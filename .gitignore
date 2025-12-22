@@ -1,0 +1,34 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.code-workspace
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# Fabric/Forge
+run/
+runs/
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.env
+secrets.json
+
+# Local development
+local.properties

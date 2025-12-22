@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/halocore099/isotope/discussions
+    about: Ask questions or discuss ideas
+  - name: Discord
+    url: https://discord.gg/YOUR_DISCORD
+    about: Join the community (coming soon)
