@@ -1,4 +1,10 @@
-apply plugin: "com.github.johnrengelman.shadow"
+plugins {
+    id "com.github.johnrengelman.shadow"
+}
+
+repositories {
+    maven { url "https://maven.neoforged.net/releases/" }
+}
 
 architectury {
     platformSetupLoomIde()
