@@ -55,6 +55,14 @@ public final class IsotopeColors {
     public static final int BUTTON_PRESSED = 0xFF2D2D2D;
     public static final int BUTTON_DISABLED = 0xFF2A2A2A;
 
+    // List colors
+    public static final int LIST_SELECTED = 0xFF00ACC1;
+    public static final int LIST_HOVER = 0xFF3D3D3D;
+
+    // Scrollbar colors
+    public static final int SCROLLBAR_TRACK = 0xFF2A2A2A;
+    public static final int SCROLLBAR_THUMB = 0xFF505050;
+
     // Destructive action colors
     public static final int DESTRUCTIVE_BACKGROUND = 0xFF5D2A2A;
     public static final int DESTRUCTIVE_HOVER = 0xFF7D3A3A;
