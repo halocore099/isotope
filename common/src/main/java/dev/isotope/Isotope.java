@@ -16,6 +16,24 @@ public final class Isotope {
 
     public static void init() {
         LOGGER.info("Initializing {} - Worldgen & Loot Introspection Toolkit", MOD_NAME);
-        LOGGER.warn("[{}] This is a developer tool. Not intended for survival gameplay.", MOD_NAME);
+        printDevWarning();
+    }
+
+    private static void printDevWarning() {
+        LOGGER.warn("");
+        LOGGER.warn("========================================================");
+        LOGGER.warn("  ISOTOPE - DEVELOPER TOOL");
+        LOGGER.warn("========================================================");
+        LOGGER.warn("  This mod is intended for modpack developers only.");
+        LOGGER.warn("");
+        LOGGER.warn("  DO NOT include this mod in production modpacks.");
+        LOGGER.warn("  It may:");
+        LOGGER.warn("    - Cause world generation changes");
+        LOGGER.warn("    - Impact game performance during analysis");
+        LOGGER.warn("    - Modify loot tables when editing features are used");
+        LOGGER.warn("");
+        LOGGER.warn("  Remove ISOTOPE before publishing your modpack!");
+        LOGGER.warn("========================================================");
+        LOGGER.warn("");
     }
 }
