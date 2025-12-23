@@ -3,6 +3,8 @@ package dev.isotope.ui;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.hooks.client.screen.ScreenAccess;
 import dev.isotope.Isotope;
+import dev.isotope.analysis.AnalysisEngine;
+import dev.isotope.ui.screen.AnalysisProgressScreen;
 import dev.isotope.ui.screen.ConfirmationScreen;
 import dev.isotope.ui.screen.MainScreen;
 import dev.isotope.ui.widget.IsotopeButton;
@@ -116,14 +118,23 @@ public final class IsotopeClientInit {
         Minecraft minecraft = Minecraft.getInstance();
 
         // Check if registry data is available (singleplayer server running)
-        if (minecraft.getSingleplayerServer() == null && parentScreen instanceof TitleScreen) {
-            // From title screen without a world - show message that a world must be loaded
+        if (minecraft.getSingleplayerServer() == null) {
+            // No world loaded - show warning and go to main screen (empty data)
             Isotope.LOGGER.warn("ISOTOPE requires a world to be loaded for analysis");
-            // For now, still open MainScreen which will show empty data
-            // In M4+ we can add proper messaging
+            MainScreen mainScreen = new MainScreen(parentScreen);
+            minecraft.setScreen(mainScreen);
+            return;
         }
 
+        // World is loaded - run analysis first, then show main screen
         MainScreen mainScreen = new MainScreen(parentScreen);
-        minecraft.setScreen(mainScreen);
+
+        // Show analysis progress screen which will transition to main screen
+        AnalysisProgressScreen progressScreen = new AnalysisProgressScreen(
+            parentScreen,
+            mainScreen,
+            AnalysisEngine.AnalysisConfig.defaultConfig()
+        );
+        minecraft.setScreen(progressScreen);
     }
 }
