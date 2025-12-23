@@ -14,7 +14,8 @@
   "icon": "assets/isotope/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": ["dev.isotope.fabric.IsotopeFabric"]
+    "main": ["dev.isotope.fabric.IsotopeFabric"],
+    "client": ["dev.isotope.fabric.IsotopeFabricClient"]
   },
   "mixins": [],
   "depends": {
