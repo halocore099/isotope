@@ -4,6 +4,7 @@ import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.hooks.client.screen.ScreenAccess;
 import dev.isotope.Isotope;
 import dev.isotope.analysis.AnalysisEngine;
+import dev.isotope.analysis.HeadlessAnalysisWorld;
 import dev.isotope.ui.screen.AnalysisProgressScreen;
 import dev.isotope.ui.screen.ConfirmationScreen;
 import dev.isotope.ui.screen.MainScreen;
@@ -119,21 +120,34 @@ public final class IsotopeClientInit {
 
         // Check if registry data is available (singleplayer server running)
         if (minecraft.getSingleplayerServer() == null) {
-            // No world loaded - show warning and go to main screen (empty data)
-            Isotope.LOGGER.warn("ISOTOPE requires a world to be loaded for analysis");
-            MainScreen mainScreen = new MainScreen(parentScreen);
-            minecraft.setScreen(mainScreen);
+            // No world loaded - use headless analysis world
+            Isotope.LOGGER.info("Starting headless analysis from main menu");
+            openHeadlessAnalysis(parentScreen);
             return;
         }
 
-        // World is loaded - run analysis first, then show main screen
+        // World is loaded - run analysis using current server
         MainScreen mainScreen = new MainScreen(parentScreen);
 
         // Show analysis progress screen which will transition to main screen
         AnalysisProgressScreen progressScreen = new AnalysisProgressScreen(
             parentScreen,
             mainScreen,
-            AnalysisEngine.AnalysisConfig.defaultConfig()
+            AnalysisEngine.AnalysisConfig.defaultConfig(),
+            false  // Not headless - use current server
+        );
+        minecraft.setScreen(progressScreen);
+    }
+
+    private static void openHeadlessAnalysis(Screen parentScreen) {
+        Minecraft minecraft = Minecraft.getInstance();
+
+        // Show progress screen in headless mode
+        AnalysisProgressScreen progressScreen = new AnalysisProgressScreen(
+            parentScreen,
+            null,  // Next screen will be set after analysis completes
+            AnalysisEngine.AnalysisConfig.defaultConfig(),
+            true   // Headless mode - create temp world
         );
         minecraft.setScreen(progressScreen);
     }

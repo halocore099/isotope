@@ -2,6 +2,7 @@ package dev.isotope.registry;
 
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.isotope.Isotope;
+import dev.isotope.analysis.HeadlessAnalysisWorld;
 import dev.isotope.analysis.LootContentsRegistry;
 import dev.isotope.analysis.StructureLootLinker;
 import net.minecraft.server.MinecraftServer;
@@ -28,6 +29,14 @@ public final class RegistryScanner {
     }
 
     private static void onServerStarted(MinecraftServer server) {
+        // Check if this is the headless analysis world
+        if (HeadlessAnalysisWorld.getInstance().isAnalysisWorld(server)) {
+            Isotope.LOGGER.info("Analysis world detected - delegating to HeadlessAnalysisWorld");
+            HeadlessAnalysisWorld.getInstance().onServerReady(server);
+            return;
+        }
+
+        // Normal world - run standard registry discovery
         Isotope.LOGGER.info("Server started - beginning registry discovery...");
 
         long startTime = System.currentTimeMillis();
@@ -47,6 +56,13 @@ public final class RegistryScanner {
     }
 
     private static void onServerStopping(MinecraftServer server) {
+        // Don't reset registries when headless analysis world stops
+        // We want to keep the data for the UI
+        if (HeadlessAnalysisWorld.getInstance().isAnalysisWorld(server)) {
+            Isotope.LOGGER.info("Analysis world stopping - preserving registry data for UI");
+            return;
+        }
+
         Isotope.LOGGER.debug("Server stopping - resetting registry state");
 
         // Reset M2 components

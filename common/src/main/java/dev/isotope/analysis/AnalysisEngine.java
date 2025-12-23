@@ -207,6 +207,23 @@ public final class AnalysisEngine {
         );
     }
 
+    /**
+     * Sample a single loot table and store the result.
+     * Used by HeadlessAnalysisWorld for incremental sampling.
+     */
+    public void sampleSingleTable(MinecraftServer server, ServerLevel level,
+                                   LootTableInfo tableInfo, int sampleCount) {
+        LootSampleResult result = sampleLootTable(server, level, tableInfo, sampleCount);
+        lootSamples.put(tableInfo.id(), result);
+    }
+
+    /**
+     * Clear all cached sample data.
+     */
+    public void clearSamples() {
+        lootSamples.clear();
+    }
+
     public void cancel() {
         cancelled.set(true);
         Isotope.LOGGER.info("Analysis cancellation requested");

@@ -5,6 +5,7 @@ import dev.isotope.analysis.AnalysisEngine;
 import dev.isotope.analysis.AnalysisEngine.AnalysisConfig;
 import dev.isotope.analysis.AnalysisEngine.AnalysisProgress;
 import dev.isotope.analysis.AnalysisEngine.AnalysisResult;
+import dev.isotope.analysis.HeadlessAnalysisWorld;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.widget.IsotopeButton;
 import net.fabricmc.api.EnvType;
@@ -29,8 +30,9 @@ public class AnalysisProgressScreen extends IsotopeScreen {
 
     private static final Component TITLE = Component.literal("ISOTOPE - Running Analysis");
 
-    private final Screen nextScreen;
+    private Screen nextScreen;
     private final AnalysisConfig config;
+    private final boolean headlessMode;
 
     // State
     private boolean analysisStarted = false;
@@ -44,10 +46,19 @@ public class AnalysisProgressScreen extends IsotopeScreen {
     private IsotopeButton cancelButton;
     private IsotopeButton continueButton;
 
-    public AnalysisProgressScreen(@Nullable Screen parent, Screen nextScreen, AnalysisConfig config) {
+    /**
+     * Create analysis progress screen.
+     * @param parent Parent screen to return to on cancel
+     * @param nextScreen Screen to show after completion (can be null for headless mode)
+     * @param config Analysis configuration
+     * @param headlessMode If true, creates a temporary world for analysis
+     */
+    public AnalysisProgressScreen(@Nullable Screen parent, @Nullable Screen nextScreen,
+                                   AnalysisConfig config, boolean headlessMode) {
         super(TITLE, parent);
         this.nextScreen = nextScreen;
         this.config = config;
+        this.headlessMode = headlessMode;
     }
 
     @Override
@@ -91,6 +102,87 @@ public class AnalysisProgressScreen extends IsotopeScreen {
         analysisStarted = true;
         addLog("Starting ISOTOPE analysis...");
 
+        if (headlessMode) {
+            startHeadlessAnalysis();
+        } else {
+            startInWorldAnalysis();
+        }
+    }
+
+    private void startHeadlessAnalysis() {
+        addLog("Creating temporary analysis world...");
+        addLog("Sample count: " + config.sampleCount());
+
+        // Use HeadlessAnalysisWorld for main menu analysis
+        HeadlessAnalysisWorld.getInstance().startAnalysis(
+            config,
+            this::onHeadlessProgress,
+            this::onHeadlessComplete
+        );
+    }
+
+    private void onHeadlessProgress(String message) {
+        Minecraft.getInstance().execute(() -> {
+            this.currentTask = message;
+            addLog(message);
+
+            // Estimate progress based on message content
+            if (message.contains("Creating")) {
+                this.progressPercent = 5;
+            } else if (message.contains("Loading")) {
+                this.progressPercent = 10;
+            } else if (message.contains("Scanning structure")) {
+                this.progressPercent = 20;
+            } else if (message.contains("Scanning loot")) {
+                this.progressPercent = 30;
+            } else if (message.contains("Building structure-loot")) {
+                this.progressPercent = 40;
+            } else if (message.contains("Sampling")) {
+                // Parse sampling progress
+                if (message.contains("/")) {
+                    try {
+                        String[] parts = message.split(" ");
+                        for (String part : parts) {
+                            if (part.contains("/")) {
+                                String[] nums = part.split("/");
+                                int current = Integer.parseInt(nums[0]);
+                                int total = Integer.parseInt(nums[1]);
+                                this.progressPercent = 40 + (current * 50 / total);
+                                break;
+                            }
+                        }
+                    } catch (Exception e) {
+                        this.progressPercent = 60;
+                    }
+                } else {
+                    this.progressPercent = 50;
+                }
+            } else if (message.contains("complete")) {
+                this.progressPercent = 100;
+            }
+        });
+    }
+
+    private void onHeadlessComplete(Boolean success) {
+        Minecraft.getInstance().execute(() -> {
+            this.analysisComplete = true;
+            this.progressPercent = 100;
+
+            if (success) {
+                // Headless analysis complete - open MainScreen directly
+                // (our AnalysisProgressScreen was replaced by Minecraft's loading screens)
+                Isotope.LOGGER.info("Headless analysis complete - opening MainScreen");
+                MainScreen mainScreen = new MainScreen(null); // null parent = return to title on close
+                Minecraft.getInstance().setScreen(mainScreen);
+            } else {
+                // Failed - return to title screen
+                Isotope.LOGGER.warn("Headless analysis failed - returning to title screen");
+                Minecraft.getInstance().setScreen(null);
+            }
+        });
+    }
+
+    private void startInWorldAnalysis() {
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
 
@@ -161,12 +253,21 @@ public class AnalysisProgressScreen extends IsotopeScreen {
     }
 
     private void cancelAnalysis() {
-        AnalysisEngine.getInstance().cancel();
+        if (headlessMode) {
+            HeadlessAnalysisWorld.getInstance().cancel();
+        } else {
+            AnalysisEngine.getInstance().cancel();
+        }
         addLog("Cancelling analysis...");
     }
 
     private void openNextScreen() {
-        Minecraft.getInstance().setScreen(nextScreen);
+        if (nextScreen != null) {
+            Minecraft.getInstance().setScreen(nextScreen);
+        } else {
+            // Fallback to parent or title screen
+            Minecraft.getInstance().setScreen(parent);
+        }
     }
 
     private void updateButtons() {
