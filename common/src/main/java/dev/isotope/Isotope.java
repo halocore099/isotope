@@ -1,5 +1,7 @@
 package dev.isotope;
 
+import dev.isotope.command.IsotopeCommands;
+import dev.isotope.registry.RegistryScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +19,12 @@ public final class Isotope {
     public static void init() {
         LOGGER.info("Initializing {} - Worldgen & Loot Introspection Toolkit", MOD_NAME);
         printDevWarning();
+
+        // M1: Registry Discovery
+        RegistryScanner.init();
+        IsotopeCommands.register();
+
+        LOGGER.info("{} initialization complete", MOD_NAME);
     }
 
     private static void printDevWarning() {
