@@ -4,6 +4,9 @@ import dev.isotope.Isotope;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.data.ClientDataProvider;
 import dev.isotope.ui.widget.IsotopeButton;
+import dev.isotope.ui.widget.LootCategoryListWidget;
+import dev.isotope.ui.widget.LootTableDetailPanel;
+import dev.isotope.ui.widget.LootTableListWidget;
 import dev.isotope.ui.widget.NamespaceListWidget;
 import dev.isotope.ui.widget.StructureDetailPanel;
 import dev.isotope.ui.widget.StructureListWidget;
@@ -33,10 +36,15 @@ public class MainScreen extends IsotopeScreen {
     private static final int HEADER_HEIGHT = 55;
     private static final int PADDING = 5;
 
-    // Widgets
+    // Structure tab widgets
     private NamespaceListWidget namespaceList;
     private StructureListWidget structureList;
     private StructureDetailPanel detailPanel;
+
+    // Loot table tab widgets
+    private LootCategoryListWidget categoryList;
+    private LootTableListWidget lootTableList;
+    private LootTableDetailPanel lootDetailPanel;
 
     // Current tab
     private Tab currentTab = Tab.STRUCTURES;
@@ -110,11 +118,11 @@ public class MainScreen extends IsotopeScreen {
         int contentHeight = this.height - HEADER_HEIGHT - PADDING;
         int centerPanelWidth = this.width - LEFT_PANEL_WIDTH - RIGHT_PANEL_WIDTH - (PADDING * 4);
 
-        // Initialize 3-panel layout
+        // Initialize 3-panel layout based on current tab
         if (currentTab == Tab.STRUCTURES) {
             initStructuresPanel(contentY, contentHeight, centerPanelWidth);
         } else if (currentTab == Tab.LOOT_TABLES) {
-            // TODO: M5 - Loot tables tab
+            initLootTablesPanel(contentY, contentHeight, centerPanelWidth);
         } else if (currentTab == Tab.EXPORT) {
             // TODO: M7 - Export tab
         }
@@ -163,6 +171,45 @@ public class MainScreen extends IsotopeScreen {
         }
     }
 
+    private void initLootTablesPanel(int contentY, int contentHeight, int centerPanelWidth) {
+        // Left panel - Category list
+        categoryList = new LootCategoryListWidget(
+            PADDING,
+            contentY,
+            LEFT_PANEL_WIDTH,
+            contentHeight,
+            this::onCategorySelected
+        );
+        this.addRenderableWidget(categoryList);
+
+        // Center panel - Loot table list
+        lootTableList = new LootTableListWidget(
+            PADDING + LEFT_PANEL_WIDTH + PADDING,
+            contentY,
+            centerPanelWidth,
+            contentHeight,
+            this::onLootTableSelected
+        );
+        this.addRenderableWidget(lootTableList);
+
+        // Right panel - Loot table details
+        lootDetailPanel = new LootTableDetailPanel(
+            PADDING + LEFT_PANEL_WIDTH + PADDING + centerPanelWidth + PADDING,
+            contentY,
+            RIGHT_PANEL_WIDTH,
+            contentHeight
+        );
+
+        // Load data
+        if (ClientDataProvider.getInstance().isDataAvailable()) {
+            categoryList.loadData();
+            LootCategoryListWidget.CategoryEntry selected = categoryList.getSelected();
+            if (selected != null) {
+                lootTableList.loadForCategory(selected.category());
+            }
+        }
+    }
+
     private void switchTab(Tab tab) {
         if (currentTab != tab) {
             currentTab = tab;
@@ -200,8 +247,27 @@ public class MainScreen extends IsotopeScreen {
     }
 
     private void onViewLootTable(ResourceLocation tableId) {
-        // TODO: M5 - Open LootTableDetailScreen
+        // Switch to loot tables tab and select this table
         Isotope.LOGGER.info("View loot table: {}", tableId);
+        currentTab = Tab.LOOT_TABLES;
+        rebuildWidgets();
+        // TODO: Auto-select the table in the list
+    }
+
+    private void onCategorySelected(LootCategoryListWidget.CategoryEntry entry) {
+        if (lootTableList != null && entry != null) {
+            lootTableList.loadForCategory(entry.category());
+            lootTableList.clearSelection();
+            if (lootDetailPanel != null) {
+                lootDetailPanel.setLootTable(null);
+            }
+        }
+    }
+
+    private void onLootTableSelected(LootTableListWidget.LootTableEntry entry) {
+        if (lootDetailPanel != null) {
+            lootDetailPanel.setLootTable(entry);
+        }
     }
 
     @Override
@@ -215,14 +281,14 @@ public class MainScreen extends IsotopeScreen {
         renderStatusBar(graphics);
 
         // Detail panel (custom rendering, not a widget)
-        if (detailPanel != null && currentTab == Tab.STRUCTURES) {
+        if (currentTab == Tab.STRUCTURES && detailPanel != null) {
             detailPanel.render(graphics, mouseX, mouseY, partialTick);
+        } else if (currentTab == Tab.LOOT_TABLES && lootDetailPanel != null) {
+            lootDetailPanel.render(graphics, mouseX, mouseY, partialTick);
         }
 
         // Tab-specific placeholders
-        if (currentTab == Tab.LOOT_TABLES) {
-            renderPlaceholder(graphics, "Loot Tables browser - Coming in M5");
-        } else if (currentTab == Tab.EXPORT) {
+        if (currentTab == Tab.EXPORT) {
             renderPlaceholder(graphics, "Export functionality - Coming in M7");
         }
     }
@@ -265,6 +331,17 @@ public class MainScreen extends IsotopeScreen {
             this.height / 2,
             IsotopeColors.TEXT_MUTED
         );
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        // Handle scrolling for detail panels
+        if (currentTab == Tab.LOOT_TABLES && lootDetailPanel != null) {
+            if (lootDetailPanel.mouseScrolled(mouseX, mouseY, scrollX, scrollY)) {
+                return true;
+            }
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
