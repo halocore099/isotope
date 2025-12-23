@@ -9,6 +9,6 @@ pluginManagement {
 
 include("common")
 include("fabric")
-// include("neoforge")  // TODO: NeoForge support - needs Loom config fix
+include("neoforge")
 
 rootProject.name = "isotope"

@@ -8,7 +8,8 @@ repositories {
 
 architectury {
     platformSetupLoomIde()
-    neoForge()
+    neoForge {
+    }
 }
 
 configurations {
