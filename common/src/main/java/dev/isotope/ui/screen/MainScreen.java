@@ -124,7 +124,10 @@ public class MainScreen extends IsotopeScreen {
         } else if (currentTab == Tab.LOOT_TABLES) {
             initLootTablesPanel(contentY, contentHeight, centerPanelWidth);
         } else if (currentTab == Tab.EXPORT) {
-            // TODO: M7 - Export tab
+            // Open export screen
+            if (minecraft != null) {
+                minecraft.setScreen(new ExportScreen(this));
+            }
         }
     }
 
@@ -287,10 +290,6 @@ public class MainScreen extends IsotopeScreen {
             lootDetailPanel.render(graphics, mouseX, mouseY, partialTick);
         }
 
-        // Tab-specific placeholders
-        if (currentTab == Tab.EXPORT) {
-            renderPlaceholder(graphics, "Export functionality - Coming in M7");
-        }
     }
 
     private void renderStatusBar(GuiGraphics graphics) {
