@@ -1,15 +1,18 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.Isotope;
+import dev.isotope.registry.StructureLootLinker;
+import dev.isotope.save.AnalysisSaveManager;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.data.ClientDataProvider;
-import dev.isotope.ui.widget.IsotopeButton;
+import dev.isotope.ui.widget.IsotopeWindow;
 import dev.isotope.ui.widget.LootCategoryListWidget;
 import dev.isotope.ui.widget.LootTableDetailPanel;
 import dev.isotope.ui.widget.LootTableListWidget;
 import dev.isotope.ui.widget.NamespaceListWidget;
 import dev.isotope.ui.widget.StructureDetailPanel;
 import dev.isotope.ui.widget.StructureListWidget;
+import dev.isotope.ui.widget.VanillaTabBar;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -33,8 +36,12 @@ public class MainScreen extends IsotopeScreen {
     // Panel dimensions
     private static final int LEFT_PANEL_WIDTH = 150;
     private static final int RIGHT_PANEL_WIDTH = 220;
-    private static final int HEADER_HEIGHT = 55;
+    private static final int WINDOW_MARGIN = 20;
     private static final int PADDING = 5;
+
+    // Window frame
+    private IsotopeWindow window;
+    private VanillaTabBar tabBar;
 
     // Structure tab widgets
     private NamespaceListWidget namespaceList;
@@ -49,6 +56,9 @@ public class MainScreen extends IsotopeScreen {
     // Current tab
     private Tab currentTab = Tab.STRUCTURES;
 
+    // Track buttons added to screen for proper cleanup
+    private final java.util.List<Button> addedDetailButtons = new java.util.ArrayList<>();
+
     private enum Tab {
         STRUCTURES, LOOT_TABLES, EXPORT
     }
@@ -61,80 +71,78 @@ public class MainScreen extends IsotopeScreen {
     protected void init() {
         super.init();
 
-        // Close button in top-right
-        int closeButtonSize = 20;
+        // Create window frame
+        window = IsotopeWindow.fullscreen(this, WINDOW_MARGIN, TITLE);
+
+        // Tab bar below window title
+        int tabBarY = window.getY() + 28;
+        tabBar = new VanillaTabBar(window.getContentX(), tabBarY, window.getContentWidth())
+            .addTab("Structures")
+            .addTab("Loot Tables")
+            .addTab("Export")
+            .onTabChange(this::onTabChanged);
+        tabBar.setSelectedIndex(currentTab.ordinal());
+        this.addRenderableWidget(tabBar);
+
+        // Action buttons in title area
+        int buttonY = window.getY() + 5;
+        int buttonX = window.getX() + window.getWidth() - 70;
+
+        // Close button
         this.addRenderableWidget(
-            IsotopeButton.isotopeBuilder(
-                Component.literal("X"),
-                button -> onClose()
-            )
-            .pos(this.width - closeButtonSize - 5, 5)
-            .size(closeButtonSize, closeButtonSize)
-            .style(IsotopeButton.ButtonStyle.DEFAULT)
-            .build()
+            Button.builder(Component.literal("X"), button -> onClose())
+                .pos(buttonX + 50, buttonY)
+                .size(16, 16)
+                .build()
         );
 
-        // Tab buttons
-        int tabY = 30;
-        int tabWidth = 100;
-        int tabHeight = 20;
-        int tabX = 10;
-
+        // Save button
         this.addRenderableWidget(
-            IsotopeButton.isotopeBuilder(
-                Component.literal("Structures"),
-                button -> switchTab(Tab.STRUCTURES)
-            )
-            .pos(tabX, tabY)
-            .size(tabWidth, tabHeight)
-            .style(currentTab == Tab.STRUCTURES ? IsotopeButton.ButtonStyle.PRIMARY : IsotopeButton.ButtonStyle.DEFAULT)
-            .build()
+            Button.builder(Component.literal("Save"), button -> saveCurrentAnalysis())
+                .pos(buttonX, buttonY)
+                .size(45, 16)
+                .build()
         );
 
-        this.addRenderableWidget(
-            IsotopeButton.isotopeBuilder(
-                Component.literal("Loot Tables"),
-                button -> switchTab(Tab.LOOT_TABLES)
-            )
-            .pos(tabX + tabWidth + 5, tabY)
-            .size(tabWidth, tabHeight)
-            .style(currentTab == Tab.LOOT_TABLES ? IsotopeButton.ButtonStyle.PRIMARY : IsotopeButton.ButtonStyle.DEFAULT)
-            .build()
-        );
-
-        this.addRenderableWidget(
-            IsotopeButton.isotopeBuilder(
-                Component.literal("Export"),
-                button -> switchTab(Tab.EXPORT)
-            )
-            .pos(tabX + (tabWidth + 5) * 2, tabY)
-            .size(tabWidth, tabHeight)
-            .style(currentTab == Tab.EXPORT ? IsotopeButton.ButtonStyle.PRIMARY : IsotopeButton.ButtonStyle.DEFAULT)
-            .build()
-        );
-
-        // Calculate panel dimensions
-        int contentY = HEADER_HEIGHT;
-        int contentHeight = this.height - HEADER_HEIGHT - PADDING;
-        int centerPanelWidth = this.width - LEFT_PANEL_WIDTH - RIGHT_PANEL_WIDTH - (PADDING * 4);
+        // Calculate content area (below tabs)
+        int contentY = tabBarY + 28;
+        int contentHeight = window.getContentY() + window.getContentHeight() - contentY - 20;
+        int contentWidth = window.getContentWidth();
+        int centerPanelWidth = contentWidth - LEFT_PANEL_WIDTH - RIGHT_PANEL_WIDTH - (PADDING * 2);
 
         // Initialize 3-panel layout based on current tab
         if (currentTab == Tab.STRUCTURES) {
             initStructuresPanel(contentY, contentHeight, centerPanelWidth);
         } else if (currentTab == Tab.LOOT_TABLES) {
             initLootTablesPanel(contentY, contentHeight, centerPanelWidth);
-        } else if (currentTab == Tab.EXPORT) {
-            // Open export screen
-            if (minecraft != null) {
-                minecraft.setScreen(new ExportScreen(this));
+        }
+        // Note: EXPORT tab is handled in onTabChanged to avoid init loop
+    }
+
+    private void onTabChanged(int tabIndex) {
+        Tab newTab = Tab.values()[tabIndex];
+        if (currentTab != newTab) {
+            if (newTab == Tab.EXPORT) {
+                // Open export screen without changing currentTab
+                // This prevents a loop when returning from ExportScreen
+                if (minecraft != null) {
+                    minecraft.setScreen(new ExportScreen(this));
+                }
+                // Reset tab bar selection to previous tab
+                tabBar.setSelectedIndex(currentTab.ordinal());
+            } else {
+                currentTab = newTab;
+                rebuildWidgets();
             }
         }
     }
 
     private void initStructuresPanel(int contentY, int contentHeight, int centerPanelWidth) {
+        int contentX = window.getContentX();
+
         // Left panel - Namespace list
         namespaceList = new NamespaceListWidget(
-            PADDING,
+            contentX,
             contentY,
             LEFT_PANEL_WIDTH,
             contentHeight,
@@ -144,7 +152,7 @@ public class MainScreen extends IsotopeScreen {
 
         // Center panel - Structure list
         structureList = new StructureListWidget(
-            PADDING + LEFT_PANEL_WIDTH + PADDING,
+            contentX + LEFT_PANEL_WIDTH + PADDING,
             contentY,
             centerPanelWidth,
             contentHeight,
@@ -152,13 +160,15 @@ public class MainScreen extends IsotopeScreen {
         );
         this.addRenderableWidget(structureList);
 
-        // Right panel - Details (not a widget, custom rendering)
+        // Right panel - Details with editing controls
         detailPanel = new StructureDetailPanel(
-            PADDING + LEFT_PANEL_WIDTH + PADDING + centerPanelWidth + PADDING,
+            contentX + LEFT_PANEL_WIDTH + PADDING + centerPanelWidth + PADDING,
             contentY,
             RIGHT_PANEL_WIDTH,
             contentHeight,
-            this::onViewLootTable
+            this::onViewLootTable,
+            this::onAddLinkToStructure,
+            this::onRemoveLinkFromStructure
         );
 
         // Load data
@@ -175,9 +185,11 @@ public class MainScreen extends IsotopeScreen {
     }
 
     private void initLootTablesPanel(int contentY, int contentHeight, int centerPanelWidth) {
+        int contentX = window.getContentX();
+
         // Left panel - Category list
         categoryList = new LootCategoryListWidget(
-            PADDING,
+            contentX,
             contentY,
             LEFT_PANEL_WIDTH,
             contentHeight,
@@ -187,7 +199,7 @@ public class MainScreen extends IsotopeScreen {
 
         // Center panel - Loot table list
         lootTableList = new LootTableListWidget(
-            PADDING + LEFT_PANEL_WIDTH + PADDING,
+            contentX + LEFT_PANEL_WIDTH + PADDING,
             contentY,
             centerPanelWidth,
             contentHeight,
@@ -197,7 +209,7 @@ public class MainScreen extends IsotopeScreen {
 
         // Right panel - Loot table details
         lootDetailPanel = new LootTableDetailPanel(
-            PADDING + LEFT_PANEL_WIDTH + PADDING + centerPanelWidth + PADDING,
+            contentX + LEFT_PANEL_WIDTH + PADDING + centerPanelWidth + PADDING,
             contentY,
             RIGHT_PANEL_WIDTH,
             contentHeight
@@ -206,17 +218,8 @@ public class MainScreen extends IsotopeScreen {
         // Load data
         if (ClientDataProvider.getInstance().isDataAvailable()) {
             categoryList.loadData();
-            LootCategoryListWidget.CategoryEntry selected = categoryList.getSelected();
-            if (selected != null) {
-                lootTableList.loadForCategory(selected.category());
-            }
-        }
-    }
-
-    private void switchTab(Tab tab) {
-        if (currentTab != tab) {
-            currentTab = tab;
-            rebuildWidgets();
+            // Load all observed loot tables (category filtering not applicable in observation model)
+            lootTableList.loadAll();
         }
     }
 
@@ -239,13 +242,16 @@ public class MainScreen extends IsotopeScreen {
     }
 
     private void refreshDetailButtons() {
-        // Remove old detail buttons
-        for (Button btn : detailPanel.getButtons()) {
+        // Remove previously added buttons from the screen
+        for (Button btn : addedDetailButtons) {
             this.removeWidget(btn);
         }
-        // Add new ones
+        addedDetailButtons.clear();
+
+        // Add new buttons from the detail panel
         for (Button btn : detailPanel.getButtons()) {
             this.addRenderableWidget(btn);
+            addedDetailButtons.add(btn);
         }
     }
 
@@ -257,8 +263,49 @@ public class MainScreen extends IsotopeScreen {
         // TODO: Auto-select the table in the list
     }
 
+    private void onAddLinkToStructure(ResourceLocation structureId) {
+        // Open loot table picker
+        if (minecraft == null) return;
+
+        LootTablePickerScreen picker = new LootTablePickerScreen(
+            this,
+            structureId,
+            lootTableId -> {
+                // Add the link
+                StructureLootLinker.getInstance().addManualLink(structureId, lootTableId);
+                Isotope.LOGGER.info("Added manual link: {} -> {}", structureId, lootTableId);
+
+                // Refresh the structure list and detail panel
+                refreshAfterLinkChange();
+            }
+        );
+        minecraft.setScreen(picker);
+    }
+
+    private void onRemoveLinkFromStructure(ResourceLocation structureId, ResourceLocation lootTableId) {
+        // Remove the link
+        StructureLootLinker.getInstance().removeLink(structureId, lootTableId);
+        Isotope.LOGGER.info("Removed link: {} -> {}", structureId, lootTableId);
+
+        // Refresh the structure list and detail panel
+        refreshAfterLinkChange();
+    }
+
+    private void refreshAfterLinkChange() {
+        // Re-select current structure to refresh detail panel
+        if (structureList != null) {
+            StructureListWidget.StructureEntry selected = structureList.getSelected();
+            if (selected != null) {
+                // Reload the structure entry with updated links
+                structureList.reloadCurrentEntry();
+                onStructureSelected(structureList.getSelected());
+            }
+        }
+    }
+
     private void onCategorySelected(LootCategoryListWidget.CategoryEntry entry) {
         if (lootTableList != null && entry != null) {
+            // Filter by category (null means all)
             lootTableList.loadForCategory(entry.category());
             lootTableList.clearSelection();
             if (lootDetailPanel != null) {
@@ -275,10 +322,13 @@ public class MainScreen extends IsotopeScreen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
+        // Render window frame first (includes dim background)
+        if (window != null) {
+            window.render(graphics, mouseX, mouseY, partialTick);
+        }
 
-        // Title bar
-        renderTitleBar(graphics);
+        // Render widgets on top
+        super.render(graphics, mouseX, mouseY, partialTick);
 
         // Status bar with counts
         renderStatusBar(graphics);
@@ -289,16 +339,20 @@ public class MainScreen extends IsotopeScreen {
         } else if (currentTab == Tab.LOOT_TABLES && lootDetailPanel != null) {
             lootDetailPanel.render(graphics, mouseX, mouseY, partialTick);
         }
-
     }
 
     private void renderStatusBar(GuiGraphics graphics) {
+        if (window == null) return;
+
+        int statusY = window.getY() + window.getHeight() - 15;
+        int statusX = window.getContentX();
+
         if (!ClientDataProvider.getInstance().isDataAvailable()) {
             graphics.drawString(
                 this.font,
                 "No world loaded - registry data unavailable",
-                this.width / 2 - 100,
-                this.height - 15,
+                statusX,
+                statusY,
                 IsotopeColors.STATUS_WARNING
             );
             return;
@@ -306,17 +360,17 @@ public class MainScreen extends IsotopeScreen {
 
         ClientDataProvider provider = ClientDataProvider.getInstance();
         String status = String.format(
-            "%d structures | %d loot tables | %d linked",
+            "%d structures | %d loot tables | %d with loot",
             provider.getTotalStructureCount(),
             provider.getTotalLootTableCount(),
-            provider.getLinkedStructureCount()
+            provider.getStructuresWithLootCount()
         );
 
         graphics.drawString(
             this.font,
             status,
-            PADDING,
-            this.height - 15,
+            statusX,
+            statusY,
             IsotopeColors.TEXT_MUTED
         );
     }
@@ -341,6 +395,16 @@ public class MainScreen extends IsotopeScreen {
             }
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    private void saveCurrentAnalysis() {
+        var result = AnalysisSaveManager.getInstance().saveCurrentAnalysis(null);
+        if (result.isPresent()) {
+            Isotope.LOGGER.info("Analysis saved: {}", result.get().getDisplayName());
+            // Could show a toast notification here
+        } else {
+            Isotope.LOGGER.error("Failed to save analysis");
+        }
     }
 
     @Override

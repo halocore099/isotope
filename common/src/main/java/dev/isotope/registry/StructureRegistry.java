@@ -2,10 +2,8 @@ package dev.isotope.registry;
 
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureInfo;
-import net.minecraft.core.Holder;
-import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -14,9 +12,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Discovers and stores all registered structures from the dynamic registry.
+ * Registry of all discovered structures.
+ *
+ * Scans Minecraft's structure registry to find all structures
+ * (vanilla + modded) that exist in the current game session.
  */
 public final class StructureRegistry {
+
     private static final StructureRegistry INSTANCE = new StructureRegistry();
 
     private final Map<ResourceLocation, StructureInfo> structures = new LinkedHashMap<>();
@@ -28,67 +30,107 @@ public final class StructureRegistry {
         return INSTANCE;
     }
 
+    /**
+     * Scan the structure registry from the server.
+     */
     public void scan(MinecraftServer server) {
-        if (scanned) {
-            Isotope.LOGGER.warn("Structure registry already scanned - skipping");
-            return;
-        }
-
         structures.clear();
 
         try {
-            // Use lookupOrThrow for dynamic registries in 1.21.4
-            HolderLookup.RegistryLookup<Structure> lookup = server.registryAccess()
-                .lookupOrThrow(Registries.STRUCTURE);
+            Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
-            lookup.listElementIds().forEach(key -> {
-                ResourceLocation id = key.location();
-                structures.put(id, StructureInfo.fromId(id));
+            registry.keySet().forEach(id -> {
+                StructureInfo info = StructureInfo.fromId(id);
+                structures.put(id, info);
             });
 
             scanned = true;
-            logSummary();
+            Isotope.LOGGER.info("StructureRegistry: scanned {} structures", structures.size());
+
+            // Log namespace breakdown
+            Map<String, Long> byNamespace = structures.values().stream()
+                .collect(Collectors.groupingBy(StructureInfo::namespace, Collectors.counting()));
+            byNamespace.forEach((ns, count) ->
+                Isotope.LOGGER.debug("  {} structures from {}", count, ns));
+
         } catch (Exception e) {
             Isotope.LOGGER.error("Failed to scan structure registry", e);
         }
     }
 
+    /**
+     * Get all discovered structures.
+     */
+    public Collection<StructureInfo> getAll() {
+        return Collections.unmodifiableCollection(structures.values());
+    }
+
+    /**
+     * Get structure by ID.
+     */
+    public Optional<StructureInfo> get(ResourceLocation id) {
+        return Optional.ofNullable(structures.get(id));
+    }
+
+    /**
+     * Get structures filtered by namespace.
+     */
+    public List<StructureInfo> getByNamespace(String namespace) {
+        if ("*".equals(namespace)) {
+            return new ArrayList<>(structures.values());
+        }
+        return structures.values().stream()
+            .filter(s -> s.namespace().equals(namespace))
+            .toList();
+    }
+
+    /**
+     * Get all unique namespaces.
+     */
+    public Set<String> getNamespaces() {
+        return structures.values().stream()
+            .map(StructureInfo::namespace)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /**
+     * Get count of structures per namespace.
+     */
+    public Map<String, Integer> getNamespaceCounts() {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (StructureInfo info : structures.values()) {
+            counts.merge(info.namespace(), 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    /**
+     * Total structure count.
+     */
+    public int size() {
+        return structures.size();
+    }
+
+    /**
+     * Check if registry has been scanned.
+     */
+    public boolean isScanned() {
+        return scanned;
+    }
+
+    /**
+     * Reset the registry (for re-scanning).
+     */
     public void reset() {
         structures.clear();
         scanned = false;
     }
 
-    private void logSummary() {
-        Map<String, Long> byNamespace = structures.values().stream()
-            .collect(Collectors.groupingBy(StructureInfo::namespace, Collectors.counting()));
-
-        Isotope.LOGGER.info("========================================");
-        Isotope.LOGGER.info("Structure Registry Scan Complete");
-        Isotope.LOGGER.info("Total structures: {}", structures.size());
-        byNamespace.forEach((ns, count) ->
-            Isotope.LOGGER.info("  {}: {}", ns, count));
-        Isotope.LOGGER.info("========================================");
-    }
-
-    public Optional<StructureInfo> get(ResourceLocation id) {
-        return Optional.ofNullable(structures.get(id));
-    }
-
-    public Collection<StructureInfo> getAll() {
-        return Collections.unmodifiableCollection(structures.values());
-    }
-
-    public Collection<StructureInfo> getByNamespace(String namespace) {
-        return structures.values().stream()
-            .filter(s -> namespace.equals(s.namespace()))
-            .toList();
-    }
-
-    public int count() {
-        return structures.size();
-    }
-
-    public boolean isScanned() {
-        return scanned;
+    /**
+     * Add a structure from a loaded save file.
+     */
+    public void addFromSave(StructureInfo info) {
+        structures.put(info.id(), info);
+        scanned = true; // Mark as having data
     }
 }

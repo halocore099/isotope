@@ -1,83 +1,88 @@
 package dev.isotope.ui.widget;
 
-import dev.isotope.analysis.AnalysisEngine;
 import dev.isotope.data.LootTableInfo;
-import dev.isotope.registry.LootTableRegistry;
+import dev.isotope.data.LootTableInfo.LootTableCategory;
+import dev.isotope.data.StructureLootLink;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.data.ClientDataProvider;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * Widget showing loot tables for the Loot Tables tab.
+ * Widget showing all discovered loot tables for the Loot Tables tab.
+ *
+ * Shows ALL loot tables from the registry with link information.
  */
 @Environment(EnvType.CLIENT)
 public class LootTableListWidget extends ScrollableListWidget<LootTableListWidget.LootTableEntry> {
 
     public record LootTableEntry(
         LootTableInfo info,
-        boolean sampled,
-        float avgItemsPerRoll
+        List<StructureLootLink> links
     ) {
         public String displayName() {
             return info.path();
         }
 
-        public String categoryName() {
-            return info.category().name();
+        public String namespace() {
+            return info.namespace();
+        }
+
+        public LootTableCategory category() {
+            return info.category();
+        }
+
+        public boolean hasLinks() {
+            return !links.isEmpty();
+        }
+
+        public int structureCount() {
+            return links.size();
+        }
+
+        public boolean isVanilla() {
+            return info.isVanilla();
         }
     }
+
+    private LootTableCategory currentFilter = null;
 
     public LootTableListWidget(int x, int y, int width, int height, Consumer<LootTableEntry> onSelect) {
         super(x, y, width, height, 26, LootTableListWidget::renderEntry, onSelect);
     }
 
-    public void loadForNamespace(String namespace) {
-        if (namespace == null) {
-            setItems(List.of());
-            return;
-        }
-
-        List<LootTableEntry> entries = new ArrayList<>();
-        var samples = AnalysisEngine.getInstance().getAllSamples();
-
-        for (LootTableInfo info : LootTableRegistry.getInstance().getByNamespace(namespace)) {
-            var sample = samples.get(info.id());
-            boolean sampled = sample != null && !sample.hasError();
-            float avgItems = sample != null ? sample.averageItemsPerRoll() : 0;
-            entries.add(new LootTableEntry(info, sampled, avgItems));
-        }
-
-        // Sort: sampled first, then by category, then alphabetically
-        entries.sort(Comparator
-            .comparing((LootTableEntry e) -> !e.sampled)
-            .thenComparing(e -> e.info.category().ordinal())
-            .thenComparing(e -> e.info.path()));
-
-        setItems(entries);
+    public void loadAll() {
+        loadForCategory(null);
     }
 
-    public void loadForCategory(LootTableInfo.LootTableCategory category) {
-        List<LootTableEntry> entries = new ArrayList<>();
-        var samples = AnalysisEngine.getInstance().getAllSamples();
+    public void loadForCategory(LootTableCategory category) {
+        currentFilter = category;
 
-        for (LootTableInfo info : LootTableRegistry.getInstance().getByCategory(category)) {
-            var sample = samples.get(info.id());
-            boolean sampled = sample != null && !sample.hasError();
-            float avgItems = sample != null ? sample.averageItemsPerRoll() : 0;
-            entries.add(new LootTableEntry(info, sampled, avgItems));
+        ClientDataProvider provider = ClientDataProvider.getInstance();
+        List<LootTableInfo> tables;
+
+        if (category == null) {
+            tables = provider.getAllLootTables();
+        } else {
+            tables = provider.getLootTablesByCategory(category);
         }
 
+        List<LootTableEntry> entries = new ArrayList<>();
+        for (LootTableInfo info : tables) {
+            List<StructureLootLink> links = provider.getLinksForLootTable(info.id());
+            entries.add(new LootTableEntry(info, links));
+        }
+
+        // Sort: tables with links first, then by category, then alphabetically
         entries.sort(Comparator
-            .comparing((LootTableEntry e) -> !e.sampled)
-            .thenComparing(e -> e.info.path()));
+            .comparing((LootTableEntry e) -> !e.hasLinks())
+            .thenComparing(e -> e.category().ordinal())
+            .thenComparing(e -> e.info().id().toString()));
 
         setItems(entries);
     }
@@ -99,36 +104,43 @@ public class LootTableListWidget extends ScrollableListWidget<LootTableListWidge
         int textColor = selected ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_SECONDARY;
         graphics.drawString(mc.font, name, x, y + 2, textColor, false);
 
-        // Category badge
+        // Badges row
         int badgeY = y + 13;
         int badgeX = x;
 
-        String catText = entry.categoryName();
+        // Category badge
+        String catText = entry.category().name();
         int catWidth = mc.font.width(catText) + 6;
-        int catColor = getCategoryColor(entry.info.category());
+        int catColor = getCategoryColor(entry.category());
         graphics.fill(badgeX, badgeY, badgeX + catWidth, badgeY + 10, catColor);
-        graphics.drawString(mc.font, catText, badgeX + 3, badgeY + 1, IsotopeColors.TEXT_PRIMARY, false);
+        graphics.drawString(mc.font, catText, badgeX + 3, badgeY + 1, 0xFF000000, false);
         badgeX += catWidth + 3;
 
-        // Sampled badge
-        if (entry.sampled) {
-            String sampledText = String.format("%.1f avg", entry.avgItemsPerRoll);
-            int sampledWidth = mc.font.width(sampledText) + 6;
-            graphics.fill(badgeX, badgeY, badgeX + sampledWidth, badgeY + 10, IsotopeColors.BADGE_HAS_LOOT);
-            graphics.drawString(mc.font, sampledText, badgeX + 3, badgeY + 1, IsotopeColors.TEXT_PRIMARY, false);
+        // Structure link count badge
+        if (entry.hasLinks()) {
+            String linkText = entry.structureCount() + " struct";
+            int linkWidth = mc.font.width(linkText) + 6;
+            graphics.fill(badgeX, badgeY, badgeX + linkWidth, badgeY + 10, IsotopeColors.BADGE_HAS_LOOT);
+            graphics.drawString(mc.font, linkText, badgeX + 3, badgeY + 1, 0xFF000000, false);
+            badgeX += linkWidth + 3;
+        } else {
+            String noLink = "UNLINKED";
+            int noLinkWidth = mc.font.width(noLink) + 6;
+            graphics.fill(badgeX, badgeY, badgeX + noLinkWidth, badgeY + 10, IsotopeColors.BADGE_NO_LOOT);
+            graphics.drawString(mc.font, noLink, badgeX + 3, badgeY + 1, IsotopeColors.TEXT_MUTED, false);
         }
     }
 
-    private static int getCategoryColor(LootTableInfo.LootTableCategory category) {
+    private static int getCategoryColor(LootTableCategory category) {
         return switch (category) {
-            case CHEST -> IsotopeColors.BADGE_HAS_LOOT;
-            case ENTITY -> 0xFF9C27B0; // Purple
-            case BLOCK -> 0xFF795548; // Brown
-            case GAMEPLAY -> 0xFF2196F3; // Blue
-            case ARCHAEOLOGY -> 0xFFFF9800; // Orange
-            case EQUIPMENT -> 0xFF607D8B; // Blue-gray
-            case SHEARING -> 0xFF8BC34A; // Light green
-            default -> IsotopeColors.BADGE_NO_LOOT;
+            case CHEST -> 0xFF8B4513;      // Brown
+            case ENTITY -> 0xFFCC0000;     // Red
+            case BLOCK -> 0xFF666666;      // Gray
+            case GAMEPLAY -> 0xFF00AA00;   // Green
+            case ARCHAEOLOGY -> 0xFFCC8800;// Orange
+            case EQUIPMENT -> 0xFF4444FF;  // Blue
+            case SHEARING -> 0xFFCCCCCC;   // Light gray
+            case OTHER -> 0xFF888888;      // Gray
         };
     }
 }

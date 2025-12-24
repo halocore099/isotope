@@ -1,6 +1,5 @@
 package dev.isotope.ui.widget;
 
-import dev.isotope.analysis.StructureLootLinker;
 import dev.isotope.data.StructureInfo;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.ui.IsotopeColors;
@@ -11,28 +10,46 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * Center panel widget showing structures for selected namespace.
+ *
+ * Shows ALL structures from the registry with heuristic link information.
  */
 @Environment(EnvType.CLIENT)
 public class StructureListWidget extends ScrollableListWidget<StructureListWidget.StructureEntry> {
 
     public record StructureEntry(
-        StructureInfo structure,
-        StructureLootLink link,
-        boolean hasLoot
+        StructureInfo info,
+        List<StructureLootLink> links
     ) {
         public String displayName() {
-            return structure.path();
+            return info.path();
+        }
+
+        public boolean hasLoot() {
+            return !links.isEmpty();
         }
 
         public int lootTableCount() {
-            return link != null ? link.linkCount() : 0;
+            return links.size();
+        }
+
+        public boolean isVanilla() {
+            return info.isVanilla();
+        }
+
+        /**
+         * Get the highest confidence level among all links.
+         */
+        public StructureLootLink.Confidence getHighestConfidence() {
+            return links.stream()
+                .map(StructureLootLink::confidence)
+                .max(Comparator.comparingInt(StructureLootLink.Confidence::getScore))
+                .orElse(null);
         }
     }
 
@@ -46,24 +63,45 @@ public class StructureListWidget extends ScrollableListWidget<StructureListWidge
             return;
         }
 
-        Collection<StructureInfo> structures = ClientDataProvider.getInstance()
-            .getStructuresByNamespace(namespace);
+        ClientDataProvider provider = ClientDataProvider.getInstance();
+        List<StructureInfo> structures = provider.getStructuresByNamespace(namespace);
 
         List<StructureEntry> entries = new ArrayList<>();
-        for (StructureInfo structure : structures) {
-            StructureLootLink link = StructureLootLinker.getInstance()
-                .getLink(structure.id())
-                .orElse(null);
-            boolean hasLoot = link != null && link.hasLinks();
-            entries.add(new StructureEntry(structure, link, hasLoot));
+        for (StructureInfo info : structures) {
+            List<StructureLootLink> links = provider.getLinksForStructure(info.id());
+            entries.add(new StructureEntry(info, links));
         }
 
         // Sort: structures with loot first, then alphabetically
         entries.sort(Comparator
-            .comparing((StructureEntry e) -> !e.hasLoot)
-            .thenComparing(e -> e.structure.path()));
+            .comparing((StructureEntry e) -> !e.hasLoot())
+            .thenComparing(StructureEntry::displayName));
 
         setItems(entries);
+    }
+
+    /**
+     * Reload the currently selected entry with fresh link data.
+     * Called after links are added or removed.
+     */
+    public void reloadCurrentEntry() {
+        StructureEntry current = getSelected();
+        if (current == null) return;
+
+        // Get fresh link data
+        ClientDataProvider provider = ClientDataProvider.getInstance();
+        List<StructureLootLink> freshLinks = provider.getLinksForStructure(current.info().id());
+
+        // Find and update the entry in the list
+        List<StructureEntry> items = getItems();
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).info().id().equals(current.info().id())) {
+                StructureEntry updated = new StructureEntry(current.info(), freshLinks);
+                items.set(i, updated);
+                setSelected(updated);
+                break;
+            }
+        }
     }
 
     private static void renderEntry(GuiGraphics graphics, StructureEntry entry, int x, int y,
@@ -78,23 +116,36 @@ public class StructureListWidget extends ScrollableListWidget<StructureListWidge
         int badgeY = y + 12;
         int badgeX = x;
 
-        // HAS LOOT / NO LOOT badge
-        if (entry.hasLoot) {
+        // Loot count badge with confidence color
+        if (entry.hasLoot()) {
+            StructureLootLink.Confidence confidence = entry.getHighestConfidence();
             String lootText = entry.lootTableCount() + " loot";
             int lootWidth = mc.font.width(lootText) + 6;
-            graphics.fill(badgeX, badgeY, badgeX + lootWidth, badgeY + 10, IsotopeColors.BADGE_HAS_LOOT);
-            graphics.drawString(mc.font, lootText, badgeX + 3, badgeY + 1, IsotopeColors.TEXT_PRIMARY, false);
+
+            // Use confidence color for the badge
+            int badgeColor = confidence != null ? confidence.getColor() : IsotopeColors.BADGE_HAS_LOOT;
+            graphics.fill(badgeX, badgeY, badgeX + lootWidth, badgeY + 10, badgeColor);
+            graphics.drawString(mc.font, lootText, badgeX + 3, badgeY + 1, 0xFF000000, false);
             badgeX += lootWidth + 3;
+
+            // Show confidence label
+            if (confidence != null) {
+                String confText = confidence.getLabel();
+                int confWidth = mc.font.width(confText) + 4;
+                graphics.fill(badgeX, badgeY, badgeX + confWidth, badgeY + 10, 0x80000000);
+                graphics.drawString(mc.font, confText, badgeX + 2, badgeY + 1, confidence.getColor(), false);
+                badgeX += confWidth + 3;
+            }
         } else {
-            String noLoot = "NO LOOT";
+            String noLoot = "NO LINKS";
             int noLootWidth = mc.font.width(noLoot) + 6;
             graphics.fill(badgeX, badgeY, badgeX + noLootWidth, badgeY + 10, IsotopeColors.BADGE_NO_LOOT);
             graphics.drawString(mc.font, noLoot, badgeX + 3, badgeY + 1, IsotopeColors.TEXT_MUTED, false);
             badgeX += noLootWidth + 3;
         }
 
-        // VANILLA badge (for minecraft namespace)
-        if (entry.structure.isVanilla()) {
+        // VANILLA badge
+        if (entry.isVanilla()) {
             String vanillaText = "VANILLA";
             int vanillaWidth = mc.font.width(vanillaText) + 6;
             graphics.fill(badgeX, badgeY, badgeX + vanillaWidth, badgeY + 10, IsotopeColors.BADGE_VANILLA);

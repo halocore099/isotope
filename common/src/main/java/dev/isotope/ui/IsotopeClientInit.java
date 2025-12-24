@@ -3,13 +3,14 @@ package dev.isotope.ui;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.hooks.client.screen.ScreenAccess;
 import dev.isotope.Isotope;
-import dev.isotope.analysis.AnalysisEngine;
-import dev.isotope.analysis.HeadlessAnalysisWorld;
-import dev.isotope.ui.screen.AnalysisProgressScreen;
+import dev.isotope.registry.RegistryLoader;
+import dev.isotope.registry.RegistryScanner;
 import dev.isotope.ui.screen.ConfirmationScreen;
+import dev.isotope.ui.screen.LoadingScreen;
 import dev.isotope.ui.screen.MainScreen;
-import dev.isotope.ui.widget.IsotopeButton;
+import dev.isotope.ui.screen.SavesScreen;
 import net.fabricmc.api.EnvType;
+import net.minecraft.client.gui.components.Button;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -19,7 +20,10 @@ import net.minecraft.network.chat.Component;
 
 /**
  * Client-side initialization for ISOTOPE UI.
- * Adds the ISOTOPE button to the title screen and pause menu.
+ *
+ * Flow:
+ * - From Title Screen: Load registries (invisible) → MainScreen
+ * - From Pause Menu: MainScreen directly (already scanned)
  */
 @Environment(EnvType.CLIENT)
 public final class IsotopeClientInit {
@@ -42,7 +46,6 @@ public final class IsotopeClientInit {
     }
 
     private static void onScreenInit(Screen screen, ScreenAccess access) {
-        Isotope.LOGGER.info("Screen init event: {}", screen.getClass().getSimpleName());
         if (screen instanceof TitleScreen) {
             addIsotopeButtonToTitleScreen(screen, access);
         } else if (screen instanceof PauseScreen) {
@@ -57,18 +60,18 @@ public final class IsotopeClientInit {
         int x = screen.width / 2 - buttonWidth / 2;
         int y = screen.height - 35; // Near bottom, above copyright
 
-        IsotopeButton button = IsotopeButton.isotopeBuilder(
+        // Use vanilla Button for native Minecraft styling
+        Button button = Button.builder(
             Component.literal("ISOTOPE: Worldgen Analysis"),
-            btn -> openIsotopeConfirmation(screen)
+            btn -> openFromMainMenu(screen)
         )
         .pos(x, y)
         .size(buttonWidth, buttonHeight)
-        .style(IsotopeButton.ButtonStyle.DEFAULT)
         .build();
 
         access.addRenderableWidget(button);
 
-        Isotope.LOGGER.info("Added ISOTOPE button to title screen at ({}, {})", x, y);
+        Isotope.LOGGER.debug("Added ISOTOPE button to title screen at ({}, {})", x, y);
     }
 
     private static void addIsotopeButtonToPauseScreen(Screen screen, ScreenAccess access) {
@@ -76,7 +79,6 @@ public final class IsotopeClientInit {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.getSingleplayerServer() == null) {
             // Not in singleplayer/LAN - registry data not available
-            Isotope.LOGGER.debug("Skipping ISOTOPE button on pause screen - not in singleplayer");
             return;
         }
 
@@ -86,69 +88,56 @@ public final class IsotopeClientInit {
         int x = screen.width / 2 - buttonWidth / 2;
         int y = screen.height / 4 + 120 + 24; // Below other pause menu buttons
 
-        IsotopeButton button = IsotopeButton.isotopeBuilder(
+        // Use vanilla Button for native Minecraft styling
+        Button button = Button.builder(
             Component.literal("ISOTOPE: Worldgen Analysis"),
-            btn -> openIsotopeConfirmation(screen)
+            btn -> openFromPauseMenu(screen)
         )
         .pos(x, y)
         .size(buttonWidth, buttonHeight)
-        .style(IsotopeButton.ButtonStyle.DEFAULT)
         .build();
 
         access.addRenderableWidget(button);
 
-        Isotope.LOGGER.debug("Added ISOTOPE button to pause screen at ({}, {})", x, y);
+        Isotope.LOGGER.debug("Added ISOTOPE button to pause screen");
     }
 
-    private static void openIsotopeConfirmation(Screen parentScreen) {
+    /**
+     * Opens ISOTOPE from the title screen.
+     * Shows the SavesScreen as the IDE entry point where users can:
+     * - Load a previous analysis
+     * - Start a new analysis (which triggers registry scanning)
+     */
+    private static void openFromMainMenu(Screen parentScreen) {
         Minecraft minecraft = Minecraft.getInstance();
 
+        // Always go to SavesScreen first - this is the IDE entry point
+        minecraft.setScreen(new SavesScreen(parentScreen));
+    }
+
+    /**
+     * Opens ISOTOPE from the pause menu.
+     * Registry data is already available, so we can go directly to MainScreen.
+     */
+    private static void openFromPauseMenu(Screen parentScreen) {
+        Minecraft minecraft = Minecraft.getInstance();
+
+        // Check if registries are scanned
+        if (!RegistryScanner.isScanned()) {
+            Isotope.LOGGER.warn("Opening ISOTOPE but registries not scanned yet");
+        }
+
+        // Show confirmation screen first (developer warning)
         ConfirmationScreen confirmationScreen = new ConfirmationScreen(
             parentScreen,
             confirmed -> {
                 if (confirmed) {
-                    openMainScreen(parentScreen);
+                    // Go directly to MainScreen - registry data is already available
+                    minecraft.setScreen(new MainScreen(parentScreen));
                 }
             }
         );
 
         minecraft.setScreen(confirmationScreen);
-    }
-
-    private static void openMainScreen(Screen parentScreen) {
-        Minecraft minecraft = Minecraft.getInstance();
-
-        // Check if registry data is available (singleplayer server running)
-        if (minecraft.getSingleplayerServer() == null) {
-            // No world loaded - use headless analysis world
-            Isotope.LOGGER.info("Starting headless analysis from main menu");
-            openHeadlessAnalysis(parentScreen);
-            return;
-        }
-
-        // World is loaded - run analysis using current server
-        MainScreen mainScreen = new MainScreen(parentScreen);
-
-        // Show analysis progress screen which will transition to main screen
-        AnalysisProgressScreen progressScreen = new AnalysisProgressScreen(
-            parentScreen,
-            mainScreen,
-            AnalysisEngine.AnalysisConfig.defaultConfig(),
-            false  // Not headless - use current server
-        );
-        minecraft.setScreen(progressScreen);
-    }
-
-    private static void openHeadlessAnalysis(Screen parentScreen) {
-        Minecraft minecraft = Minecraft.getInstance();
-
-        // Show progress screen in headless mode
-        AnalysisProgressScreen progressScreen = new AnalysisProgressScreen(
-            parentScreen,
-            null,  // Next screen will be set after analysis completes
-            AnalysisEngine.AnalysisConfig.defaultConfig(),
-            true   // Headless mode - create temp world
-        );
-        minecraft.setScreen(progressScreen);
     }
 }

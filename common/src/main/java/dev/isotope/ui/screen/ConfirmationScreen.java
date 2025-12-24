@@ -1,10 +1,10 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
-import dev.isotope.ui.widget.IsotopeButton;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
@@ -57,33 +57,25 @@ public class ConfirmationScreen extends IsotopeScreen {
         int buttonHeight = 20;
         int buttonY = modalY + MODAL_HEIGHT - 35;
 
-        // Run Analysis button (primary)
+        // Run Analysis button
         this.addRenderableWidget(
-            IsotopeButton.isotopeBuilder(
-                Component.literal("Run Analysis"),
-                button -> {
-                    callback.accept(true);
-                    onClose();
-                }
-            )
+            Button.builder(Component.literal("Run Analysis"), button -> {
+                callback.accept(true);
+                onClose();
+            })
             .pos(modalX + MODAL_WIDTH / 2 - buttonWidth - 10, buttonY)
             .size(buttonWidth, buttonHeight)
-            .style(IsotopeButton.ButtonStyle.PRIMARY)
             .build()
         );
 
         // Cancel button
         this.addRenderableWidget(
-            IsotopeButton.isotopeBuilder(
-                Component.literal("Cancel"),
-                button -> {
-                    callback.accept(false);
-                    onClose();
-                }
-            )
+            Button.builder(Component.literal("Cancel"), button -> {
+                callback.accept(false);
+                onClose();
+            })
             .pos(modalX + MODAL_WIDTH / 2 + 10, buttonY)
             .size(buttonWidth, buttonHeight)
-            .style(IsotopeButton.ButtonStyle.DEFAULT)
             .build()
         );
     }

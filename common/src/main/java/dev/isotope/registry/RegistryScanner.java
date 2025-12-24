@@ -3,15 +3,18 @@ package dev.isotope.registry;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.isotope.Isotope;
 import dev.isotope.analysis.HeadlessAnalysisWorld;
-import dev.isotope.analysis.LootContentsRegistry;
-import dev.isotope.analysis.StructureLootLinker;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Orchestrates registry scanning on server lifecycle events.
+ * Hooks into server lifecycle to scan registries.
+ *
+ * This is the foundation of ISOTOPE's discovery system.
+ * We scan all structures and loot tables immediately when a world loads,
+ * then run heuristic linking to establish relationships.
  */
 public final class RegistryScanner {
     private static boolean initialized = false;
+    private static MinecraftServer currentServer = null;
 
     private RegistryScanner() {}
 
@@ -29,48 +32,67 @@ public final class RegistryScanner {
     }
 
     private static void onServerStarted(MinecraftServer server) {
-        // Check if this is the headless analysis world
+        currentServer = server;
+
+        // Always scan registries - this is the core of ISOTOPE
+        Isotope.LOGGER.info("Scanning registries for structures and loot tables...");
+
+        StructureRegistry.getInstance().scan(server);
+        LootTableRegistry.getInstance().scan(server);
+        StructureLootLinker.getInstance().link();
+
+        Isotope.LOGGER.info("Registry scan complete: {} structures, {} loot tables, {} links",
+            StructureRegistry.getInstance().size(),
+            LootTableRegistry.getInstance().size(),
+            StructureLootLinker.getInstance().getLinkCount());
+
+        // Check if this is the temporary registry loading world (main menu flow)
+        if (RegistryLoader.getInstance().isTempWorld(server)) {
+            Isotope.LOGGER.info("Temp world detected - notifying RegistryLoader");
+            RegistryLoader.getInstance().onTempWorldReady(server);
+            return;
+        }
+
+        // Check if this is the headless analysis/observation world
         if (HeadlessAnalysisWorld.getInstance().isAnalysisWorld(server)) {
             Isotope.LOGGER.info("Analysis world detected - delegating to HeadlessAnalysisWorld");
             HeadlessAnalysisWorld.getInstance().onServerReady(server);
-            return;
         }
-
-        // Normal world - run standard registry discovery
-        Isotope.LOGGER.info("Server started - beginning registry discovery...");
-
-        long startTime = System.currentTimeMillis();
-
-        // M1: Basic registry scanning
-        StructureRegistry.getInstance().scan(server);
-        LootTableRegistry.getInstance().scan(server);
-
-        // M2: Initialize content analysis (lazy analysis on first access)
-        LootContentsRegistry.getInstance().init(server);
-
-        // M2: Build structure-loot links
-        StructureLootLinker.getInstance().buildLinks();
-
-        long elapsed = System.currentTimeMillis() - startTime;
-        Isotope.LOGGER.info("Registry discovery completed in {}ms", elapsed);
     }
 
     private static void onServerStopping(MinecraftServer server) {
-        // Don't reset registries when headless analysis world stops
-        // We want to keep the data for the UI
+        // Check if this is the analysis world
         if (HeadlessAnalysisWorld.getInstance().isAnalysisWorld(server)) {
-            Isotope.LOGGER.info("Analysis world stopping - preserving registry data for UI");
-            return;
+            Isotope.LOGGER.info("Analysis world stopping - preserving registry data");
+        } else {
+            Isotope.LOGGER.debug("Server stopping: {}", server.getWorldData().getLevelName());
         }
+        currentServer = null;
+    }
 
-        Isotope.LOGGER.debug("Server stopping - resetting registry state");
+    /**
+     * Get the current server (if available).
+     */
+    public static MinecraftServer getCurrentServer() {
+        return currentServer;
+    }
 
-        // Reset M2 components
-        LootContentsRegistry.getInstance().reset();
-        StructureLootLinker.getInstance().reset();
+    /**
+     * Check if registries have been scanned.
+     */
+    public static boolean isScanned() {
+        return StructureRegistry.getInstance().isScanned() &&
+               LootTableRegistry.getInstance().isScanned();
+    }
 
-        // Reset M1 components
-        StructureRegistry.getInstance().reset();
-        LootTableRegistry.getInstance().reset();
+    /**
+     * Force a re-scan of registries.
+     */
+    public static void rescan() {
+        if (currentServer != null) {
+            StructureRegistry.getInstance().scan(currentServer);
+            LootTableRegistry.getInstance().scan(currentServer);
+            StructureLootLinker.getInstance().link();
+        }
     }
 }

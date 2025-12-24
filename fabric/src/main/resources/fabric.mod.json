@@ -17,7 +17,9 @@
     "main": ["dev.isotope.fabric.IsotopeFabric"],
     "client": ["dev.isotope.fabric.IsotopeFabricClient"]
   },
-  "mixins": [],
+  "mixins": [
+    "isotope-common.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.16.0",
     "fabric-api": "*",

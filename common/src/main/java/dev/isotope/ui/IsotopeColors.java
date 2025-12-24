@@ -4,69 +4,93 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
 /**
- * Color palette for ISOTOPE UI.
- * Design: Neutral dark gray background, muted cyan accent, red for destructive actions.
+ * Color palette for ISOTOPE UI - Vanilla Minecraft style.
+ * Uses colors that match Minecraft's native UI aesthetic.
  */
 @Environment(EnvType.CLIENT)
 public final class IsotopeColors {
 
-    // Background colors
-    public static final int BACKGROUND_DARK = 0xFF1A1A1A;
-    public static final int BACKGROUND_MEDIUM = 0xFF2D2D2D;
-    public static final int BACKGROUND_LIGHT = 0xFF3D3D3D;
-    public static final int BACKGROUND_PANEL = 0xFF252525;
+    // === Vanilla-style backgrounds ===
+    // Based on inventory/creative menu colors
+    public static final int BACKGROUND_DARK = 0xC0101010;       // Semi-transparent dark
+    public static final int BACKGROUND_MEDIUM = 0xFF1A1A1A;     // Medium dark
+    public static final int BACKGROUND_SOLID = 0xFF0F0F0F;      // Solid dark
+    public static final int BACKGROUND_PANEL = 0xFF1E1E1E;      // Panel background
+    public static final int BACKGROUND_SLOT = 0xFF8B8B8B;       // Slot gray (like inventory)
+    public static final int BACKGROUND_SLOT_DARK = 0xFF373737;  // Darker slot
 
-    // Accent colors
-    public static final int ACCENT_CYAN = 0xFF4DD0E1;
-    public static final int ACCENT_CYAN_DARK = 0xFF00ACC1;
-    public static final int ACCENT_CYAN_HOVER = 0xFF80DEEA;
-
-    // Text colors
-    public static final int TEXT_PRIMARY = 0xFFFFFFFF;
-    public static final int TEXT_SECONDARY = 0xFFB0B0B0;
-    public static final int TEXT_MUTED = 0xFF808080;
+    // === Vanilla text colors ===
+    public static final int TEXT_PRIMARY = 0xFFFFFFFF;          // White
+    public static final int TEXT_SECONDARY = 0xFFA0A0A0;        // Gray
+    public static final int TEXT_MUTED = 0xFF707070;            // Dark gray
+    public static final int TEXT_TITLE = 0xFF404040;            // Dark title (like inventory)
     public static final int TEXT_DISABLED = 0xFF505050;
 
-    // Status colors
-    public static final int STATUS_SUCCESS = 0xFF4CAF50;
-    public static final int STATUS_WARNING = 0xFFFF9800;
-    public static final int STATUS_ERROR = 0xFFF44336;
+    // === Vanilla accent colors ===
+    public static final int ACCENT_GOLD = 0xFFFFD700;           // Gold/yellow
+    public static final int ACCENT_GREEN = 0xFF55FF55;          // Minecraft green
+    public static final int ACCENT_AQUA = 0xFF55FFFF;           // Aqua/cyan
+    public static final int ACCENT_RED = 0xFFFF5555;            // Red
 
-    // Confidence level colors
-    public static final int CONFIDENCE_EXACT = 0xFF4CAF50;      // Green
-    public static final int CONFIDENCE_CONDITIONAL = 0xFFFFEB3B; // Yellow
-    public static final int CONFIDENCE_OBSERVED = 0xFFFF9800;    // Orange
-    public static final int CONFIDENCE_UNKNOWN = 0xFFF44336;     // Red
+    // === Cyan variants (for backward compatibility) ===
+    public static final int ACCENT_CYAN = ACCENT_AQUA;          // Alias for aqua
+    public static final int ACCENT_CYAN_DARK = 0xFF2A8080;      // Darker cyan
+    public static final int ACCENT_CYAN_HOVER = 0xFF77FFFF;     // Lighter cyan for hover
 
-    // Badge colors
-    public static final int BADGE_HAS_LOOT = 0xFF4CAF50;
-    public static final int BADGE_NO_LOOT = 0xFF9E9E9E;
-    public static final int BADGE_VANILLA = 0xFF2196F3;
-    public static final int BADGE_MODIFIED = 0xFFFF9800;
+    // === Status colors (vanilla-style) ===
+    public static final int STATUS_SUCCESS = 0xFF55FF55;        // Green
+    public static final int STATUS_WARNING = 0xFFFFFF55;        // Yellow
+    public static final int STATUS_ERROR = 0xFFFF5555;          // Red
 
-    // Border colors
+    // === Confidence level colors ===
+    public static final int CONFIDENCE_MANUAL = 0xFF55FF55;     // Green - author defined
+    public static final int CONFIDENCE_VERIFIED = 0xFF55FFFF;   // Cyan - runtime verified
+    public static final int CONFIDENCE_HIGH = 0xFFAAFFAA;       // Light green
+    public static final int CONFIDENCE_MEDIUM = 0xFFFFFF55;     // Yellow
+    public static final int CONFIDENCE_LOW = 0xFFFFAA00;        // Orange
+
+    // === Badge colors ===
+    public static final int BADGE_HAS_LOOT = 0xFF55AA55;        // Muted green
+    public static final int BADGE_NO_LOOT = 0xFF555555;         // Gray
+    public static final int BADGE_VANILLA = 0xFF5555FF;         // Blue
+    public static final int BADGE_MODIFIED = 0xFFFFAA00;        // Orange
+
+    // === Border colors (vanilla stone-like) ===
+    public static final int BORDER_OUTER_DARK = 0xFF000000;     // Black
+    public static final int BORDER_OUTER_LIGHT = 0xFF555555;    // Gray
+    public static final int BORDER_INNER = 0xFF373737;          // Dark gray
     public static final int BORDER_DEFAULT = 0xFF404040;
-    public static final int BORDER_SELECTED = 0xFF4DD0E1;
-    public static final int BORDER_HOVER = 0xFF606060;
+    public static final int BORDER_HIGHLIGHT = 0xFF606060;
+    public static final int BORDER_SELECTED = 0xFFFFFFFF;       // White outline
+    public static final int BORDER_HOVER = 0xFF707070;          // Hover state
 
-    // Button colors
-    public static final int BUTTON_BACKGROUND = 0xFF3D3D3D;
-    public static final int BUTTON_HOVER = 0xFF4D4D4D;
-    public static final int BUTTON_PRESSED = 0xFF2D2D2D;
-    public static final int BUTTON_DISABLED = 0xFF2A2A2A;
+    // === Destructive action colors (for delete/remove) ===
+    public static final int DESTRUCTIVE_BACKGROUND = 0xFF5A2020;
+    public static final int DESTRUCTIVE_HOVER = 0xFF7A3030;
+    public static final int DESTRUCTIVE_TEXT = 0xFFFF8888;
 
-    // List colors
-    public static final int LIST_SELECTED = 0xFF00ACC1;
-    public static final int LIST_HOVER = 0xFF3D3D3D;
+    // === List colors (vanilla-style selection) ===
+    public static final int LIST_SELECTED = 0x80FFFFFF;         // Semi-transparent white
+    public static final int LIST_HOVER = 0x40FFFFFF;            // Light hover
+    public static final int LIST_ITEM_BG = 0x00000000;          // Transparent
+    public static final int LIST_ITEM_HOVER = 0x40FFFFFF;
+    public static final int LIST_ITEM_SELECTED = 0x60FFFFFF;
 
-    // Scrollbar colors
-    public static final int SCROLLBAR_TRACK = 0xFF2A2A2A;
-    public static final int SCROLLBAR_THUMB = 0xFF505050;
+    // === Scrollbar colors ===
+    public static final int SCROLLBAR_TRACK = 0xFF1E1E1E;
+    public static final int SCROLLBAR_THUMB = 0xFF8B8B8B;
+    public static final int SCROLLBAR_THUMB_HOVER = 0xFFC6C6C6;
 
-    // Destructive action colors
-    public static final int DESTRUCTIVE_BACKGROUND = 0xFF5D2A2A;
-    public static final int DESTRUCTIVE_HOVER = 0xFF7D3A3A;
-    public static final int DESTRUCTIVE_TEXT = 0xFFFF8A80;
+    // === Button colors (vanilla style) ===
+    public static final int BUTTON_BACKGROUND = 0xFF555555;
+    public static final int BUTTON_HOVER = 0xFF666666;
+    public static final int BUTTON_PRESSED = 0xFF444444;
+    public static final int BUTTON_DISABLED = 0xFF303030;
+
+    // === Tab colors ===
+    public static final int TAB_ACTIVE = 0xFFC6C6C6;            // Light gray
+    public static final int TAB_INACTIVE = 0xFF555555;          // Dark gray
+    public static final int TAB_HOVER = 0xFF7A7A7A;
 
     private IsotopeColors() {}
 
@@ -75,27 +99,5 @@ public final class IsotopeColors {
      */
     public static int withAlpha(int color, int alpha) {
         return (alpha << 24) | (color & 0x00FFFFFF);
-    }
-
-    /**
-     * Blend two colors.
-     */
-    public static int blend(int color1, int color2, float ratio) {
-        int a1 = (color1 >> 24) & 0xFF;
-        int r1 = (color1 >> 16) & 0xFF;
-        int g1 = (color1 >> 8) & 0xFF;
-        int b1 = color1 & 0xFF;
-
-        int a2 = (color2 >> 24) & 0xFF;
-        int r2 = (color2 >> 16) & 0xFF;
-        int g2 = (color2 >> 8) & 0xFF;
-        int b2 = color2 & 0xFF;
-
-        int a = (int) (a1 + (a2 - a1) * ratio);
-        int r = (int) (r1 + (r2 - r1) * ratio);
-        int g = (int) (g1 + (g2 - g1) * ratio);
-        int b = (int) (b1 + (b2 - b1) * ratio);
-
-        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 }

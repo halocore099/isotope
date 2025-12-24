@@ -4,10 +4,10 @@ import dev.isotope.export.ExportManager;
 import dev.isotope.export.ExportManager.ExportConfig;
 import dev.isotope.export.ExportManager.ExportResult;
 import dev.isotope.ui.IsotopeColors;
-import dev.isotope.ui.widget.IsotopeButton;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
@@ -37,8 +37,8 @@ public class ExportScreen extends IsotopeScreen {
     private final List<String> logMessages = new ArrayList<>();
 
     // Buttons
-    private IsotopeButton exportButton;
-    private IsotopeButton closeButton;
+    private Button exportButton;
+    private Button closeButton;
 
     public ExportScreen(@Nullable Screen parent) {
         super(TITLE, parent);
@@ -68,45 +68,33 @@ public class ExportScreen extends IsotopeScreen {
 
         // Export button
         int buttonY = this.height - 50;
-        exportButton = IsotopeButton.isotopeBuilder(
-            Component.literal("Export to JSON"),
-            btn -> startExport()
-        )
-        .pos(centerX - 110, buttonY)
-        .size(100, 20)
-        .style(IsotopeButton.ButtonStyle.PRIMARY)
-        .build();
+        exportButton = Button.builder(Component.literal("Export to JSON"), btn -> startExport())
+            .pos(centerX - 110, buttonY)
+            .size(100, 20)
+            .build();
         this.addRenderableWidget(exportButton);
 
         // Close button
-        closeButton = IsotopeButton.isotopeBuilder(
-            Component.literal("Close"),
-            btn -> onClose()
-        )
-        .pos(centerX + 10, buttonY)
-        .size(100, 20)
-        .style(IsotopeButton.ButtonStyle.DEFAULT)
-        .build();
+        closeButton = Button.builder(Component.literal("Close"), btn -> onClose())
+            .pos(centerX + 10, buttonY)
+            .size(100, 20)
+            .build();
         this.addRenderableWidget(closeButton);
     }
 
     private void addCheckbox(int x, int y, int width, String label, boolean initialValue, Runnable toggle) {
         this.addRenderableWidget(
-            IsotopeButton.isotopeBuilder(
-                Component.literal((initialValue ? "[X] " : "[ ] ") + label),
-                btn -> {
-                    toggle.run();
-                    // Update button text
-                    boolean newValue = label.contains("Structures") ? exportStructures :
-                                      label.contains("Loot Tables") ? exportLootTables :
-                                      label.contains("Links") ? exportLinks :
-                                      label.contains("Sample") ? exportSamples : timestampedFolder;
-                    btn.setMessage(Component.literal((newValue ? "[X] " : "[ ] ") + label));
-                }
-            )
+            Button.builder(Component.literal((initialValue ? "[X] " : "[ ] ") + label), btn -> {
+                toggle.run();
+                // Update button text
+                boolean newValue = label.contains("Structures") ? exportStructures :
+                                  label.contains("Loot Tables") ? exportLootTables :
+                                  label.contains("Links") ? exportLinks :
+                                  label.contains("Sample") ? exportSamples : timestampedFolder;
+                btn.setMessage(Component.literal((newValue ? "[X] " : "[ ] ") + label));
+            })
             .pos(x, y)
             .size(width, 20)
-            .style(IsotopeButton.ButtonStyle.DEFAULT)
             .build()
         );
     }

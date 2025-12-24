@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.isotope.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LootTableMixin",
+    "ReloadableRegistriesMixin",
+    "StructureStartMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
