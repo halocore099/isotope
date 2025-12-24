@@ -214,6 +214,7 @@ public class MainScreen extends IsotopeScreen {
             RIGHT_PANEL_WIDTH,
             contentHeight
         );
+        lootDetailPanel.setOnEditClicked(this::onEditLootTable);
 
         // Load data
         if (ClientDataProvider.getInstance().isDataAvailable()) {
@@ -320,6 +321,12 @@ public class MainScreen extends IsotopeScreen {
         }
     }
 
+    private void onEditLootTable(ResourceLocation tableId) {
+        if (minecraft == null) return;
+        Isotope.LOGGER.info("Opening editor for loot table: {}", tableId);
+        minecraft.setScreen(new LootTableEditorScreen(tableId, this));
+    }
+
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Render window frame first (includes dim background)
@@ -384,6 +391,17 @@ public class MainScreen extends IsotopeScreen {
             this.height / 2,
             IsotopeColors.TEXT_MUTED
         );
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Handle clicks for loot detail panel (Edit button)
+        if (currentTab == Tab.LOOT_TABLES && lootDetailPanel != null) {
+            if (lootDetailPanel.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override

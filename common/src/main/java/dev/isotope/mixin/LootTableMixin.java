@@ -1,5 +1,8 @@
 package dev.isotope.mixin;
 
+import dev.isotope.data.loot.LootTableStructure;
+import dev.isotope.editing.LootEditManager;
+import dev.isotope.editing.LootGenerator;
 import dev.isotope.observation.LootObserver;
 import dev.isotope.observation.LootTableTracker;
 import net.minecraft.resources.ResourceLocation;
@@ -12,35 +15,51 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * Mixin to observe loot table execution.
- * Works in conjunction with LootTableTracker to know which table is being executed.
+ * Mixin to observe and intercept loot table execution.
  *
- * Note: This is an OPTIONAL verification system. The primary discovery
- * comes from registry scanning and heuristic linking.
+ * This mixin serves two purposes:
+ * 1. Observation - Records loot table invocations during analysis
+ * 2. Test mode - Replaces loot generation with edited structures when test mode is active
  */
 @Mixin(LootTable.class)
 public class LootTableMixin {
 
     /**
-     * Track when a loot table is invoked.
-     * For now, we just record the invocation without capturing items.
+     * Intercept loot generation for observation and test mode.
+     *
+     * When ISOTOPE test mode is active and we have edits for the current table,
+     * we generate loot from our edited structure instead of the vanilla table.
      */
     @Inject(
         method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;JLjava/util/function/Consumer;)V",
-        at = @At("HEAD")
+        at = @At("HEAD"),
+        cancellable = true
     )
     private void isotope$onGetRandomItems(LootParams params, long seed, Consumer<ItemStack> consumer, CallbackInfo ci) {
-        if (!LootObserver.getInstance().isRecording()) {
-            return;
-        }
-
         // Get the table ID from the tracker (set by ReloadableRegistriesMixin)
         ResourceLocation tableId = LootTableTracker.getCurrentTableId();
 
-        if (tableId != null) {
+        // Check if we should intercept for test mode
+        if (tableId != null && LootEditManager.getInstance().isTestModeActive()) {
+            if (LootEditManager.getInstance().hasEdits(tableId)) {
+                Optional<LootTableStructure> editedStructure =
+                    LootEditManager.getInstance().getEditedStructure(tableId);
+
+                if (editedStructure.isPresent()) {
+                    // Generate loot from our edited structure
+                    LootGenerator.generateFromStructure(editedStructure.get(), params, seed, consumer);
+                    ci.cancel(); // Skip vanilla generation
+                    return;
+                }
+            }
+        }
+
+        // Observation recording
+        if (LootObserver.getInstance().isRecording() && tableId != null) {
             // Record invocation without item details for now
             LootObserver.getInstance().onLootTableInvoked(tableId, params, Collections.emptyList());
         }

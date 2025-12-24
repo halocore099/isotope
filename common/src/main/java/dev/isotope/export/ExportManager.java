@@ -3,6 +3,9 @@ package dev.isotope.export;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.isotope.Isotope;
+import dev.isotope.data.loot.LootTableStructure;
+import dev.isotope.editing.LootEditManager;
+import dev.isotope.editing.LootTableSerializer;
 import dev.isotope.observation.ObservationSession;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -74,6 +77,96 @@ public final class ExportManager {
             Isotope.LOGGER.error("Export failed", e);
             return new ExportResult(false, e.getMessage(), null, List.of());
         }
+    }
+
+    /**
+     * Export edited loot tables as a Minecraft datapack.
+     *
+     * Creates a valid datapack structure:
+     * - pack.mcmeta (format 61 for 1.21.4)
+     * - data/<namespace>/loot_table/<path>.json for each edited table
+     *
+     * @param packName The name of the datapack
+     * @param progressCallback Progress callback for status updates
+     * @return Export result with success status and location
+     */
+    public ExportResult exportEditedAsDatapack(String packName, Consumer<String> progressCallback) {
+        try {
+            LootEditManager editManager = LootEditManager.getInstance();
+            Set<ResourceLocation> editedTables = editManager.getEditedTables();
+
+            if (editedTables.isEmpty()) {
+                return new ExportResult(false, "No edited loot tables to export", null, List.of());
+            }
+
+            progressCallback.accept("Found " + editedTables.size() + " edited loot table(s)");
+
+            // Create datapack directory
+            Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+            Path datapackDir = gameDir.resolve("isotope-datapacks").resolve(packName);
+            Files.createDirectories(datapackDir);
+
+            List<String> exportedFiles = new ArrayList<>();
+
+            // Create pack.mcmeta
+            progressCallback.accept("Creating pack.mcmeta...");
+            createPackMcmeta(datapackDir, packName);
+            exportedFiles.add("pack.mcmeta");
+
+            // Export each edited loot table
+            for (ResourceLocation tableId : editedTables) {
+                progressCallback.accept("Exporting: " + tableId);
+
+                Optional<LootTableStructure> edited = editManager.getEditedStructure(tableId);
+                if (edited.isEmpty()) {
+                    Isotope.LOGGER.warn("Could not get edited structure for: {}", tableId);
+                    continue;
+                }
+
+                // Create the directory structure
+                // data/<namespace>/loot_table/<path>.json
+                Path tablePath = datapackDir
+                    .resolve("data")
+                    .resolve(tableId.getNamespace())
+                    .resolve("loot_table")
+                    .resolve(tableId.getPath() + ".json");
+
+                Files.createDirectories(tablePath.getParent());
+
+                // Serialize and write the loot table
+                String json = LootTableSerializer.toJson(edited.get());
+                Files.writeString(tablePath, json);
+
+                String relativePath = "data/" + tableId.getNamespace() + "/loot_table/" + tableId.getPath() + ".json";
+                exportedFiles.add(relativePath);
+            }
+
+            progressCallback.accept("Datapack export complete: " + exportedFiles.size() + " files");
+            progressCallback.accept("Location: " + datapackDir);
+
+            return new ExportResult(true, null, datapackDir, exportedFiles);
+
+        } catch (Exception e) {
+            Isotope.LOGGER.error("Datapack export failed", e);
+            return new ExportResult(false, e.getMessage(), null, List.of());
+        }
+    }
+
+    /**
+     * Create the pack.mcmeta file for a datapack.
+     */
+    private void createPackMcmeta(Path datapackDir, String packName) throws IOException {
+        // Format 61 is for Minecraft 1.21.4
+        String packMcmeta = """
+            {
+              "pack": {
+                "pack_format": 61,
+                "description": "ISOTOPE edited loot tables: %s"
+              }
+            }
+            """.formatted(packName);
+
+        Files.writeString(datapackDir.resolve("pack.mcmeta"), packMcmeta);
     }
 
     private Path getExportDirectory(ExportConfig config) {

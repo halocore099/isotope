@@ -1,6 +1,7 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.data.StructureLootLink;
+import dev.isotope.editing.LootEditManager;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.data.ClientDataProvider;
 import net.fabricmc.api.EnvType;
@@ -12,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Right panel showing loot table details based on registry data.
@@ -28,11 +30,23 @@ public class LootTableDetailPanel {
 
     private int scrollOffset = 0;
 
+    // Edit button callback
+    @Nullable
+    private Consumer<ResourceLocation> onEditClicked;
+
+    // Edit button bounds (for click handling)
+    private int editButtonX, editButtonY, editButtonWidth, editButtonHeight;
+    private boolean editButtonVisible = false;
+
     public LootTableDetailPanel(int x, int y, int width, int height) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+    }
+
+    public void setOnEditClicked(@Nullable Consumer<ResourceLocation> callback) {
+        this.onEditClicked = callback;
     }
 
     public void setLootTable(@Nullable LootTableListWidget.LootTableEntry entry) {
@@ -86,6 +100,35 @@ public class LootTableDetailPanel {
         graphics.drawString(font, "REGISTRY", x + 55, contentY, IsotopeColors.BADGE_VANILLA);
         contentY += 15;
 
+        // Edit button (only show when in-world)
+        if (Minecraft.getInstance().getSingleplayerServer() != null) {
+            editButtonVisible = true;
+            editButtonWidth = 50;
+            editButtonHeight = 16;
+            editButtonX = x + width - editButtonWidth - 10;
+            editButtonY = y + 30;
+
+            // Button background
+            boolean hasEdits = LootEditManager.getInstance().hasEdits(
+                ResourceLocation.parse(currentEntry.info().fullId()));
+            int buttonColor = hasEdits ? IsotopeColors.BADGE_MODIFIED : IsotopeColors.BUTTON_BACKGROUND;
+            graphics.fill(editButtonX, editButtonY, editButtonX + editButtonWidth, editButtonY + editButtonHeight, buttonColor);
+
+            // Button border
+            graphics.fill(editButtonX, editButtonY, editButtonX + editButtonWidth, editButtonY + 1, 0xFFC6C6C6);
+            graphics.fill(editButtonX, editButtonY, editButtonX + 1, editButtonY + editButtonHeight, 0xFFC6C6C6);
+            graphics.fill(editButtonX, editButtonY + editButtonHeight - 1, editButtonX + editButtonWidth, editButtonY + editButtonHeight, 0xFF2A2A2A);
+            graphics.fill(editButtonX + editButtonWidth - 1, editButtonY, editButtonX + editButtonWidth, editButtonY + editButtonHeight, 0xFF2A2A2A);
+
+            // Button text
+            String editLabel = hasEdits ? "Edit*" : "Edit";
+            int textWidth = font.width(editLabel);
+            graphics.drawString(font, editLabel, editButtonX + (editButtonWidth - textWidth) / 2,
+                editButtonY + 4, IsotopeColors.TEXT_PRIMARY, false);
+        } else {
+            editButtonVisible = false;
+        }
+
         // Linked structures section
         List<StructureLootLink> links = currentEntry.links();
 
@@ -134,12 +177,33 @@ public class LootTableDetailPanel {
         graphics.disableScissor();
     }
 
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button != 0) return false;
+
+        // Check Edit button click
+        if (editButtonVisible && currentEntry != null) {
+            if (mouseX >= editButtonX && mouseX < editButtonX + editButtonWidth
+                && mouseY >= editButtonY && mouseY < editButtonY + editButtonHeight) {
+                if (onEditClicked != null) {
+                    onEditClicked.accept(ResourceLocation.parse(currentEntry.info().fullId()));
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height) {
             scrollOffset = Math.max(0, scrollOffset - (int)(scrollY * 10));
             return true;
         }
         return false;
+    }
+
+    @Nullable
+    public ResourceLocation getCurrentTableId() {
+        return currentEntry != null ? ResourceLocation.parse(currentEntry.info().fullId()) : null;
     }
 
     private void renderBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {

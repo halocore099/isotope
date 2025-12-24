@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.editing.LootEditManager;
 import dev.isotope.export.ExportManager;
 import dev.isotope.export.ExportManager.ExportConfig;
 import dev.isotope.export.ExportManager.ExportResult;
@@ -12,6 +13,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -38,6 +41,7 @@ public class ExportScreen extends IsotopeScreen {
 
     // Buttons
     private Button exportButton;
+    private Button exportDatapackButton;
     private Button closeButton;
 
     public ExportScreen(@Nullable Screen parent) {
@@ -69,14 +73,24 @@ public class ExportScreen extends IsotopeScreen {
         // Export button
         int buttonY = this.height - 50;
         exportButton = Button.builder(Component.literal("Export to JSON"), btn -> startExport())
-            .pos(centerX - 110, buttonY)
+            .pos(centerX - 160, buttonY)
             .size(100, 20)
             .build();
         this.addRenderableWidget(exportButton);
 
+        // Export Datapack button
+        int editCount = LootEditManager.getInstance().getEditedTableCount();
+        String datapackLabel = "Export Datapack" + (editCount > 0 ? " (" + editCount + ")" : "");
+        exportDatapackButton = Button.builder(Component.literal(datapackLabel), btn -> startDatapackExport())
+            .pos(centerX - 50, buttonY)
+            .size(100, 20)
+            .build();
+        exportDatapackButton.active = editCount > 0;
+        this.addRenderableWidget(exportDatapackButton);
+
         // Close button
         closeButton = Button.builder(Component.literal("Close"), btn -> onClose())
-            .pos(centerX + 10, buttonY)
+            .pos(centerX + 60, buttonY)
             .size(100, 20)
             .build();
         this.addRenderableWidget(closeButton);
@@ -122,10 +136,46 @@ public class ExportScreen extends IsotopeScreen {
                 this.result = res;
                 this.exporting = false;
                 this.exportButton.active = true;
+                this.exportDatapackButton.active = LootEditManager.getInstance().getEditedTableCount() > 0;
 
                 if (res.success()) {
                     addLog("SUCCESS: Exported " + res.exportedFiles().size() + " files");
                     addLog("Location: " + res.exportDirectory());
+                } else {
+                    addLog("FAILED: " + res.error());
+                }
+            });
+        });
+    }
+
+    private void startDatapackExport() {
+        if (exporting) return;
+
+        exporting = true;
+        exportButton.active = false;
+        exportDatapackButton.active = false;
+        logMessages.clear();
+        result = null;
+
+        // Generate datapack name with timestamp
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String packName = "isotope_edits_" + timestamp;
+
+        addLog("Creating datapack: " + packName);
+
+        CompletableFuture.supplyAsync(() ->
+            ExportManager.getInstance().exportEditedAsDatapack(packName, this::addLog)
+        ).thenAccept(res -> {
+            minecraft.execute(() -> {
+                this.result = res;
+                this.exporting = false;
+                this.exportButton.active = true;
+                this.exportDatapackButton.active = LootEditManager.getInstance().getEditedTableCount() > 0;
+
+                if (res.success()) {
+                    addLog("SUCCESS: Created datapack with " + res.exportedFiles().size() + " files");
+                    addLog("Location: " + res.exportDirectory());
+                    addLog("Copy to world/datapacks/ to use");
                 } else {
                     addLog("FAILED: " + res.error());
                 }
