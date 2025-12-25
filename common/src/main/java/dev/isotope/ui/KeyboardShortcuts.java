@@ -16,6 +16,7 @@ import org.lwjgl.glfw.GLFW;
  * - Ctrl+D: Duplicate selected entry
  * - Ctrl+C: Copy selected entry
  * - Ctrl+V: Paste entry
+ * - F1: Show keyboard shortcuts help
  */
 public final class KeyboardShortcuts {
 
@@ -94,6 +95,10 @@ public final class KeyboardShortcuts {
                 context.escape();
                 yield true;
             }
+            case GLFW.GLFW_KEY_F1 -> {
+                context.showHelp();
+                yield true;
+            }
             default -> false;
         };
     }
@@ -135,5 +140,8 @@ public final class KeyboardShortcuts {
 
         /** Handle escape key - close picker or clear selection */
         default void escape() {}
+
+        /** Show keyboard shortcuts help (F1) */
+        default void showHelp() {}
     }
 }

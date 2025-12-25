@@ -166,10 +166,24 @@ public class LootTableEditPanel extends AbstractWidget {
         graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1a1a1a);
 
         if (tableId == null) {
-            // Empty state
-            String msg = "Select a loot table to edit";
-            int msgWidth = font.width(msg);
-            graphics.drawString(font, msg, getX() + (width - msgWidth) / 2, getY() + height / 2,
+            // Empty state with helpful messaging
+            int centerX = getX() + width / 2;
+            int centerY = getY() + height / 2;
+
+            String title = "No Loot Table Selected";
+            graphics.drawString(font, title, centerX - font.width(title) / 2, centerY - 30,
+                IsotopeColors.TEXT_PRIMARY, false);
+
+            String hint1 = "Select a loot table from the browser";
+            graphics.drawString(font, hint1, centerX - font.width(hint1) / 2, centerY - 10,
+                IsotopeColors.TEXT_MUTED, false);
+
+            String hint2 = "or use Ctrl+Shift+F to search";
+            graphics.drawString(font, hint2, centerX - font.width(hint2) / 2, centerY + 4,
+                IsotopeColors.TEXT_MUTED, false);
+
+            String hint3 = "Press F1 for keyboard shortcuts";
+            graphics.drawString(font, hint3, centerX - font.width(hint3) / 2, centerY + 28,
                 IsotopeColors.TEXT_MUTED, false);
             return;
         }

@@ -3,8 +3,10 @@ package dev.isotope.ui.screen;
 import dev.isotope.Isotope;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.editing.LootEditManager;
+import dev.isotope.editing.LootTableSerializer;
 import dev.isotope.export.ExportManager;
 import dev.isotope.registry.LootTableRegistry;
+import dev.isotope.session.EditorSession;
 import dev.isotope.session.SessionManager;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
@@ -22,6 +24,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -65,6 +68,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     private Button importButton;
     private Button compareButton;
     private Button historyButton;
+    private Button copyJsonButton;
 
     // Search overlay state
     private boolean searchVisible = false;
@@ -99,6 +103,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         exportButton = Button.builder(Component.literal("Export"), this::onExport)
             .pos(width - 75, buttonY)
             .size(70, 20)
+            .tooltip(Tooltip.create(Component.literal("Export edits as datapack (Ctrl+S)")))
             .build();
         addRenderableWidget(exportButton);
 
@@ -106,6 +111,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         testModeButton = Button.builder(Component.literal(getTestModeLabel()), this::onToggleTestMode)
             .pos(width - 165, buttonY)
             .size(85, 20)
+            .tooltip(Tooltip.create(Component.literal("Toggle test mode - applies edits to loot generation in-game")))
             .build();
         addRenderableWidget(testModeButton);
 
@@ -113,6 +119,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         redoButton = Button.builder(Component.literal("Redo"), this::onRedo)
             .pos(width - 220, buttonY)
             .size(50, 20)
+            .tooltip(Tooltip.create(Component.literal("Redo last undone change (Ctrl+Y)")))
             .build();
         addRenderableWidget(redoButton);
 
@@ -120,6 +127,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         undoButton = Button.builder(Component.literal("Undo"), this::onUndo)
             .pos(width - 275, buttonY)
             .size(50, 20)
+            .tooltip(Tooltip.create(Component.literal("Undo last change (Ctrl+Z)")))
             .build();
         addRenderableWidget(undoButton);
 
@@ -127,6 +135,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         ratesButton = Button.builder(Component.literal("Rates"), this::onToggleRates)
             .pos(width - 330, buttonY)
             .size(50, 20)
+            .tooltip(Tooltip.create(Component.literal("Show drop rate visualization panel")))
             .build();
         addRenderableWidget(ratesButton);
 
@@ -134,6 +143,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         diffButton = Button.builder(Component.literal("Diff"), this::onToggleDiff)
             .pos(width - 380, buttonY)
             .size(45, 20)
+            .tooltip(Tooltip.create(Component.literal("Show changes vs original loot table")))
             .build();
         addRenderableWidget(diffButton);
 
@@ -141,6 +151,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         historyButton = Button.builder(Component.literal("Log"), this::onToggleHistory)
             .pos(width - 420, buttonY)
             .size(35, 20)
+            .tooltip(Tooltip.create(Component.literal("Show edit history log")))
             .build();
         addRenderableWidget(historyButton);
 
@@ -148,6 +159,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         sessionsButton = Button.builder(Component.literal("Sessions"), this::onOpenSessions)
             .pos(width - 495, buttonY)
             .size(70, 20)
+            .tooltip(Tooltip.create(Component.literal("Save/load editing sessions")))
             .build();
         addRenderableWidget(sessionsButton);
 
@@ -155,6 +167,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         importButton = Button.builder(Component.literal("Import"), this::onOpenImport)
             .pos(width - 555, buttonY)
             .size(55, 20)
+            .tooltip(Tooltip.create(Component.literal("Import edits from existing datapack")))
             .build();
         addRenderableWidget(importButton);
 
@@ -162,8 +175,17 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         compareButton = Button.builder(Component.literal("Compare"), this::onOpenCompare)
             .pos(width - 625, buttonY)
             .size(65, 20)
+            .tooltip(Tooltip.create(Component.literal("Compare two loot tables side-by-side")))
             .build();
         addRenderableWidget(compareButton);
+
+        // Copy JSON button
+        copyJsonButton = Button.builder(Component.literal("Copy"), this::onCopyJson)
+            .pos(width - 675, buttonY)
+            .size(45, 20)
+            .tooltip(Tooltip.create(Component.literal("Copy loot table JSON to clipboard")))
+            .build();
+        addRenderableWidget(copyJsonButton);
 
         // Register listeners
         LootEditManager.getInstance().addListener(editListener);
@@ -352,6 +374,36 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             } else {
                 minecraft.setScreen(new CompareScreen(this));
             }
+        }
+    }
+
+    private void onCopyJson(Button button) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null) {
+            IsotopeToast.info("Copy JSON", "No loot table selected");
+            return;
+        }
+
+        // Get edited or original structure
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+
+        if (structure == null) {
+            IsotopeToast.error("Copy JSON", "Could not load loot table");
+            return;
+        }
+
+        try {
+            String json = LootTableSerializer.toJson(structure);
+
+            // Copy to system clipboard
+            if (minecraft != null) {
+                minecraft.keyboardHandler.setClipboard(json);
+                IsotopeToast.success("Copied", tableId.getPath() + " JSON copied to clipboard");
+            }
+        } catch (Exception e) {
+            IsotopeToast.error("Copy Failed", e.getMessage());
+            Isotope.LOGGER.error("Failed to copy JSON", e);
         }
     }
 
@@ -565,6 +617,13 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     @Override
+    public void showHelp() {
+        if (minecraft != null) {
+            minecraft.setScreen(new ShortcutsScreen(this));
+        }
+    }
+
+    @Override
     public boolean isPauseScreen() {
         return false;
     }
@@ -573,7 +632,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     public void onClose() {
         // Auto-save session if there are open tabs
         if (tabManager.getTabCount() > 0) {
-            SessionManager.getInstance().autoSave(tabManager);
+            SessionManager.getInstance().autoSave(tabManager, getCurrentUIState());
         }
 
         // Unregister listeners
@@ -583,5 +642,23 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         if (minecraft != null) {
             minecraft.setScreen(null);
         }
+    }
+
+    /**
+     * Get current UI panel visibility state.
+     */
+    public EditorSession.UIState getCurrentUIState() {
+        return new EditorSession.UIState(dropRatesVisible, diffVisible, historyVisible);
+    }
+
+    /**
+     * Apply UI state from a session.
+     */
+    public void applyUIState(EditorSession.UIState state) {
+        if (state == null) return;
+        dropRatesVisible = state.dropRatesVisible();
+        diffVisible = state.diffVisible();
+        historyVisible = state.historyVisible();
+        rebuildWidgets();
     }
 }

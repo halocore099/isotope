@@ -9,7 +9,7 @@ import java.util.UUID;
  * Represents a saved editing session.
  *
  * Captures the state of the editor including open tabs, bookmarks,
- * and selection state for later restoration.
+ * UI panel visibility, and selection state for later restoration.
  */
 public record EditorSession(
     String id,
@@ -19,7 +19,8 @@ public record EditorSession(
     List<String> openTabs,      // Table IDs as strings
     int activeTabIndex,
     List<String> bookmarks,     // Bookmark IDs as strings
-    SessionMetadata metadata
+    SessionMetadata metadata,
+    UIState uiState             // UI panel visibility state
 ) {
     /**
      * Create a new session with generated ID and current timestamp.
@@ -28,7 +29,8 @@ public record EditorSession(
             String name,
             List<ResourceLocation> openTabs,
             int activeTabIndex,
-            List<ResourceLocation> bookmarks
+            List<ResourceLocation> bookmarks,
+            UIState uiState
     ) {
         long now = System.currentTimeMillis();
         return new EditorSession(
@@ -39,8 +41,21 @@ public record EditorSession(
             openTabs.stream().map(ResourceLocation::toString).toList(),
             activeTabIndex,
             bookmarks.stream().map(ResourceLocation::toString).toList(),
-            SessionMetadata.current()
+            SessionMetadata.current(),
+            uiState != null ? uiState : UIState.defaults()
         );
+    }
+
+    /**
+     * Create a new session with default UI state.
+     */
+    public static EditorSession create(
+            String name,
+            List<ResourceLocation> openTabs,
+            int activeTabIndex,
+            List<ResourceLocation> bookmarks
+    ) {
+        return create(name, openTabs, activeTabIndex, bookmarks, UIState.defaults());
     }
 
     /**
@@ -55,8 +70,16 @@ public record EditorSession(
             openTabs,
             activeTabIndex,
             bookmarks,
-            metadata
+            metadata,
+            uiState
         );
+    }
+
+    /**
+     * Get UI state with null safety.
+     */
+    public UIState getUIState() {
+        return uiState != null ? uiState : UIState.defaults();
     }
 
     /**
@@ -91,6 +114,19 @@ public record EditorSession(
                 "1.21.4",
                 "1.0.0"
             );
+        }
+    }
+
+    /**
+     * UI panel visibility state.
+     */
+    public record UIState(
+        boolean dropRatesVisible,
+        boolean diffVisible,
+        boolean historyVisible
+    ) {
+        public static UIState defaults() {
+            return new UIState(false, false, false);
         }
     }
 }

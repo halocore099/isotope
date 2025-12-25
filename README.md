@@ -29,20 +29,41 @@ This makes it extremely difficult to:
 
 ## Features
 
-### Discovery
-- Enumerate all registered structures (vanilla + modded)
-- Detect containers placed by structures
-- Capture loot table assignments and runtime calls
+### Loot Table Browser
+- Browse all registered loot tables (vanilla + modded)
+- Filter by namespace/mod or category (chest, entity, block, etc.)
+- Bookmarks for frequently accessed tables
+- Global search across all tables by item name
 
-### Visualization
-- Structure gallery world for spatial inspection
-- Advancement-style UI for structure/loot tree navigation
-- Clear labeling of all observed data
+### Visual Loot Table Editor
+- Multi-tab editing with full undo/redo support
+- Inline weight and count editing
+- Add/remove items and pools with one click
+- Copy/paste entries between tables
+- Live drop rate visualization
+- Diff view showing changes vs original
 
-### Editing & Export
-- Remove/add items from loot tables
-- Enable/disable structures
-- Export changes as vanilla-compatible datapacks
+### Analysis Engine
+- Pre-parses all 1200+ loot tables on startup
+- Structure-to-loot-table linking (34 vanilla structures)
+- Search index for finding items across all tables
+- Links structures to their associated loot tables
+
+### Export & Import
+- Export edits as vanilla-compatible Minecraft datapack
+- Import edits from existing datapacks
+- Copy loot table JSON to clipboard
+- Session save/load for persistent workflows
+
+### Keyboard Shortcuts
+| Shortcut | Action |
+|----------|--------|
+| F1 | Show keyboard shortcuts help |
+| Ctrl+Z / Ctrl+Y | Undo / Redo |
+| Ctrl+S | Export as datapack |
+| Ctrl+Shift+F | Global search |
+| Ctrl+C / Ctrl+V | Copy / Paste entry |
+| Delete | Remove selected entry |
 
 ## Installation
 
@@ -58,12 +79,24 @@ This makes it extremely difficult to:
 
 ## Usage
 
+### Getting Started
 1. Launch Minecraft with ISOTOPE installed
-2. From the main menu, click **"Run Worldgen Analysis"**
-3. Wait for analysis to complete
-4. Browse structures and loot in the ISOTOPE UI
-5. Make adjustments as needed
-6. Export your changes as a datapack
+2. Click **"ISOTOPE"** button at bottom of title screen
+3. Confirm the developer warning
+4. Wait for registry scan (happens once, ~2 seconds)
+5. Browse loot tables in the main interface
+
+### Editing Workflow
+1. Click a loot table to open it in a tab
+2. Click weight/count values to edit inline
+3. Use "+ Add Item" to add entries to pools
+4. Use "Rates" panel to visualize drop probabilities
+5. Enable "Test Mode" to try changes in-game
+6. Click "Export" to save as datapack
+
+### Accessing ISOTOPE
+- **Title Screen**: Click the "ISOTOPE" button (bottom of screen)
+- **In-Game**: Press Escape, click "ISOTOPE" button
 
 ## Important Disclaimer
 

@@ -55,6 +55,18 @@ public final class SessionManager {
      * @return The saved session
      */
     public EditorSession saveSession(String name, TabManager tabManager) {
+        return saveSession(name, tabManager, null);
+    }
+
+    /**
+     * Save the current editor state as a session with UI state.
+     *
+     * @param name Session name
+     * @param tabManager Current tab manager
+     * @param uiState UI panel visibility state
+     * @return The saved session
+     */
+    public EditorSession saveSession(String name, TabManager tabManager, EditorSession.UIState uiState) {
         try {
             // Gather current state
             List<ResourceLocation> openTabs = tabManager.getTabs().stream()
@@ -64,7 +76,7 @@ public final class SessionManager {
             List<ResourceLocation> bookmarks = BookmarkManager.getInstance().getAll();
 
             // Create session
-            EditorSession session = EditorSession.create(name, openTabs, activeTabIndex, bookmarks);
+            EditorSession session = EditorSession.create(name, openTabs, activeTabIndex, bookmarks, uiState);
 
             // Save to file
             Path sessionsDir = getSessionsDir();
@@ -89,11 +101,18 @@ public final class SessionManager {
      * Auto-save the current state.
      */
     public void autoSave(TabManager tabManager) {
+        autoSave(tabManager, null);
+    }
+
+    /**
+     * Auto-save the current state with UI state.
+     */
+    public void autoSave(TabManager tabManager, EditorSession.UIState uiState) {
         if (tabManager.getTabCount() == 0) {
             return; // Nothing to save
         }
         try {
-            saveSession(AUTOSAVE_NAME, tabManager);
+            saveSession(AUTOSAVE_NAME, tabManager, uiState);
         } catch (Exception e) {
             Isotope.LOGGER.warn("Auto-save failed", e);
         }
@@ -249,7 +268,8 @@ public final class SessionManager {
                 session.get().openTabs(),
                 session.get().activeTabIndex(),
                 session.get().bookmarks(),
-                session.get().metadata()
+                session.get().metadata(),
+                session.get().getUIState()
             );
 
             // Save with new name

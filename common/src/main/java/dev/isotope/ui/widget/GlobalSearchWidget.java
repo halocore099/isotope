@@ -25,13 +25,21 @@ import java.util.function.Consumer;
 public class GlobalSearchWidget extends AbstractWidget {
 
     private static final int SEARCH_HEIGHT = 24;
+    private static final int FILTER_HEIGHT = 16;
     private static final int RESULT_HEIGHT = 20;
     private static final int MAX_VISIBLE_RESULTS = 10;
 
     private EditBox searchBox;
     private List<SearchHit> results = new ArrayList<>();
+    private List<SearchHit> filteredResults = new ArrayList<>();
     private int scrollOffset = 0;
     private int hoveredResult = -1;
+
+    // Mod filter
+    private String selectedNamespace = null; // null = all
+    private List<String> availableNamespaces = new ArrayList<>();
+    private int hoveredNamespace = -1;
+    private boolean showNamespaceDropdown = false;
 
     private final Consumer<ResourceLocation> onTableSelected;
 
@@ -64,19 +72,38 @@ public class GlobalSearchWidget extends AbstractWidget {
         searchBox.setY(searchY);
         searchBox.render(graphics, mouseX, mouseY, partialTick);
 
+        // Mod filter
+        int filterY = searchY + SEARCH_HEIGHT + 2;
+        String filterLabel = selectedNamespace == null ? "All Mods" : selectedNamespace;
+        int filterWidth = font.width(filterLabel) + 16;
+
+        boolean filterHovered = mouseX >= getX() + 8 && mouseX < getX() + 8 + filterWidth &&
+            mouseY >= filterY && mouseY < filterY + FILTER_HEIGHT;
+
+        graphics.fill(getX() + 8, filterY, getX() + 8 + filterWidth, filterY + FILTER_HEIGHT,
+            filterHovered ? 0xFF3a3a3a : 0xFF2a2a2a);
+        graphics.renderOutline(getX() + 8, filterY, filterWidth, FILTER_HEIGHT, 0xFF404040);
+        graphics.drawString(font, filterLabel, getX() + 12, filterY + 4, IsotopeColors.TEXT_PRIMARY, false);
+        graphics.drawString(font, "▼", getX() + 8 + filterWidth - 10, filterY + 4, IsotopeColors.TEXT_MUTED, false);
+
+        // Namespace dropdown (if open)
+        if (showNamespaceDropdown && !availableNamespaces.isEmpty()) {
+            renderNamespaceDropdown(graphics, font, mouseX, mouseY, filterY + FILTER_HEIGHT);
+        }
+
         // Results area
-        int resultsY = searchY + SEARCH_HEIGHT + 4;
+        int resultsY = filterY + FILTER_HEIGHT + 4;
         int resultsHeight = height - (resultsY - getY()) - 8;
-        int visibleCount = Math.min(results.size() - scrollOffset, resultsHeight / RESULT_HEIGHT);
+        int visibleCount = Math.min(filteredResults.size() - scrollOffset, resultsHeight / RESULT_HEIGHT);
 
         graphics.enableScissor(getX() + 4, resultsY, getX() + width - 4, getY() + height - 4);
 
         hoveredResult = -1;
         for (int i = 0; i < visibleCount; i++) {
             int index = scrollOffset + i;
-            if (index >= results.size()) break;
+            if (index >= filteredResults.size()) break;
 
-            SearchHit hit = results.get(index);
+            SearchHit hit = filteredResults.get(index);
             int y = resultsY + i * RESULT_HEIGHT;
 
             boolean hovered = mouseX >= getX() + 8 && mouseX < getX() + width - 8 &&
@@ -107,26 +134,85 @@ public class GlobalSearchWidget extends AbstractWidget {
 
         graphics.disableScissor();
 
-        // Result count
-        if (!results.isEmpty()) {
-            String countText = results.size() + " result" + (results.size() > 1 ? "s" : "");
+        // Result count or empty state
+        if (!filteredResults.isEmpty()) {
+            String countText = filteredResults.size() + " result" + (filteredResults.size() > 1 ? "s" : "");
+            if (selectedNamespace != null) {
+                countText += " in " + selectedNamespace;
+            }
             graphics.drawString(font, countText, getX() + width - font.width(countText) - 8,
                 getY() + height - 14, IsotopeColors.TEXT_MUTED, false);
         } else if (searchBox != null && !searchBox.getValue().isEmpty()) {
-            graphics.drawString(font, "No results", getX() + 8, resultsY,
+            // No results for search query
+            graphics.drawString(font, "No results found", getX() + 8, resultsY + 10,
+                IsotopeColors.TEXT_MUTED, false);
+            if (selectedNamespace != null) {
+                graphics.drawString(font, "Try 'All Mods' or different term", getX() + 8, resultsY + 22,
+                    IsotopeColors.TEXT_MUTED, false);
+            } else {
+                graphics.drawString(font, "Try a different search term", getX() + 8, resultsY + 22,
+                    IsotopeColors.TEXT_MUTED, false);
+            }
+        } else {
+            // Empty search - show hint
+            graphics.drawString(font, "Search for items by name or ID", getX() + 8, resultsY + 10,
+                IsotopeColors.TEXT_MUTED, false);
+            graphics.drawString(font, "e.g. 'diamond', 'iron_ingot'", getX() + 8, resultsY + 22,
+                IsotopeColors.TEXT_MUTED, false);
+            graphics.drawString(font, "Use filter to search by mod", getX() + 8, resultsY + 36,
                 IsotopeColors.TEXT_MUTED, false);
         }
 
         // Scrollbar
-        if (results.size() > visibleCount) {
+        if (filteredResults.size() > visibleCount) {
             int scrollbarX = getX() + width - 6;
             int scrollbarHeight = resultsHeight;
-            int thumbHeight = Math.max(20, scrollbarHeight * visibleCount / results.size());
+            int thumbHeight = Math.max(20, scrollbarHeight * visibleCount / filteredResults.size());
             int thumbY = resultsY + (scrollbarHeight - thumbHeight) * scrollOffset /
-                Math.max(1, results.size() - visibleCount);
+                Math.max(1, filteredResults.size() - visibleCount);
 
             graphics.fill(scrollbarX, resultsY, scrollbarX + 4, resultsY + scrollbarHeight, 0xFF2a2a2a);
             graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+        }
+    }
+
+    private void renderNamespaceDropdown(GuiGraphics graphics, Font font, int mouseX, int mouseY, int startY) {
+        int dropdownWidth = 120;
+        int itemHeight = 14;
+        int maxItems = Math.min(availableNamespaces.size() + 1, 8); // +1 for "All Mods"
+        int dropdownHeight = maxItems * itemHeight + 4;
+
+        // Dropdown background
+        graphics.fill(getX() + 8, startY, getX() + 8 + dropdownWidth, startY + dropdownHeight, 0xFF252525);
+        graphics.renderOutline(getX() + 8, startY, dropdownWidth, dropdownHeight, 0xFF404040);
+
+        hoveredNamespace = -1;
+        int y = startY + 2;
+
+        // "All Mods" option
+        boolean allHovered = mouseX >= getX() + 8 && mouseX < getX() + 8 + dropdownWidth &&
+            mouseY >= y && mouseY < y + itemHeight;
+        if (allHovered) {
+            hoveredNamespace = -1; // Special value for "All"
+            graphics.fill(getX() + 10, y, getX() + 8 + dropdownWidth - 2, y + itemHeight, 0xFF3a3a3a);
+        }
+        int textColor = selectedNamespace == null ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_PRIMARY;
+        graphics.drawString(font, "All Mods", getX() + 12, y + 3, textColor, false);
+        y += itemHeight;
+
+        // Namespace options
+        for (int i = 0; i < Math.min(availableNamespaces.size(), maxItems - 1); i++) {
+            String ns = availableNamespaces.get(i);
+            boolean hovered = mouseX >= getX() + 8 && mouseX < getX() + 8 + dropdownWidth &&
+                mouseY >= y && mouseY < y + itemHeight;
+            if (hovered) {
+                hoveredNamespace = i;
+                graphics.fill(getX() + 10, y, getX() + 8 + dropdownWidth - 2, y + itemHeight, 0xFF3a3a3a);
+            }
+            textColor = ns.equals(selectedNamespace) ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_PRIMARY;
+            String displayNs = font.width(ns) > dropdownWidth - 10 ? font.plainSubstrByWidth(ns, dropdownWidth - 15) + ".." : ns;
+            graphics.drawString(font, displayNs, getX() + 12, y + 3, textColor, false);
+            y += itemHeight;
         }
     }
 
@@ -137,6 +223,26 @@ public class GlobalSearchWidget extends AbstractWidget {
         } else {
             results = new ArrayList<>(SearchIndex.getInstance().search(query));
         }
+
+        // Extract available namespaces from results
+        availableNamespaces = results.stream()
+            .map(hit -> hit.table().getNamespace())
+            .distinct()
+            .sorted()
+            .toList();
+
+        applyFilter();
+    }
+
+    private void applyFilter() {
+        if (selectedNamespace == null) {
+            filteredResults = new ArrayList<>(results);
+        } else {
+            filteredResults = results.stream()
+                .filter(hit -> hit.table().getNamespace().equals(selectedNamespace))
+                .toList();
+        }
+        scrollOffset = 0;
     }
 
     /**
@@ -150,17 +256,60 @@ public class GlobalSearchWidget extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!isMouseOver(mouseX, mouseY)) return false;
+        if (!isMouseOver(mouseX, mouseY)) {
+            showNamespaceDropdown = false;
+            return false;
+        }
 
         // Check search box click
         if (searchBox != null && searchBox.isMouseOver(mouseX, mouseY)) {
+            showNamespaceDropdown = false;
             searchBox.mouseClicked(mouseX, mouseY, button);
             return true;
         }
 
+        // Check filter button click
+        Font font = Minecraft.getInstance().font;
+        int filterY = getY() + 24 + SEARCH_HEIGHT + 2;
+        String filterLabel = selectedNamespace == null ? "All Mods" : selectedNamespace;
+        int filterWidth = font.width(filterLabel) + 16;
+
+        if (mouseX >= getX() + 8 && mouseX < getX() + 8 + filterWidth &&
+            mouseY >= filterY && mouseY < filterY + FILTER_HEIGHT) {
+            showNamespaceDropdown = !showNamespaceDropdown;
+            return true;
+        }
+
+        // Check dropdown selection
+        if (showNamespaceDropdown) {
+            int dropdownWidth = 120;
+            int itemHeight = 14;
+            int dropdownStartY = filterY + FILTER_HEIGHT;
+
+            if (mouseX >= getX() + 8 && mouseX < getX() + 8 + dropdownWidth) {
+                int relativeY = (int) mouseY - dropdownStartY - 2;
+                int clickedIndex = relativeY / itemHeight;
+
+                if (clickedIndex == 0) {
+                    // "All Mods" selected
+                    selectedNamespace = null;
+                    applyFilter();
+                    showNamespaceDropdown = false;
+                    return true;
+                } else if (clickedIndex > 0 && clickedIndex <= availableNamespaces.size()) {
+                    selectedNamespace = availableNamespaces.get(clickedIndex - 1);
+                    applyFilter();
+                    showNamespaceDropdown = false;
+                    return true;
+                }
+            }
+            showNamespaceDropdown = false;
+            return true;
+        }
+
         // Check result click
-        if (hoveredResult >= 0 && hoveredResult < results.size()) {
-            SearchHit hit = results.get(hoveredResult);
+        if (hoveredResult >= 0 && hoveredResult < filteredResults.size()) {
+            SearchHit hit = filteredResults.get(hoveredResult);
             onTableSelected.accept(hit.table());
             return true;
         }
@@ -172,7 +321,7 @@ public class GlobalSearchWidget extends AbstractWidget {
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (!isMouseOver(mouseX, mouseY)) return false;
 
-        int maxScroll = Math.max(0, results.size() - MAX_VISIBLE_RESULTS);
+        int maxScroll = Math.max(0, filteredResults.size() - MAX_VISIBLE_RESULTS);
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) scrollY));
         return true;
     }

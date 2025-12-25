@@ -305,11 +305,16 @@ public class SessionScreen extends Screen {
     private void onDelete(Button button) {
         if (selectedSession == null) return;
 
-        if (SessionManager.getInstance().deleteSession(selectedSession)) {
-            IsotopeToast.info("Session Deleted", "Deleted '" + selectedSession + "'");
-            refreshSessionList();
-        } else {
-            IsotopeToast.error("Delete Failed", "Could not delete session");
+        String sessionToDelete = selectedSession;
+        if (minecraft != null) {
+            minecraft.setScreen(ConfirmDialog.delete(this, sessionToDelete, () -> {
+                if (SessionManager.getInstance().deleteSession(sessionToDelete)) {
+                    IsotopeToast.info("Session Deleted", "Deleted '" + sessionToDelete + "'");
+                    refreshSessionList();
+                } else {
+                    IsotopeToast.error("Delete Failed", "Could not delete session");
+                }
+            }));
         }
     }
 
