@@ -127,10 +127,15 @@ public record LootTableStructure(
 
     /**
      * Create a copy with a pool added at the specified index.
+     * Use -1 to add at the end.
      */
     public LootTableStructure withPoolAdded(int index, LootPool pool) {
         List<LootPool> newPools = new ArrayList<>(pools);
-        newPools.add(Math.min(index, newPools.size()), pool);
+        if (index < 0) {
+            newPools.add(pool); // Add at end
+        } else {
+            newPools.add(Math.min(index, newPools.size()), pool);
+        }
         return withPools(newPools);
     }
 

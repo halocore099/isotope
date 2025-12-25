@@ -9,6 +9,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Supplier;
+
 /**
  * Simple loading screen shown while scanning registries from main menu.
  *
@@ -20,14 +22,20 @@ public class LoadingScreen extends IsotopeScreen {
     private static final Component TITLE = Component.literal("ISOTOPE");
 
     private final Screen parentScreen;
+    private final Supplier<Screen> targetScreenFactory;
     private String statusMessage = "Initializing...";
     private boolean loadingStarted = false;
     private int dots = 0;
     private int tickCount = 0;
 
     public LoadingScreen(@Nullable Screen parent) {
+        this(parent, LootEditorScreen::new);
+    }
+
+    public LoadingScreen(@Nullable Screen parent, Supplier<Screen> targetScreenFactory) {
         super(TITLE, parent);
         this.parentScreen = parent;
+        this.targetScreenFactory = targetScreenFactory;
     }
 
     @Override
@@ -53,8 +61,8 @@ public class LoadingScreen extends IsotopeScreen {
 
     private void onComplete(boolean success) {
         if (success && minecraft != null) {
-            // Transition to MainScreen
-            minecraft.setScreen(new MainScreen(parentScreen));
+            // Transition to target screen
+            minecraft.setScreen(targetScreenFactory.get());
         } else {
             // Go back to parent on failure
             statusMessage = "Failed to load registries. Press ESC to go back.";

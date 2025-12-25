@@ -105,10 +105,15 @@ public record LootPool(
 
     /**
      * Create a copy with an entry added at the specified index.
+     * Use -1 to add at the end.
      */
     public LootPool withEntryAdded(int index, LootEntry entry) {
         List<LootEntry> newEntries = new ArrayList<>(entries);
-        newEntries.add(Math.min(index, newEntries.size()), entry);
+        if (index < 0) {
+            newEntries.add(entry); // Add at end
+        } else {
+            newEntries.add(Math.min(index, newEntries.size()), entry);
+        }
         return withEntries(newEntries);
     }
 

@@ -3,16 +3,13 @@ package dev.isotope.ui;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.hooks.client.screen.ScreenAccess;
 import dev.isotope.Isotope;
-import dev.isotope.registry.RegistryLoader;
 import dev.isotope.registry.RegistryScanner;
-import dev.isotope.ui.screen.ConfirmationScreen;
+import dev.isotope.ui.screen.LootEditorScreen;
 import dev.isotope.ui.screen.LoadingScreen;
-import dev.isotope.ui.screen.MainScreen;
-import dev.isotope.ui.screen.SavesScreen;
 import net.fabricmc.api.EnvType;
-import net.minecraft.client.gui.components.Button;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -55,14 +52,14 @@ public final class IsotopeClientInit {
 
     private static void addIsotopeButtonToTitleScreen(Screen screen, ScreenAccess access) {
         // Position at bottom of screen, above copyright text
-        int buttonWidth = 200;
+        int buttonWidth = 150;
         int buttonHeight = 20;
         int x = screen.width / 2 - buttonWidth / 2;
         int y = screen.height - 35; // Near bottom, above copyright
 
         // Use vanilla Button for native Minecraft styling
         Button button = Button.builder(
-            Component.literal("ISOTOPE: Worldgen Analysis"),
+            Component.literal("ISOTOPE"),
             btn -> openFromMainMenu(screen)
         )
         .pos(x, y)
@@ -83,14 +80,14 @@ public final class IsotopeClientInit {
         }
 
         // Position in pause menu
-        int buttonWidth = 200;
+        int buttonWidth = 150;
         int buttonHeight = 20;
         int x = screen.width / 2 - buttonWidth / 2;
         int y = screen.height / 4 + 120 + 24; // Below other pause menu buttons
 
         // Use vanilla Button for native Minecraft styling
         Button button = Button.builder(
-            Component.literal("ISOTOPE: Worldgen Analysis"),
+            Component.literal("ISOTOPE"),
             btn -> openFromPauseMenu(screen)
         )
         .pos(x, y)
@@ -104,40 +101,35 @@ public final class IsotopeClientInit {
 
     /**
      * Opens ISOTOPE from the title screen.
-     * Shows the SavesScreen as the IDE entry point where users can:
-     * - Load a previous analysis
-     * - Start a new analysis (which triggers registry scanning)
+     * Loads registries first, then opens the editor.
      */
     private static void openFromMainMenu(Screen parentScreen) {
         Minecraft minecraft = Minecraft.getInstance();
 
-        // Always go to SavesScreen first - this is the IDE entry point
-        minecraft.setScreen(new SavesScreen(parentScreen));
+        // Check if registries already loaded
+        if (RegistryScanner.isScanned()) {
+            Isotope.LOGGER.info("Registries already loaded");
+            minecraft.setScreen(new LootEditorScreen());
+            return;
+        }
+
+        // Show loading screen - it handles registry loading and transitions to LootEditorScreen
+        minecraft.setScreen(new LoadingScreen(parentScreen));
     }
 
     /**
      * Opens ISOTOPE from the pause menu.
-     * Registry data is already available, so we can go directly to MainScreen.
+     * Registry data is already available from the loaded world.
      */
     private static void openFromPauseMenu(Screen parentScreen) {
         Minecraft minecraft = Minecraft.getInstance();
 
-        // Check if registries are scanned
+        // Registries should already be scanned when world loaded
         if (!RegistryScanner.isScanned()) {
             Isotope.LOGGER.warn("Opening ISOTOPE but registries not scanned yet");
         }
 
-        // Show confirmation screen first (developer warning)
-        ConfirmationScreen confirmationScreen = new ConfirmationScreen(
-            parentScreen,
-            confirmed -> {
-                if (confirmed) {
-                    // Go directly to MainScreen - registry data is already available
-                    minecraft.setScreen(new MainScreen(parentScreen));
-                }
-            }
-        );
-
-        minecraft.setScreen(confirmationScreen);
+        // Open editor directly
+        minecraft.setScreen(new LootEditorScreen());
     }
 }

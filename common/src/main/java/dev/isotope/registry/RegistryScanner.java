@@ -3,6 +3,7 @@ package dev.isotope.registry;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.isotope.Isotope;
 import dev.isotope.analysis.HeadlessAnalysisWorld;
+import dev.isotope.editing.LootEditManager;
 import net.minecraft.server.MinecraftServer;
 
 /**
@@ -40,6 +41,9 @@ public final class RegistryScanner {
         StructureRegistry.getInstance().scan(server);
         LootTableRegistry.getInstance().scan(server);
         StructureLootLinker.getInstance().link();
+
+        // Pre-parse loot tables for the editor (while server is available)
+        LootEditManager.getInstance().preParseLootTables(server);
 
         Isotope.LOGGER.info("Registry scan complete: {} structures, {} loot tables, {} links",
             StructureRegistry.getInstance().size(),
