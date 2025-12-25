@@ -1037,6 +1037,13 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     /**
+     * Check if any entries are currently selected.
+     */
+    public boolean hasSelection() {
+        return selectedPoolIdx >= 0 || selectedEntryIdx >= 0 || !multiSelection.isEmpty();
+    }
+
+    /**
      * Clear the current selection (Escape key).
      */
     public void clearSelection() {

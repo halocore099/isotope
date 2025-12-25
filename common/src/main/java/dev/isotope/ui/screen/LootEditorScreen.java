@@ -597,8 +597,11 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             // Close search overlay first
             searchVisible = false;
             searchWidget.visible = false;
-        } else {
+        } else if (editPanel.hasSelection()) {
             editPanel.clearSelection();
+        } else {
+            // No overlays or selection - close the screen
+            onClose();
         }
     }
 

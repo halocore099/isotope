@@ -2,6 +2,8 @@ plugins {
     id "com.github.johnrengelman.shadow"
 }
 
+archivesBaseName = "isotope-neoforge"
+
 repositories {
     maven { url "https://maven.neoforged.net/releases/" }
 }

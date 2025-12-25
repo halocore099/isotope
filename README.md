@@ -1,16 +1,18 @@
-# ISOTOPE
+# Isotope IDE
 
-**Worldgen & loot introspection toolkit for Minecraft modpacks**
+**Visual loot table editor and worldgen analysis toolkit for modpack developers**
 
 [![Build](https://github.com/halocore099/isotope/actions/workflows/build.yml/badge.svg)](https://github.com/halocore099/isotope/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.4-green.svg)](https://minecraft.net)
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.x-green.svg)](https://minecraft.net)
+[![Modrinth](https://img.shields.io/modrinth/dt/isotope-ide?logo=modrinth&label=Modrinth)](https://modrinth.com/mod/isotope-ide)
+[![CurseForge](https://img.shields.io/curseforge/dt/isotope-ide?logo=curseforge&label=CurseForge)](https://www.curseforge.com/minecraft/mc-mods/isotope-ide)
 
-ISOTOPE allows pack developers to analyze, visualize, and rebalance all structures and their loot - across vanilla and modded Minecraft - without modifying mods or writing scripts.
+Isotope IDE allows pack developers to analyze, visualize, and rebalance all structures and their loot - across vanilla and modded Minecraft - without modifying mods or writing scripts.
 
 > **Warning:** This is a developer tool. Not intended for survival gameplay.
 
-## What Problem ISOTOPE Solves
+## What Problem Isotope IDE Solves
 
 Modern Minecraft modpacks suffer from a fundamental tooling gap:
 
@@ -25,7 +27,7 @@ This makes it extremely difficult to:
 - Prevent loot redundancy
 - Make structures feel meaningful
 
-**ISOTOPE exists to make worldgen observable.**
+**Isotope IDE exists to make worldgen observable.**
 
 ## Features
 
@@ -80,19 +82,19 @@ Quickly add pre-configured loot entries with the Template button:
 ## Installation
 
 ### Requirements
-- Minecraft 1.21.4
-- Fabric Loader 0.16.9+ **or** NeoForge 21.4+
-- Architectury API 15.0.3+
+- Minecraft 1.21, 1.21.1, or 1.21.4
+- Fabric Loader 0.16.0+ **or** NeoForge 21.4+
+- Architectury API 15.0.0+
 
 ### Download
-- [Modrinth](https://modrinth.com/mod/isotope) (coming soon)
-- [CurseForge](https://www.curseforge.com/minecraft/mc-mods/isotope) (coming soon)
+- [Modrinth](https://modrinth.com/mod/isotope-ide)
+- [CurseForge](https://www.curseforge.com/minecraft/mc-mods/isotope-ide)
 - [GitHub Releases](https://github.com/halocore099/isotope/releases)
 
 ## Usage
 
 ### Getting Started
-1. Launch Minecraft with ISOTOPE installed
+1. Launch Minecraft with Isotope IDE installed
 2. Click **"ISOTOPE"** button at bottom of title screen
 3. Confirm the developer warning
 4. Wait for registry scan (happens once, ~2 seconds)
@@ -106,20 +108,20 @@ Quickly add pre-configured loot entries with the Template button:
 5. Enable "Test Mode" to try changes in-game
 6. Click "Export" to save as datapack
 
-### Accessing ISOTOPE
+### Accessing Isotope IDE
 - **Title Screen**: Click the "ISOTOPE" button (bottom of screen)
 - **In-Game**: Press Escape, click "ISOTOPE" button
 
 ## Important Disclaimer
 
-**Data shown by ISOTOPE is "Observed, not guaranteed."**
+**Data shown by Isotope IDE is "Observed, not guaranteed."**
 
-ISOTOPE captures loot tables as they are used during structure generation. It cannot predict:
+Isotope IDE captures loot tables as they are used during structure generation. It cannot predict:
 - All possible random rolls
 - Conditional loot (locked behind game state)
 - Programmatic loot not triggered during analysis
 
-Use ISOTOPE as a high-confidence starting point, not an absolute truth.
+Use Isotope IDE as a high-confidence starting point, not an absolute truth.
 
 ## Building from Source
 

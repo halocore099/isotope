@@ -21,6 +21,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * Main ISOTOPE screen with 3-panel layout.
@@ -413,6 +414,18 @@ public class MainScreen extends IsotopeScreen {
             }
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // F1 - show keyboard shortcuts help
+        if (keyCode == GLFW.GLFW_KEY_F1) {
+            if (minecraft != null) {
+                minecraft.setScreen(new ShortcutsScreen(this));
+            }
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     private void saveCurrentAnalysis() {
