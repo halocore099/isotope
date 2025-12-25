@@ -116,6 +116,19 @@ public final class HistoryLog {
     }
 
     /**
+     * Log a batch operation (multiple operations applied at once).
+     */
+    public void logBatch(ResourceLocation tableId, int count, String firstOpDescription) {
+        long now = System.currentTimeMillis();
+        String time = TIME_FORMAT.format(
+            Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).toLocalDateTime()
+        );
+        String description = "Batch (" + count + " ops): " + firstOpDescription;
+        entries.add(new LogEntry(now, tableId, "BATCH", description, time));
+        notifyListeners();
+    }
+
+    /**
      * Get all entries (most recent last).
      */
     public List<LogEntry> getAll() {

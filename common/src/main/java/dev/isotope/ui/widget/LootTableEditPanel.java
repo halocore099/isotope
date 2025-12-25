@@ -8,7 +8,10 @@ import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootEditOperation;
 import dev.isotope.editing.LootTableParser;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.screen.BatchWeightScreen;
+import dev.isotope.ui.screen.TemplatePickerScreen;
 import dev.isotope.registry.StructureLootLinker;
+import dev.isotope.data.EntryTemplate;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -28,6 +31,7 @@ import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Right panel for inline loot table editing.
@@ -69,6 +73,25 @@ public class LootTableEditPanel extends AbstractWidget {
     private int selectedPoolIdx = -1;
     private int selectedEntryIdx = -1;
 
+    // Multi-selection for batch operations
+    private final Set<EntryKey> multiSelection = new LinkedHashSet<>();
+    private EntryKey lastClickedEntry = null; // For shift-click range selection
+
+    // Batch action hover state
+    private boolean batchWeightHovered = false;
+    private boolean batchDeleteHovered = false;
+
+    /**
+     * Key for identifying a specific entry (pool index, entry index).
+     */
+    public record EntryKey(int poolIdx, int entryIdx) implements Comparable<EntryKey> {
+        @Override
+        public int compareTo(EntryKey other) {
+            int cmp = Integer.compare(this.poolIdx, other.poolIdx);
+            return cmp != 0 ? cmp : Integer.compare(this.entryIdx, other.entryIdx);
+        }
+    }
+
     public LootTableEditPanel(int x, int y, int width, int height) {
         super(x, y, width, height, Component.empty());
     }
@@ -80,6 +103,8 @@ public class LootTableEditPanel extends AbstractWidget {
         this.scrollOffset = 0;
         this.selectedPoolIdx = -1;
         this.selectedEntryIdx = -1;
+        this.multiSelection.clear();
+        this.lastClickedEntry = null;
         entryRows.clear();
 
         if (tableId == null) return;
@@ -204,6 +229,11 @@ public class LootTableEditPanel extends AbstractWidget {
         renderHeader(graphics, font, y, mouseX, mouseY);
         y += HEADER_HEIGHT;
 
+        // Batch action bar (shown when multiple entries selected)
+        if (multiSelection.size() > 1) {
+            y = renderBatchActionBar(graphics, font, y, mouseX, mouseY);
+        }
+
         // Pools and entries
         hoveredRemovePool = -1;
         hoveredRemoveEntry = -1;
@@ -281,6 +311,50 @@ public class LootTableEditPanel extends AbstractWidget {
             0xFF333333);
     }
 
+    private static final int BATCH_BAR_HEIGHT = 28;
+
+    private int renderBatchActionBar(GuiGraphics graphics, Font font, int y, int mouseX, int mouseY) {
+        // Background
+        graphics.fill(getX(), y, getX() + width, y + BATCH_BAR_HEIGHT, 0xFF2a2a3a);
+
+        // Selection count
+        String selectionText = multiSelection.size() + " entries selected";
+        graphics.drawString(font, selectionText, getX() + PADDING, y + 9, 0xFF9966ff, false);
+
+        // Buttons on the right
+        int btnY = y + 4;
+        int btnHeight = 20;
+
+        // Clear selection button (X)
+        int clearX = getX() + width - PADDING - 20;
+        boolean clearHovered = mouseX >= clearX && mouseX < clearX + 18 &&
+            mouseY >= btnY && mouseY < btnY + btnHeight;
+        graphics.fill(clearX, btnY, clearX + 18, btnY + btnHeight, clearHovered ? 0xFF4a3a3a : 0xFF3a3a3a);
+        graphics.drawString(font, "×", clearX + 5, btnY + 6, clearHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+
+        // Delete All button
+        int deleteX = clearX - 70;
+        batchDeleteHovered = mouseX >= deleteX && mouseX < deleteX + 65 &&
+            mouseY >= btnY && mouseY < btnY + btnHeight;
+        graphics.fill(deleteX, btnY, deleteX + 65, btnY + btnHeight,
+            batchDeleteHovered ? 0xFF5a2a2a : 0xFF3a3a3a);
+        graphics.renderOutline(deleteX, btnY, 65, btnHeight, 0xFF505050);
+        graphics.drawString(font, "Delete All", deleteX + 6, btnY + 6,
+            batchDeleteHovered ? 0xFFff6666 : IsotopeColors.TEXT_PRIMARY, false);
+
+        // Set Weight button
+        int weightX = deleteX - 75;
+        batchWeightHovered = mouseX >= weightX && mouseX < weightX + 70 &&
+            mouseY >= btnY && mouseY < btnY + btnHeight;
+        graphics.fill(weightX, btnY, weightX + 70, btnY + btnHeight,
+            batchWeightHovered ? 0xFF3a4a5a : 0xFF3a3a3a);
+        graphics.renderOutline(weightX, btnY, 70, btnHeight, 0xFF505050);
+        graphics.drawString(font, "Set Weight", weightX + 6, btnY + 6,
+            batchWeightHovered ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_PRIMARY, false);
+
+        return y + BATCH_BAR_HEIGHT;
+    }
+
     private int renderPool(GuiGraphics graphics, Font font, int y, int poolIdx, LootPool pool,
                            int mouseX, int mouseY) {
 
@@ -317,18 +391,33 @@ public class LootTableEditPanel extends AbstractWidget {
             y += ENTRY_HEIGHT;
         }
 
-        // Add item button
+        // Add item and Template buttons
         if (y > getY() && y < getY() + height) {
-            int btnX = getX() + PADDING + 20;
-            int btnWidth = width - PADDING * 2 - 20;
-            boolean hovered = mouseX >= btnX && mouseX < btnX + btnWidth &&
+            int totalWidth = width - PADDING * 2 - 20;
+            int btnSpacing = 4;
+            int addBtnWidth = (totalWidth - btnSpacing) / 2;
+            int templateBtnWidth = totalWidth - addBtnWidth - btnSpacing;
+
+            int addBtnX = getX() + PADDING + 20;
+            int templateBtnX = addBtnX + addBtnWidth + btnSpacing;
+
+            // Add Item button
+            boolean addHovered = mouseX >= addBtnX && mouseX < addBtnX + addBtnWidth &&
                 mouseY >= y && mouseY < y + 20;
-
-            graphics.fill(btnX, y + 2, btnX + btnWidth, y + 20, hovered ? 0xFF353535 : 0xFF2a2a2a);
-
+            graphics.fill(addBtnX, y + 2, addBtnX + addBtnWidth, y + 20, addHovered ? 0xFF353535 : 0xFF2a2a2a);
             String addText = "+ Add Item";
-            int textX = btnX + (btnWidth - font.width(addText)) / 2;
-            graphics.drawString(font, addText, textX, y + 6, IsotopeColors.TEXT_MUTED, false);
+            int addTextX = addBtnX + (addBtnWidth - font.width(addText)) / 2;
+            graphics.drawString(font, addText, addTextX, y + 6, IsotopeColors.TEXT_MUTED, false);
+
+            // Template button
+            boolean templateHovered = mouseX >= templateBtnX && mouseX < templateBtnX + templateBtnWidth &&
+                mouseY >= y && mouseY < y + 20;
+            graphics.fill(templateBtnX, y + 2, templateBtnX + templateBtnWidth, y + 20,
+                templateHovered ? 0xFF3a4a3a : 0xFF2a2a2a);
+            String templateText = "☆ Template";
+            int templateTextX = templateBtnX + (templateBtnWidth - font.width(templateText)) / 2;
+            graphics.drawString(font, templateText, templateTextX, y + 6,
+                templateHovered ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_MUTED, false);
         }
         y += 24;
 
@@ -341,9 +430,14 @@ public class LootTableEditPanel extends AbstractWidget {
         boolean rowHovered = mouseX >= getX() && mouseX < getX() + width &&
             mouseY >= y && mouseY < y + ENTRY_HEIGHT;
         boolean isSelected = selectedPoolIdx == poolIdx && selectedEntryIdx == entryIdx;
+        boolean isMultiSelected = multiSelection.contains(new EntryKey(poolIdx, entryIdx));
 
-        if (isSelected) {
-            // Selected highlight (stronger blue tint)
+        if (isMultiSelected) {
+            // Multi-selected entries (purple tint)
+            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, 0xFF3a2a4a);
+            graphics.renderOutline(getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, 0xFF9966ff);
+        } else if (isSelected) {
+            // Single selected highlight (stronger blue tint)
             graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, 0xFF2a3a4a);
             graphics.renderOutline(getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, IsotopeColors.ACCENT_GOLD);
         } else if (rowHovered) {
@@ -474,10 +568,40 @@ public class LootTableEditPanel extends AbstractWidget {
         LootTableStructure display = editedStructure != null ? editedStructure : structure;
         if (display == null) return false;
 
+        // Check for batch action bar clicks when multi-selection is active
+        if (multiSelection.size() > 1) {
+            int batchBarY = getY() - scrollOffset + HEADER_HEIGHT;
+            int btnY = batchBarY + 4;
+            int btnHeight = 20;
+
+            // Clear selection button (X)
+            int clearX = getX() + width - PADDING - 20;
+            if (mouseX >= clearX && mouseX < clearX + 18 && mouseY >= btnY && mouseY < btnY + btnHeight) {
+                multiSelection.clear();
+                lastClickedEntry = null;
+                return true;
+            }
+
+            // Delete All button
+            int deleteX = clearX - 70;
+            if (mouseX >= deleteX && mouseX < deleteX + 65 && mouseY >= btnY && mouseY < btnY + btnHeight) {
+                batchDelete();
+                return true;
+            }
+
+            // Set Weight button
+            int weightX = deleteX - 75;
+            if (mouseX >= weightX && mouseX < weightX + 70 && mouseY >= btnY && mouseY < btnY + btnHeight) {
+                openBatchWeightDialog();
+                return true;
+            }
+        }
+
         // Check for remove pool click
         if (hoveredRemovePool >= 0) {
             LootEditOperation op = new LootEditOperation.RemovePool(hoveredRemovePool);
             LootEditManager.getInstance().applyOperation(tableId, op);
+            multiSelection.clear();
             refreshFromEdits();
             return true;
         }
@@ -486,12 +610,22 @@ public class LootTableEditPanel extends AbstractWidget {
         if (hoveredRemoveEntry >= 0 && hoveredRemoveEntryPool >= 0) {
             LootEditOperation op = new LootEditOperation.RemoveEntry(hoveredRemoveEntryPool, hoveredRemoveEntry);
             LootEditManager.getInstance().applyOperation(tableId, op);
+            multiSelection.remove(new EntryKey(hoveredRemoveEntryPool, hoveredRemoveEntry));
             refreshFromEdits();
             return true;
         }
 
+        // Check modifier keys for multi-selection
+        boolean ctrlHeld = Screen.hasControlDown();
+        boolean shiftHeld = Screen.hasShiftDown();
+
         // Check for weight/qty box clicks
         int y = getY() - scrollOffset + HEADER_HEIGHT;
+
+        // Adjust y if batch bar is showing
+        if (multiSelection.size() > 1) {
+            y += BATCH_BAR_HEIGHT;
+        }
 
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);
@@ -544,23 +678,54 @@ public class LootTableEditPanel extends AbstractWidget {
                         return true;
                     }
 
-                    // Clicking elsewhere in the row just selects it
-                    selectedPoolIdx = poolIdx;
-                    selectedEntryIdx = entryIdx;
+                    // Clicking elsewhere in the row handles selection
+                    EntryKey clickedKey = new EntryKey(poolIdx, entryIdx);
+
+                    if (ctrlHeld) {
+                        // Ctrl+Click: Toggle selection
+                        if (multiSelection.contains(clickedKey)) {
+                            multiSelection.remove(clickedKey);
+                        } else {
+                            multiSelection.add(clickedKey);
+                        }
+                        lastClickedEntry = clickedKey;
+                    } else if (shiftHeld && lastClickedEntry != null) {
+                        // Shift+Click: Range selection
+                        selectRange(lastClickedEntry, clickedKey, display);
+                    } else {
+                        // Normal click: Clear multi-selection, set single selection
+                        multiSelection.clear();
+                        selectedPoolIdx = poolIdx;
+                        selectedEntryIdx = entryIdx;
+                        lastClickedEntry = clickedKey;
+                    }
                     return true;
                 }
 
                 y += ENTRY_HEIGHT;
             }
 
-            // Add item button
-            int btnX = getX() + PADDING + 20;
-            int btnWidth = width - PADDING * 2 - 20;
-            if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y + 2 && mouseY < y + 20) {
-                selectedPoolIdx = poolIdx;
-                selectedEntryIdx = -1;
-                openAddItemDialog(poolIdx);
-                return true;
+            // Add item and Template buttons
+            int totalWidth = width - PADDING * 2 - 20;
+            int btnSpacing = 4;
+            int addBtnWidth = (totalWidth - btnSpacing) / 2;
+            int templateBtnWidth = totalWidth - addBtnWidth - btnSpacing;
+            int addBtnX = getX() + PADDING + 20;
+            int templateBtnX = addBtnX + addBtnWidth + btnSpacing;
+
+            if (mouseY >= y + 2 && mouseY < y + 20) {
+                if (mouseX >= addBtnX && mouseX < addBtnX + addBtnWidth) {
+                    selectedPoolIdx = poolIdx;
+                    selectedEntryIdx = -1;
+                    openAddItemDialog(poolIdx);
+                    return true;
+                }
+                if (mouseX >= templateBtnX && mouseX < templateBtnX + templateBtnWidth) {
+                    selectedPoolIdx = poolIdx;
+                    selectedEntryIdx = -1;
+                    openTemplateDialog(poolIdx);
+                    return true;
+                }
             }
             y += 24;
         }
@@ -629,6 +794,31 @@ public class LootTableEditPanel extends AbstractWidget {
         }));
     }
 
+    private void openTemplateDialog(int poolIdx) {
+        Isotope.LOGGER.info("Opening template picker for pool {}", poolIdx);
+
+        Screen currentScreen = Minecraft.getInstance().screen;
+        Minecraft.getInstance().setScreen(new TemplatePickerScreen(currentScreen, template -> {
+            // If template has a default item, use it directly
+            if (template.defaultItem().isPresent()) {
+                LootEntry newEntry = template.createEntry();
+                LootEditOperation op = new LootEditOperation.AddEntry(poolIdx, -1, newEntry);
+                LootEditManager.getInstance().applyOperation(tableId, op);
+                refreshFromEdits();
+                IsotopeToast.success("Added", template.name() + " (" + template.defaultItem().get().getPath() + ")");
+            } else {
+                // No default item - open item picker
+                Minecraft.getInstance().setScreen(new ItemPickerScreen(currentScreen, itemId -> {
+                    LootEntry newEntry = template.createEntry(itemId);
+                    LootEditOperation op = new LootEditOperation.AddEntry(poolIdx, -1, newEntry);
+                    LootEditManager.getInstance().applyOperation(tableId, op);
+                    refreshFromEdits();
+                    IsotopeToast.success("Added", template.name() + " (" + itemId.getPath() + ")");
+                }));
+            }
+        }));
+    }
+
     private void openChangeItemDialog(int poolIdx, int entryIdx) {
         Isotope.LOGGER.info("Opening item picker to change pool {} entry {}", poolIdx, entryIdx);
 
@@ -656,6 +846,105 @@ public class LootTableEditPanel extends AbstractWidget {
         LootEditOperation op = new LootEditOperation.AddPool(-1, newPool);
         LootEditManager.getInstance().applyOperation(tableId, op);
         refreshFromEdits();
+    }
+
+    // ===== Multi-Selection & Batch Operations =====
+
+    /**
+     * Select a range of entries between two keys (for Shift+Click).
+     */
+    private void selectRange(EntryKey from, EntryKey to, LootTableStructure display) {
+        multiSelection.clear();
+
+        // Build a flat list of all entry keys
+        List<EntryKey> allEntries = new ArrayList<>();
+        for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
+            LootPool pool = display.pools().get(poolIdx);
+            for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                allEntries.add(new EntryKey(poolIdx, entryIdx));
+            }
+        }
+
+        // Find indices
+        int fromIndex = allEntries.indexOf(from);
+        int toIndex = allEntries.indexOf(to);
+
+        if (fromIndex < 0 || toIndex < 0) return;
+
+        // Ensure correct order
+        int start = Math.min(fromIndex, toIndex);
+        int end = Math.max(fromIndex, toIndex);
+
+        // Select the range
+        for (int i = start; i <= end; i++) {
+            multiSelection.add(allEntries.get(i));
+        }
+    }
+
+    /**
+     * Delete all multi-selected entries.
+     * Entries are deleted in reverse order to preserve indices.
+     */
+    private void batchDelete() {
+        if (tableId == null || multiSelection.isEmpty()) return;
+
+        // Sort by pool then entry (descending) to delete from end first
+        List<EntryKey> sorted = multiSelection.stream()
+            .sorted(Comparator.reverseOrder())
+            .toList();
+
+        // Build operations
+        List<LootEditOperation> ops = sorted.stream()
+            .map(key -> new LootEditOperation.RemoveEntry(key.poolIdx(), key.entryIdx()))
+            .collect(Collectors.toList());
+
+        // Apply as batch
+        int count = LootEditManager.getInstance().applyOperations(tableId, ops);
+
+        IsotopeToast.success("Deleted", count + " entries removed");
+
+        multiSelection.clear();
+        lastClickedEntry = null;
+        selectedPoolIdx = -1;
+        selectedEntryIdx = -1;
+        refreshFromEdits();
+    }
+
+    /**
+     * Open a dialog to set weight for all multi-selected entries.
+     */
+    private void openBatchWeightDialog() {
+        if (tableId == null || multiSelection.isEmpty()) return;
+
+        // For now, use a simple cycling approach (similar to single weight edit)
+        // In a full implementation, this would open a proper input dialog
+        Screen currentScreen = Minecraft.getInstance().screen;
+        Minecraft.getInstance().setScreen(new BatchWeightScreen(currentScreen, newWeight -> {
+            List<LootEditOperation> ops = multiSelection.stream()
+                .map(key -> new LootEditOperation.ModifyEntryWeight(key.poolIdx(), key.entryIdx(), newWeight))
+                .collect(Collectors.toList());
+
+            int count = LootEditManager.getInstance().applyOperations(tableId, ops);
+            IsotopeToast.success("Updated", count + " entries set to weight " + newWeight);
+
+            multiSelection.clear();
+            lastClickedEntry = null;
+            refreshFromEdits();
+        }));
+    }
+
+    /**
+     * Get the current multi-selection count.
+     */
+    public int getMultiSelectionCount() {
+        return multiSelection.size();
+    }
+
+    /**
+     * Check if an entry is multi-selected.
+     */
+    public boolean isMultiSelected(int poolIdx, int entryIdx) {
+        return multiSelection.contains(new EntryKey(poolIdx, entryIdx));
     }
 
     @Override
@@ -690,9 +979,19 @@ public class LootTableEditPanel extends AbstractWidget {
 
     /**
      * Delete the currently selected entry (Delete key).
+     * If multiple entries are selected, performs batch delete.
      */
     public void deleteSelected() {
-        if (tableId == null || selectedPoolIdx < 0 || selectedEntryIdx < 0) return;
+        if (tableId == null) return;
+
+        // If multi-selection, batch delete
+        if (multiSelection.size() > 1) {
+            batchDelete();
+            return;
+        }
+
+        // Single deletion
+        if (selectedPoolIdx < 0 || selectedEntryIdx < 0) return;
 
         LootEditOperation op = new LootEditOperation.RemoveEntry(selectedPoolIdx, selectedEntryIdx);
         LootEditManager.getInstance().applyOperation(tableId, op);
@@ -743,6 +1042,8 @@ public class LootTableEditPanel extends AbstractWidget {
     public void clearSelection() {
         selectedPoolIdx = -1;
         selectedEntryIdx = -1;
+        multiSelection.clear();
+        lastClickedEntry = null;
     }
 
     /**

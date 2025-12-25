@@ -182,6 +182,40 @@ public final class LootEditManager {
     }
 
     /**
+     * Apply multiple operations atomically to a table's edits.
+     * Operations are applied in order and logged as a batch.
+     * Clears the redo stack for this table.
+     *
+     * @param tableId The table to edit
+     * @param operations The operations to apply (in order)
+     * @return The number of operations applied
+     */
+    public int applyOperations(ResourceLocation tableId, List<LootEditOperation> operations) {
+        if (operations.isEmpty()) {
+            return 0;
+        }
+
+        LootTableEdit edit = getOrCreateEdit(tableId);
+        for (LootEditOperation op : operations) {
+            edit = edit.withOperation(op);
+        }
+        edits.put(tableId, edit);
+
+        // Clear redo stack
+        redoStacks.remove(tableId);
+
+        // Invalidate edited cache
+        editedCache.remove(tableId);
+
+        // Log to history (batch entry)
+        HistoryLog.getInstance().logBatch(tableId, operations.size(), operations.get(0).getDescription());
+
+        Isotope.LOGGER.debug("Applied {} batch edits to {}", operations.size(), tableId);
+        notifyListeners();
+        return operations.size();
+    }
+
+    /**
      * Undo the last operation on a table.
      * The operation is pushed to the redo stack.
      */

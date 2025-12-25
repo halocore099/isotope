@@ -16,7 +16,7 @@ import net.minecraft.network.chat.Component;
 public class ShortcutsScreen extends Screen {
 
     private static final int DIALOG_WIDTH = 320;
-    private static final int DIALOG_HEIGHT = 340;
+    private static final int DIALOG_HEIGHT = 380;
 
     private final Screen parent;
 
@@ -35,10 +35,14 @@ public class ShortcutsScreen extends Screen {
 
         // Entry operations
         {"Ctrl+N", "Add new item to selected pool"},
-        {"Delete", "Remove selected entry"},
+        {"Delete", "Remove selected entry(s)"},
         {"Ctrl+D", "Duplicate selected entry"},
         {"Ctrl+C", "Copy selected entry"},
         {"Ctrl+V", "Paste entry from clipboard"},
+
+        // Multi-selection
+        {"Ctrl+Click", "Toggle entry selection"},
+        {"Shift+Click", "Select range of entries"},
 
         // Navigation
         {"Tab", "Next field"},
@@ -111,10 +115,19 @@ public class ShortcutsScreen extends Screen {
         }
 
         y += 8;
+        graphics.drawString(font, "Multi-Selection", dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
+        y += 14;
+
+        for (int i = 12; i < 14; i++) {
+            renderShortcut(graphics, keyX, y, SHORTCUTS[i][0], SHORTCUTS[i][1]);
+            y += 12;
+        }
+
+        y += 8;
         graphics.drawString(font, "Navigation", dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
         y += 14;
 
-        for (int i = 12; i < SHORTCUTS.length; i++) {
+        for (int i = 14; i < SHORTCUTS.length; i++) {
             renderShortcut(graphics, keyX, y, SHORTCUTS[i][0], SHORTCUTS[i][1]);
             y += 12;
         }

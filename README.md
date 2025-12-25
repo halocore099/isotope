@@ -63,7 +63,19 @@ This makes it extremely difficult to:
 | Ctrl+S | Export as datapack |
 | Ctrl+Shift+F | Global search |
 | Ctrl+C / Ctrl+V | Copy / Paste entry |
-| Delete | Remove selected entry |
+| Delete | Remove selected entry(s) |
+| Ctrl+Click | Toggle entry selection |
+| Shift+Click | Select range of entries |
+
+### Entry Templates
+Quickly add pre-configured loot entries with the Template button:
+- **Common Item** - Weight 10, count 1-3
+- **Uncommon Item** - Weight 5, count 1-2
+- **Rare Item** - Weight 1, count 1
+- **Food Stack** - Weight 10, count 2-5
+- **Enchanted Gear** - Random enchantments
+- **Treasure** - Diamond with weight 1
+- And more...
 
 ## Installation
 
