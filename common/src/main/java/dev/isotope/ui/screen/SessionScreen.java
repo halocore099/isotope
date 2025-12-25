@@ -58,9 +58,6 @@ public class SessionScreen extends Screen {
     protected void init() {
         super.init();
 
-        // Load session list
-        refreshSessionList();
-
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
@@ -100,8 +97,8 @@ public class SessionScreen extends Screen {
             .build();
         addRenderableWidget(closeButton);
 
-        // Update button states
-        updateButtonStates();
+        // Load session list (after buttons are created)
+        refreshSessionList();
     }
 
     private void refreshSessionList() {
