@@ -93,6 +93,8 @@ Quickly add pre-configured loot entries with the Template button:
 
 ## Usage
 
+For a comprehensive guide, see [USAGE.md](USAGE.md).
+
 ### Getting Started
 1. Launch Minecraft with Isotope IDE installed
 2. Click **"ISOTOPE"** button at bottom of title screen
