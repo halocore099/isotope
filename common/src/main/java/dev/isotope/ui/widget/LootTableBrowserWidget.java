@@ -419,10 +419,16 @@ public class LootTableBrowserWidget extends AbstractWidget {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // Search box
         if (searchBox != null && searchBox.isMouseOver(mouseX, mouseY)) {
+            setFocused(true);  // Mark widget as focused for key events
             searchBox.setFocused(true);
             return searchBox.mouseClicked(mouseX, mouseY, button);
         } else if (searchBox != null) {
             searchBox.setFocused(false);
+        }
+
+        // If clicking elsewhere in this widget, still focus it but not the search box
+        if (isMouseOver(mouseX, mouseY)) {
+            setFocused(true);
         }
 
         int y = getY();

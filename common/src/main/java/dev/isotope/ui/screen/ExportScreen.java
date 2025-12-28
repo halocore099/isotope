@@ -7,12 +7,15 @@ import dev.isotope.export.ExportManager.ExportResult;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,6 +47,10 @@ public class ExportScreen extends IsotopeScreen {
     private Button exportDatapackButton;
     private Button closeButton;
 
+    // Export path
+    private EditBox exportPathBox;
+    private String defaultExportPath;
+
     public ExportScreen(@Nullable Screen parent) {
         super(TITLE, parent);
     }
@@ -69,6 +76,17 @@ public class ExportScreen extends IsotopeScreen {
             () -> exportSamples = !exportSamples);
         addCheckbox(checkboxX, startY + 100, checkboxWidth, "Timestamped Folder", timestampedFolder,
             () -> timestampedFolder = !timestampedFolder);
+
+        // Export path input
+        int pathY = startY + 130;
+        Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+        defaultExportPath = gameDir.resolve("isotope-export").toString();
+
+        exportPathBox = new EditBox(this.font, centerX - 150, pathY, 300, 20, Component.literal("Export Path"));
+        exportPathBox.setMaxLength(512);
+        exportPathBox.setValue(defaultExportPath);
+        exportPathBox.setHint(Component.literal("Export path..."));
+        this.addRenderableWidget(exportPathBox);
 
         // Export button
         int buttonY = this.height - 50;
@@ -121,12 +139,19 @@ public class ExportScreen extends IsotopeScreen {
         logMessages.clear();
         result = null;
 
+        String customPath = exportPathBox.getValue();
+        // Use null if it's the default path (let ExportManager use its default logic)
+        if (customPath.equals(defaultExportPath)) {
+            customPath = null;
+        }
+
         ExportConfig config = new ExportConfig(
             exportStructures,
             exportLootTables,
             exportLinks,
             exportSamples,
-            timestampedFolder
+            timestampedFolder,
+            customPath
         );
 
         CompletableFuture.supplyAsync(() ->
@@ -206,8 +231,11 @@ public class ExportScreen extends IsotopeScreen {
         // Section header
         graphics.drawCenteredString(this.font, "Export Options", centerX, 45, IsotopeColors.TEXT_SECONDARY);
 
-        // Log panel
-        int logY = 180;
+        // Export path label
+        graphics.drawString(this.font, "Export Path:", centerX - 150, 180, IsotopeColors.TEXT_MUTED, false);
+
+        // Log panel (below path input)
+        int logY = 220;
         int logHeight = this.height - logY - 60;
 
         graphics.fill(20, logY, this.width - 20, logY + logHeight, IsotopeColors.BACKGROUND_DARK);

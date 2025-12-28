@@ -70,7 +70,8 @@ public class ShortcutsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Render semi-transparent overlay instead of vanilla background
+        graphics.fill(0, 0, width, height, 0xC0101010);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;

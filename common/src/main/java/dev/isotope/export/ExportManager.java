@@ -10,9 +10,12 @@ import dev.isotope.observation.ObservationSession;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -170,8 +173,15 @@ public final class ExportManager {
     }
 
     private Path getExportDirectory(ExportConfig config) {
-        Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
-        Path baseDir = gameDir.resolve("isotope-export");
+        Path baseDir;
+
+        // Use custom path if provided
+        if (config.customPath() != null && !config.customPath().isBlank()) {
+            baseDir = Paths.get(config.customPath());
+        } else {
+            Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+            baseDir = gameDir.resolve("isotope-export");
+        }
 
         if (config.timestampedFolder()) {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
@@ -314,14 +324,21 @@ public final class ExportManager {
         boolean exportLootTables,
         boolean exportLinks,    // Legacy - not used
         boolean exportSamples,  // Legacy - not used
-        boolean timestampedFolder
+        boolean timestampedFolder,
+        @Nullable String customPath  // Custom export path (null = use default)
     ) {
         public static ExportConfig defaultConfig() {
-            return new ExportConfig(true, true, false, false, true);
+            return new ExportConfig(true, true, false, false, true, null);
         }
 
         public static ExportConfig minimal() {
-            return new ExportConfig(true, false, false, false, false);
+            return new ExportConfig(true, false, false, false, false, null);
+        }
+
+        // Constructor for backwards compatibility
+        public ExportConfig(boolean exportStructures, boolean exportLootTables,
+                           boolean exportLinks, boolean exportSamples, boolean timestampedFolder) {
+            this(exportStructures, exportLootTables, exportLinks, exportSamples, timestampedFolder, null);
         }
     }
 

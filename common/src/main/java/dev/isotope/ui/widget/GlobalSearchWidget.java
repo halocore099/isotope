@@ -14,6 +14,8 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
+import dev.isotope.Isotope;
+import dev.isotope.registry.LootTableRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -46,6 +48,14 @@ public class GlobalSearchWidget extends AbstractWidget {
     public GlobalSearchWidget(int x, int y, int width, int height, Consumer<ResourceLocation> onTableSelected) {
         super(x, y, width, height, Component.literal("Global Search"));
         this.onTableSelected = onTableSelected;
+
+        // Populate available namespaces from all loot tables
+        availableNamespaces = new ArrayList<>(LootTableRegistry.getInstance().getNamespaces());
+        availableNamespaces.sort((a, b) -> {
+            if ("minecraft".equals(a)) return -1;
+            if ("minecraft".equals(b)) return 1;
+            return a.compareTo(b);
+        });
     }
 
     @Override
@@ -249,23 +259,43 @@ public class GlobalSearchWidget extends AbstractWidget {
      * Focus the search box.
      */
     public void focusSearch() {
-        if (searchBox != null) {
-            searchBox.setFocused(true);
+        // Focus both the widget (for key event routing) and the search box
+        setFocused(true);
+
+        // Create searchBox if it doesn't exist yet (called before first render)
+        if (searchBox == null) {
+            Font font = Minecraft.getInstance().font;
+            int searchY = getY() + 24;
+            searchBox = new EditBox(font, getX() + 8, searchY, width - 16, SEARCH_HEIGHT - 4,
+                Component.literal("Search"));
+            searchBox.setHint(Component.literal("Search items..."));
+            searchBox.setBordered(true);
+            searchBox.setResponder(this::onSearch);
         }
+
+        searchBox.setFocused(true);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!isMouseOver(mouseX, mouseY)) {
             showNamespaceDropdown = false;
+            setFocused(false);
+            if (searchBox != null) searchBox.setFocused(false);
             return false;
         }
+
+        // Mark this widget as focused so it receives key events
+        setFocused(true);
 
         // Check search box click
         if (searchBox != null && searchBox.isMouseOver(mouseX, mouseY)) {
             showNamespaceDropdown = false;
+            searchBox.setFocused(true);
             searchBox.mouseClicked(mouseX, mouseY, button);
             return true;
+        } else if (searchBox != null) {
+            searchBox.setFocused(false);
         }
 
         // Check filter button click

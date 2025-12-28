@@ -4,7 +4,6 @@ import dev.isotope.Isotope;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableSerializer;
-import dev.isotope.export.ExportManager;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.session.EditorSession;
 import dev.isotope.session.SessionManager;
@@ -31,9 +30,6 @@ import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Unified loot table editor screen.
@@ -80,9 +76,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     // Tab management
     private final TabManager tabManager = new TabManager();
-
-    // State
-    private boolean exporting = false;
 
     // Edit listener for updating button states
     private final LootEditManager.EditListener editListener = this::updateButtonStates;
@@ -471,39 +464,10 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void onExport(Button button) {
-        if (exporting) return;
-
-        int editCount = LootEditManager.getInstance().getEditedTableCount();
-        if (editCount == 0) {
-            IsotopeToast.info("Export", "No edits to export");
-            return;
+        // Open export screen with path selection options
+        if (minecraft != null) {
+            minecraft.setScreen(new ExportScreen(this));
         }
-
-        exporting = true;
-        exportButton.active = false;
-
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String packName = "isotope_edits_" + timestamp;
-
-        CompletableFuture.supplyAsync(() ->
-            ExportManager.getInstance().exportEditedAsDatapack(packName, msg ->
-                Isotope.LOGGER.info("[Export] {}", msg))
-        ).thenAccept(result -> {
-            if (minecraft != null) {
-                minecraft.execute(() -> {
-                    exporting = false;
-                    exportButton.active = true;
-
-                    if (result.success()) {
-                        IsotopeToast.success("Export Complete", editCount + " table(s) → " + packName);
-                        Isotope.LOGGER.info("Exported to: {}", result.exportDirectory());
-                    } else {
-                        IsotopeToast.error("Export Failed", result.error());
-                        Isotope.LOGGER.error("Export failed: {}", result.error());
-                    }
-                });
-            }
-        });
     }
 
     @Override
@@ -531,12 +495,35 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // If global search is visible, give it priority for clicks
+        if (searchVisible && searchWidget.isMouseOver(mouseX, mouseY)) {
+            if (searchWidget.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+        }
+        // If clicked outside global search, close it
+        if (searchVisible && !searchWidget.isMouseOver(mouseX, mouseY)) {
+            searchVisible = false;
+            searchWidget.visible = false;
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Delegate to centralized keyboard shortcuts handler
+        // First, let focused widgets handle the key (for text input)
+        // This must happen BEFORE shortcuts, otherwise backspace/delete get stolen
+        if (super.keyPressed(keyCode, scanCode, modifiers)) {
+            return true;
+        }
+
+        // Then delegate to centralized keyboard shortcuts handler
         if (KeyboardShortcuts.handle(keyCode, modifiers, this)) {
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return false;
     }
 
     // ===== ShortcutContext Implementation =====
@@ -567,6 +554,8 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         searchWidget.visible = searchVisible;
         if (searchVisible) {
             searchWidget.focusSearch();
+            // Tell the Screen to route events to this widget
+            this.setFocused(searchWidget);
         }
     }
 
