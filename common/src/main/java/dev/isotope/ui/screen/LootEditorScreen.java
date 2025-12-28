@@ -513,7 +513,14 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // First, let focused widgets handle the key (for text input)
+        // First, check if edit panel is in inline editing mode
+        if (editPanel != null && editPanel.isEditing()) {
+            if (editPanel.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
+        }
+
+        // Then let focused widgets handle the key (for text input)
         // This must happen BEFORE shortcuts, otherwise backspace/delete get stolen
         if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
@@ -524,6 +531,17 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        // Route to edit panel if it's in inline editing mode
+        if (editPanel != null && editPanel.isEditing()) {
+            if (editPanel.charTyped(chr, modifiers)) {
+                return true;
+            }
+        }
+        return super.charTyped(chr, modifiers);
     }
 
     // ===== ShortcutContext Implementation =====

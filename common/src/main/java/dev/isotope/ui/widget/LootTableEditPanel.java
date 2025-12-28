@@ -81,6 +81,15 @@ public class LootTableEditPanel extends AbstractWidget {
     private boolean batchWeightHovered = false;
     private boolean batchDeleteHovered = false;
 
+    // Inline editing state
+    private enum EditingField { NONE, WEIGHT, COUNT_MIN, COUNT_MAX }
+    private EditingField editingField = EditingField.NONE;
+    private int editingPoolIdx = -1;
+    private int editingEntryIdx = -1;
+    private String editText = "";
+    private int editCursorPos = 0;
+    private int editFieldX, editFieldY, editFieldWidth;  // For rendering
+
     /**
      * Key for identifying a specific entry (pool index, entry index).
      */
@@ -471,14 +480,31 @@ public class LootTableEditPanel extends AbstractWidget {
 
         // Weight edit box
         int weightBoxWidth = 30;
+        boolean weightEditing = editingField == EditingField.WEIGHT &&
+            editingPoolIdx == poolIdx && editingEntryIdx == entryIdx;
         boolean weightHovered = mouseX >= x && mouseX < x + weightBoxWidth &&
             mouseY >= y + 3 && mouseY < y + 19;
-        graphics.fill(x, y + 3, x + weightBoxWidth, y + 19, weightHovered ? 0xFF404040 : 0xFF303030);
-        graphics.renderOutline(x, y + 3, weightBoxWidth, 16, 0xFF505050);
 
-        String weightStr = String.valueOf(entry.weight());
-        int weightTextX = x + (weightBoxWidth - font.width(weightStr)) / 2;
-        graphics.drawString(font, weightStr, weightTextX, y + 7, IsotopeColors.TEXT_PRIMARY, false);
+        int weightBgColor = weightEditing ? 0xFF2a3a4a : (weightHovered ? 0xFF404040 : 0xFF303030);
+        int weightBorderColor = weightEditing ? IsotopeColors.ACCENT_GOLD : 0xFF505050;
+        graphics.fill(x, y + 3, x + weightBoxWidth, y + 19, weightBgColor);
+        graphics.renderOutline(x, y + 3, weightBoxWidth, 16, weightBorderColor);
+
+        if (weightEditing) {
+            // Show edit text with cursor
+            int textX = x + (weightBoxWidth - font.width(editText)) / 2;
+            graphics.drawString(font, editText, textX, y + 7, IsotopeColors.TEXT_PRIMARY, false);
+            // Blinking cursor
+            if ((System.currentTimeMillis() / 500) % 2 == 0) {
+                String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
+                int cursorX = textX + font.width(beforeCursor);
+                graphics.fill(cursorX, y + 5, cursorX + 1, y + 16, IsotopeColors.TEXT_PRIMARY);
+            }
+        } else {
+            String weightStr = String.valueOf(entry.weight());
+            int weightTextX = x + (weightBoxWidth - font.width(weightStr)) / 2;
+            graphics.drawString(font, weightStr, weightTextX, y + 7, IsotopeColors.TEXT_PRIMARY, false);
+        }
         x += weightBoxWidth + 8;
 
         // Quantity (from set_count function)
@@ -489,13 +515,29 @@ public class LootTableEditPanel extends AbstractWidget {
         // Min count
         int minCount = (int) countProvider.getMin();
         int countBoxWidth = 24;
+        boolean minEditing = editingField == EditingField.COUNT_MIN &&
+            editingPoolIdx == poolIdx && editingEntryIdx == entryIdx;
         boolean minHovered = mouseX >= x && mouseX < x + countBoxWidth &&
             mouseY >= y + 3 && mouseY < y + 19;
-        graphics.fill(x, y + 3, x + countBoxWidth, y + 19, minHovered ? 0xFF404040 : 0xFF303030);
-        graphics.renderOutline(x, y + 3, countBoxWidth, 16, 0xFF505050);
-        String minStr = String.valueOf(minCount);
-        graphics.drawString(font, minStr, x + (countBoxWidth - font.width(minStr)) / 2, y + 7,
-            IsotopeColors.TEXT_PRIMARY, false);
+
+        int minBgColor = minEditing ? 0xFF2a3a4a : (minHovered ? 0xFF404040 : 0xFF303030);
+        int minBorderColor = minEditing ? IsotopeColors.ACCENT_GOLD : 0xFF505050;
+        graphics.fill(x, y + 3, x + countBoxWidth, y + 19, minBgColor);
+        graphics.renderOutline(x, y + 3, countBoxWidth, 16, minBorderColor);
+
+        if (minEditing) {
+            int textX = x + (countBoxWidth - font.width(editText)) / 2;
+            graphics.drawString(font, editText, textX, y + 7, IsotopeColors.TEXT_PRIMARY, false);
+            if ((System.currentTimeMillis() / 500) % 2 == 0) {
+                String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
+                int cursorX = textX + font.width(beforeCursor);
+                graphics.fill(cursorX, y + 5, cursorX + 1, y + 16, IsotopeColors.TEXT_PRIMARY);
+            }
+        } else {
+            String minStr = String.valueOf(minCount);
+            graphics.drawString(font, minStr, x + (countBoxWidth - font.width(minStr)) / 2, y + 7,
+                IsotopeColors.TEXT_PRIMARY, false);
+        }
         x += countBoxWidth + 2;
 
         graphics.drawString(font, "-", x, y + 7, IsotopeColors.TEXT_MUTED, false);
@@ -503,13 +545,29 @@ public class LootTableEditPanel extends AbstractWidget {
 
         // Max count
         int maxCount = (int) countProvider.getMax();
+        boolean maxEditing = editingField == EditingField.COUNT_MAX &&
+            editingPoolIdx == poolIdx && editingEntryIdx == entryIdx;
         boolean maxHovered = mouseX >= x && mouseX < x + countBoxWidth &&
             mouseY >= y + 3 && mouseY < y + 19;
-        graphics.fill(x, y + 3, x + countBoxWidth, y + 19, maxHovered ? 0xFF404040 : 0xFF303030);
-        graphics.renderOutline(x, y + 3, countBoxWidth, 16, 0xFF505050);
-        String maxStr = String.valueOf(maxCount);
-        graphics.drawString(font, maxStr, x + (countBoxWidth - font.width(maxStr)) / 2, y + 7,
-            IsotopeColors.TEXT_PRIMARY, false);
+
+        int maxBgColor = maxEditing ? 0xFF2a3a4a : (maxHovered ? 0xFF404040 : 0xFF303030);
+        int maxBorderColor = maxEditing ? IsotopeColors.ACCENT_GOLD : 0xFF505050;
+        graphics.fill(x, y + 3, x + countBoxWidth, y + 19, maxBgColor);
+        graphics.renderOutline(x, y + 3, countBoxWidth, 16, maxBorderColor);
+
+        if (maxEditing) {
+            int textX = x + (countBoxWidth - font.width(editText)) / 2;
+            graphics.drawString(font, editText, textX, y + 7, IsotopeColors.TEXT_PRIMARY, false);
+            if ((System.currentTimeMillis() / 500) % 2 == 0) {
+                String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
+                int cursorX = textX + font.width(beforeCursor);
+                graphics.fill(cursorX, y + 5, cursorX + 1, y + 16, IsotopeColors.TEXT_PRIMARY);
+            }
+        } else {
+            String maxStr = String.valueOf(maxCount);
+            graphics.drawString(font, maxStr, x + (countBoxWidth - font.width(maxStr)) / 2, y + 7,
+                IsotopeColors.TEXT_PRIMARY, false);
+        }
         x += countBoxWidth + 10;
 
         // Remove button
@@ -742,36 +800,85 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     private void openWeightEditor(int poolIdx, int entryIdx, int currentWeight) {
-        // For now, simple increment/decrement via keyboard
-        // TODO: Open a small popup or use inline editing
-        Isotope.LOGGER.info("Edit weight for pool {} entry {} (current: {})", poolIdx, entryIdx, currentWeight);
-
-        // Simple: cycle through common weights
-        int newWeight = currentWeight + 5;
-        if (newWeight > 50) newWeight = 1;
-
-        LootEditOperation op = new LootEditOperation.ModifyEntryWeight(poolIdx, entryIdx, newWeight);
-        LootEditManager.getInstance().applyOperation(tableId, op);
-        refreshFromEdits();
+        // Start inline editing
+        editingField = EditingField.WEIGHT;
+        editingPoolIdx = poolIdx;
+        editingEntryIdx = entryIdx;
+        editText = String.valueOf(currentWeight);
+        editCursorPos = editText.length();
     }
 
     private void openCountEditor(int poolIdx, int entryIdx, int min, int max, boolean editMin) {
-        Isotope.LOGGER.info("Edit count for pool {} entry {} ({}-{})", poolIdx, entryIdx, min, max);
+        // Start inline editing
+        editingField = editMin ? EditingField.COUNT_MIN : EditingField.COUNT_MAX;
+        editingPoolIdx = poolIdx;
+        editingEntryIdx = entryIdx;
+        editText = String.valueOf(editMin ? min : max);
+        editCursorPos = editText.length();
+    }
 
-        // Simple: increment
-        if (editMin) {
-            min = Math.min(min + 1, max);
-        } else {
-            max = max + 1;
+    private void commitEdit() {
+        if (editingField == EditingField.NONE || tableId == null) return;
+
+        try {
+            int value = Integer.parseInt(editText);
+            if (value < 1) value = 1;
+            if (value > 9999) value = 9999;
+
+            LootTableStructure display = editedStructure != null ? editedStructure : structure;
+            if (display == null) {
+                cancelEdit();
+                return;
+            }
+
+            if (editingField == EditingField.WEIGHT) {
+                LootEditOperation op = new LootEditOperation.ModifyEntryWeight(editingPoolIdx, editingEntryIdx, value);
+                LootEditManager.getInstance().applyOperation(tableId, op);
+            } else {
+                // Count editing
+                LootPool pool = display.pools().get(editingPoolIdx);
+                LootEntry entry = pool.entries().get(editingEntryIdx);
+                NumberProvider currentCount = getCountFromEntry(entry);
+                int min = (int) currentCount.getMin();
+                int max = (int) currentCount.getMax();
+
+                if (editingField == EditingField.COUNT_MIN) {
+                    min = value;
+                    if (min > max) max = min;  // Adjust max if min exceeds it
+                } else {
+                    max = value;
+                    if (max < min) min = max;  // Adjust min if max is below it
+                }
+
+                NumberProvider newCount = min == max
+                    ? new NumberProvider.Constant(min)
+                    : new NumberProvider.Uniform(min, max);
+
+                LootEditOperation op = new LootEditOperation.SetItemCount(editingPoolIdx, editingEntryIdx, newCount);
+                LootEditManager.getInstance().applyOperation(tableId, op);
+            }
+
+            refreshFromEdits();
+        } catch (NumberFormatException e) {
+            // Invalid input, just cancel
         }
 
-        NumberProvider newCount = min == max
-            ? new NumberProvider.Constant(min)
-            : new NumberProvider.Uniform(min, max);
+        cancelEdit();
+    }
 
-        LootEditOperation op = new LootEditOperation.SetItemCount(poolIdx, entryIdx, newCount);
-        LootEditManager.getInstance().applyOperation(tableId, op);
-        refreshFromEdits();
+    private void cancelEdit() {
+        editingField = EditingField.NONE;
+        editingPoolIdx = -1;
+        editingEntryIdx = -1;
+        editText = "";
+        editCursorPos = 0;
+    }
+
+    /**
+     * Check if currently editing a field.
+     */
+    public boolean isEditing() {
+        return editingField != EditingField.NONE;
     }
 
     private void openAddItemDialog(int poolIdx) {
@@ -953,6 +1060,78 @@ public class LootTableEditPanel extends AbstractWidget {
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));
             return true;
         }
+        return false;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (editingField == EditingField.NONE) return false;
+
+        // Enter - commit
+        if (keyCode == 257 || keyCode == 335) { // Enter or numpad enter
+            commitEdit();
+            return true;
+        }
+
+        // Escape - cancel
+        if (keyCode == 256) {
+            cancelEdit();
+            return true;
+        }
+
+        // Backspace
+        if (keyCode == 259 && editCursorPos > 0) {
+            editText = editText.substring(0, editCursorPos - 1) + editText.substring(editCursorPos);
+            editCursorPos--;
+            return true;
+        }
+
+        // Delete
+        if (keyCode == 261 && editCursorPos < editText.length()) {
+            editText = editText.substring(0, editCursorPos) + editText.substring(editCursorPos + 1);
+            return true;
+        }
+
+        // Left arrow
+        if (keyCode == 263 && editCursorPos > 0) {
+            editCursorPos--;
+            return true;
+        }
+
+        // Right arrow
+        if (keyCode == 262 && editCursorPos < editText.length()) {
+            editCursorPos++;
+            return true;
+        }
+
+        // Home
+        if (keyCode == 268) {
+            editCursorPos = 0;
+            return true;
+        }
+
+        // End
+        if (keyCode == 269) {
+            editCursorPos = editText.length();
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        if (editingField == EditingField.NONE) return false;
+
+        // Only allow digits (no decimals)
+        if (Character.isDigit(chr)) {
+            if (editText.length() < 4) { // Max 4 digits (9999)
+                editText = editText.substring(0, editCursorPos) + chr + editText.substring(editCursorPos);
+                editCursorPos++;
+            }
+            return true;
+        }
+
         return false;
     }
 

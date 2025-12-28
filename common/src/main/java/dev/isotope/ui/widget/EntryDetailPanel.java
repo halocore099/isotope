@@ -54,16 +54,19 @@ public class EntryDetailPanel extends AbstractWidget {
     private java.util.function.Consumer<Integer> onRemoveCondition;  // conditionIndex
 
     // Button bounds for click detection
-    private int weightMinusBtnX, weightMinusBtnY;
-    private int weightPlusBtnX, weightPlusBtnY;
-    private int countMinusBtnX, countMinusBtnY;
-    private int countPlusBtnX, countPlusBtnY;
     private int deleteBtnX, deleteBtnY, deleteBtnWidth;
     private int addFunctionBtnX, addFunctionBtnY, addFunctionBtnWidth;
     private int addConditionBtnX, addConditionBtnY, addConditionBtnWidth;
     private final java.util.List<int[]> removeFunctionBtns = new java.util.ArrayList<>();
     private final java.util.List<int[]> removeConditionBtns = new java.util.ArrayList<>();
     private static final int BTN_SIZE = 14;
+
+    // Inline edit fields for weight and count
+    private InlineEditField weightField;
+    private InlineEditField countMinField;  // For constant or uniform min
+    private InlineEditField countMaxField;  // For uniform max only
+    private boolean showCountMaxField = false;  // True for uniform distributions
+    private int weightFieldY, countFieldY;  // Y positions for fields (for scroll adjustment)
 
     public EntryDetailPanel(int x, int y, int width, int height) {
         super(x, y, width, height, Component.empty());
@@ -103,6 +106,72 @@ public class EntryDetailPanel extends AbstractWidget {
         this.entryIndex = entryIndex;
         this.scrollOffset = 0;
         calculateContentHeight();
+        initEditFields();
+    }
+
+    private void initEditFields() {
+        if (entry == null) {
+            weightField = null;
+            countMinField = null;
+            countMaxField = null;
+            showCountMaxField = false;
+            return;
+        }
+
+        // Weight field - always integer, min 1
+        weightField = new InlineEditField(0, 0, 40, 14, entry.weight());
+        weightField.setRange(1, 9999);
+        weightField.setOnValueChanged(newWeight -> {
+            if (onWeightChanged != null) {
+                onWeightChanged.accept(entryIndex, newWeight);
+            }
+        });
+
+        // Count fields - depends on current count type
+        if (entry.isItem()) {
+            LootFunction setCount = entry.getSetCountFunction();
+            NumberProvider count = setCount != null ? setCount.getCountAsNumberProvider() : NumberProvider.constant(1);
+
+            if (count instanceof NumberProvider.Constant c) {
+                countMinField = new InlineEditField(0, 0, 40, 14, (int) c.value());
+                countMinField.setRange(1, 9999);
+                countMinField.setOnValueChanged(newCount -> {
+                    if (onCountChanged != null) {
+                        onCountChanged.accept(entryIndex, NumberProvider.constant(newCount));
+                    }
+                });
+                showCountMaxField = false;
+                countMaxField = null;
+            } else if (count instanceof NumberProvider.Uniform u) {
+                countMinField = new InlineEditField(0, 0, 35, 14, (int) u.min());
+                countMinField.setRange(1, 9999);
+                countMinField.setOnValueChanged(newMin -> {
+                    if (onCountChanged != null) {
+                        int max = countMaxField != null ? countMaxField.getValue() : newMin;
+                        onCountChanged.accept(entryIndex, NumberProvider.uniform(newMin, Math.max(newMin, max)));
+                    }
+                });
+
+                countMaxField = new InlineEditField(0, 0, 35, 14, (int) u.max());
+                countMaxField.setRange(1, 9999);
+                countMaxField.setOnValueChanged(newMax -> {
+                    if (onCountChanged != null) {
+                        int min = countMinField != null ? countMinField.getValue() : 1;
+                        onCountChanged.accept(entryIndex, NumberProvider.uniform(min, Math.max(min, newMax)));
+                    }
+                });
+                showCountMaxField = true;
+            } else {
+                // Binomial - just show display, no edit fields for now
+                countMinField = null;
+                countMaxField = null;
+                showCountMaxField = false;
+            }
+        } else {
+            countMinField = null;
+            countMaxField = null;
+            showCountMaxField = false;
+        }
     }
 
     public void clearEntry() {
@@ -167,7 +236,7 @@ public class EntryDetailPanel extends AbstractWidget {
         // Enable scissor for scrolling
         graphics.enableScissor(getX() + 2, getY() + 2, getX() + width - 2, getY() + height - 2);
 
-        renderEntryDetails(graphics);
+        renderEntryDetails(graphics, mouseX, mouseY, partialTick);
 
         graphics.disableScissor();
 
@@ -196,7 +265,7 @@ public class EntryDetailPanel extends AbstractWidget {
             IsotopeColors.TEXT_MUTED, false);
     }
 
-    private void renderEntryDetails(GuiGraphics graphics) {
+    private void renderEntryDetails(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Minecraft.getInstance().font;
         int lineHeight = font.lineHeight + 2;
         int x = getX() + 6;
@@ -227,39 +296,37 @@ public class EntryDetailPanel extends AbstractWidget {
         }
         y += lineHeight;
 
-        // Weight with +/- buttons
+        // Weight with inline edit field
         graphics.drawString(font, "Weight:", x, y, IsotopeColors.TEXT_MUTED, false);
-        graphics.drawString(font, String.valueOf(entry.weight()), x + 50, y,
-            IsotopeColors.ACCENT_GREEN, false);
-
-        // Weight buttons (only if editing enabled)
-        if (onWeightChanged != null) {
-            int btnY = y - 2;
-            weightMinusBtnX = x + 75;
-            weightMinusBtnY = btnY;
-            renderSmallButton(graphics, weightMinusBtnX, weightMinusBtnY, "-");
-
-            weightPlusBtnX = x + 92;
-            weightPlusBtnY = btnY;
-            renderSmallButton(graphics, weightPlusBtnX, weightPlusBtnY, "+");
+        weightFieldY = y - scrollOffset;  // Store for scroll adjustment
+        if (weightField != null && onWeightChanged != null) {
+            weightField.setX(x + 50);
+            weightField.setY(y);
+            weightField.render(graphics, mouseX, mouseY, partialTick);
+        } else {
+            graphics.drawString(font, String.valueOf(entry.weight()), x + 50, y,
+                IsotopeColors.ACCENT_GREEN, false);
         }
         y += lineHeight;
 
-        // Count with +/- buttons
+        // Count with inline edit field(s)
         graphics.drawString(font, "Count:", x, y, IsotopeColors.TEXT_MUTED, false);
-        graphics.drawString(font, entry.getCountString(), x + 50, y,
-            IsotopeColors.ACCENT_AQUA, false);
+        countFieldY = y - scrollOffset;  // Store for scroll adjustment
+        if (countMinField != null && onCountChanged != null && entry.isItem()) {
+            countMinField.setX(x + 50);
+            countMinField.setY(y);
+            countMinField.render(graphics, mouseX, mouseY, partialTick);
 
-        // Count buttons (only if editing enabled and is item entry)
-        if (onCountChanged != null && entry.isItem()) {
-            int btnY = y - 2;
-            countMinusBtnX = x + 85;
-            countMinusBtnY = btnY;
-            renderSmallButton(graphics, countMinusBtnX, countMinusBtnY, "-");
-
-            countPlusBtnX = x + 102;
-            countPlusBtnY = btnY;
-            renderSmallButton(graphics, countPlusBtnX, countPlusBtnY, "+");
+            if (showCountMaxField && countMaxField != null) {
+                // Show "min - max" layout
+                graphics.drawString(font, "-", x + 92, y + 3, IsotopeColors.TEXT_MUTED, false);
+                countMaxField.setX(x + 102);
+                countMaxField.setY(y);
+                countMaxField.render(graphics, mouseX, mouseY, partialTick);
+            }
+        } else {
+            graphics.drawString(font, entry.getCountString(), x + 50, y,
+                IsotopeColors.ACCENT_AQUA, false);
         }
         y += lineHeight;
 
@@ -492,39 +559,46 @@ public class EntryDetailPanel extends AbstractWidget {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!isMouseOver(mouseX, mouseY) || button != 0 || entry == null) return false;
 
-        // Check weight buttons
-        if (onWeightChanged != null) {
-            if (isInButton(mouseX, mouseY, weightMinusBtnX, weightMinusBtnY)) {
-                int newWeight = Math.max(1, entry.weight() - 1);
-                onWeightChanged.accept(entryIndex, newWeight);
-                return true;
-            }
-            if (isInButton(mouseX, mouseY, weightPlusBtnX, weightPlusBtnY)) {
-                int newWeight = entry.weight() + 1;
-                onWeightChanged.accept(entryIndex, newWeight);
-                return true;
+        // First, unfocus any currently editing fields if clicking outside them
+        boolean clickedOnField = false;
+
+        // Check weight field
+        if (weightField != null && onWeightChanged != null) {
+            if (weightField.isMouseOver(mouseX, mouseY)) {
+                weightField.mouseClicked(mouseX, mouseY, button);
+                clickedOnField = true;
+                // Unfocus other fields
+                if (countMinField != null) countMinField.setFocused(false);
+                if (countMaxField != null) countMaxField.setFocused(false);
+            } else if (weightField.isEditing()) {
+                weightField.setFocused(false);
             }
         }
 
-        // Check count buttons (for item entries)
-        if (onCountChanged != null && entry.isItem()) {
-            if (isInButton(mouseX, mouseY, countMinusBtnX, countMinusBtnY)) {
-                // Decrease min count
-                LootFunction setCount = entry.getSetCountFunction();
-                NumberProvider current = setCount != null ? setCount.getCountAsNumberProvider() : NumberProvider.constant(1);
-                NumberProvider newCount = decreaseCount(current);
-                onCountChanged.accept(entryIndex, newCount);
-                return true;
-            }
-            if (isInButton(mouseX, mouseY, countPlusBtnX, countPlusBtnY)) {
-                // Increase max count
-                LootFunction setCount = entry.getSetCountFunction();
-                NumberProvider current = setCount != null ? setCount.getCountAsNumberProvider() : NumberProvider.constant(1);
-                NumberProvider newCount = increaseCount(current);
-                onCountChanged.accept(entryIndex, newCount);
-                return true;
+        // Check count fields
+        if (countMinField != null && onCountChanged != null && entry.isItem()) {
+            if (countMinField.isMouseOver(mouseX, mouseY)) {
+                countMinField.mouseClicked(mouseX, mouseY, button);
+                clickedOnField = true;
+                if (weightField != null) weightField.setFocused(false);
+                if (countMaxField != null) countMaxField.setFocused(false);
+            } else if (countMinField.isEditing()) {
+                countMinField.setFocused(false);
             }
         }
+
+        if (countMaxField != null && showCountMaxField && onCountChanged != null) {
+            if (countMaxField.isMouseOver(mouseX, mouseY)) {
+                countMaxField.mouseClicked(mouseX, mouseY, button);
+                clickedOnField = true;
+                if (weightField != null) weightField.setFocused(false);
+                if (countMinField != null) countMinField.setFocused(false);
+            } else if (countMaxField.isEditing()) {
+                countMaxField.setFocused(false);
+            }
+        }
+
+        if (clickedOnField) return true;
 
         // Check delete button
         if (onDeleteEntry != null && deleteBtnWidth > 0) {
@@ -578,32 +652,43 @@ public class EntryDetailPanel extends AbstractWidget {
         return false;
     }
 
-    private boolean isInButton(double mouseX, double mouseY, int btnX, int btnY) {
-        return mouseX >= btnX && mouseX < btnX + BTN_SIZE
-            && mouseY >= btnY && mouseY < btnY + BTN_SIZE;
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Route to active edit field
+        if (weightField != null && weightField.isEditing()) {
+            return weightField.keyPressed(keyCode, scanCode, modifiers);
+        }
+        if (countMinField != null && countMinField.isEditing()) {
+            return countMinField.keyPressed(keyCode, scanCode, modifiers);
+        }
+        if (countMaxField != null && countMaxField.isEditing()) {
+            return countMaxField.keyPressed(keyCode, scanCode, modifiers);
+        }
+        return false;
     }
 
-    private NumberProvider decreaseCount(NumberProvider current) {
-        return switch (current) {
-            case NumberProvider.Constant c -> NumberProvider.constant(Math.max(1, c.value() - 1));
-            case NumberProvider.Uniform u -> {
-                float newMin = Math.max(1, u.min() - 1);
-                float newMax = Math.max(newMin, u.max() - 1);
-                if (newMin == newMax) {
-                    yield NumberProvider.constant(newMin);
-                }
-                yield NumberProvider.uniform(newMin, newMax);
-            }
-            case NumberProvider.Binomial b -> NumberProvider.binomial(Math.max(1, b.n() - 1), b.p());
-        };
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        // Route to active edit field
+        if (weightField != null && weightField.isEditing()) {
+            return weightField.charTyped(chr, modifiers);
+        }
+        if (countMinField != null && countMinField.isEditing()) {
+            return countMinField.charTyped(chr, modifiers);
+        }
+        if (countMaxField != null && countMaxField.isEditing()) {
+            return countMaxField.charTyped(chr, modifiers);
+        }
+        return false;
     }
 
-    private NumberProvider increaseCount(NumberProvider current) {
-        return switch (current) {
-            case NumberProvider.Constant c -> NumberProvider.constant(c.value() + 1);
-            case NumberProvider.Uniform u -> NumberProvider.uniform(u.min(), u.max() + 1);
-            case NumberProvider.Binomial b -> NumberProvider.binomial(b.n() + 1, b.p());
-        };
+    /**
+     * Check if any edit field is currently being edited.
+     */
+    public boolean isEditingField() {
+        return (weightField != null && weightField.isEditing())
+            || (countMinField != null && countMinField.isEditing())
+            || (countMaxField != null && countMaxField.isEditing());
     }
 
     @Override

@@ -467,11 +467,29 @@ public class LootTableEditorScreen extends IsotopeScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // First, route to detail panel if it's editing a field
+        if (detailPanel != null && detailPanel.isEditingField()) {
+            if (detailPanel.keyPressed(keyCode, scanCode, modifiers)) {
+                return true;
+            }
+        }
+
         // Ctrl+Z for undo
         if (keyCode == 90 && (modifiers & 2) != 0) { // 'Z' with Ctrl
             undoLastEdit();
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        // Route to detail panel if it's editing a field
+        if (detailPanel != null && detailPanel.isEditingField()) {
+            if (detailPanel.charTyped(chr, modifiers)) {
+                return true;
+            }
+        }
+        return super.charTyped(chr, modifiers);
     }
 }
