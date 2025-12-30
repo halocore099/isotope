@@ -1,16 +1,23 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.data.EntryTemplate;
+import dev.isotope.data.TemplateManager;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -31,6 +38,7 @@ public class TemplatePickerScreen extends Screen {
 
     private int scrollOffset = 0;
     private int hoveredTemplate = -1;
+    private List<EntryTemplate> templates = new ArrayList<>();
 
     public TemplatePickerScreen(@Nullable Screen parent, Consumer<EntryTemplate> onSelect) {
         super(Component.literal("Select Template"));
@@ -38,18 +46,34 @@ public class TemplatePickerScreen extends Screen {
         this.onSelect = onSelect;
     }
 
+    private void refreshTemplates() {
+        templates = TemplateManager.getInstance().getAllTemplates();
+    }
+
     @Override
     protected void init() {
         super.init();
 
+        refreshTemplates();
+
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
+
+        // Manage Templates button
+        addRenderableWidget(Button.builder(Component.literal("Manage..."), btn -> openManageTemplates())
+            .pos(dialogX + PADDING, dialogY + DIALOG_HEIGHT - 30)
+            .size(80, 20)
+            .build());
 
         // Cancel button
         addRenderableWidget(Button.builder(Component.literal("Cancel"), btn -> onClose())
             .pos(dialogX + DIALOG_WIDTH - 80, dialogY + DIALOG_HEIGHT - 30)
             .size(70, 20)
             .build());
+    }
+
+    private void openManageTemplates() {
+        minecraft.setScreen(new TemplateManagerScreen(this));
     }
 
     @Override
@@ -74,21 +98,22 @@ public class TemplatePickerScreen extends Screen {
         // Scissor for scrolling
         graphics.enableScissor(dialogX + PADDING, listY, dialogX + PADDING + listWidth, listY + listHeight);
 
-        List<EntryTemplate> templates = EntryTemplate.BUILTIN_TEMPLATES;
         hoveredTemplate = -1;
+        TemplateManager manager = TemplateManager.getInstance();
 
         String currentCategory = null;
         int y = listY - scrollOffset;
 
         for (int i = 0; i < templates.size(); i++) {
             EntryTemplate template = templates.get(i);
+            boolean isCustom = !manager.isBuiltIn(template);
 
             // Category header
             if (!template.category().equals(currentCategory)) {
                 currentCategory = template.category();
                 if (y > listY - 20 && y < listY + listHeight) {
-                    graphics.drawString(font, currentCategory, dialogX + PADDING, y + 4,
-                        IsotopeColors.TEXT_SECONDARY, false);
+                    int catColor = isCustom ? 0xFF8a6a4a : IsotopeColors.TEXT_SECONDARY;
+                    graphics.drawString(font, currentCategory, dialogX + PADDING, y + 4, catColor, false);
                 }
                 y += 16;
             }
@@ -102,34 +127,51 @@ public class TemplatePickerScreen extends Screen {
                     hoveredTemplate = i;
                     graphics.fill(dialogX + PADDING, y, dialogX + PADDING + listWidth, y + TEMPLATE_HEIGHT - 4, 0xFF2a3a4a);
                 } else {
-                    graphics.fill(dialogX + PADDING, y, dialogX + PADDING + listWidth, y + TEMPLATE_HEIGHT - 4, 0xFF252525);
+                    int bgColor = isCustom ? 0xFF2a2a25 : 0xFF252525;
+                    graphics.fill(dialogX + PADDING, y, dialogX + PADDING + listWidth, y + TEMPLATE_HEIGHT - 4, bgColor);
                 }
-                graphics.renderOutline(dialogX + PADDING, y, listWidth, TEMPLATE_HEIGHT - 4, 0xFF3a3a3a);
+                int outlineColor = isCustom ? 0xFF4a4a3a : 0xFF3a3a3a;
+                graphics.renderOutline(dialogX + PADDING, y, listWidth, TEMPLATE_HEIGHT - 4, outlineColor);
+
+                int textX = dialogX + PADDING + 10;
+
+                // Item icon (if has default item)
+                if (template.defaultItem().isPresent()) {
+                    var itemOpt = BuiltInRegistries.ITEM.get(template.defaultItem().get());
+                    if (itemOpt.isPresent()) {
+                        graphics.renderItem(new ItemStack(itemOpt.get().value()), dialogX + PADDING + 6, y + (TEMPLATE_HEIGHT - 4 - 16) / 2);
+                        textX = dialogX + PADDING + 28;
+                    }
+                }
 
                 // Template name
-                graphics.drawString(font, template.name(), dialogX + PADDING + 10, y + 6,
+                graphics.drawString(font, template.name(), textX, y + 6,
                     IsotopeColors.TEXT_PRIMARY, false);
 
-                // Template description
-                graphics.drawString(font, template.description(), dialogX + PADDING + 10, y + 18,
-                    IsotopeColors.TEXT_MUTED, false);
-
-                // Default item (if any)
-                if (template.defaultItem().isPresent()) {
-                    String itemText = "Default: " + template.defaultItem().get().getPath();
-                    graphics.drawString(font, itemText, dialogX + PADDING + 10, y + 30,
-                        IsotopeColors.TEXT_MUTED, false);
-                } else {
-                    graphics.drawString(font, "Pick an item after selecting", dialogX + PADDING + 10, y + 30,
-                        IsotopeColors.TEXT_MUTED, false);
+                // Custom badge
+                if (isCustom) {
+                    int badgeX = textX + font.width(template.name()) + 6;
+                    graphics.fill(badgeX, y + 5, badgeX + 42, y + 16, 0xFF5a4a2a);
+                    graphics.drawString(font, "CUSTOM", badgeX + 3, y + 7, 0xFFc9a656, false);
                 }
+
+                // Template description
+                String desc = template.description();
+                if (desc.length() > 45) {
+                    desc = desc.substring(0, 42) + "...";
+                }
+                graphics.drawString(font, desc, textX, y + 18, IsotopeColors.TEXT_MUTED, false);
+
+                // Count info
+                String countText = template.defaultCount().toString();
+                graphics.drawString(font, "Count: " + countText, textX, y + 30, IsotopeColors.TEXT_MUTED, false);
 
                 // Weight badge
                 String weightText = "W:" + template.defaultWeight();
                 int weightWidth = font.width(weightText) + 8;
-                int badgeX = dialogX + PADDING + listWidth - weightWidth - 10;
-                graphics.fill(badgeX, y + 6, badgeX + weightWidth, y + 18, 0xFF3a3a3a);
-                graphics.drawString(font, weightText, badgeX + 4, y + 8, IsotopeColors.TEXT_PRIMARY, false);
+                int wBadgeX = dialogX + PADDING + listWidth - weightWidth - 10;
+                graphics.fill(wBadgeX, y + 6, wBadgeX + weightWidth, y + 18, 0xFF3a3a3a);
+                graphics.drawString(font, weightText, wBadgeX + 4, y + 8, IsotopeColors.TEXT_PRIMARY, false);
             }
 
             y += TEMPLATE_HEIGHT;
@@ -166,8 +208,8 @@ public class TemplatePickerScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (hoveredTemplate >= 0 && hoveredTemplate < EntryTemplate.BUILTIN_TEMPLATES.size()) {
-            EntryTemplate template = EntryTemplate.BUILTIN_TEMPLATES.get(hoveredTemplate);
+        if (hoveredTemplate >= 0 && hoveredTemplate < templates.size()) {
+            EntryTemplate template = templates.get(hoveredTemplate);
             onSelect.accept(template);
             onClose();
             return true;
@@ -185,7 +227,6 @@ public class TemplatePickerScreen extends Screen {
         if (mouseX >= dialogX && mouseX < dialogX + DIALOG_WIDTH &&
             mouseY >= listY && mouseY < listY + listHeight) {
 
-            List<EntryTemplate> templates = EntryTemplate.BUILTIN_TEMPLATES;
             int contentHeight = templates.size() * TEMPLATE_HEIGHT + 16 * countCategories(templates);
             int maxScroll = Math.max(0, contentHeight - listHeight);
 

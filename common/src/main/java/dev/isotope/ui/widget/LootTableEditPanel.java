@@ -9,6 +9,7 @@ import dev.isotope.editing.LootEditOperation;
 import dev.isotope.editing.LootTableParser;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.screen.BatchWeightScreen;
+import dev.isotope.ui.screen.TemplateEditorScreen;
 import dev.isotope.ui.screen.TemplatePickerScreen;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.data.EntryTemplate;
@@ -694,6 +695,14 @@ public class LootTableEditPanel extends AbstractWidget {
 
                 // Check if clicking in entry row
                 if (mouseY >= y && mouseY < y + ENTRY_HEIGHT) {
+                    // Right-click: Save as Template
+                    if (button == 1) {
+                        selectedPoolIdx = poolIdx;
+                        selectedEntryIdx = entryIdx;
+                        openSaveAsTemplateDialog(entry);
+                        return true;
+                    }
+
                     // Calculate field positions
                     int itemX = getX() + PADDING + 10;
                     int itemEndX = itemX + 20 + 105; // Icon + name width
@@ -936,6 +945,13 @@ public class LootTableEditPanel extends AbstractWidget {
             refreshFromEdits();
             Isotope.LOGGER.info("Changed pool {} entry {} to {}", poolIdx, entryIdx, itemId);
         }));
+    }
+
+    private void openSaveAsTemplateDialog(LootEntry entry) {
+        Isotope.LOGGER.info("Opening template editor from entry: {}", entry.name().orElse(null));
+
+        Screen currentScreen = Minecraft.getInstance().screen;
+        Minecraft.getInstance().setScreen(TemplateEditorScreen.fromEntry(currentScreen, entry, null));
     }
 
     private void addNewPool() {
