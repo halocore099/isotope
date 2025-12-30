@@ -153,6 +153,10 @@ Each loot table shows:
 
 ### Using Templates
 
+Templates are pre-configured entry settings that make adding common item types faster.
+
+#### Built-in Templates
+
 1. Click "Template" next to "+ Add Item"
 2. Choose a preset configuration:
    - Common Item (weight 10, count 1-3)
@@ -160,8 +164,53 @@ Each loot table shows:
    - Rare Item (weight 1, count 1)
    - Food Stack (weight 10, count 2-5)
    - Enchanted Gear (random enchantments)
-   - And more
-3. Select the item to add
+   - Treasure, Emerald Stack, Arrow Stack, and more
+3. If the template has no default item, select an item from the picker
+4. The entry is added with all template settings applied
+
+#### Custom Templates
+
+Create your own templates for items and configurations you use frequently.
+
+**Creating from an Existing Entry:**
+
+1. Right-click any entry in the edit panel
+2. The Template Editor opens pre-filled with that entry's settings
+3. Enter a name, description, and category
+4. Adjust weight, count, or functions as needed
+5. Click "Save" to save the template
+
+**Creating from Scratch:**
+
+1. Click "Template" next to "+ Add Item"
+2. Click "Manage..." at the bottom of the template picker
+3. Click "New Template"
+4. Fill in the template details:
+   - **Name**: Display name for the template
+   - **Description**: Short description of what it's for
+   - **Category**: Grouping for organization (e.g., "Custom", "Resources")
+   - **Item**: (Optional) Default item to use
+   - **Weight**: Default weight value
+   - **Count**: Constant or range (min-max)
+   - **Functions**: Add functions like set_count, enchant, etc.
+5. Click "Save"
+
+**Managing Custom Templates:**
+
+1. Open the template picker (click "Template")
+2. Click "Manage..." to open the Template Manager
+3. View all your custom templates
+4. Click "E" (Edit) to modify a template
+5. Click "X" (Delete) to remove a template
+6. Use keyboard shortcuts: Enter to edit, Delete to remove
+
+Custom templates are saved to `.minecraft/isotope/templates.json` and persist across game sessions.
+
+#### Visual Distinction
+
+- Built-in templates appear with standard styling
+- Custom templates show a gold "CUSTOM" badge
+- Custom template categories are highlighted in gold
 
 ### Removing Entries
 
@@ -307,6 +356,7 @@ Preserve your work across game restarts:
 | Ctrl+C | Copy selected entry |
 | Ctrl+V | Paste entry |
 | Delete | Remove selected entry(s) |
+| Right-click | Save entry as custom template |
 
 ### Selection
 
