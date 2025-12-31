@@ -121,55 +121,64 @@ public class TemplateEditorScreen extends Screen {
 
     @Override
     protected void init() {
+        super.init(); // Required for proper screen initialization
+
         panelX = (width - PANEL_WIDTH) / 2;
         panelY = (height - PANEL_HEIGHT) / 2;
 
         int fieldWidth = PANEL_WIDTH - 100;
-        int y = panelY + 35;
+        int y = panelY + 40;  // Start after title
 
-        // Name
-        nameBox = new EditBox(font, panelX + 80, y, fieldWidth, 16, Component.literal("Name"));
+        // Section 1: Basic Info (Name, Description, Category)
+        int fieldX = panelX + 80;
+
+        // Name - at y position in section
+        nameBox = new EditBox(font, fieldX, y + 12, fieldWidth - 14, 16, Component.literal("Name"));
         nameBox.setMaxLength(50);
+        nameBox.setHint(Component.literal("Template name..."));
         if (existingTemplate != null && !existingTemplate.name().isEmpty()) {
             nameBox.setValue(existingTemplate.name());
         }
         addRenderableWidget(nameBox);
-        y += 24;
 
         // Description
-        descriptionBox = new EditBox(font, panelX + 80, y, fieldWidth, 16, Component.literal("Description"));
+        descriptionBox = new EditBox(font, fieldX, y + 36, fieldWidth - 14, 16, Component.literal("Description"));
         descriptionBox.setMaxLength(100);
+        descriptionBox.setHint(Component.literal("Short description..."));
         if (existingTemplate != null && !existingTemplate.description().isEmpty()) {
             descriptionBox.setValue(existingTemplate.description());
         }
         addRenderableWidget(descriptionBox);
-        y += 24;
 
         // Category
-        categoryBox = new EditBox(font, panelX + 80, y, fieldWidth, 16, Component.literal("Category"));
+        categoryBox = new EditBox(font, fieldX, y + 60, 100, 16, Component.literal("Category"));
         categoryBox.setMaxLength(30);
         categoryBox.setValue(existingTemplate != null ? existingTemplate.category() : "Custom");
         addRenderableWidget(categoryBox);
-        y += 32;
 
-        // Item (button to open picker) - rendered manually
-        y += 24;
+        y += 76;  // Move past section 1
+
+        // Section 2: Item & Values (skip 6 for padding)
+        y += 6;
+
+        // Item row - rendered manually, skip 26
+        y += 26;
 
         // Weight
-        weightBox = new EditBox(font, panelX + 80, y, 60, 16, Component.literal("Weight"));
+        weightBox = new EditBox(font, fieldX, y, 60, 16, Component.literal("Weight"));
         weightBox.setMaxLength(4);
         weightBox.setValue(existingTemplate != null ? String.valueOf(existingTemplate.defaultWeight()) : "10");
         weightBox.setFilter(s -> s.isEmpty() || s.matches("\\d+"));
         addRenderableWidget(weightBox);
-        y += 24;
+        y += 26;
 
-        // Count range toggle and fields
+        // Count fields
         int countFieldWidth = 50;
-        countMinBox = new EditBox(font, panelX + 80, y, countFieldWidth, 16, Component.literal("Min"));
+        countMinBox = new EditBox(font, fieldX, y, countFieldWidth, 16, Component.literal("Min"));
         countMinBox.setMaxLength(4);
         countMinBox.setFilter(s -> s.isEmpty() || s.matches("\\d+"));
 
-        countMaxBox = new EditBox(font, panelX + 80 + countFieldWidth + 30, y, countFieldWidth, 16, Component.literal("Max"));
+        countMaxBox = new EditBox(font, fieldX + countFieldWidth + 25, y, countFieldWidth, 16, Component.literal("Max"));
         countMaxBox.setMaxLength(4);
         countMaxBox.setFilter(s -> s.isEmpty() || s.matches("\\d+"));
 
@@ -191,11 +200,11 @@ public class TemplateEditorScreen extends Screen {
 
         addRenderableWidget(countMinBox);
         addRenderableWidget(countMaxBox);
-        y += 32;
+        y += 28;
 
-        // Functions area
-        functionsY = y + 14;
-        functionsHeight = PANEL_HEIGHT - (y - panelY) - 80;
+        // Section 3: Functions area
+        functionsY = y + 22;  // After section header
+        functionsHeight = PANEL_HEIGHT - (y - panelY) - 70;
 
         // Buttons
         int buttonY = panelY + PANEL_HEIGHT - 30;
@@ -217,100 +226,133 @@ public class TemplateEditorScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+        // MUST call super.render() first for content to be visible in MC 1.21
+        super.render(graphics, mouseX, mouseY, partialTick);
 
-        // Panel background
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, 0xFF404040);
+        // Dim background
+        graphics.fill(0, 0, width, height, 0x90000000);
+
+        // Panel background with vanilla-style border
+        graphics.fill(panelX - 3, panelY - 3, panelX + PANEL_WIDTH + 3, panelY + PANEL_HEIGHT + 3, 0xFF000000);
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, 0xFF555555);
+        graphics.fill(panelX - 1, panelY - 1, panelX + PANEL_WIDTH + 1, panelY + PANEL_HEIGHT + 1, 0xFF2d2d2d);
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xFF1a1a1a);
 
         // Title
         graphics.drawCenteredString(font, title, panelX + PANEL_WIDTH / 2, panelY + 10, IsotopeColors.ACCENT_GOLD);
 
-        int y = panelY + 35;
+        // Subtitle hint
+        graphics.drawCenteredString(font, "Create a reusable entry preset", panelX + PANEL_WIDTH / 2, panelY + 22, 0xFF707070);
 
-        // Labels
-        graphics.drawString(font, "Name:", panelX + 10, y + 4, IsotopeColors.TEXT_PRIMARY, false);
+        int y = panelY + 40;
+
+        // Section: Basic Info
+        graphics.fill(panelX + 8, y - 4, panelX + PANEL_WIDTH - 8, y + 68, 0xFF222222);
+        graphics.renderOutline(panelX + 8, y - 4, PANEL_WIDTH - 16, 72, 0xFF333333);
+
+        // Name field
+        graphics.drawString(font, "Name", panelX + 14, y + 2, 0xFFFFFFFF, false);
         y += 24;
-        graphics.drawString(font, "Desc:", panelX + 10, y + 4, IsotopeColors.TEXT_PRIMARY, false);
+
+        // Description field
+        graphics.drawString(font, "Description", panelX + 14, y + 2, 0xFFFFFFFF, false);
         y += 24;
-        graphics.drawString(font, "Category:", panelX + 10, y + 4, IsotopeColors.TEXT_PRIMARY, false);
-        y += 32;
+
+        // Category field
+        graphics.drawString(font, "Category", panelX + 14, y + 2, 0xFFFFFFFF, false);
+        y += 28;
+
+        // Section: Item & Values
+        graphics.fill(panelX + 8, y, panelX + PANEL_WIDTH - 8, y + 92, 0xFF222222);
+        graphics.renderOutline(panelX + 8, y, PANEL_WIDTH - 16, 92, 0xFF333333);
+
+        y += 6;
 
         // Item selector
-        graphics.drawString(font, "Item:", panelX + 10, y + 4, IsotopeColors.TEXT_PRIMARY, false);
-        int itemBtnX = panelX + 80;
-        int itemBtnWidth = PANEL_WIDTH - 100;
-        boolean itemHovered = mouseX >= itemBtnX && mouseX < itemBtnX + itemBtnWidth &&
-            mouseY >= y && mouseY < y + 20;
+        graphics.drawString(font, "Item", panelX + 14, y + 2, 0xFFFFFFFF, false);
 
-        graphics.fill(itemBtnX, y, itemBtnX + itemBtnWidth, y + 20,
-            itemHovered ? 0xFF404040 : 0xFF303030);
-        graphics.renderOutline(itemBtnX, y, itemBtnWidth, 20, 0xFF505050);
+        int itemBtnX = panelX + 80;
+        int itemBtnWidth = PANEL_WIDTH - 96;
+        boolean itemHovered = mouseX >= itemBtnX && mouseX < itemBtnX + itemBtnWidth &&
+            mouseY >= y - 2 && mouseY < y + 18;
+
+        graphics.fill(itemBtnX, y - 2, itemBtnX + itemBtnWidth, y + 18,
+            itemHovered ? 0xFF3d5c7a : 0xFF2a2a2a);
+        graphics.renderOutline(itemBtnX, y - 2, itemBtnWidth, 20, itemHovered ? 0xFF5a8ab8 : 0xFF404040);
 
         if (selectedItem != null) {
             // Render item icon
             var itemOpt = BuiltInRegistries.ITEM.get(selectedItem);
             if (itemOpt.isPresent()) {
-                graphics.renderItem(new ItemStack(itemOpt.get().value()), itemBtnX + 2, y + 2);
+                graphics.renderItem(new ItemStack(itemOpt.get().value()), itemBtnX + 2, y);
             }
-            graphics.drawString(font, selectedItem.toString(), itemBtnX + 22, y + 6, IsotopeColors.TEXT_PRIMARY, false);
+            String itemName = selectedItem.getPath();
+            if (itemName.length() > 18) itemName = itemName.substring(0, 15) + "...";
+            graphics.drawString(font, itemName, itemBtnX + 22, y + 4, 0xFFFFFFFF, false);
+
+            // Clear button
+            int clearX = itemBtnX + itemBtnWidth - 18;
+            boolean clearHovered = mouseX >= clearX && mouseX < clearX + 16 && mouseY >= y && mouseY < y + 16;
+            graphics.fill(clearX, y, clearX + 16, y + 16, clearHovered ? 0xFF5a3030 : 0xFF3a2828);
+            graphics.drawCenteredString(font, "X", clearX + 8, y + 4, clearHovered ? 0xFFff6666 : 0xFFaa6666);
         } else {
-            graphics.drawString(font, "(Optional) Click to select...", itemBtnX + 4, y + 6, IsotopeColors.TEXT_MUTED, false);
+            graphics.drawString(font, "Click to select...", itemBtnX + 4, y + 4, 0xFF808080, false);
         }
 
-        // Clear button if item selected
-        if (selectedItem != null) {
-            int clearX = itemBtnX + itemBtnWidth - 16;
-            boolean clearHovered = mouseX >= clearX && mouseX < clearX + 14 && mouseY >= y + 3 && mouseY < y + 17;
-            graphics.drawString(font, "X", clearX + 4, y + 6, clearHovered ? 0xFFFF6666 : IsotopeColors.TEXT_MUTED, false);
+        y += 26;
+
+        // Weight
+        graphics.drawString(font, "Weight", panelX + 14, y + 2, 0xFFFFFFFF, false);
+        y += 26;
+
+        // Count
+        graphics.drawString(font, "Count", panelX + 14, y + 2, 0xFFFFFFFF, false);
+
+        // "to" label between min and max
+        if (useRange) {
+            graphics.drawString(font, "to", panelX + 80 + 55, y + 2, 0xFF808080, false);
         }
 
-        y += 24;
-
-        // Weight label
-        graphics.drawString(font, "Weight:", panelX + 10, y + 4, IsotopeColors.TEXT_PRIMARY, false);
-        y += 24;
-
-        // Count label and toggle
-        graphics.drawString(font, "Count:", panelX + 10, y + 4, IsotopeColors.TEXT_PRIMARY, false);
-
-        // Range toggle button
-        int toggleX = panelX + 80 + 50 + 10;
-        graphics.drawString(font, "-", toggleX + 7, y + 4, IsotopeColors.TEXT_MUTED, false);
-
-        // Toggle button
+        // Toggle button for Range/Constant
         int toggleBtnX = panelX + PANEL_WIDTH - 80;
-        boolean toggleHovered = mouseX >= toggleBtnX && mouseX < toggleBtnX + 70 && mouseY >= y && mouseY < y + 16;
-        graphics.fill(toggleBtnX, y, toggleBtnX + 70, y + 16, toggleHovered ? 0xFF404040 : 0xFF303030);
-        graphics.renderOutline(toggleBtnX, y, 70, 16, 0xFF505050);
-        graphics.drawString(font, useRange ? "Range" : "Constant", toggleBtnX + 4, y + 4,
-            IsotopeColors.TEXT_PRIMARY, false);
+        boolean toggleHovered = mouseX >= toggleBtnX && mouseX < toggleBtnX + 66 && mouseY >= y - 2 && mouseY < y + 14;
+        int toggleBg = useRange ? 0xFF2a4a3a : 0xFF3a3a2a;
+        graphics.fill(toggleBtnX, y - 2, toggleBtnX + 66, y + 14, toggleHovered ? 0xFF404040 : toggleBg);
+        graphics.renderOutline(toggleBtnX, y - 2, 66, 16, toggleHovered ? 0xFF606060 : 0xFF505050);
+        graphics.drawCenteredString(font, useRange ? "Range" : "Fixed", toggleBtnX + 33, y + 1,
+            useRange ? 0xFF66aa66 : 0xFFaaaa66);
 
         countMaxBox.visible = useRange;
 
-        y += 32;
+        y += 28;
 
-        // Functions section
-        graphics.drawString(font, "Functions:", panelX + 10, y, IsotopeColors.TEXT_PRIMARY, false);
+        // Section: Functions
+        graphics.fill(panelX + 8, y, panelX + PANEL_WIDTH - 8, y + functionsHeight + 24, 0xFF222222);
+        graphics.renderOutline(panelX + 8, y, PANEL_WIDTH - 16, functionsHeight + 24, 0xFF333333);
+
+        y += 6;
+
+        graphics.drawString(font, "Functions", panelX + 14, y, 0xFFFFFFFF, false);
 
         // Add function button
-        int addFuncBtnX = panelX + PANEL_WIDTH - 90;
-        boolean addFuncHovered = mouseX >= addFuncBtnX && mouseX < addFuncBtnX + 80 &&
-            mouseY >= y - 2 && mouseY < y + 12;
-        graphics.fill(addFuncBtnX, y - 2, addFuncBtnX + 80, y + 12,
-            addFuncHovered ? 0xFF3a5a3a : 0xFF2a3a2a);
-        graphics.renderOutline(addFuncBtnX, y - 2, 80, 14, 0xFF4a6a4a);
-        graphics.drawString(font, "+ Add Function", addFuncBtnX + 4, y, IsotopeColors.TEXT_PRIMARY, false);
+        int addFuncBtnX = panelX + PANEL_WIDTH - 100;
+        boolean addFuncHovered = mouseX >= addFuncBtnX && mouseX < addFuncBtnX + 86 &&
+            mouseY >= y - 4 && mouseY < y + 12;
+        graphics.fill(addFuncBtnX, y - 4, addFuncBtnX + 86, y + 12,
+            addFuncHovered ? 0xFF3a6a4a : 0xFF2a4a3a);
+        graphics.renderOutline(addFuncBtnX, y - 4, 86, 16, addFuncHovered ? 0xFF5a9a6a : 0xFF4a7a5a);
+        graphics.drawCenteredString(font, "+ Add Function", addFuncBtnX + 43, y - 1, addFuncHovered ? 0xFFFFFFFF : 0xFF88cc88);
+
+        y += 16;
 
         // Functions list
-        int listX = panelX + 10;
-        int listWidth = PANEL_WIDTH - 20;
-        int listY = functionsY;
-        int listHeight = functionsHeight;
+        int listX = panelX + 14;
+        int listWidth = PANEL_WIDTH - 36;
+        int listY = y;
+        int listHeight = functionsHeight - 4;
 
-        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, 0xFF252525);
-        graphics.renderOutline(listX, listY, listWidth, listHeight, 0xFF3a3a3a);
+        graphics.fill(listX - 1, listY - 1, listX + listWidth + 1, listY + listHeight + 1, 0xFF000000);
+        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, 0xFF1a1a1a);
 
         graphics.enableScissor(listX, listY, listX + listWidth, listY + listHeight);
 
@@ -319,58 +361,81 @@ public class TemplateEditorScreen extends Screen {
         for (int i = 0; i < functions.size(); i++) {
             LootFunction func = functions.get(i);
 
-            if (funcY + 20 > listY && funcY < listY + listHeight) {
+            if (funcY + 24 > listY && funcY < listY + listHeight) {
                 boolean funcHovered = mouseX >= listX && mouseX < listX + listWidth &&
-                    mouseY >= funcY && mouseY < funcY + 20 &&
+                    mouseY >= funcY && mouseY < funcY + 24 &&
                     mouseY >= listY && mouseY < listY + listHeight;
 
                 if (funcHovered) {
                     hoveredFunctionIdx = i;
-                    graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 20, 0xFF3a3a3a);
+                    graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 22, 0xFF3d5c7a);
+                    graphics.renderOutline(listX + 2, funcY, listWidth - 4, 22, 0xFF5a8ab8);
+                } else {
+                    graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 22, 0xFF2a2a2a);
+                    graphics.renderOutline(listX + 2, funcY, listWidth - 4, 22, 0xFF353535);
                 }
 
-                // Function name and params
+                // Function icon placeholder
+                graphics.fill(listX + 6, funcY + 4, listX + 18, funcY + 18, 0xFF3a5a4a);
+                graphics.drawCenteredString(font, "f", listX + 12, funcY + 7, 0xFF88cc88);
+
+                // Function name
                 String display = func.getDisplayName();
+                graphics.drawString(font, display, listX + 24, funcY + 4, 0xFFFFFFFF, false);
+
+                // Parameters
                 String params = func.getParameterSummary();
                 if (!params.isEmpty()) {
-                    display += " (" + params + ")";
+                    if (params.length() > 30) params = params.substring(0, 27) + "...";
+                    graphics.drawString(font, params, listX + 24, funcY + 13, 0xFF888888, false);
                 }
-                graphics.drawString(font, display, listX + 6, funcY + 6, IsotopeColors.TEXT_PRIMARY, false);
 
                 // Remove button
-                int removeX = listX + listWidth - 18;
-                boolean removeHovered = mouseX >= removeX && mouseX < removeX + 14 &&
-                    mouseY >= funcY + 3 && mouseY < funcY + 17 &&
+                int removeX = listX + listWidth - 22;
+                boolean removeHovered = mouseX >= removeX && mouseX < removeX + 18 &&
+                    mouseY >= funcY + 2 && mouseY < funcY + 20 &&
                     mouseY >= listY && mouseY < listY + listHeight;
-                graphics.drawString(font, "X", removeX + 4, funcY + 6,
-                    removeHovered ? 0xFFFF6666 : IsotopeColors.TEXT_MUTED, false);
+                graphics.fill(removeX, funcY + 3, removeX + 18, funcY + 19, removeHovered ? 0xFF5a3030 : 0xFF3a2828);
+                graphics.drawCenteredString(font, "X", removeX + 9, funcY + 7, removeHovered ? 0xFFff6666 : 0xFFaa6666);
             }
 
-            funcY += 22;
+            funcY += 26;
         }
 
         if (functions.isEmpty()) {
-            graphics.drawString(font, "No functions added", listX + 6, listY + 6, IsotopeColors.TEXT_MUTED, false);
+            graphics.drawCenteredString(font, "No functions added", listX + listWidth / 2, listY + listHeight / 2 - 4, 0xFF606060);
+            graphics.drawCenteredString(font, "Click '+ Add Function' above", listX + listWidth / 2, listY + listHeight / 2 + 8, 0xFF505050);
         }
 
         graphics.disableScissor();
 
-        // Render widgets
-        super.render(graphics, mouseX, mouseY, partialTick);
+        // Re-render widgets on top
+        for (var widget : this.children()) {
+            if (widget instanceof Button btn) {
+                btn.render(graphics, mouseX, mouseY, partialTick);
+            } else if (widget instanceof EditBox box) {
+                box.render(graphics, mouseX, mouseY, partialTick);
+            }
+        }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int y = panelY + 35 + 24 + 24 + 32; // Item row Y
+        // Calculate positions matching render()
+        int y = panelY + 40;  // Start after title
+        y += 76;  // Past section 1 (basic info)
+        y += 6;   // Section 2 padding
 
-        // Item selector click
+        // Item selector row
         int itemBtnX = panelX + 80;
-        int itemBtnWidth = PANEL_WIDTH - 100;
-        if (mouseX >= itemBtnX && mouseX < itemBtnX + itemBtnWidth && mouseY >= y && mouseY < y + 20) {
+        int itemBtnWidth = PANEL_WIDTH - 96;
+        int itemY = y;
+
+        if (mouseX >= itemBtnX && mouseX < itemBtnX + itemBtnWidth && mouseY >= itemY - 2 && mouseY < itemY + 18) {
             // Check clear button first
             if (selectedItem != null) {
-                int clearX = itemBtnX + itemBtnWidth - 16;
-                if (mouseX >= clearX && mouseX < clearX + 14 && mouseY >= y + 3 && mouseY < y + 17) {
+                int clearX = itemBtnX + itemBtnWidth - 18;
+                if (mouseX >= clearX && mouseX < clearX + 16 && mouseY >= itemY && mouseY < itemY + 16) {
                     selectedItem = null;
                     return true;
                 }
@@ -383,11 +448,12 @@ public class TemplateEditorScreen extends Screen {
             return true;
         }
 
-        y += 24 + 24; // Count row Y
+        y += 26;  // Weight row
+        y += 26;  // Count row
 
         // Count toggle click
         int toggleBtnX = panelX + PANEL_WIDTH - 80;
-        if (mouseX >= toggleBtnX && mouseX < toggleBtnX + 70 && mouseY >= y && mouseY < y + 16) {
+        if (mouseX >= toggleBtnX && mouseX < toggleBtnX + 66 && mouseY >= y - 2 && mouseY < y + 14) {
             useRange = !useRange;
             if (!useRange) {
                 // Copy min to max for constant
@@ -396,11 +462,12 @@ public class TemplateEditorScreen extends Screen {
             return true;
         }
 
-        y += 32;
+        y += 28;  // Functions section
+        y += 6;   // Padding
 
         // Add function button
-        int addFuncBtnX = panelX + PANEL_WIDTH - 90;
-        if (mouseX >= addFuncBtnX && mouseX < addFuncBtnX + 80 && mouseY >= y - 2 && mouseY < y + 12) {
+        int addFuncBtnX = panelX + PANEL_WIDTH - 100;
+        if (mouseX >= addFuncBtnX && mouseX < addFuncBtnX + 86 && mouseY >= y - 4 && mouseY < y + 12) {
             minecraft.setScreen(new FunctionPickerScreen(this, func -> {
                 functions.add(func);
             }));
@@ -408,20 +475,25 @@ public class TemplateEditorScreen extends Screen {
         }
 
         // Function remove buttons
-        if (mouseX >= panelX + 10 && mouseX < panelX + PANEL_WIDTH - 10 &&
-            mouseY >= functionsY && mouseY < functionsY + functionsHeight) {
+        int listX = panelX + 14;
+        int listWidth = PANEL_WIDTH - 36;
+        int listY = functionsY;
+        int listHeight = functionsHeight - 4;
 
-            int funcY = functionsY + 4 - functionsScrollOffset;
+        if (mouseX >= listX && mouseX < listX + listWidth &&
+            mouseY >= listY && mouseY < listY + listHeight) {
+
+            int funcY = listY + 4 - functionsScrollOffset;
             for (int i = 0; i < functions.size(); i++) {
-                if (funcY + 20 > functionsY && funcY < functionsY + functionsHeight) {
-                    int removeX = panelX + PANEL_WIDTH - 10 - 18;
-                    if (mouseX >= removeX && mouseX < removeX + 14 &&
-                        mouseY >= funcY + 3 && mouseY < funcY + 17) {
+                if (funcY + 24 > listY && funcY < listY + listHeight) {
+                    int removeX = listX + listWidth - 22;
+                    if (mouseX >= removeX && mouseX < removeX + 18 &&
+                        mouseY >= funcY + 2 && mouseY < funcY + 20) {
                         functions.remove(i);
                         return true;
                     }
                 }
-                funcY += 22;
+                funcY += 26;
             }
         }
 
@@ -431,11 +503,16 @@ public class TemplateEditorScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         // Functions list scroll
-        if (mouseX >= panelX + 10 && mouseX < panelX + PANEL_WIDTH - 10 &&
-            mouseY >= functionsY && mouseY < functionsY + functionsHeight) {
+        int listX = panelX + 14;
+        int listWidth = PANEL_WIDTH - 36;
+        int listY = functionsY;
+        int listHeight = functionsHeight - 4;
 
-            int contentHeight = functions.size() * 22 + 8;
-            int maxScroll = Math.max(0, contentHeight - functionsHeight);
+        if (mouseX >= listX && mouseX < listX + listWidth &&
+            mouseY >= listY && mouseY < listY + listHeight) {
+
+            int contentHeight = functions.size() * 26 + 8;
+            int maxScroll = Math.max(0, contentHeight - listHeight);
             functionsScrollOffset = Math.max(0, Math.min(maxScroll, functionsScrollOffset - (int)(scrollY * 20)));
             return true;
         }

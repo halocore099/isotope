@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.Isotope;
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
 import dev.isotope.ui.IsotopeColors;
@@ -49,6 +50,10 @@ public class TemplateManagerScreen extends Screen {
 
     @Override
     protected void init() {
+        super.init(); // Required for proper screen initialization
+
+        Isotope.LOGGER.info("TemplateManagerScreen: init() called");
+
         panelX = (width - PANEL_WIDTH) / 2;
         panelY = (height - PANEL_HEIGHT) / 2;
 
@@ -58,6 +63,7 @@ public class TemplateManagerScreen extends Screen {
         listHeight = PANEL_HEIGHT - 100;
 
         refreshTemplates();
+        Isotope.LOGGER.info("TemplateManagerScreen: {} custom templates loaded", templates.size());
 
         // Buttons at bottom
         int buttonY = panelY + PANEL_HEIGHT - 35;

@@ -14,7 +14,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import dev.isotope.Isotope;
+
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +51,8 @@ public class TemplatePickerScreen extends Screen {
 
     private void refreshTemplates() {
         templates = TemplateManager.getInstance().getAllTemplates();
+        // Sort by category, then by name for proper grouping
+        templates.sort(Comparator.comparing(EntryTemplate::category).thenComparing(EntryTemplate::name));
     }
 
     @Override
@@ -78,13 +83,20 @@ public class TemplatePickerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // MUST call super.render() first for content to be visible in MC 1.21
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        // Render background dim
+        graphics.fill(0, 0, width, height, 0x90000000);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
-        // Dialog background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF333333);
+        // Dialog background with vanilla-style border
+        // Outer highlight (top-left light)
+        graphics.fill(dialogX - 3, dialogY - 3, dialogX + DIALOG_WIDTH + 3, dialogY + DIALOG_HEIGHT + 3, 0xFF000000);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF555555);
+        graphics.fill(dialogX - 1, dialogY - 1, dialogX + DIALOG_WIDTH + 1, dialogY + DIALOG_HEIGHT + 1, 0xFF2d2d2d);
         graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
 
         // Title
@@ -94,6 +106,10 @@ public class TemplatePickerScreen extends Screen {
         int listY = dialogY + 30;
         int listHeight = DIALOG_HEIGHT - 70;
         int listWidth = DIALOG_WIDTH - PADDING * 2;
+
+        // Draw list background with inset border
+        graphics.fill(dialogX + PADDING - 1, listY - 1, dialogX + PADDING + listWidth + 1, listY + listHeight + 1, 0xFF000000);
+        graphics.fill(dialogX + PADDING, listY, dialogX + PADDING + listWidth, listY + listHeight, 0xFF202020);
 
         // Scissor for scrolling
         graphics.enableScissor(dialogX + PADDING, listY, dialogX + PADDING + listWidth, listY + listHeight);
@@ -112,66 +128,80 @@ public class TemplatePickerScreen extends Screen {
             if (!template.category().equals(currentCategory)) {
                 currentCategory = template.category();
                 if (y > listY - 20 && y < listY + listHeight) {
-                    int catColor = isCustom ? 0xFF8a6a4a : IsotopeColors.TEXT_SECONDARY;
-                    graphics.drawString(font, currentCategory, dialogX + PADDING, y + 4, catColor, false);
+                    // Category separator line
+                    if (y > listY + 4) {
+                        graphics.fill(dialogX + PADDING + 8, y - 2, dialogX + PADDING + listWidth - 8, y - 1, 0xFF333333);
+                    }
+                    // Category label
+                    int catColor = isCustom ? 0xFFc9a656 : 0xFF8899aa;
+                    graphics.drawString(font, "- " + currentCategory + " -", dialogX + PADDING + 8, y + 2, catColor, false);
                 }
-                y += 16;
+                y += 18;
             }
 
             // Template entry
+            int entryX = dialogX + PADDING + 4;
+            int entryWidth = listWidth - 8;
+            int entryHeight = TEMPLATE_HEIGHT - 6;
+
             if (y > listY - TEMPLATE_HEIGHT && y < listY + listHeight) {
-                boolean hovered = mouseX >= dialogX + PADDING && mouseX < dialogX + PADDING + listWidth &&
-                    mouseY >= y && mouseY < y + TEMPLATE_HEIGHT - 4;
+                // Hover detection must match visual bounds exactly
+                boolean hovered = mouseX >= entryX && mouseX < entryX + entryWidth &&
+                    mouseY >= y && mouseY < y + entryHeight;
 
                 if (hovered) {
                     hoveredTemplate = i;
-                    graphics.fill(dialogX + PADDING, y, dialogX + PADDING + listWidth, y + TEMPLATE_HEIGHT - 4, 0xFF2a3a4a);
+                    // Highlighted background
+                    graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, 0xFF3d5c7a);
+                    graphics.renderOutline(entryX, y, entryWidth, entryHeight, 0xFF5a8ab8);
                 } else {
-                    int bgColor = isCustom ? 0xFF2a2a25 : 0xFF252525;
-                    graphics.fill(dialogX + PADDING, y, dialogX + PADDING + listWidth, y + TEMPLATE_HEIGHT - 4, bgColor);
+                    // Normal background
+                    int bgColor = isCustom ? 0xFF2e2a24 : 0xFF2a2a2a;
+                    graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, bgColor);
+                    int outlineColor = isCustom ? 0xFF3d3a30 : 0xFF353535;
+                    graphics.renderOutline(entryX, y, entryWidth, entryHeight, outlineColor);
                 }
-                int outlineColor = isCustom ? 0xFF4a4a3a : 0xFF3a3a3a;
-                graphics.renderOutline(dialogX + PADDING, y, listWidth, TEMPLATE_HEIGHT - 4, outlineColor);
 
-                int textX = dialogX + PADDING + 10;
+                int textX = entryX + 8;
 
                 // Item icon (if has default item)
                 if (template.defaultItem().isPresent()) {
                     var itemOpt = BuiltInRegistries.ITEM.get(template.defaultItem().get());
                     if (itemOpt.isPresent()) {
-                        graphics.renderItem(new ItemStack(itemOpt.get().value()), dialogX + PADDING + 6, y + (TEMPLATE_HEIGHT - 4 - 16) / 2);
-                        textX = dialogX + PADDING + 28;
+                        graphics.renderItem(new ItemStack(itemOpt.get().value()), entryX + 4, y + (entryHeight - 16) / 2);
+                        textX = entryX + 26;
                     }
                 }
 
-                // Template name
-                graphics.drawString(font, template.name(), textX, y + 6,
-                    IsotopeColors.TEXT_PRIMARY, false);
+                // Template name (white for better readability)
+                graphics.drawString(font, template.name(), textX, y + 4, 0xFFFFFFFF, false);
 
                 // Custom badge
                 if (isCustom) {
                     int badgeX = textX + font.width(template.name()) + 6;
-                    graphics.fill(badgeX, y + 5, badgeX + 42, y + 16, 0xFF5a4a2a);
-                    graphics.drawString(font, "CUSTOM", badgeX + 3, y + 7, 0xFFc9a656, false);
+                    graphics.fill(badgeX, y + 3, badgeX + 44, y + 14, 0xFF4a3d20);
+                    graphics.renderOutline(badgeX, y + 3, 44, 11, 0xFF6a5a30);
+                    graphics.drawString(font, "CUSTOM", badgeX + 4, y + 5, 0xFFdaa520, false);
                 }
 
                 // Template description
                 String desc = template.description();
-                if (desc.length() > 45) {
-                    desc = desc.substring(0, 42) + "...";
+                if (desc.length() > 50) {
+                    desc = desc.substring(0, 47) + "...";
                 }
-                graphics.drawString(font, desc, textX, y + 18, IsotopeColors.TEXT_MUTED, false);
+                graphics.drawString(font, desc, textX, y + 16, 0xFFaaaaaa, false);
 
                 // Count info
-                String countText = template.defaultCount().toString();
-                graphics.drawString(font, "Count: " + countText, textX, y + 30, IsotopeColors.TEXT_MUTED, false);
+                String countText = "Count: " + template.defaultCount().toString();
+                graphics.drawString(font, countText, textX, y + 28, 0xFF888888, false);
 
-                // Weight badge
-                String weightText = "W:" + template.defaultWeight();
-                int weightWidth = font.width(weightText) + 8;
-                int wBadgeX = dialogX + PADDING + listWidth - weightWidth - 10;
-                graphics.fill(wBadgeX, y + 6, wBadgeX + weightWidth, y + 18, 0xFF3a3a3a);
-                graphics.drawString(font, weightText, wBadgeX + 4, y + 8, IsotopeColors.TEXT_PRIMARY, false);
+                // Weight badge (right side)
+                String weightText = "Weight: " + template.defaultWeight();
+                int weightWidth = font.width(weightText) + 10;
+                int wBadgeX = entryX + entryWidth - weightWidth - 6;
+                graphics.fill(wBadgeX, y + 4, wBadgeX + weightWidth, y + 16, 0xFF383838);
+                graphics.renderOutline(wBadgeX, y + 4, weightWidth, 12, 0xFF484848);
+                graphics.drawString(font, weightText, wBadgeX + 5, y + 6, 0xFFcccccc, false);
             }
 
             y += TEMPLATE_HEIGHT;
@@ -180,23 +210,30 @@ public class TemplatePickerScreen extends Screen {
         graphics.disableScissor();
 
         // Scrollbar
-        int contentHeight = templates.size() * TEMPLATE_HEIGHT + 16 * countCategories(templates);
+        int contentHeight = templates.size() * TEMPLATE_HEIGHT + 18 * countCategories(templates);
         if (contentHeight > listHeight) {
-            int scrollbarX = dialogX + DIALOG_WIDTH - PADDING - 4;
+            int scrollbarX = dialogX + DIALOG_WIDTH - PADDING - 6;
             int scrollbarHeight = listHeight;
             int thumbHeight = Math.max(20, (int)((float)listHeight / contentHeight * scrollbarHeight));
             int maxScroll = contentHeight - listHeight;
             int thumbY = listY + (int)((float)scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, listY, scrollbarX + 4, listY + listHeight, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+            // Scrollbar track
+            graphics.fill(scrollbarX, listY, scrollbarX + 6, listY + listHeight, 0xFF1a1a1a);
+            // Scrollbar thumb
+            graphics.fill(scrollbarX + 1, thumbY + 1, scrollbarX + 5, thumbY + thumbHeight - 1, 0xFF606060);
         }
 
-        // Help text
-        graphics.drawString(font, "Click a template to add it to the current pool", dialogX + PADDING,
-            dialogY + DIALOG_HEIGHT - 25, IsotopeColors.TEXT_MUTED, false);
+        // Help text (centered)
+        String helpText = "Click a template to add it to the current pool";
+        graphics.drawCenteredString(font, helpText, width / 2, dialogY + DIALOG_HEIGHT - 44, 0xFF707070);
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        // Re-render buttons on top (super.render() rendered them first, but we drew over them)
+        for (var widget : this.children()) {
+            if (widget instanceof Button btn) {
+                btn.render(graphics, mouseX, mouseY, partialTick);
+            }
+        }
     }
 
     private int countCategories(List<EntryTemplate> templates) {
@@ -227,7 +264,7 @@ public class TemplatePickerScreen extends Screen {
         if (mouseX >= dialogX && mouseX < dialogX + DIALOG_WIDTH &&
             mouseY >= listY && mouseY < listY + listHeight) {
 
-            int contentHeight = templates.size() * TEMPLATE_HEIGHT + 16 * countCategories(templates);
+            int contentHeight = templates.size() * TEMPLATE_HEIGHT + 18 * countCategories(templates);
             int maxScroll = Math.max(0, contentHeight - listHeight);
 
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));

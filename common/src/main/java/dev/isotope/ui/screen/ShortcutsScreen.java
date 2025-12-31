@@ -70,14 +70,19 @@ public class ShortcutsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Render semi-transparent overlay instead of vanilla background
-        graphics.fill(0, 0, width, height, 0xC0101010);
+        // MUST call super.render() first for content to be visible in MC 1.21
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        // Render semi-transparent overlay
+        graphics.fill(0, 0, width, height, 0x90000000);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
-        // Dialog background with border
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF333333);
+        // Dialog background with vanilla-style border
+        graphics.fill(dialogX - 3, dialogY - 3, dialogX + DIALOG_WIDTH + 3, dialogY + DIALOG_HEIGHT + 3, 0xFF000000);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF555555);
+        graphics.fill(dialogX - 1, dialogY - 1, dialogX + DIALOG_WIDTH + 1, dialogY + DIALOG_HEIGHT + 1, 0xFF2d2d2d);
         graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
 
         // Title
@@ -133,8 +138,12 @@ public class ShortcutsScreen extends Screen {
             y += 12;
         }
 
-        // Render widgets
-        super.render(graphics, mouseX, mouseY, partialTick);
+        // Re-render button on top
+        for (var widget : this.children()) {
+            if (widget instanceof Button btn) {
+                btn.render(graphics, mouseX, mouseY, partialTick);
+            }
+        }
     }
 
     private void renderShortcut(GuiGraphics graphics, int x, int y, String key, String description) {
