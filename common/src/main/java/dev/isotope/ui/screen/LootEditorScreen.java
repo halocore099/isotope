@@ -366,6 +366,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("compare", "\u2194", "Compare Two Tables...", "", this::onOpenCompare)
             .addCommand("sessions", "\u2630", "Manage Sessions...", "", this::onOpenSessions)
 
+            // Navigation
+            .addCommand("structures", "\u2302", "Structures Browser (Testing)", "", this::onOpenStructures)
+
             // Help
             .addCommand("shortcuts", "?", "Keyboard Shortcuts", "F1", this::showHelp)
             .addCommand("documentation", "\u2709", "Open Documentation", "", HelpLinks::openDocs)
@@ -711,6 +714,12 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     private void onOpenSessions() {
         if (minecraft != null) {
             minecraft.setScreen(new SessionScreen(this, tabManager));
+        }
+    }
+
+    private void onOpenStructures() {
+        if (minecraft != null) {
+            minecraft.setScreen(new MainScreen(this));
         }
     }
 
