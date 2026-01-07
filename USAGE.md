@@ -64,6 +64,7 @@ The vertical bar on the far left provides quick access to different panels:
 | ⌕ | Global Search | 2 |
 | ≡ | Analysis | 3 |
 | ⎘ | History | 4 |
+| ✔ | Validation | 5 |
 
 ### Left Panel
 
@@ -72,6 +73,7 @@ Changes based on Activity Bar selection:
 - **Search**: Global item search across all loot tables
 - **Analysis**: Drop rate visualization and diff view
 - **History**: Edit history log with timestamps
+- **Validation**: Issue detection with auto-fix for current table
 
 ### Tab Bar
 
@@ -129,13 +131,14 @@ The Command Palette provides quick access to all Isotope features. Press **Ctrl+
 | Duplicate Entry | Duplicate the selected entry |
 | **View Operations** | |
 | Toggle Test Mode | Enable/disable live loot testing |
-| Show Browser/Search/Analysis/History Panel | Switch left panel view |
+| Show Browser/Search/Analysis/History/Validation Panel | Switch left panel view |
 | Global Item Search | Search for items across all tables |
 | **Tools** | |
 | Simulate Drops... | Run drop simulation on current table |
 | Quick Fix Wizards... | Apply one-click balancing fixes |
 | Bulk Operations... | Apply changes across multiple tables |
 | Validate Loot Table | Check for issues in current table |
+| Validate All Edited Tables | Check all edited tables for issues |
 | Export as KubeJS Script | Export edits as KubeJS server script |
 | Compare Two Tables... | Side-by-side table comparison |
 | Manage Sessions... | Save and load work sessions |
@@ -287,6 +290,33 @@ Custom templates are saved to `.minecraft/isotope/templates.json` and persist ac
 - Press Ctrl+Y to redo
 - Full history is preserved for the session
 
+### Context Menus
+
+Right-click on entries and pools for quick access to common actions.
+
+**Entry Context Menu** (right-click on an item entry):
+
+| Action | Description |
+|--------|-------------|
+| Copy | Copy entry to clipboard (Ctrl+C) |
+| Paste | Paste entry from clipboard (Ctrl+V) |
+| Move Up | Move entry up in the pool |
+| Move Down | Move entry down in the pool |
+| Duplicate | Create a copy of this entry (Ctrl+D) |
+| Delete | Remove this entry (Delete) |
+| Save as Template... | Save entry settings as a reusable template |
+
+**Pool Context Menu** (right-click on pool header):
+
+| Action | Description |
+|--------|-------------|
+| Add Item... | Open item picker to add a new entry |
+| Add from Template... | Add entry using a template |
+| Duplicate Pool | Create a copy of the entire pool |
+| Clear Pool | Remove all entries from the pool |
+| Delete Pool | Remove the pool entirely |
+| Add New Pool | Create a new empty pool |
+
 ---
 
 ## Batch Operations
@@ -409,29 +439,56 @@ Apply changes across ALL loot tables at once - powerful for modpack-wide adjustm
 |-----------|-------------|
 | Remove Item | Remove a specific item from all loot tables |
 | Replace Item | Replace one item with another across all tables |
+| Scale Weights | Multiply all entry weights by a factor |
+| Scale Counts | Multiply all item counts by a factor |
 
 **Using Bulk Operations:**
-1. Select an operation type
-2. Enter the item ID (e.g., `minecraft:diamond`)
+1. Select an operation type (two rows of operation buttons)
+2. For item operations: Enter the item ID (e.g., `minecraft:diamond`)
 3. For Replace: also enter the replacement item ID
-4. Click "Preview" to see affected tables
-5. Review the list of changes
-6. Click "Apply" to execute
+4. For Scale operations: Enter a scale factor (e.g., 2.0 = double, 0.5 = halve)
+5. Click "Preview" to see affected tables
+6. Review the list of changes
+7. Click "Apply" to execute
 
 **Use Cases:**
 - Remove overpowered mod items from all loot tables
 - Replace one resource with another across your modpack
+- Scale weights to make all items more/less common
+- Scale counts to increase/decrease drop quantities globally
 - Standardize loot across different structures
 
 **Warning:** Bulk operations affect many tables. Always preview before applying and use Test Mode to verify changes in-game.
 
 ### Validation
 
-Check loot tables for potential issues and errors.
+Check loot tables for potential issues and errors with automatic fix suggestions.
 
-**Running Validation:**
+#### Validation Panel
+
+Access the dedicated validation panel for the current table:
+
+1. Press **5** or click the checkmark icon in the Activity Bar
+2. The panel shows all issues for the currently selected table
+3. Issues update automatically when you make edits
+4. Click an issue to navigate to the affected pool/entry
+
+#### Running One-Time Validation
+
+For quick validation without switching panels:
+
 1. Select a loot table in the editor
 2. Press Ctrl+P and type "Validate" or select "Validate Loot Table"
+3. A toast notification shows the summary
+
+#### Validate All Edited Tables
+
+Check all tables you've edited at once:
+
+1. Press Ctrl+P and type "Validate All" or select "Validate All Edited Tables"
+2. All edited tables are validated
+3. Summary toast shows total errors and warnings across all tables
+4. Detailed issues logged to game console (F3+T to view)
 
 **Issue Types Detected:**
 
@@ -451,10 +508,24 @@ Check loot tables for potential issues and errors.
 - **Warning** (Orange): Might cause problems, review recommended
 - **Info** (Blue): Informational, may be intentional
 
-**Results:**
-- Toast notification shows summary (X errors, Y warnings)
-- Detailed issues logged to game console (F3+T to view)
-- Use to verify your edits don't introduce problems
+#### Auto-Fix
+
+Some issues can be automatically fixed with one click:
+
+| Issue | Auto-Fix Action |
+|-------|-----------------|
+| Zero Weight | Set weight to 1 |
+| Zero Rolls | Set rolls to 1 |
+| Empty Pool | Remove the empty pool |
+
+**Using Auto-Fix:**
+1. Open the Validation panel (press 5)
+2. Look for issues with a green "Fix" button
+3. Click "Fix" to apply the automatic correction
+4. The table is updated and validation refreshes
+5. A toast confirms the fix was applied
+
+**Note:** Not all issues can be auto-fixed. Issues like Missing Item or Duplicate Entry require manual review since the correct fix depends on your intent.
 
 ---
 
@@ -576,6 +647,7 @@ Preserve your work across game restarts:
 | 2 | Show Global Search panel |
 | 3 | Show Analysis panel |
 | 4 | Show History panel |
+| 5 | Show Validation panel |
 
 ### Editing
 
