@@ -40,6 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activity Bar badge showing issue count
 - Auto-fix for Unreachable Entry (all entries have 0 weight)
 
+#### Help & Documentation
+- In-app help buttons ("?") on all complex screens
+- Click to open relevant documentation in browser
+- Screens with help: Test Arena, Bulk Operations, Drop Simulator, Quick Fix, Export, Import, Templates, Sessions
+- Command Palette: "Open Documentation" and "Report Issue on GitHub" commands
+
 ### Improved
 - Enhanced context menus with Move Up/Down, Duplicate, Clear Pool
 - Better inline editing with text input for weights and counts
