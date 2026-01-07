@@ -93,7 +93,12 @@ public class DropRatePanel extends AbstractWidget {
         graphics.drawString(font, "Drop Rates", getX() + PADDING, getY() + 7, IsotopeColors.ACCENT_GOLD, false);
 
         if (structure == null || poolStats.isEmpty()) {
-            graphics.drawString(font, "No data", getX() + PADDING, getY() + 30, IsotopeColors.TEXT_MUTED, false);
+            int centerX = getX() + width / 2;
+            graphics.drawString(font, "📊", centerX - 6, getY() + 35, 0xFF3a3a3a, false);
+            String msg = "Select a loot table";
+            graphics.drawString(font, msg, centerX - font.width(msg) / 2, getY() + 55, IsotopeColors.TEXT_MUTED, false);
+            String hint = "to see drop rates";
+            graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, 0xFF555555, false);
             return;
         }
 

@@ -4,13 +4,18 @@ import dev.isotope.Isotope;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableSerializer;
+import dev.isotope.export.KubeJSExporter;
 import dev.isotope.registry.LootTableRegistry;
+import dev.isotope.validation.LootTableValidator;
 import dev.isotope.session.EditorSession;
 import dev.isotope.session.SessionManager;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.KeyboardShortcuts;
 import dev.isotope.ui.TabManager;
+import dev.isotope.ui.widget.ActivityBar;
+import dev.isotope.ui.widget.CommandPalette;
+import dev.isotope.ui.widget.ContextMenu;
 import dev.isotope.ui.widget.EditorTabBar;
 import dev.isotope.ui.widget.DiffPanel;
 import dev.isotope.ui.widget.DropRatePanel;
@@ -32,21 +37,32 @@ import org.lwjgl.glfw.GLFW;
 
 
 /**
- * Unified loot table editor screen.
+ * Unified loot table editor screen with VS Code-style layout.
  *
- * Single screen with 2-panel layout:
- * - Left: Loot table browser with mod filter, search, and categories
- * - Right: Inline editing of selected loot table
+ * Layout:
+ * - Activity bar (left edge): Panel switching icons
+ * - Left panel: Loot table browser OR analysis panels
+ * - Right panel: Edit area with tabs
+ * - Command palette (Ctrl+P): Quick access to all commands
  */
 @Environment(EnvType.CLIENT)
 public class LootEditorScreen extends Screen implements KeyboardShortcuts.ShortcutContext {
 
     private static final int HEADER_HEIGHT = 30;
     private static final int TAB_BAR_HEIGHT = 22;
+    private static final int STATUS_BAR_HEIGHT = 20;
     private static final int LEFT_PANEL_WIDTH = 200;
     private static final int PADDING = 5;
 
-    // Widgets
+    // Activity bar panel IDs
+    private static final String PANEL_BROWSER = "browser";
+    private static final String PANEL_SEARCH = "search";
+    private static final String PANEL_ANALYSIS = "analysis";
+    private static final String PANEL_HISTORY = "history";
+
+    // Core widgets
+    private ActivityBar activityBar;
+    private CommandPalette commandPalette;
     private LootTableBrowserWidget browser;
     private LootTableEditPanel editPanel;
     private EditorTabBar tabBar;
@@ -54,25 +70,28 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     private DropRatePanel dropRatePanel;
     private DiffPanel diffPanel;
     private HistoryLogPanel historyPanel;
+
+    // Essential toolbar buttons (kept minimal)
     private Button undoButton;
     private Button redoButton;
-    private Button ratesButton;
-    private Button diffButton;
     private Button testModeButton;
     private Button exportButton;
-    private Button sessionsButton;
-    private Button importButton;
-    private Button compareButton;
-    private Button historyButton;
-    private Button copyJsonButton;
 
-    // Search overlay state
-    private boolean searchVisible = false;
+    // Overlay states
+    private boolean commandPaletteVisible = false;
+    private boolean globalSearchVisible = false;
 
-    // Bottom panels state
-    private boolean dropRatesVisible = false;
-    private boolean diffVisible = false;
-    private boolean historyVisible = false;
+    // Context menu
+    @Nullable
+    private ContextMenu contextMenu;
+    private boolean contextMenuVisible = false;
+
+    // Active panel (controlled by activity bar)
+    private String activePanel = PANEL_BROWSER;
+
+    // Analysis panel visibility (when PANEL_ANALYSIS is active)
+    private boolean showRates = true;
+    private boolean showDiff = false;
 
     // Tab management
     private final TabManager tabManager = new TabManager();
@@ -89,191 +108,188 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     protected void init() {
         super.init();
 
-        // Header buttons (right side)
-        int buttonY = 5;
+        // Register listeners
+        LootEditManager.getInstance().addListener(editListener);
+        tabManager.addListener(tabListener);
 
-        // Export button
-        exportButton = Button.builder(Component.literal("Export"), this::onExport)
-            .pos(width - 75, buttonY)
-            .size(70, 20)
+        // === Activity Bar (left edge) ===
+        activityBar = new ActivityBar(0, HEADER_HEIGHT, height - HEADER_HEIGHT - STATUS_BAR_HEIGHT)
+            .addItem(PANEL_BROWSER, "\u2630", "Browser (1)")        // ☰
+            .addItem(PANEL_SEARCH, "\u2315", "Global Search (2)")   // ⌕
+            .addItem(PANEL_ANALYSIS, "\u2261", "Analysis (3)")      // ≡
+            .addItem(PANEL_HISTORY, "\u2398", "History (4)")        // ⎘
+            .onSelect(item -> onActivityItemSelected(item.id()));
+        activityBar.setSelectedId(activePanel);
+        addRenderableWidget(activityBar);
+
+        // === Header Toolbar (minimal - right side only) ===
+        int buttonY = 5;
+        int buttonX = width - PADDING;
+
+        // Export button (primary action)
+        buttonX -= 70;
+        exportButton = Button.builder(Component.literal("Export"), b -> onExport())
+            .pos(buttonX, buttonY)
+            .size(65, 20)
             .tooltip(Tooltip.create(Component.literal("Export edits as datapack (Ctrl+S)")))
             .build();
         addRenderableWidget(exportButton);
 
         // Test mode toggle
-        testModeButton = Button.builder(Component.literal(getTestModeLabel()), this::onToggleTestMode)
-            .pos(width - 165, buttonY)
+        buttonX -= 90;
+        testModeButton = Button.builder(Component.literal(getTestModeLabel()), b -> onToggleTestMode())
+            .pos(buttonX, buttonY)
             .size(85, 20)
-            .tooltip(Tooltip.create(Component.literal("Toggle test mode - applies edits to loot generation in-game")))
+            .tooltip(Tooltip.create(Component.literal("Toggle test mode (F5)")))
             .build();
         addRenderableWidget(testModeButton);
 
         // Redo button
-        redoButton = Button.builder(Component.literal("Redo"), this::onRedo)
-            .pos(width - 220, buttonY)
-            .size(50, 20)
-            .tooltip(Tooltip.create(Component.literal("Redo last undone change (Ctrl+Y)")))
+        buttonX -= 45;
+        redoButton = Button.builder(Component.literal("\u21B7"), b -> onRedo())  // ↷
+            .pos(buttonX, buttonY)
+            .size(40, 20)
+            .tooltip(Tooltip.create(Component.literal("Redo (Ctrl+Y)")))
             .build();
         addRenderableWidget(redoButton);
 
         // Undo button
-        undoButton = Button.builder(Component.literal("Undo"), this::onUndo)
-            .pos(width - 275, buttonY)
-            .size(50, 20)
-            .tooltip(Tooltip.create(Component.literal("Undo last change (Ctrl+Z)")))
+        buttonX -= 45;
+        undoButton = Button.builder(Component.literal("\u21B6"), b -> onUndo())  // ↶
+            .pos(buttonX, buttonY)
+            .size(40, 20)
+            .tooltip(Tooltip.create(Component.literal("Undo (Ctrl+Z)")))
             .build();
         addRenderableWidget(undoButton);
 
-        // Rates toggle button
-        ratesButton = Button.builder(Component.literal("Rates"), this::onToggleRates)
-            .pos(width - 330, buttonY)
-            .size(50, 20)
-            .tooltip(Tooltip.create(Component.literal("Show drop rate visualization panel")))
-            .build();
-        addRenderableWidget(ratesButton);
+        // === Main Content Area ===
+        int contentX = ActivityBar.WIDTH;
+        int contentY = HEADER_HEIGHT;
+        int contentWidth = width - ActivityBar.WIDTH;
+        int contentHeight = height - HEADER_HEIGHT - STATUS_BAR_HEIGHT;
 
-        // Diff toggle button
-        diffButton = Button.builder(Component.literal("Diff"), this::onToggleDiff)
-            .pos(width - 380, buttonY)
-            .size(45, 20)
-            .tooltip(Tooltip.create(Component.literal("Show changes vs original loot table")))
-            .build();
-        addRenderableWidget(diffButton);
-
-        // History toggle button
-        historyButton = Button.builder(Component.literal("Log"), this::onToggleHistory)
-            .pos(width - 420, buttonY)
-            .size(35, 20)
-            .tooltip(Tooltip.create(Component.literal("Show edit history log")))
-            .build();
-        addRenderableWidget(historyButton);
-
-        // Sessions button
-        sessionsButton = Button.builder(Component.literal("Sessions"), this::onOpenSessions)
-            .pos(width - 495, buttonY)
-            .size(70, 20)
-            .tooltip(Tooltip.create(Component.literal("Save/load editing sessions")))
-            .build();
-        addRenderableWidget(sessionsButton);
-
-        // Import button
-        importButton = Button.builder(Component.literal("Import"), this::onOpenImport)
-            .pos(width - 555, buttonY)
-            .size(55, 20)
-            .tooltip(Tooltip.create(Component.literal("Import edits from existing datapack")))
-            .build();
-        addRenderableWidget(importButton);
-
-        // Compare button
-        compareButton = Button.builder(Component.literal("Compare"), this::onOpenCompare)
-            .pos(width - 625, buttonY)
-            .size(65, 20)
-            .tooltip(Tooltip.create(Component.literal("Compare two loot tables side-by-side")))
-            .build();
-        addRenderableWidget(compareButton);
-
-        // Copy JSON button
-        copyJsonButton = Button.builder(Component.literal("Copy"), this::onCopyJson)
-            .pos(width - 675, buttonY)
-            .size(45, 20)
-            .tooltip(Tooltip.create(Component.literal("Copy loot table JSON to clipboard")))
-            .build();
-        addRenderableWidget(copyJsonButton);
-
-        // Register listeners
-        LootEditManager.getInstance().addListener(editListener);
-        tabManager.addListener(tabListener);
-
-        // Tab bar (right side, under header)
-        int tabBarX = LEFT_PANEL_WIDTH + PADDING * 2;
-        int tabBarWidth = width - tabBarX - PADDING;
-        tabBar = new EditorTabBar(tabBarX, HEADER_HEIGHT, tabBarWidth, tabManager);
+        // Tab bar
+        int tabBarX = contentX + LEFT_PANEL_WIDTH + PADDING;
+        int tabBarWidth = contentWidth - LEFT_PANEL_WIDTH - PADDING * 2;
+        tabBar = new EditorTabBar(tabBarX, contentY, tabBarWidth, tabManager);
         addRenderableWidget(tabBar);
 
-        // Left panel - Browser
-        int contentY = HEADER_HEIGHT + TAB_BAR_HEIGHT + PADDING;
-        int contentHeight = height - contentY - PADDING;
+        // Edit panel (always visible on right, fills available space)
+        int editX = contentX + LEFT_PANEL_WIDTH + PADDING;
+        int editY = contentY + TAB_BAR_HEIGHT + PADDING;
+        int editWidth = contentWidth - LEFT_PANEL_WIDTH - PADDING * 2;
+        int editHeight = contentHeight - TAB_BAR_HEIGHT - PADDING * 2;
 
-        browser = new LootTableBrowserWidget(
-            PADDING,
-            HEADER_HEIGHT,
-            LEFT_PANEL_WIDTH,
-            height - HEADER_HEIGHT - PADDING,
-            this::onTableSelected
-        );
-        addRenderableWidget(browser);
-
-        // Right panel - Edit panel
-        int editX = LEFT_PANEL_WIDTH + PADDING * 2;
-        int editWidth = width - editX - PADDING;
-
-        // Calculate panel sizes based on visibility
-        int bottomPanelHeight = 0;
-        if (dropRatesVisible) bottomPanelHeight += 180;
-        if (diffVisible) bottomPanelHeight += 150;
-        if (historyVisible) bottomPanelHeight += 120;
-        int editPanelHeight = contentHeight - bottomPanelHeight;
-
-        editPanel = new LootTableEditPanel(
-            editX,
-            contentY,
-            editWidth,
-            editPanelHeight
-        );
+        editPanel = new LootTableEditPanel(editX, editY, editWidth, editHeight);
+        editPanel.setContextMenuListener(this::onContextMenuRequested);
         addRenderableWidget(editPanel);
 
-        int bottomY = contentY + editPanelHeight;
+        // === Left Panel (varies by activity bar selection) ===
+        int leftPanelX = contentX;
+        int leftPanelY = contentY;
+        int leftPanelHeight = contentHeight;
 
-        // Drop rate panel
-        int dropRateHeight = dropRatesVisible ? 180 : 0;
-        dropRatePanel = new DropRatePanel(
-            editX,
-            bottomY,
-            editWidth,
-            dropRateHeight
-        );
-        dropRatePanel.visible = dropRatesVisible;
-        addRenderableWidget(dropRatePanel);
-        bottomY += dropRateHeight;
+        switch (activePanel) {
+            case PANEL_BROWSER:
+                browser = new LootTableBrowserWidget(
+                    leftPanelX, leftPanelY, LEFT_PANEL_WIDTH, leftPanelHeight,
+                    this::onTableSelected
+                );
+                addRenderableWidget(browser);
+                browser.loadData();
+                break;
 
-        // Diff panel
-        int diffHeight = diffVisible ? 150 : 0;
-        diffPanel = new DiffPanel(
-            editX,
-            bottomY,
-            editWidth,
-            diffHeight
-        );
-        diffPanel.visible = diffVisible;
-        addRenderableWidget(diffPanel);
-        bottomY += diffHeight;
+            case PANEL_SEARCH:
+                // Global search in left panel mode
+                searchWidget = new GlobalSearchWidget(
+                    leftPanelX, leftPanelY, LEFT_PANEL_WIDTH, leftPanelHeight,
+                    this::onSearchResultSelected
+                );
+                addRenderableWidget(searchWidget);
+                searchWidget.focusSearch();
+                break;
 
-        // History log panel
-        int historyHeight = historyVisible ? 120 : 0;
-        historyPanel = new HistoryLogPanel(
-            editX,
-            bottomY,
-            editWidth,
-            historyHeight > 0 ? historyHeight : 120
-        );
-        historyPanel.visible = historyVisible;
-        addRenderableWidget(historyPanel);
+            case PANEL_ANALYSIS:
+                // Toggle buttons at top
+                int toggleY = leftPanelY;
+                int toggleBtnWidth = (LEFT_PANEL_WIDTH - 10) / 3;
 
-        // Load data
-        browser.loadData();
+                // Rates toggle
+                Button ratesBtn = Button.builder(Component.literal(showRates ? "● Rates" : "○ Rates"), b -> {
+                    showRates = !showRates;
+                    if (!showRates && !showDiff) showDiff = true; // At least one must be on
+                    rebuildWidgets();
+                })
+                    .pos(leftPanelX + 2, toggleY + 2)
+                    .size(toggleBtnWidth, 16)
+                    .build();
+                addRenderableWidget(ratesBtn);
 
-        // Global search overlay (initially hidden)
-        int searchWidth = 300;
-        int searchHeight = 400;
-        searchWidget = new GlobalSearchWidget(
-            (width - searchWidth) / 2,
-            (height - searchHeight) / 2,
-            searchWidth,
-            searchHeight,
-            this::onSearchResultSelected
-        );
-        searchWidget.visible = searchVisible;
-        addRenderableWidget(searchWidget);
+                // Diff toggle
+                Button diffBtn = Button.builder(Component.literal(showDiff ? "● Diff" : "○ Diff"), b -> {
+                    showDiff = !showDiff;
+                    if (!showRates && !showDiff) showRates = true; // At least one must be on
+                    rebuildWidgets();
+                })
+                    .pos(leftPanelX + 4 + toggleBtnWidth, toggleY + 2)
+                    .size(toggleBtnWidth, 16)
+                    .build();
+                addRenderableWidget(diffBtn);
+
+                // Both toggle
+                Button bothBtn = Button.builder(Component.literal("Both"), b -> {
+                    showRates = true;
+                    showDiff = true;
+                    rebuildWidgets();
+                })
+                    .pos(leftPanelX + 6 + toggleBtnWidth * 2, toggleY + 2)
+                    .size(toggleBtnWidth, 16)
+                    .build();
+                addRenderableWidget(bothBtn);
+
+                // Show rates and diff panels below the toggles
+                int analysisY = leftPanelY + 22;
+                int remainingHeight = leftPanelHeight - 22;
+
+                if (showRates && showDiff) {
+                    // Split space between both panels
+                    int ratesHeight = remainingHeight * 2 / 3;
+                    int diffHeight = remainingHeight - ratesHeight - 5;
+
+                    dropRatePanel = new DropRatePanel(leftPanelX, analysisY, LEFT_PANEL_WIDTH, ratesHeight);
+                    addRenderableWidget(dropRatePanel);
+
+                    diffPanel = new DiffPanel(leftPanelX, analysisY + ratesHeight + 5, LEFT_PANEL_WIDTH, diffHeight);
+                    addRenderableWidget(diffPanel);
+                } else if (showRates) {
+                    // Rates takes full height
+                    dropRatePanel = new DropRatePanel(leftPanelX, analysisY, LEFT_PANEL_WIDTH, remainingHeight);
+                    addRenderableWidget(dropRatePanel);
+                } else if (showDiff) {
+                    // Diff takes full height
+                    diffPanel = new DiffPanel(leftPanelX, analysisY, LEFT_PANEL_WIDTH, remainingHeight);
+                    addRenderableWidget(diffPanel);
+                }
+
+                updateAnalysisPanels();
+                break;
+
+            case PANEL_HISTORY:
+                historyPanel = new HistoryLogPanel(leftPanelX, leftPanelY, LEFT_PANEL_WIDTH, leftPanelHeight);
+                addRenderableWidget(historyPanel);
+                historyPanel.refreshEntries();
+                break;
+        }
+
+        // === Command Palette (overlay, initially hidden) ===
+        commandPalette = new CommandPalette(width, height);
+        registerCommands();
+        commandPalette.onClose(v -> {
+            commandPaletteVisible = false;
+            commandPalette.visible = false;
+        });
+        commandPalette.visible = false;
+        addRenderableWidget(commandPalette);
 
         // Restore from active tab if any
         tabManager.getActiveTableId().ifPresent(tableId -> editPanel.setLootTable(tableId));
@@ -282,32 +298,128 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         updateButtonStates();
     }
 
-    private void onSearchResultSelected(ResourceLocation tableId) {
-        // Open the table in a tab
-        tabManager.openTab(tableId);
-        // Hide search overlay
-        searchVisible = false;
-        searchWidget.visible = false;
+    /**
+     * Register all commands in the command palette.
+     */
+    private void registerCommands() {
+        commandPalette
+            // File operations
+            .addCommand("export", "\u2913", "Export as Datapack", "Ctrl+S", this::onExport)
+            .addCommand("copy-json", "\u2398", "Copy JSON to Clipboard", "", this::onCopyJson)
+            .addCommand("import", "\u2912", "Import from Datapack...", "", this::onOpenImport)
+
+            // Edit operations
+            .addCommand("undo", "\u21B6", "Undo", "Ctrl+Z", this::onUndo)
+            .addCommand("redo", "\u21B7", "Redo", "Ctrl+Y", this::onRedo)
+            .addCommand("copy", "\u2398", "Copy Entry", "Ctrl+C", () -> {
+                if (getSelectedTable() != null) editPanel.copySelected();
+            })
+            .addCommand("paste", "\u2399", "Paste Entry", "Ctrl+V", () -> {
+                if (getSelectedTable() != null) editPanel.pasteFromClipboard();
+            })
+            .addCommand("delete", "\u2715", "Delete Selected", "Del", () -> {
+                if (getSelectedTable() != null) editPanel.deleteSelected();
+            })
+            .addCommand("duplicate", "\u2750", "Duplicate Entry", "Ctrl+D", () -> {
+                if (getSelectedTable() != null) editPanel.duplicateSelected();
+            })
+
+            // View operations
+            .addCommand("toggle-test", "\u25CF", "Toggle Test Mode", "F5", this::onToggleTestMode)
+            .addCommand("panel-browser", "\u2630", "Show Browser Panel", "1", () -> switchPanel(PANEL_BROWSER))
+            .addCommand("panel-search", "\u2315", "Show Search Panel", "2", () -> switchPanel(PANEL_SEARCH))
+            .addCommand("panel-analysis", "\u2261", "Show Analysis Panel", "3", () -> switchPanel(PANEL_ANALYSIS))
+            .addCommand("panel-history", "\u2398", "Show History Panel", "4", () -> switchPanel(PANEL_HISTORY))
+            .addCommand("global-search", "\u2315", "Global Item Search", "Ctrl+Shift+F", this::globalSearch)
+
+            // Tools
+            .addCommand("simulate", "🎲", "Simulate Drops...", "", this::onOpenSimulation)
+            .addCommand("quickfix", "⚡", "Quick Fix Wizards...", "", this::onOpenQuickFix)
+            .addCommand("bulk", "📦", "Bulk Operations...", "", this::onOpenBulkOps)
+            .addCommand("validate", "\u2714", "Validate Loot Table", "", this::onValidateTable)
+            .addCommand("kubejs", "K", "Export as KubeJS Script", "", this::onExportKubeJS)
+            .addCommand("compare", "\u2194", "Compare Two Tables...", "", this::onOpenCompare)
+            .addCommand("sessions", "\u2630", "Manage Sessions...", "", this::onOpenSessions)
+
+            // Help
+            .addCommand("shortcuts", "?", "Keyboard Shortcuts", "F1", this::showHelp);
+    }
+
+    private void switchPanel(String panelId) {
+        if (!activePanel.equals(panelId)) {
+            activePanel = panelId;
+            activityBar.setSelectedId(panelId);
+            rebuildWidgets();
+        }
+    }
+
+    private void onActivityItemSelected(String panelId) {
+        switchPanel(panelId);
     }
 
     private void onTableSelected(ResourceLocation tableId) {
-        // Open in a tab (or switch to existing tab)
         tabManager.openTab(tableId);
-        // Tab listener will handle updating edit panel
+    }
+
+    private void onSearchResultSelected(ResourceLocation tableId) {
+        tabManager.openTab(tableId);
+        // Switch back to browser after selection
+        switchPanel(PANEL_BROWSER);
     }
 
     private void onTabsChanged() {
-        // Update edit panel to show active tab's table
         var activeTable = getSelectedTable();
         editPanel.setLootTable(activeTable);
-        updateDropRatePanel();
-        updateDiffPanel();
+        updateAnalysisPanels();
         updateButtonStates();
     }
 
-    /**
-     * Get the currently selected (active tab's) table ID.
-     */
+    // ===== Context Menu Handling =====
+
+    private void onContextMenuRequested(LootTableEditPanel.ContextMenuRequest request) {
+        // Close any existing context menu
+        closeContextMenu();
+
+        // Create appropriate context menu based on type
+        if (request.type() == LootTableEditPanel.ContextMenuType.ENTRY) {
+            contextMenu = createEntryContextMenu(request.x(), request.y(), request.poolIdx(), request.entryIdx());
+        } else if (request.type() == LootTableEditPanel.ContextMenuType.POOL) {
+            contextMenu = createPoolContextMenu(request.x(), request.y(), request.poolIdx());
+        }
+
+        if (contextMenu != null) {
+            contextMenu.reposition(width, height);
+            contextMenu.onClose(v -> closeContextMenu());
+            contextMenuVisible = true;
+        }
+    }
+
+    private ContextMenu createEntryContextMenu(int x, int y, int poolIdx, int entryIdx) {
+        boolean canPaste = dev.isotope.editing.ClipboardManager.getInstance().hasEntry();
+
+        return new ContextMenu(x, y)
+            .addItem("\u2398", "Copy", "Ctrl+C", () -> editPanel.copySelected())
+            .addItem("\u2399", "Paste", "Ctrl+V", () -> editPanel.pasteFromClipboard(), canPaste)
+            .addSeparator()
+            .addItem("\u2750", "Duplicate", "Ctrl+D", () -> editPanel.duplicateSelected())
+            .addItem("\u2715", "Delete", "Del", () -> editPanel.deleteSelected())
+            .addSeparator()
+            .addItem("\u2606", "Save as Template...", "", () -> editPanel.saveSelectedAsTemplate());
+    }
+
+    private ContextMenu createPoolContextMenu(int x, int y, int poolIdx) {
+        return new ContextMenu(x, y)
+            .addItem("+", "Add Item...", "", () -> editPanel.openAddItem(poolIdx))
+            .addItem("\u2630", "Add from Template...", "", () -> editPanel.openTemplatePicker(poolIdx))
+            .addSeparator()
+            .addItem("\u2715", "Delete Pool", "", () -> editPanel.deletePool(poolIdx));
+    }
+
+    private void closeContextMenu() {
+        contextMenuVisible = false;
+        contextMenu = null;
+    }
+
     @Nullable
     private ResourceLocation getSelectedTable() {
         return tabManager.getActiveTableId().orElse(null);
@@ -315,69 +427,46 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     private String getTestModeLabel() {
         boolean active = LootEditManager.getInstance().isTestModeActive();
-        return "Test Mode " + (active ? "●" : "○");
+        return "Test " + (active ? "\u25CF" : "\u25CB");  // ● or ○
     }
 
-    private void onToggleTestMode(Button button) {
+    private void onToggleTestMode() {
         LootEditManager.getInstance().toggleTestMode();
         testModeButton.setMessage(Component.literal(getTestModeLabel()));
+        IsotopeToast.info("Test Mode", LootEditManager.getInstance().isTestModeActive() ? "Enabled" : "Disabled");
     }
 
-    private void onToggleRates(Button button) {
-        dropRatesVisible = !dropRatesVisible;
-        // Reinitialize to resize panels
-        rebuildWidgets();
-        updateDropRatePanel();
-    }
-
-    private void onToggleDiff(Button button) {
-        diffVisible = !diffVisible;
-        // Reinitialize to resize panels
-        rebuildWidgets();
-        updateDiffPanel();
-    }
-
-    private void onToggleHistory(Button button) {
-        historyVisible = !historyVisible;
-        // Reinitialize to resize panels
-        rebuildWidgets();
-        if (historyVisible && historyPanel != null) {
-            historyPanel.refreshEntries();
-        }
-    }
-
-    private void onOpenSessions(Button button) {
-        if (minecraft != null) {
-            minecraft.setScreen(new SessionScreen(this, tabManager));
-        }
-    }
-
-    private void onOpenImport(Button button) {
-        if (minecraft != null) {
-            minecraft.setScreen(new ImportScreen(this, tabManager));
-        }
-    }
-
-    private void onOpenCompare(Button button) {
-        if (minecraft != null) {
-            // If a table is selected, use it as the left side
-            ResourceLocation current = getSelectedTable();
-            if (current != null) {
-                minecraft.setScreen(new CompareScreen(this, current, null));
-            } else {
-                minecraft.setScreen(new CompareScreen(this));
+    private void onUndo() {
+        if (getSelectedTable() != null) {
+            if (LootEditManager.getInstance().undo(getSelectedTable())) {
+                editPanel.refresh();
+                updateAnalysisPanels();
             }
         }
     }
 
-    private void onCopyJson(Button button) {
+    private void onRedo() {
+        if (getSelectedTable() != null) {
+            if (LootEditManager.getInstance().redo(getSelectedTable())) {
+                editPanel.refresh();
+                updateAnalysisPanels();
+            }
+        }
+    }
+
+    private void onExport() {
+        if (minecraft != null) {
+            minecraft.setScreen(new ExportScreen(this));
+        }
+    }
+
+    private void onCopyJson() {
         ResourceLocation tableId = getSelectedTable();
         if (tableId == null) {
             IsotopeToast.info("Copy JSON", "No loot table selected");
             return;
         }
 
-        // Get edited or original structure
         var structure = LootEditManager.getInstance().getEditedStructure(tableId)
             .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
 
@@ -388,11 +477,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         try {
             String json = LootTableSerializer.toJson(structure);
-
-            // Copy to system clipboard
             if (minecraft != null) {
                 minecraft.keyboardHandler.setClipboard(json);
-                IsotopeToast.success("Copied", tableId.getPath() + " JSON copied to clipboard");
+                IsotopeToast.success("Copied", tableId.getPath() + " JSON copied");
             }
         } catch (Exception e) {
             IsotopeToast.error("Copy Failed", e.getMessage());
@@ -400,73 +487,141 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
     }
 
-    private void updateDiffPanel() {
-        if (diffPanel == null) return;
-        diffPanel.setTable(getSelectedTable());
+    private void onOpenImport() {
+        if (minecraft != null) {
+            minecraft.setScreen(new ImportScreen(this, tabManager));
+        }
     }
 
-    private void updateDropRatePanel() {
-        if (dropRatePanel == null) return;
+    private void onOpenCompare() {
+        if (minecraft != null) {
+            ResourceLocation current = getSelectedTable();
+            if (current != null) {
+                minecraft.setScreen(new CompareScreen(this, current, null));
+            } else {
+                minecraft.setScreen(new CompareScreen(this));
+            }
+        }
+    }
 
-        var tableId = getSelectedTable();
-        if (tableId == null) {
-            dropRatePanel.setStructure(null);
+    private void onOpenSimulation() {
+        if (minecraft != null) {
+            ResourceLocation current = getSelectedTable();
+            if (current != null) {
+                minecraft.setScreen(new SimulationScreen(this, current));
+            } else {
+                IsotopeToast.warning("No Table", "Select a loot table first");
+            }
+        }
+    }
+
+    private void onOpenQuickFix() {
+        if (minecraft != null) {
+            ResourceLocation current = getSelectedTable();
+            if (current != null) {
+                minecraft.setScreen(new QuickFixScreen(this, current));
+            } else {
+                IsotopeToast.warning("No Table", "Select a loot table first");
+            }
+        }
+    }
+
+    private void onOpenBulkOps() {
+        if (minecraft != null) {
+            minecraft.setScreen(new BulkOperationScreen(this));
+        }
+    }
+
+    private void onExportKubeJS() {
+        if (LootEditManager.getInstance().getEditedTables().isEmpty()) {
+            IsotopeToast.warning("No Edits", "No edited loot tables to export");
             return;
         }
 
-        // Get edited or original structure
-        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
-            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
-        dropRatePanel.setStructure(structure);
+        var result = KubeJSExporter.getInstance().export(msg -> {
+            Isotope.LOGGER.info("[KubeJS Export] {}", msg);
+        });
+
+        if (result.success()) {
+            IsotopeToast.success("KubeJS Export", "Script saved to kubejs/server_scripts/");
+        } else {
+            IsotopeToast.error("Export Failed", result.error());
+        }
     }
 
-    private void onUndo(Button button) {
-        if (getSelectedTable() != null) {
-            if (LootEditManager.getInstance().undo(getSelectedTable())) {
-                editPanel.refresh();
-                IsotopeToast.info("Undo", "Reverted last change");
+    private void onValidateTable() {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null) {
+            IsotopeToast.warning("No Table", "Select a loot table first");
+            return;
+        }
+
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+
+        if (structure == null) {
+            IsotopeToast.error("Validation", "Could not load loot table");
+            return;
+        }
+
+        var result = LootTableValidator.validate(tableId, structure);
+
+        if (!result.hasIssues()) {
+            IsotopeToast.success("Validation", "No issues found!");
+        } else {
+            String summary = result.errorCount() + " error(s), " + result.warningCount() + " warning(s)";
+            if (result.hasErrors()) {
+                IsotopeToast.error("Validation", summary);
+            } else {
+                IsotopeToast.warning("Validation", summary);
+            }
+
+            // Log details
+            for (var issue : result.issues()) {
+                Isotope.LOGGER.info("[Validate] {} - {}: {}", issue.severity().label, issue.type().name, issue.message());
             }
         }
     }
 
-    private void onRedo(Button button) {
-        if (getSelectedTable() != null) {
-            if (LootEditManager.getInstance().redo(getSelectedTable())) {
-                editPanel.refresh();
-                IsotopeToast.info("Redo", "Restored change");
+    private void onOpenSessions() {
+        if (minecraft != null) {
+            minecraft.setScreen(new SessionScreen(this, tabManager));
+        }
+    }
+
+    private void updateAnalysisPanels() {
+        if (dropRatePanel != null) {
+            var tableId = getSelectedTable();
+            if (tableId != null) {
+                var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+                    .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+                dropRatePanel.setStructure(structure);
+            } else {
+                dropRatePanel.setStructure(null);
             }
+        }
+
+        if (diffPanel != null) {
+            diffPanel.setTable(getSelectedTable());
         }
     }
 
     private void updateButtonStates() {
-        if (getSelectedTable() != null) {
-            undoButton.active = LootEditManager.getInstance().canUndo(getSelectedTable());
-            redoButton.active = LootEditManager.getInstance().canRedo(getSelectedTable());
+        ResourceLocation selected = getSelectedTable();
+        if (selected != null) {
+            undoButton.active = LootEditManager.getInstance().canUndo(selected);
+            redoButton.active = LootEditManager.getInstance().canRedo(selected);
         } else {
             undoButton.active = false;
             redoButton.active = false;
         }
 
-        // Refresh drop rate panel when edits change
-        if (dropRatesVisible && dropRatePanel != null) {
-            updateDropRatePanel();
+        // Update panels if visible
+        if (activePanel.equals(PANEL_ANALYSIS)) {
+            updateAnalysisPanels();
         }
-
-        // Refresh diff panel when edits change
-        if (diffVisible && diffPanel != null) {
-            diffPanel.recalculate();
-        }
-
-        // Refresh history panel when edits change
-        if (historyVisible && historyPanel != null) {
+        if (activePanel.equals(PANEL_HISTORY) && historyPanel != null) {
             historyPanel.refreshEntries();
-        }
-    }
-
-    private void onExport(Button button) {
-        // Open export screen with path selection options
-        if (minecraft != null) {
-            minecraft.setScreen(new ExportScreen(this));
         }
     }
 
@@ -476,105 +631,204 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Header bar
-        graphics.fill(0, 0, width, HEADER_HEIGHT, 0xFF1a1a1a);
-        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, 0xFF333333);
+        graphics.fill(0, 0, width, HEADER_HEIGHT, IsotopeColors.BACKGROUND_SOLID);
+        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, IsotopeColors.BORDER_INNER);
 
         // Title
-        graphics.drawString(font, "ISOTOPE", 10, 10, IsotopeColors.ACCENT_GOLD, false);
+        graphics.drawString(font, "ISOTOPE", ActivityBar.WIDTH + 10, 10, IsotopeColors.ACCENT_GOLD, false);
+
+        // Command palette hint
+        graphics.drawString(font, "Ctrl+P", ActivityBar.WIDTH + 70, 11, IsotopeColors.TEXT_MUTED, false);
 
         // Edit count indicator
         int editCount = LootEditManager.getInstance().getEditedTableCount();
         if (editCount > 0) {
             String editText = editCount + " edit" + (editCount > 1 ? "s" : "");
-            int editWidth = font.width(editText);
-            graphics.drawString(font, editText, width - 180 - editWidth, 10, IsotopeColors.BADGE_MODIFIED, false);
+            graphics.drawString(font, editText, width - 300, 10, IsotopeColors.BADGE_MODIFIED, false);
         }
 
         // Render widgets
         super.render(graphics, mouseX, mouseY, partialTick);
+
+        // Status bar (rendered AFTER widgets so it's on top)
+        int statusY = height - STATUS_BAR_HEIGHT;
+        graphics.fill(0, statusY, width, height, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.fill(0, statusY, width, statusY + 1, IsotopeColors.BORDER_INNER);
+
+        // Status bar content
+        ResourceLocation selectedTable = getSelectedTable();
+        if (selectedTable != null) {
+            graphics.drawString(font, selectedTable.toString(), ActivityBar.WIDTH + 5, statusY + 6,
+                IsotopeColors.TEXT_SECONDARY, false);
+        } else {
+            graphics.drawString(font, "No table selected", ActivityBar.WIDTH + 5, statusY + 6,
+                IsotopeColors.TEXT_MUTED, false);
+        }
+
+        // Show edit count in status bar too
+        if (editCount > 0) {
+            String statusEdit = editCount + " unsaved edit" + (editCount > 1 ? "s" : "");
+            int statusEditWidth = font.width(statusEdit);
+            graphics.drawString(font, statusEdit, width - statusEditWidth - 10, statusY + 6,
+                IsotopeColors.BADGE_MODIFIED, false);
+        }
+
+        // Context menu (rendered last, on top of everything)
+        if (contextMenuVisible && contextMenu != null) {
+            contextMenu.render(graphics, mouseX, mouseY, partialTick);
+        }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // If global search is visible, give it priority for clicks
-        if (searchVisible && searchWidget.isMouseOver(mouseX, mouseY)) {
-            if (searchWidget.mouseClicked(mouseX, mouseY, button)) {
+        // Context menu takes priority over everything
+        if (contextMenuVisible && contextMenu != null) {
+            if (contextMenu.isMouseOver(mouseX, mouseY)) {
+                return contextMenu.mouseClicked(mouseX, mouseY, button);
+            } else {
+                // Click outside closes context menu
+                closeContextMenu();
                 return true;
             }
         }
-        // If clicked outside global search, close it
-        if (searchVisible && !searchWidget.isMouseOver(mouseX, mouseY)) {
-            searchVisible = false;
-            searchWidget.visible = false;
-            return true;
+
+        // Command palette takes priority
+        if (commandPaletteVisible) {
+            if (commandPalette.isMouseOver(mouseX, mouseY)) {
+                return commandPalette.mouseClicked(mouseX, mouseY, button);
+            } else {
+                // Click outside closes palette
+                commandPaletteVisible = false;
+                commandPalette.visible = false;
+                return true;
+            }
         }
+
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // First, check if edit panel is in inline editing mode
-        if (editPanel != null && editPanel.isEditing()) {
-            if (editPanel.keyPressed(keyCode, scanCode, modifiers)) {
+        // Context menu - Escape closes it
+        if (contextMenuVisible && contextMenu != null) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                closeContextMenu();
                 return true;
+            }
+            // Block other keys while context menu is open
+            return true;
+        }
+
+        // Command palette takes priority when visible
+        if (commandPaletteVisible) {
+            return commandPalette.keyPressed(keyCode, scanCode, modifiers);
+        }
+
+        // Ctrl+P to open command palette
+        boolean ctrl = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
+        if (ctrl && keyCode == GLFW.GLFW_KEY_P) {
+            commandPaletteVisible = true;
+            commandPalette.visible = true;
+            commandPalette.reset();
+            setFocused(commandPalette);
+            return true;
+        }
+
+        // Number keys for quick panel switching
+        if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_4 && modifiers == 0) {
+            String[] panels = {PANEL_BROWSER, PANEL_SEARCH, PANEL_ANALYSIS, PANEL_HISTORY};
+            int index = keyCode - GLFW.GLFW_KEY_1;
+            switchPanel(panels[index]);
+            return true;
+        }
+
+        // F5 for test mode
+        if (keyCode == GLFW.GLFW_KEY_F5) {
+            onToggleTestMode();
+            return true;
+        }
+
+        // Edit panel - inline editing OR navigation
+        if (editPanel != null) {
+            // Always forward to edit panel for editing mode
+            if (editPanel.isEditing()) {
+                if (editPanel.keyPressed(keyCode, scanCode, modifiers)) {
+                    return true;
+                }
+            }
+            // Forward navigation keys (arrows, home, end, enter) to edit panel
+            if (keyCode == GLFW.GLFW_KEY_UP || keyCode == GLFW.GLFW_KEY_DOWN ||
+                keyCode == GLFW.GLFW_KEY_HOME || keyCode == GLFW.GLFW_KEY_END ||
+                keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+                if (editPanel.keyPressed(keyCode, scanCode, modifiers)) {
+                    return true;
+                }
             }
         }
 
-        // Then let focused widgets handle the key (for text input)
-        // This must happen BEFORE shortcuts, otherwise backspace/delete get stolen
+        // Let focused widgets handle the key
         if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
 
-        // Then delegate to centralized keyboard shortcuts handler
+        // Delegate to keyboard shortcuts handler
         if (KeyboardShortcuts.handle(keyCode, modifiers, this)) {
             return true;
         }
+
         return false;
     }
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        // Route to edit panel if it's in inline editing mode
+        if (commandPaletteVisible) {
+            return commandPalette.charTyped(chr, modifiers);
+        }
+
         if (editPanel != null && editPanel.isEditing()) {
             if (editPanel.charTyped(chr, modifiers)) {
                 return true;
             }
         }
+
         return super.charTyped(chr, modifiers);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (commandPaletteVisible && commandPalette.isMouseOver(mouseX, mouseY)) {
+            return commandPalette.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     // ===== ShortcutContext Implementation =====
 
     @Override
     public void undo() {
-        onUndo(undoButton);
+        onUndo();
     }
 
     @Override
     public void redo() {
-        onRedo(redoButton);
+        onRedo();
     }
 
     @Override
     public void save() {
-        onExport(exportButton);
+        onExport();
     }
 
     @Override
     public void focusSearch() {
-        browser.focusSearch();
+        if (browser != null) {
+            browser.focusSearch();
+        }
     }
 
     @Override
     public void globalSearch() {
-        searchVisible = !searchVisible;
-        searchWidget.visible = searchVisible;
-        if (searchVisible) {
-            searchWidget.focusSearch();
-            // Tell the Screen to route events to this widget
-            this.setFocused(searchWidget);
-        }
+        switchPanel(PANEL_SEARCH);
     }
 
     @Override
@@ -600,14 +854,12 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     @Override
     public void escape() {
-        if (searchVisible) {
-            // Close search overlay first
-            searchVisible = false;
-            searchWidget.visible = false;
+        if (commandPaletteVisible) {
+            commandPaletteVisible = false;
+            commandPalette.visible = false;
         } else if (editPanel.hasSelection()) {
             editPanel.clearSelection();
         } else {
-            // No overlays or selection - close the screen
             onClose();
         }
     }
@@ -658,7 +910,11 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
      * Get current UI panel visibility state.
      */
     public EditorSession.UIState getCurrentUIState() {
-        return new EditorSession.UIState(dropRatesVisible, diffVisible, historyVisible);
+        return new EditorSession.UIState(
+            activePanel.equals(PANEL_ANALYSIS) && showRates,
+            activePanel.equals(PANEL_ANALYSIS) && showDiff,
+            activePanel.equals(PANEL_HISTORY)
+        );
     }
 
     /**
@@ -666,9 +922,13 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
      */
     public void applyUIState(EditorSession.UIState state) {
         if (state == null) return;
-        dropRatesVisible = state.dropRatesVisible();
-        diffVisible = state.diffVisible();
-        historyVisible = state.historyVisible();
+        if (state.historyVisible()) {
+            activePanel = PANEL_HISTORY;
+        } else if (state.dropRatesVisible() || state.diffVisible()) {
+            activePanel = PANEL_ANALYSIS;
+            showRates = state.dropRatesVisible();
+            showDiff = state.diffVisible();
+        }
         rebuildWidgets();
     }
 }

@@ -312,6 +312,55 @@ public class LootTableBrowserWidget extends AbstractWidget {
             }
         }
 
+        // Check if anything to show
+        boolean hasContent = !bookmarks.isEmpty();
+        if (!hasContent) {
+            for (LootTableCategory cat : LootTableCategory.values()) {
+                if (getCategoryCount(cat) > 0) {
+                    hasContent = true;
+                    break;
+                }
+            }
+        }
+
+        // Empty state when no results
+        if (!hasContent) {
+            String searchText = searchBox != null ? searchBox.getValue() : "";
+            int centerX = getX() + width / 2;
+            int centerY = listY + 60;
+
+            if (!searchText.isEmpty()) {
+                // No search results
+                graphics.drawString(font, "⌕", centerX - 4, centerY - 20, IsotopeColors.TEXT_MUTED, false);
+                String noResults = "No results found";
+                graphics.drawString(font, noResults, centerX - font.width(noResults) / 2, centerY,
+                    IsotopeColors.TEXT_SECONDARY, false);
+                String hint = "Try a different search term";
+                graphics.drawString(font, hint, centerX - font.width(hint) / 2, centerY + 14,
+                    IsotopeColors.TEXT_MUTED, false);
+            } else if (!selectedMod.equals("All")) {
+                // No tables for selected mod
+                graphics.drawString(font, "∅", centerX - 4, centerY - 20, IsotopeColors.TEXT_MUTED, false);
+                String noTables = "No loot tables";
+                graphics.drawString(font, noTables, centerX - font.width(noTables) / 2, centerY,
+                    IsotopeColors.TEXT_SECONDARY, false);
+                String modHint = "for " + selectedMod;
+                graphics.drawString(font, modHint, centerX - font.width(modHint) / 2, centerY + 14,
+                    IsotopeColors.TEXT_MUTED, false);
+            } else {
+                // No tables at all (shouldn't happen normally)
+                graphics.drawString(font, "∅", centerX - 4, centerY - 20, IsotopeColors.TEXT_MUTED, false);
+                String noTables = "No loot tables found";
+                graphics.drawString(font, noTables, centerX - font.width(noTables) / 2, centerY,
+                    IsotopeColors.TEXT_SECONDARY, false);
+                String hint = "Join a world first";
+                graphics.drawString(font, hint, centerX - font.width(hint) / 2, centerY + 14,
+                    IsotopeColors.TEXT_MUTED, false);
+            }
+            graphics.disableScissor();
+            return;
+        }
+
         for (LootTableCategory cat : LootTableCategory.values()) {
             int count = getCategoryCount(cat);
             if (count == 0) continue;

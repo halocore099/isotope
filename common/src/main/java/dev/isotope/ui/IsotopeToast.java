@@ -8,21 +8,34 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * Custom toast notifications for ISOTOPE.
+ *
+ * VS Code-style notifications with:
+ * - Icon indicators (✓, ✕, ℹ)
+ * - Colored accent bar
+ * - Smooth fade animation
+ * - Auto-dismiss after 3 seconds
  */
 @Environment(EnvType.CLIENT)
 public class IsotopeToast implements Toast {
 
+    private static final int DISPLAY_TIME_MS = 3000;
+    private static final int FADE_TIME_MS = 200;
+
     public enum Type {
-        SUCCESS(0xFF2ecc71),  // Green
-        ERROR(0xFFe74c3c),    // Red
-        INFO(0xFF3498db);     // Blue
+        SUCCESS(0xFF4ec9b0, "✓"),  // Teal/green - VS Code success
+        ERROR(0xFFf14c4c, "✕"),    // Red - VS Code error
+        INFO(0xFF3794ff, "ℹ"),     // Blue - VS Code info
+        WARNING(0xFFcca700, "⚠");  // Yellow - VS Code warning
 
         public final int color;
-        Type(int color) { this.color = color; }
+        public final String icon;
+        Type(int color, String icon) {
+            this.color = color;
+            this.icon = icon;
+        }
     }
 
     private final Type type;
@@ -39,8 +52,9 @@ public class IsotopeToast implements Toast {
 
     @Override
     public Visibility getWantedVisibility() {
-        return this.startTime == 0 ? Visibility.SHOW :
-               (System.currentTimeMillis() - this.startTime < 5000L ? Visibility.SHOW : Visibility.HIDE);
+        if (this.startTime == 0) return Visibility.SHOW;
+        long elapsed = System.currentTimeMillis() - this.startTime;
+        return elapsed < DISPLAY_TIME_MS + FADE_TIME_MS ? Visibility.SHOW : Visibility.HIDE;
     }
 
     @Override
@@ -58,31 +72,56 @@ public class IsotopeToast implements Toast {
             this.justUpdated = false;
         }
 
-        // Background
-        graphics.fill(0, 0, width(), height(), 0xFF1a1a1a);
-        graphics.fill(0, 0, 3, height(), type.color);
+        // Calculate fade alpha
+        long elapsed = System.currentTimeMillis() - this.startTime;
+        float alpha = 1.0f;
+        if (elapsed > DISPLAY_TIME_MS) {
+            alpha = 1.0f - (float)(elapsed - DISPLAY_TIME_MS) / FADE_TIME_MS;
+            alpha = Math.max(0, Math.min(1, alpha));
+        }
+
+        int bgAlpha = (int)(alpha * 0xF0);
+        int textAlpha = (int)(alpha * 0xFF);
+
+        // Background with shadow
+        graphics.fill(2, 2, width(), height(), (int)(alpha * 0x40) << 24); // Shadow
+        graphics.fill(0, 0, width() - 2, height() - 2, (bgAlpha << 24) | 0x1e1e1e);
+
+        // Colored accent bar (left edge)
+        int accentColor = (textAlpha << 24) | (type.color & 0x00FFFFFF);
+        graphics.fill(0, 0, 3, height() - 2, accentColor);
 
         // Border
-        graphics.renderOutline(0, 0, width(), height(), 0xFF333333);
+        int borderColor = (int)(alpha * 0x50) << 24 | 0x454545;
+        graphics.renderOutline(0, 0, width() - 2, height() - 2, borderColor);
 
-        // Icon/indicator
-        graphics.fill(8, 8, 14, 14, type.color);
+        // Icon
+        int iconColor = (textAlpha << 24) | (type.color & 0x00FFFFFF);
+        graphics.drawString(font, type.icon, 8, 7, iconColor, false);
 
         // Title
-        graphics.drawString(font, title, 20, 7, type.color, false);
+        int titleColor = (textAlpha << 24) | 0xE0E0E0;
+        graphics.drawString(font, title, 22, 7, titleColor, false);
 
-        // Message
-        graphics.drawString(font, message, 20, 18, 0xFFaaaaaa, false);
+        // Message (dimmer)
+        int messageColor = (textAlpha << 24) | 0x969696;
+        graphics.drawString(font, message, 22, 19, messageColor, false);
+
+        // ISOTOPE badge (subtle)
+        String badge = "ISOTOPE";
+        int badgeWidth = font.width(badge);
+        int badgeColor = (int)(alpha * 0x40) << 24 | 0xFFFFFF;
+        graphics.drawString(font, badge, width() - badgeWidth - 8, 19, badgeColor, false);
     }
 
     @Override
     public int width() {
-        return 200;
+        return 220;
     }
 
     @Override
     public int height() {
-        return 32;
+        return 34;
     }
 
     // === Static helpers ===
@@ -97,6 +136,10 @@ public class IsotopeToast implements Toast {
 
     public static void info(String title, String message) {
         show(Type.INFO, title, message);
+    }
+
+    public static void warning(String title, String message) {
+        show(Type.WARNING, title, message);
     }
 
     public static void show(Type type, String title, String message) {

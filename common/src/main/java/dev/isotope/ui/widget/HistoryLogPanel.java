@@ -112,6 +112,18 @@ public class HistoryLogPanel extends AbstractWidget {
             return;
         }
 
+        // Empty state
+        if (entries == null || entries.isEmpty()) {
+            int centerX = getX() + width / 2;
+            int centerY = getY() + HEADER_HEIGHT + 50;
+            graphics.drawString(font, "📝", centerX - 6, centerY - 20, 0xFF3a3a3a, false);
+            String msg = "No changes yet";
+            graphics.drawString(font, msg, centerX - font.width(msg) / 2, centerY, IsotopeColors.TEXT_MUTED, false);
+            String hint = "Edit a loot table to see history";
+            graphics.drawString(font, hint, centerX - font.width(hint) / 2, centerY + 14, 0xFF555555, false);
+            return;
+        }
+
         // Entries
         graphics.enableScissor(getX(), getY() + HEADER_HEIGHT, getX() + width, getY() + expandedHeight);
 

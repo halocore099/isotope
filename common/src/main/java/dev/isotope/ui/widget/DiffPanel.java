@@ -104,8 +104,20 @@ public class DiffPanel extends AbstractWidget {
         graphics.drawString(font, "Changes", getX() + PADDING, getY() + 7, IsotopeColors.ACCENT_GOLD, false);
 
         if (diffResult == null || !diffResult.hasChanges()) {
-            String msg = tableId == null ? "No table selected" : "No changes";
-            graphics.drawString(font, msg, getX() + PADDING, getY() + 30, IsotopeColors.TEXT_MUTED, false);
+            int centerX = getX() + width / 2;
+            if (tableId == null) {
+                graphics.drawString(font, "±", centerX - 4, getY() + 35, 0xFF3a3a3a, false);
+                String msg = "Select a loot table";
+                graphics.drawString(font, msg, centerX - font.width(msg) / 2, getY() + 55, IsotopeColors.TEXT_MUTED, false);
+                String hint = "to track changes";
+                graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, 0xFF555555, false);
+            } else {
+                graphics.drawString(font, "✓", centerX - 4, getY() + 35, 0xFF4ec9b0, false);
+                String msg = "No changes";
+                graphics.drawString(font, msg, centerX - font.width(msg) / 2, getY() + 55, IsotopeColors.TEXT_MUTED, false);
+                String hint = "Table is unmodified";
+                graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, 0xFF555555, false);
+            }
             return;
         }
 

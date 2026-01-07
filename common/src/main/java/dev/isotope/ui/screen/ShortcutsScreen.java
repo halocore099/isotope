@@ -15,38 +15,50 @@ import net.minecraft.network.chat.Component;
 @Environment(EnvType.CLIENT)
 public class ShortcutsScreen extends Screen {
 
-    private static final int DIALOG_WIDTH = 320;
-    private static final int DIALOG_HEIGHT = 380;
+    private static final int DIALOG_WIDTH = 340;
+    private static final int DIALOG_HEIGHT = 480;
 
     private final Screen parent;
 
-    // Shortcuts to display
-    private static final String[][] SHORTCUTS = {
-        // General
+    // Shortcut sections for display
+    private static final String[][] GENERAL = {
+        {"Ctrl+P", "Open command palette"},
         {"F1", "Show this help"},
+        {"F5", "Toggle test mode"},
         {"Escape", "Close overlay / Clear selection"},
-        {"Ctrl+F", "Focus browser search"},
-        {"Ctrl+Shift+F", "Global search across all tables"},
+    };
 
-        // Edit operations
+    private static final String[][] PANELS = {
+        {"1", "Browser panel"},
+        {"2", "Search panel"},
+        {"3", "Analysis panel"},
+        {"4", "History panel"},
+    };
+
+    private static final String[][] EDITING = {
         {"Ctrl+Z", "Undo last change"},
         {"Ctrl+Y", "Redo last change"},
         {"Ctrl+S", "Export as datapack"},
+    };
 
-        // Entry operations
-        {"Ctrl+N", "Add new item to selected pool"},
+    private static final String[][] ENTRIES = {
+        {"Ctrl+N", "Add new item to pool"},
         {"Delete", "Remove selected entry(s)"},
-        {"Ctrl+D", "Duplicate selected entry"},
-        {"Ctrl+C", "Copy selected entry"},
-        {"Ctrl+V", "Paste entry from clipboard"},
+        {"Ctrl+D", "Duplicate entry"},
+        {"Ctrl+C", "Copy entry"},
+        {"Ctrl+V", "Paste entry"},
+    };
 
-        // Multi-selection
-        {"Ctrl+Click", "Toggle entry selection"},
-        {"Shift+Click", "Select range of entries"},
+    private static final String[][] NAVIGATION = {
+        {"↑/↓", "Navigate entries"},
+        {"Home", "Jump to first entry"},
+        {"End", "Jump to last entry"},
+        {"Enter", "Edit selected weight"},
+    };
 
-        // Navigation
-        {"Tab", "Next field"},
-        {"Shift+Tab", "Previous field"},
+    private static final String[][] SELECTION = {
+        {"Ctrl+Click", "Toggle selection"},
+        {"Shift+Click", "Select range"},
     };
 
     public ShortcutsScreen(Screen parent) {
@@ -91,52 +103,24 @@ public class ShortcutsScreen extends Screen {
         // Shortcuts list
         int y = dialogY + 30;
         int keyX = dialogX + 20;
-        int descX = dialogX + 130;
 
         // Section: General
-        graphics.drawString(font, "General", dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
-        y += 14;
+        y = renderSection(graphics, dialogX, keyX, y, "General", GENERAL);
 
-        for (int i = 0; i < 4; i++) {
-            renderShortcut(graphics, keyX, y, SHORTCUTS[i][0], SHORTCUTS[i][1]);
-            y += 12;
-        }
+        // Section: Panels
+        y = renderSection(graphics, dialogX, keyX, y, "Panels", PANELS);
 
-        y += 8;
-        graphics.drawString(font, "Editing", dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
-        y += 14;
+        // Section: Editing
+        y = renderSection(graphics, dialogX, keyX, y, "Editing", EDITING);
 
-        for (int i = 4; i < 7; i++) {
-            renderShortcut(graphics, keyX, y, SHORTCUTS[i][0], SHORTCUTS[i][1]);
-            y += 12;
-        }
+        // Section: Entries
+        y = renderSection(graphics, dialogX, keyX, y, "Entry Operations", ENTRIES);
 
-        y += 8;
-        graphics.drawString(font, "Entry Operations", dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
-        y += 14;
+        // Section: Navigation
+        y = renderSection(graphics, dialogX, keyX, y, "Navigation", NAVIGATION);
 
-        for (int i = 7; i < 12; i++) {
-            renderShortcut(graphics, keyX, y, SHORTCUTS[i][0], SHORTCUTS[i][1]);
-            y += 12;
-        }
-
-        y += 8;
-        graphics.drawString(font, "Multi-Selection", dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
-        y += 14;
-
-        for (int i = 12; i < 14; i++) {
-            renderShortcut(graphics, keyX, y, SHORTCUTS[i][0], SHORTCUTS[i][1]);
-            y += 12;
-        }
-
-        y += 8;
-        graphics.drawString(font, "Navigation", dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
-        y += 14;
-
-        for (int i = 14; i < SHORTCUTS.length; i++) {
-            renderShortcut(graphics, keyX, y, SHORTCUTS[i][0], SHORTCUTS[i][1]);
-            y += 12;
-        }
+        // Section: Selection
+        y = renderSection(graphics, dialogX, keyX, y, "Multi-Selection", SELECTION);
 
         // Re-render button on top
         for (var widget : this.children()) {
@@ -144,6 +128,16 @@ public class ShortcutsScreen extends Screen {
                 btn.render(graphics, mouseX, mouseY, partialTick);
             }
         }
+    }
+
+    private int renderSection(GuiGraphics graphics, int dialogX, int keyX, int y, String title, String[][] shortcuts) {
+        graphics.drawString(font, title, dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
+        y += 14;
+        for (String[] shortcut : shortcuts) {
+            renderShortcut(graphics, keyX, y, shortcut[0], shortcut[1]);
+            y += 12;
+        }
+        return y + 6;
     }
 
     private void renderShortcut(GuiGraphics graphics, int x, int y, String key, String description) {

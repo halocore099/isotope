@@ -6,14 +6,20 @@ A comprehensive guide to using Isotope IDE for modpack loot table editing and an
 
 1. [Getting Started](#getting-started)
 2. [Interface Overview](#interface-overview)
-3. [Browsing Loot Tables](#browsing-loot-tables)
-4. [Editing Loot Tables](#editing-loot-tables)
-5. [Batch Operations](#batch-operations)
-6. [Analysis Tools](#analysis-tools)
-7. [Exporting Changes](#exporting-changes)
-8. [Sessions and Workflow](#sessions-and-workflow)
-9. [Keyboard Shortcuts](#keyboard-shortcuts)
-10. [Troubleshooting](#troubleshooting)
+3. [Command Palette](#command-palette)
+4. [Browsing Loot Tables](#browsing-loot-tables)
+5. [Editing Loot Tables](#editing-loot-tables)
+6. [Batch Operations](#batch-operations)
+7. [Analysis Tools](#analysis-tools)
+8. [Advanced Tools](#advanced-tools)
+   - [Drop Simulator](#drop-simulator)
+   - [Quick Fix Wizards](#quick-fix-wizards)
+   - [Bulk Operations](#bulk-operations)
+   - [Validation](#validation)
+9. [Exporting Changes](#exporting-changes)
+10. [Sessions and Workflow](#sessions-and-workflow)
+11. [Keyboard Shortcuts](#keyboard-shortcuts)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -46,37 +52,95 @@ The registry scan happens once per game launch and indexes all loot tables from 
 
 ## Interface Overview
 
-The main interface is divided into several panels:
+The main interface uses a VS Code-inspired layout with several panels:
 
-### Left Panel: Loot Table Browser
+### Activity Bar (Left Edge)
 
-- **Namespace Filter**: Filter tables by mod (minecraft, modname, etc.)
-- **Search Bar**: Search for tables by name
-- **Category Badges**: Shows table type (CHEST, ENTITY, BLOCK, etc.)
-- **Table List**: All loot tables matching current filters
+The vertical bar on the far left provides quick access to different panels:
 
-### Center Panel: Tab Bar
+| Icon | Panel | Shortcut |
+|------|-------|----------|
+| ☰ | Browser | 1 |
+| ⌕ | Global Search | 2 |
+| ≡ | Analysis | 3 |
+| ⎘ | History | 4 |
+
+### Left Panel
+
+Changes based on Activity Bar selection:
+- **Browser**: Loot table browser with namespace filter and search
+- **Search**: Global item search across all loot tables
+- **Analysis**: Drop rate visualization and diff view
+- **History**: Edit history log with timestamps
+
+### Tab Bar
 
 - Open multiple loot tables simultaneously in tabs
 - Click a tab to switch between tables
 - Click X on a tab to close it
 - Modified tables show an indicator
 
-### Right Panel: Edit Panel
+### Edit Panel (Right Side)
 
 - View and edit the currently selected loot table
 - Shows pools, entries, weights, and counts
 - Inline editing for all values
+- Right-click for context menu
 
-### Toolbar Buttons
+### Header Toolbar
 
 | Button | Function |
 |--------|----------|
-| Test Mode | Toggle live testing of your edits in-game |
-| Rates | Show/hide drop rate visualization panel |
-| Diff | Show/hide comparison with original table |
-| History | Show/hide edit history log |
+| ↶ | Undo (Ctrl+Z) |
+| ↷ | Redo (Ctrl+Y) |
+| Test ○/● | Toggle live testing of edits in-game |
 | Export | Open export options dialog |
+
+### Status Bar
+
+Shows current table name and unsaved edit count.
+
+---
+
+## Command Palette
+
+The Command Palette provides quick access to all Isotope features. Press **Ctrl+P** to open it.
+
+### Using the Command Palette
+
+1. Press **Ctrl+P** anywhere in the editor
+2. Type to filter commands (fuzzy search supported)
+3. Use arrow keys to navigate
+4. Press Enter to execute the selected command
+5. Press Escape to close
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| **File Operations** | |
+| Export as Datapack | Export edited tables as a Minecraft datapack |
+| Copy JSON to Clipboard | Copy current table's JSON |
+| Import from Datapack... | Import tables from an existing datapack |
+| **Edit Operations** | |
+| Undo / Redo | Undo or redo changes |
+| Copy / Paste Entry | Copy and paste loot entries |
+| Delete Selected | Remove selected entries |
+| Duplicate Entry | Duplicate the selected entry |
+| **View Operations** | |
+| Toggle Test Mode | Enable/disable live loot testing |
+| Show Browser/Search/Analysis/History Panel | Switch left panel view |
+| Global Item Search | Search for items across all tables |
+| **Tools** | |
+| Simulate Drops... | Run drop simulation on current table |
+| Quick Fix Wizards... | Apply one-click balancing fixes |
+| Bulk Operations... | Apply changes across multiple tables |
+| Validate Loot Table | Check for issues in current table |
+| Export as KubeJS Script | Export edits as KubeJS server script |
+| Compare Two Tables... | Side-by-side table comparison |
+| Manage Sessions... | Save and load work sessions |
+| **Help** | |
+| Keyboard Shortcuts | Show all keyboard shortcuts (F1) |
 
 ---
 
@@ -274,6 +338,126 @@ Track all changes made during the session:
 
 ---
 
+## Advanced Tools
+
+Access these tools via the Command Palette (Ctrl+P) or their respective shortcuts.
+
+### Drop Simulator
+
+Simulate loot drops to verify your changes produce expected results.
+
+**Opening the Simulator:**
+1. Select a loot table in the editor
+2. Press Ctrl+P and type "Simulate" or select "Simulate Drops..."
+
+**Using the Simulator:**
+1. Choose the number of rolls: 100, 1,000, 5,000, or 10,000
+2. Click "Run Simulation"
+3. Wait for the simulation to complete
+
+**Understanding Results:**
+- **Simulated %**: Actual drop rate from the simulation
+- **Theoretical %**: Calculated probability based on weights
+- **Bar Charts**: Visual comparison of simulated vs theoretical
+- Large differences may indicate issues with your configuration
+
+**Tips:**
+- More rolls = more accurate results (10,000 recommended for rare items)
+- Compare original vs edited tables to see the impact of changes
+- Use for balancing: aim for specific drop rates
+
+### Quick Fix Wizards
+
+One-click operations for common loot table balancing tasks.
+
+**Opening Quick Fix:**
+1. Select a loot table in the editor
+2. Press Ctrl+P and type "Quick Fix" or select "Quick Fix Wizards..."
+
+**Available Fixes:**
+
+| Fix | Description |
+|-----|-------------|
+| Balance Weights | Normalize all entry weights to sum to 100 |
+| Nerf Rare Items | Halve weight of items with <5% drop rate |
+| Buff Rare Items | Double weight of items with <5% drop rate |
+| Nerf Common Items | Halve weight of items with >50% drop rate |
+| Buff Common Items | Double weight of items with >50% drop rate |
+| Cap Quantity | Set max item count to 3 for all entries |
+| Double Quantity | Double all item counts |
+| Halve Quantity | Halve all item counts |
+| Remove Enchanted | Remove enchantment functions from all entries |
+| Remove Duplicates | Remove duplicate item entries per pool |
+
+**Using Quick Fix:**
+1. Select a fix from the left panel
+2. Preview shows the changes that will be made
+3. Click "Apply Fix" to apply the changes
+4. Changes can be undone with Ctrl+Z
+
+### Bulk Operations
+
+Apply changes across ALL loot tables at once - powerful for modpack-wide adjustments.
+
+**Opening Bulk Operations:**
+1. Press Ctrl+P and type "Bulk" or select "Bulk Operations..."
+2. No table needs to be selected
+
+**Available Operations:**
+
+| Operation | Description |
+|-----------|-------------|
+| Remove Item | Remove a specific item from all loot tables |
+| Replace Item | Replace one item with another across all tables |
+
+**Using Bulk Operations:**
+1. Select an operation type
+2. Enter the item ID (e.g., `minecraft:diamond`)
+3. For Replace: also enter the replacement item ID
+4. Click "Preview" to see affected tables
+5. Review the list of changes
+6. Click "Apply" to execute
+
+**Use Cases:**
+- Remove overpowered mod items from all loot tables
+- Replace one resource with another across your modpack
+- Standardize loot across different structures
+
+**Warning:** Bulk operations affect many tables. Always preview before applying and use Test Mode to verify changes in-game.
+
+### Validation
+
+Check loot tables for potential issues and errors.
+
+**Running Validation:**
+1. Select a loot table in the editor
+2. Press Ctrl+P and type "Validate" or select "Validate Loot Table"
+
+**Issue Types Detected:**
+
+| Issue | Severity | Description |
+|-------|----------|-------------|
+| Empty Pool | Warning | Pool has no entries |
+| Zero Weight | Warning | Entry has weight of 0 |
+| Zero Rolls | Warning | Pool always rolls 0 times |
+| Missing Item | Error | Item does not exist in registry |
+| Duplicate Entry | Info | Same item appears multiple times |
+| Negative Count | Error | Item count can be negative |
+| Unreachable Entry | Error | Entry can never be selected |
+| Conflicting Functions | Warning | Multiple functions conflict |
+
+**Severity Levels:**
+- **Error** (Red): Will cause problems, should be fixed
+- **Warning** (Orange): Might cause problems, review recommended
+- **Info** (Blue): Informational, may be intentional
+
+**Results:**
+- Toast notification shows summary (X errors, Y warnings)
+- Detailed issues logged to game console (F3+T to view)
+- Use to verify your edits don't introduce problems
+
+---
+
 ## Exporting Changes
 
 ### Export Dialog
@@ -296,6 +480,42 @@ Creates a valid Minecraft datapack with your edited loot tables:
 2. The datapack is created in `<game>/isotope-datapacks/`
 3. Copy the folder to your world's `datapacks/` directory
 4. Run `/reload` in-game to apply changes
+
+### KubeJS Export
+
+Export your edits as KubeJS server scripts for modpack distribution.
+
+**What is KubeJS?**
+KubeJS is a popular modding tool that lets you modify game content via JavaScript without creating full mods. Many modpack creators prefer KubeJS for easier maintenance and distribution.
+
+**Exporting to KubeJS:**
+1. Make your edits to loot tables
+2. Press Ctrl+P and select "Export as KubeJS Script"
+3. The script is saved to `<game>/kubejs/server_scripts/`
+
+**Output Format:**
+```javascript
+ServerEvents.lootTables(event => {
+    event.modify('minecraft:chests/simple_dungeon', loot => {
+        loot.clearPools();
+        loot.addPool(pool => {
+            pool.rolls = [1, 3];
+            pool.addItem('minecraft:diamond', 10);
+            pool.addItem('minecraft:emerald', 5).count([1, 3]);
+        });
+    });
+});
+```
+
+**Requirements:**
+- KubeJS mod must be installed to use the exported scripts
+- Scripts work on both client and dedicated servers
+
+**Advantages over Datapacks:**
+- Easier to read and modify manually
+- Can be version-controlled more easily
+- Integrates with other KubeJS scripts
+- Familiar syntax for JavaScript developers
 
 ### Testing Changes
 
@@ -343,8 +563,19 @@ Preserve your work across game restarts:
 
 | Shortcut | Action |
 |----------|--------|
+| Ctrl+P | Open Command Palette |
 | F1 | Show keyboard shortcuts overlay |
-| Escape | Close current overlay/cancel edit |
+| F5 | Toggle Test Mode |
+| Escape | Close overlay / Cancel edit / Clear selection |
+
+### Panel Switching
+
+| Shortcut | Action |
+|----------|--------|
+| 1 | Show Browser panel |
+| 2 | Show Global Search panel |
+| 3 | Show Analysis panel |
+| 4 | Show History panel |
 
 ### Editing
 
@@ -352,11 +583,12 @@ Preserve your work across game restarts:
 |----------|--------|
 | Ctrl+Z | Undo last change |
 | Ctrl+Y | Redo |
-| Ctrl+S | Export as datapack |
+| Ctrl+S | Open export dialog |
 | Ctrl+C | Copy selected entry |
 | Ctrl+V | Paste entry |
+| Ctrl+D | Duplicate selected entry |
 | Delete | Remove selected entry(s) |
-| Right-click | Save entry as custom template |
+| Right-click | Open context menu / Save as template |
 
 ### Selection
 
@@ -370,15 +602,18 @@ Preserve your work across game restarts:
 | Shortcut | Action |
 |----------|--------|
 | Ctrl+Shift+F | Open global search |
+| Up/Down | Navigate entries |
+| Enter | Select/confirm |
 
 ### Inline Editing
 
 | Key | Action |
 |-----|--------|
+| Click value | Start editing |
 | Enter | Confirm edit |
 | Escape | Cancel edit |
 | Backspace | Delete character before cursor |
-| Delete | Delete character after cursor |
+| 0-9 | Type digits (integers only) |
 | Left/Right | Move cursor |
 | Home/End | Jump to start/end |
 

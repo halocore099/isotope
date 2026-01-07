@@ -102,6 +102,31 @@ public class LootTableEditPanel extends AbstractWidget {
         }
     }
 
+    /**
+     * Context menu request data.
+     */
+    public record ContextMenuRequest(int x, int y, ContextMenuType type, int poolIdx, int entryIdx) {}
+
+    /**
+     * Types of context menus.
+     */
+    public enum ContextMenuType { ENTRY, POOL }
+
+    /**
+     * Listener for context menu requests.
+     */
+    @FunctionalInterface
+    public interface ContextMenuListener {
+        void onContextMenuRequested(ContextMenuRequest request);
+    }
+
+    @Nullable
+    private ContextMenuListener contextMenuListener;
+
+    public void setContextMenuListener(@Nullable ContextMenuListener listener) {
+        this.contextMenuListener = listener;
+    }
+
     public LootTableEditPanel(int x, int y, int width, int height) {
         super(x, y, width, height, Component.empty());
     }
@@ -201,25 +226,33 @@ public class LootTableEditPanel extends AbstractWidget {
         graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1a1a1a);
 
         if (tableId == null) {
-            // Empty state with helpful messaging
+            // Empty state with icon and helpful messaging
             int centerX = getX() + width / 2;
             int centerY = getY() + height / 2;
 
+            // Large icon
+            graphics.drawString(font, "◇", centerX - 4, centerY - 50, 0xFF4a4a4a, false);
+
             String title = "No Loot Table Selected";
-            graphics.drawString(font, title, centerX - font.width(title) / 2, centerY - 30,
+            graphics.drawString(font, title, centerX - font.width(title) / 2, centerY - 24,
                 IsotopeColors.TEXT_PRIMARY, false);
 
-            String hint1 = "Select a loot table from the browser";
-            graphics.drawString(font, hint1, centerX - font.width(hint1) / 2, centerY - 10,
+            // Separator line
+            graphics.fill(centerX - 60, centerY - 8, centerX + 60, centerY - 7, 0xFF333333);
+
+            // Tips
+            String hint1 = "← Select a table from the browser";
+            graphics.drawString(font, hint1, centerX - font.width(hint1) / 2, centerY + 4,
                 IsotopeColors.TEXT_MUTED, false);
 
-            String hint2 = "or use Ctrl+Shift+F to search";
-            graphics.drawString(font, hint2, centerX - font.width(hint2) / 2, centerY + 4,
+            String hint2 = "Press 2 for global search";
+            graphics.drawString(font, hint2, centerX - font.width(hint2) / 2, centerY + 20,
                 IsotopeColors.TEXT_MUTED, false);
 
-            String hint3 = "Press F1 for keyboard shortcuts";
-            graphics.drawString(font, hint3, centerX - font.width(hint3) / 2, centerY + 28,
-                IsotopeColors.TEXT_MUTED, false);
+            // Keyboard shortcuts hint at bottom
+            String shortcutHint = "F1 - Keyboard shortcuts  |  Ctrl+P - Commands";
+            graphics.drawString(font, shortcutHint, centerX - font.width(shortcutHint) / 2, centerY + 50,
+                0xFF555555, false);
             return;
         }
 
@@ -688,6 +721,19 @@ public class LootTableEditPanel extends AbstractWidget {
 
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);
+
+            // Check for right-click on pool header
+            if (button == 1 && mouseY >= y && mouseY < y + POOL_HEADER_HEIGHT) {
+                selectedPoolIdx = poolIdx;
+                selectedEntryIdx = -1;
+                if (contextMenuListener != null) {
+                    contextMenuListener.onContextMenuRequested(
+                        new ContextMenuRequest((int) mouseX, (int) mouseY, ContextMenuType.POOL, poolIdx, -1)
+                    );
+                }
+                return true;
+            }
+
             y += POOL_HEADER_HEIGHT;
 
             for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
@@ -695,11 +741,15 @@ public class LootTableEditPanel extends AbstractWidget {
 
                 // Check if clicking in entry row
                 if (mouseY >= y && mouseY < y + ENTRY_HEIGHT) {
-                    // Right-click: Save as Template
+                    // Right-click: Show context menu
                     if (button == 1) {
                         selectedPoolIdx = poolIdx;
                         selectedEntryIdx = entryIdx;
-                        openSaveAsTemplateDialog(entry);
+                        if (contextMenuListener != null) {
+                            contextMenuListener.onContextMenuRequested(
+                                new ContextMenuRequest((int) mouseX, (int) mouseY, ContextMenuType.ENTRY, poolIdx, entryIdx)
+                            );
+                        }
                         return true;
                     }
 
@@ -1081,58 +1131,210 @@ public class LootTableEditPanel extends AbstractWidget {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (editingField == EditingField.NONE) return false;
+        // Inline editing mode - handle text input keys
+        if (editingField != EditingField.NONE) {
+            // Enter - commit
+            if (keyCode == 257 || keyCode == 335) { // Enter or numpad enter
+                commitEdit();
+                return true;
+            }
 
-        // Enter - commit
-        if (keyCode == 257 || keyCode == 335) { // Enter or numpad enter
-            commitEdit();
+            // Escape - cancel
+            if (keyCode == 256) {
+                cancelEdit();
+                return true;
+            }
+
+            // Backspace
+            if (keyCode == 259 && editCursorPos > 0) {
+                editText = editText.substring(0, editCursorPos - 1) + editText.substring(editCursorPos);
+                editCursorPos--;
+                return true;
+            }
+
+            // Delete
+            if (keyCode == 261 && editCursorPos < editText.length()) {
+                editText = editText.substring(0, editCursorPos) + editText.substring(editCursorPos + 1);
+                return true;
+            }
+
+            // Left arrow
+            if (keyCode == 263 && editCursorPos > 0) {
+                editCursorPos--;
+                return true;
+            }
+
+            // Right arrow
+            if (keyCode == 262 && editCursorPos < editText.length()) {
+                editCursorPos++;
+                return true;
+            }
+
+            // Home
+            if (keyCode == 268) {
+                editCursorPos = 0;
+                return true;
+            }
+
+            // End
+            if (keyCode == 269) {
+                editCursorPos = editText.length();
+                return true;
+            }
+
+            return false;
+        }
+
+        // Navigation mode - handle arrow keys when not editing
+        if (tableId == null) return false;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null || display.pools().isEmpty()) return false;
+
+        // Build flat list of entries for navigation
+        List<EntryKey> allEntries = buildEntryList(display);
+        if (allEntries.isEmpty()) return false;
+
+        // Arrow Down - next entry
+        if (keyCode == 264) { // Down
+            navigateEntries(allEntries, 1);
             return true;
         }
 
-        // Escape - cancel
-        if (keyCode == 256) {
-            cancelEdit();
+        // Arrow Up - previous entry
+        if (keyCode == 265) { // Up
+            navigateEntries(allEntries, -1);
             return true;
         }
 
-        // Backspace
-        if (keyCode == 259 && editCursorPos > 0) {
-            editText = editText.substring(0, editCursorPos - 1) + editText.substring(editCursorPos);
-            editCursorPos--;
-            return true;
-        }
-
-        // Delete
-        if (keyCode == 261 && editCursorPos < editText.length()) {
-            editText = editText.substring(0, editCursorPos) + editText.substring(editCursorPos + 1);
-            return true;
-        }
-
-        // Left arrow
-        if (keyCode == 263 && editCursorPos > 0) {
-            editCursorPos--;
-            return true;
-        }
-
-        // Right arrow
-        if (keyCode == 262 && editCursorPos < editText.length()) {
-            editCursorPos++;
-            return true;
-        }
-
-        // Home
+        // Home - first entry
         if (keyCode == 268) {
-            editCursorPos = 0;
+            if (!allEntries.isEmpty()) {
+                EntryKey first = allEntries.get(0);
+                selectedPoolIdx = first.poolIdx();
+                selectedEntryIdx = first.entryIdx();
+                ensureSelectionVisible();
+            }
             return true;
         }
 
-        // End
+        // End - last entry
         if (keyCode == 269) {
-            editCursorPos = editText.length();
+            if (!allEntries.isEmpty()) {
+                EntryKey last = allEntries.get(allEntries.size() - 1);
+                selectedPoolIdx = last.poolIdx();
+                selectedEntryIdx = last.entryIdx();
+                ensureSelectionVisible();
+            }
             return true;
+        }
+
+        // Enter - start editing weight of selected entry
+        if (keyCode == 257 || keyCode == 335) {
+            if (selectedPoolIdx >= 0 && selectedEntryIdx >= 0) {
+                LootPool pool = display.pools().get(selectedPoolIdx);
+                if (selectedEntryIdx < pool.entries().size()) {
+                    LootEntry entry = pool.entries().get(selectedEntryIdx);
+                    openWeightEditor(selectedPoolIdx, selectedEntryIdx, entry.weight());
+                    return true;
+                }
+            }
         }
 
         return false;
+    }
+
+    /**
+     * Build a flat list of all entry keys for navigation.
+     */
+    private List<EntryKey> buildEntryList(LootTableStructure display) {
+        List<EntryKey> allEntries = new ArrayList<>();
+        for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
+            LootPool pool = display.pools().get(poolIdx);
+            for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                allEntries.add(new EntryKey(poolIdx, entryIdx));
+            }
+        }
+        return allEntries;
+    }
+
+    /**
+     * Navigate entries by the given delta (-1 for up, +1 for down).
+     */
+    private void navigateEntries(List<EntryKey> allEntries, int delta) {
+        if (allEntries.isEmpty()) return;
+
+        // Find current index
+        int currentIndex = -1;
+        if (selectedPoolIdx >= 0 && selectedEntryIdx >= 0) {
+            EntryKey current = new EntryKey(selectedPoolIdx, selectedEntryIdx);
+            currentIndex = allEntries.indexOf(current);
+        }
+
+        // Calculate new index
+        int newIndex;
+        if (currentIndex < 0) {
+            // Nothing selected - select first or last based on direction
+            newIndex = delta > 0 ? 0 : allEntries.size() - 1;
+        } else {
+            newIndex = currentIndex + delta;
+            // Clamp to valid range
+            newIndex = Math.max(0, Math.min(allEntries.size() - 1, newIndex));
+        }
+
+        // Update selection
+        EntryKey newSelection = allEntries.get(newIndex);
+        selectedPoolIdx = newSelection.poolIdx();
+        selectedEntryIdx = newSelection.entryIdx();
+
+        // Clear multi-selection when navigating
+        multiSelection.clear();
+        lastClickedEntry = newSelection;
+
+        ensureSelectionVisible();
+    }
+
+    /**
+     * Scroll to ensure the selected entry is visible.
+     */
+    private void ensureSelectionVisible() {
+        if (selectedPoolIdx < 0 || selectedEntryIdx < 0) return;
+
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null) return;
+
+        // Calculate Y position of selected entry
+        int entryY = HEADER_HEIGHT;
+
+        // Account for batch bar if showing
+        if (multiSelection.size() > 1) {
+            entryY += BATCH_BAR_HEIGHT;
+        }
+
+        for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
+            LootPool pool = display.pools().get(poolIdx);
+            entryY += POOL_HEADER_HEIGHT;
+
+            for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                if (poolIdx == selectedPoolIdx && entryIdx == selectedEntryIdx) {
+                    // Found the selected entry - ensure it's visible
+                    int entryTop = entryY - scrollOffset;
+                    int entryBottom = entryTop + ENTRY_HEIGHT;
+
+                    if (entryTop < 0) {
+                        // Scroll up to show entry
+                        scrollOffset = entryY;
+                    } else if (entryBottom > height) {
+                        // Scroll down to show entry
+                        scrollOffset = entryY + ENTRY_HEIGHT - height;
+                    }
+
+                    scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset));
+                    return;
+                }
+                entryY += ENTRY_HEIGHT;
+            }
+            entryY += 24; // Add item button
+        }
     }
 
     @Override
@@ -1364,6 +1566,55 @@ public class LootTableEditPanel extends AbstractWidget {
      */
     public int getSelectedEntryIdx() {
         return selectedEntryIdx;
+    }
+
+    /**
+     * Get the currently selected entry, or null if none selected.
+     */
+    @Nullable
+    public LootEntry getSelectedEntry() {
+        if (selectedPoolIdx < 0 || selectedEntryIdx < 0) return null;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null) return null;
+        if (selectedPoolIdx >= display.pools().size()) return null;
+        LootPool pool = display.pools().get(selectedPoolIdx);
+        if (selectedEntryIdx >= pool.entries().size()) return null;
+        return pool.entries().get(selectedEntryIdx);
+    }
+
+    /**
+     * Open the save as template dialog for the selected entry.
+     */
+    public void saveSelectedAsTemplate() {
+        LootEntry entry = getSelectedEntry();
+        if (entry != null) {
+            openSaveAsTemplateDialog(entry);
+        }
+    }
+
+    /**
+     * Open add item dialog for a specific pool.
+     */
+    public void openAddItem(int poolIdx) {
+        openAddItemDialog(poolIdx);
+    }
+
+    /**
+     * Open template picker for a specific pool.
+     */
+    public void openTemplatePicker(int poolIdx) {
+        openTemplateDialog(poolIdx);
+    }
+
+    /**
+     * Delete a specific pool.
+     */
+    public void deletePool(int poolIdx) {
+        if (tableId == null) return;
+        LootEditOperation op = new LootEditOperation.RemovePool(poolIdx);
+        LootEditManager.getInstance().applyOperation(tableId, op);
+        multiSelection.clear();
+        refreshFromEdits();
     }
 
     @Override
