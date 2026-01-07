@@ -1,6 +1,7 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.analysis.LootTableContentAnalyzer;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
 import net.minecraft.core.Registry;
@@ -34,9 +35,14 @@ public final class LootTableRegistry {
     /**
      * Scan the loot table registry from the server.
      * In 1.21.4, loot tables are in the reloadable registries.
+     *
+     * Uses content-based analysis to detect categories, with path-based fallback.
      */
     public void scan(MinecraftServer server) {
         lootTables.clear();
+
+        int contentAnalyzed = 0;
+        int pathFallback = 0;
 
         try {
             // In 1.21.4, reloadableRegistries() returns a Holder with a lookup() method
@@ -49,6 +55,9 @@ public final class LootTableRegistry {
             var lookup = holder.lookup();
             Isotope.LOGGER.info("Lookup type: {}", lookup.getClass().getName());
 
+            // Collect all IDs first
+            List<ResourceLocation> tableIds = new ArrayList<>();
+
             // The lookup should implement HolderLookup.Provider
             if (lookup instanceof net.minecraft.core.HolderLookup.Provider provider) {
                 // Now we can look up the loot table registry
@@ -56,24 +65,47 @@ public final class LootTableRegistry {
 
                 lootLookup.listElementIds().forEach(key -> {
                     ResourceLocation id = key.location();
-                    if (id.getPath().equals("empty")) {
-                        return;
+                    if (!id.getPath().equals("empty")) {
+                        tableIds.add(id);
                     }
-                    LootTableInfo info = LootTableInfo.fromId(id);
-                    lootTables.put(id, info);
                 });
             } else {
                 Isotope.LOGGER.warn("Lookup is not a HolderLookup.Provider: {}", lookup.getClass());
             }
 
+            // Now analyze each table with content-based detection
+            for (ResourceLocation id : tableIds) {
+                LootTableCategory category = null;
+
+                // Try content-based analysis first
+                try {
+                    category = LootTableContentAnalyzer.analyze(server, id);
+                    if (category != null) {
+                        contentAnalyzed++;
+                    }
+                } catch (Exception e) {
+                    Isotope.LOGGER.debug("Content analysis failed for {}: {}", id, e.getMessage());
+                }
+
+                // Fall back to path-based detection
+                if (category == null) {
+                    category = LootTableInfo.inferCategoryFromPath(id.getPath());
+                    pathFallback++;
+                }
+
+                LootTableInfo info = LootTableInfo.fromIdWithCategory(id, category);
+                lootTables.put(id, info);
+            }
+
             scanned = true;
-            Isotope.LOGGER.info("LootTableRegistry: scanned {} loot tables", lootTables.size());
+            Isotope.LOGGER.info("LootTableRegistry: scanned {} loot tables ({} content-analyzed, {} path-fallback)",
+                lootTables.size(), contentAnalyzed, pathFallback);
 
             // Log category breakdown
             Map<LootTableCategory, Long> byCategory = lootTables.values().stream()
                 .collect(Collectors.groupingBy(LootTableInfo::category, Collectors.counting()));
             byCategory.forEach((cat, count) ->
-                Isotope.LOGGER.debug("  {} {} loot tables", count, cat));
+                Isotope.LOGGER.info("  {} {} loot tables", count, cat));
 
         } catch (Exception e) {
             Isotope.LOGGER.error("Failed to scan loot table registry", e);

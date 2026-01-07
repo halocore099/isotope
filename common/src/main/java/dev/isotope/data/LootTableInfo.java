@@ -31,6 +31,25 @@ public record LootTableInfo(
         );
     }
 
+    /**
+     * Create LootTableInfo with an explicit category (from content analysis).
+     */
+    public static LootTableInfo fromIdWithCategory(ResourceLocation id, LootTableCategory category) {
+        return new LootTableInfo(
+            id,
+            id.getNamespace(),
+            id.getPath(),
+            category
+        );
+    }
+
+    /**
+     * Infer category from path (fallback method).
+     */
+    public static LootTableCategory inferCategoryFromPath(String path) {
+        return inferCategory(path);
+    }
+
     private static LootTableCategory inferCategory(String path) {
         // Handle both singular and plural prefixes (vanilla uses "chests/", some mods use "chest/")
         if (path.startsWith("chests/") || path.startsWith("chest/")) return LootTableCategory.CHEST;
