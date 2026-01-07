@@ -22,13 +22,14 @@ import org.jetbrains.annotations.Nullable;
 public class BulkOperationScreen extends Screen {
 
     private static final int DIALOG_WIDTH = 450;
-    private static final int DIALOG_HEIGHT = 350;
+    private static final int DIALOG_HEIGHT = 380;
 
     private final Screen parent;
 
     private Type selectedType = Type.REMOVE_ITEM;
     private EditBox itemInput;
     private EditBox item2Input; // For replace operation
+    private EditBox scaleInput; // For scale operations
 
     @Nullable
     private BulkResult previewResult;
@@ -50,16 +51,24 @@ public class BulkOperationScreen extends Screen {
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
-        // Item input
-        itemInput = new EditBox(font, dialogX + 120, dialogY + 80, 200, 18, Component.literal("Item"));
+        // Item input (for remove/replace)
+        itemInput = new EditBox(font, dialogX + 120, dialogY + 95, 200, 18, Component.literal("Item"));
         itemInput.setHint(Component.literal("minecraft:diamond"));
+        itemInput.visible = isItemOperation();
         addRenderableWidget(itemInput);
 
         // Second item input (for replace)
-        item2Input = new EditBox(font, dialogX + 120, dialogY + 105, 200, 18, Component.literal("Replace with"));
+        item2Input = new EditBox(font, dialogX + 120, dialogY + 120, 200, 18, Component.literal("Replace with"));
         item2Input.setHint(Component.literal("minecraft:emerald"));
         item2Input.visible = (selectedType == Type.REPLACE_ITEM);
         addRenderableWidget(item2Input);
+
+        // Scale factor input (for scale operations)
+        scaleInput = new EditBox(font, dialogX + 120, dialogY + 95, 80, 18, Component.literal("Scale"));
+        scaleInput.setHint(Component.literal("2.0"));
+        scaleInput.setValue("2.0");
+        scaleInput.visible = isScaleOperation();
+        addRenderableWidget(scaleInput);
 
         // Preview button
         previewButton = addRenderableWidget(Button.builder(
@@ -81,44 +90,64 @@ public class BulkOperationScreen extends Screen {
         ).pos(dialogX + DIALOG_WIDTH - 90, dialogY + DIALOG_HEIGHT - 30).size(80, 20).build());
     }
 
+    private boolean isItemOperation() {
+        return selectedType == Type.REMOVE_ITEM || selectedType == Type.REPLACE_ITEM;
+    }
+
+    private boolean isScaleOperation() {
+        return selectedType == Type.SCALE_WEIGHTS || selectedType == Type.SCALE_COUNTS;
+    }
+
+    private void updateInputVisibility() {
+        itemInput.visible = isItemOperation();
+        item2Input.visible = (selectedType == Type.REPLACE_ITEM);
+        scaleInput.visible = isScaleOperation();
+    }
+
     private void runPreview() {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Must be in a world");
             return;
         }
 
-        String itemText = itemInput.getValue().trim();
-        if (itemText.isEmpty()) {
-            IsotopeToast.warning("Input Required", "Enter an item ID");
-            return;
-        }
-
-        ResourceLocation item = ResourceLocation.tryParse(itemText);
-        if (item == null) {
-            IsotopeToast.error("Invalid", "Invalid item ID format");
-            return;
-        }
-
         switch (selectedType) {
             case REMOVE_ITEM -> {
+                String itemText = itemInput.getValue().trim();
+                if (itemText.isEmpty()) {
+                    IsotopeToast.warning("Input Required", "Enter an item ID");
+                    return;
+                }
+                ResourceLocation item = ResourceLocation.tryParse(itemText);
+                if (item == null) {
+                    IsotopeToast.error("Invalid", "Invalid item ID format");
+                    return;
+                }
                 previewResult = BulkOperation.previewRemoveItem(minecraft.getSingleplayerServer(), item);
             }
             case REPLACE_ITEM -> {
+                String itemText = itemInput.getValue().trim();
                 String item2Text = item2Input.getValue().trim();
-                if (item2Text.isEmpty()) {
-                    IsotopeToast.warning("Input Required", "Enter replacement item");
+                if (itemText.isEmpty() || item2Text.isEmpty()) {
+                    IsotopeToast.warning("Input Required", "Enter both item IDs");
                     return;
                 }
+                ResourceLocation item = ResourceLocation.tryParse(itemText);
                 ResourceLocation item2 = ResourceLocation.tryParse(item2Text);
-                if (item2 == null) {
-                    IsotopeToast.error("Invalid", "Invalid replacement item ID");
+                if (item == null || item2 == null) {
+                    IsotopeToast.error("Invalid", "Invalid item ID format");
                     return;
                 }
                 previewResult = BulkOperation.previewReplaceItem(minecraft.getSingleplayerServer(), item, item2);
             }
-            default -> {
-                IsotopeToast.info("Not Implemented", "This operation is not yet available");
-                return;
+            case SCALE_WEIGHTS -> {
+                float scale = parseScale();
+                if (scale <= 0) return;
+                previewResult = BulkOperation.previewScaleWeights(minecraft.getSingleplayerServer(), scale);
+            }
+            case SCALE_COUNTS -> {
+                float scale = parseScale();
+                if (scale <= 0) return;
+                previewResult = BulkOperation.previewScaleCounts(minecraft.getSingleplayerServer(), scale);
             }
         }
 
@@ -126,24 +155,55 @@ public class BulkOperationScreen extends Screen {
         scrollOffset = 0;
     }
 
+    private float parseScale() {
+        try {
+            float scale = Float.parseFloat(scaleInput.getValue().trim());
+            if (scale <= 0) {
+                IsotopeToast.error("Invalid", "Scale must be positive");
+                return -1;
+            }
+            if (scale > 100) {
+                IsotopeToast.error("Invalid", "Scale too large (max 100)");
+                return -1;
+            }
+            return scale;
+        } catch (NumberFormatException e) {
+            IsotopeToast.error("Invalid", "Enter a valid number");
+            return -1;
+        }
+    }
+
     private void applyChanges() {
         if (minecraft == null || minecraft.getSingleplayerServer() == null || previewResult == null) return;
 
-        String itemText = itemInput.getValue().trim();
-        ResourceLocation item = ResourceLocation.tryParse(itemText);
-        if (item == null) return;
-
         switch (selectedType) {
             case REMOVE_ITEM -> {
-                BulkOperation.applyRemoveItem(minecraft.getSingleplayerServer(), item);
-                IsotopeToast.success("Applied", "Removed " + item.getPath() + " from " + previewResult.tablesAffected() + " tables");
+                ResourceLocation item = ResourceLocation.tryParse(itemInput.getValue().trim());
+                if (item != null) {
+                    BulkOperation.applyRemoveItem(minecraft.getSingleplayerServer(), item);
+                    IsotopeToast.success("Applied", "Removed " + item.getPath() + " from " + previewResult.tablesAffected() + " tables");
+                }
             }
             case REPLACE_ITEM -> {
-                String item2Text = item2Input.getValue().trim();
-                ResourceLocation item2 = ResourceLocation.tryParse(item2Text);
-                if (item2 != null) {
+                ResourceLocation item = ResourceLocation.tryParse(itemInput.getValue().trim());
+                ResourceLocation item2 = ResourceLocation.tryParse(item2Input.getValue().trim());
+                if (item != null && item2 != null) {
                     BulkOperation.applyReplaceItem(minecraft.getSingleplayerServer(), item, item2);
                     IsotopeToast.success("Applied", "Replaced in " + previewResult.tablesAffected() + " tables");
+                }
+            }
+            case SCALE_WEIGHTS -> {
+                float scale = parseScale();
+                if (scale > 0) {
+                    BulkOperation.applyScaleWeights(minecraft.getSingleplayerServer(), scale);
+                    IsotopeToast.success("Applied", "Scaled weights in " + previewResult.tablesAffected() + " tables");
+                }
+            }
+            case SCALE_COUNTS -> {
+                float scale = parseScale();
+                if (scale > 0) {
+                    BulkOperation.applyScaleCounts(minecraft.getSingleplayerServer(), scale);
+                    IsotopeToast.success("Applied", "Scaled counts in " + previewResult.tablesAffected() + " tables");
                 }
             }
         }
@@ -165,39 +225,47 @@ public class BulkOperationScreen extends Screen {
 
         // Title bar
         graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 24, 0xFF252525);
-        graphics.drawString(font, "📦 Bulk Operations", dialogX + 10, dialogY + 8, IsotopeColors.ACCENT_GOLD, false);
+        graphics.drawString(font, "Bulk Operations", dialogX + 10, dialogY + 8, IsotopeColors.ACCENT_GOLD, false);
 
-        // Operation type selector
+        // Operation type selector - Row 1
         int y = dialogY + 35;
         graphics.drawString(font, "Operation:", dialogX + 10, y, IsotopeColors.TEXT_SECONDARY, false);
 
         int btnX = dialogX + 80;
+        int btnWidth = 85;
         for (Type type : new Type[]{Type.REMOVE_ITEM, Type.REPLACE_ITEM}) {
-            boolean selected = type == selectedType;
-            boolean hovered = mouseX >= btnX && mouseX < btnX + 80 && mouseY >= y - 2 && mouseY < y + 12;
-
-            if (selected) {
-                graphics.fill(btnX, y - 2, btnX + 80, y + 12, IsotopeColors.ACCENT_GOLD);
-            } else if (hovered) {
-                graphics.fill(btnX, y - 2, btnX + 80, y + 12, 0xFF404040);
-            }
-
-            graphics.drawString(font, type.name, btnX + 4, y, selected ? 0xFF000000 : IsotopeColors.TEXT_PRIMARY, false);
-            btnX += 85;
+            renderTypeButton(graphics, type, btnX, y, btnWidth, mouseX, mouseY);
+            btnX += btnWidth + 5;
         }
 
-        // Input labels
-        y = dialogY + 60;
-        graphics.drawString(font, "Item to " + (selectedType == Type.REPLACE_ITEM ? "replace:" : "remove:"),
-            dialogX + 10, dialogY + 83, IsotopeColors.TEXT_SECONDARY, false);
+        // Row 2 for scale operations
+        y = dialogY + 52;
+        btnX = dialogX + 80;
+        for (Type type : new Type[]{Type.SCALE_WEIGHTS, Type.SCALE_COUNTS}) {
+            renderTypeButton(graphics, type, btnX, y, btnWidth, mouseX, mouseY);
+            btnX += btnWidth + 5;
+        }
 
-        if (selectedType == Type.REPLACE_ITEM) {
-            graphics.drawString(font, "Replace with:", dialogX + 10, dialogY + 108, IsotopeColors.TEXT_SECONDARY, false);
+        // Description
+        y = dialogY + 75;
+        graphics.drawString(font, selectedType.description, dialogX + 10, y, IsotopeColors.TEXT_MUTED, false);
+
+        // Input labels
+        if (isItemOperation()) {
+            String label = selectedType == Type.REPLACE_ITEM ? "Item to replace:" : "Item to remove:";
+            graphics.drawString(font, label, dialogX + 10, dialogY + 98, IsotopeColors.TEXT_SECONDARY, false);
+
+            if (selectedType == Type.REPLACE_ITEM) {
+                graphics.drawString(font, "Replace with:", dialogX + 10, dialogY + 123, IsotopeColors.TEXT_SECONDARY, false);
+            }
+        } else if (isScaleOperation()) {
+            graphics.drawString(font, "Scale factor:", dialogX + 10, dialogY + 98, IsotopeColors.TEXT_SECONDARY, false);
+            graphics.drawString(font, "(e.g., 2.0 = double, 0.5 = halve)", dialogX + 210, dialogY + 98, IsotopeColors.TEXT_MUTED, false);
         }
 
         // Preview results
         if (previewResult != null) {
-            int previewY = dialogY + 140;
+            int previewY = dialogY + 150;
             graphics.fill(dialogX + 5, previewY, dialogX + DIALOG_WIDTH - 5, dialogY + DIALOG_HEIGHT - 40, 0xFF252525);
 
             String summary = String.format("%d changes across %d tables",
@@ -205,7 +273,7 @@ public class BulkOperationScreen extends Screen {
             graphics.drawString(font, summary, dialogX + 10, previewY + 5, IsotopeColors.TEXT_PRIMARY, false);
 
             int listY = previewY + 20;
-            int listHeight = DIALOG_HEIGHT - 180;
+            int listHeight = DIALOG_HEIGHT - 210;
             graphics.enableScissor(dialogX + 5, listY, dialogX + DIALOG_WIDTH - 5, listY + listHeight);
 
             int entryY = listY - scrollOffset;
@@ -228,10 +296,25 @@ public class BulkOperationScreen extends Screen {
         for (var child : this.children()) {
             if (child instanceof Button btn) {
                 btn.render(graphics, mouseX, mouseY, partialTick);
-            } else if (child instanceof EditBox box) {
+            } else if (child instanceof EditBox box && box.visible) {
                 box.render(graphics, mouseX, mouseY, partialTick);
             }
         }
+    }
+
+    private void renderTypeButton(GuiGraphics graphics, Type type, int x, int y, int width, int mouseX, int mouseY) {
+        boolean selected = type == selectedType;
+        boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y - 2 && mouseY < y + 12;
+
+        if (selected) {
+            graphics.fill(x, y - 2, x + width, y + 12, IsotopeColors.ACCENT_GOLD);
+        } else if (hovered) {
+            graphics.fill(x, y - 2, x + width, y + 12, 0xFF404040);
+        } else {
+            graphics.fill(x, y - 2, x + width, y + 12, 0xFF2a2a2a);
+        }
+
+        graphics.drawString(font, type.name, x + 4, y, selected ? 0xFF000000 : IsotopeColors.TEXT_PRIMARY, false);
     }
 
     @Override
@@ -239,18 +322,37 @@ public class BulkOperationScreen extends Screen {
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
-        // Operation type selection
+        // Row 1 operation type selection
         int y = dialogY + 35;
         int btnX = dialogX + 80;
+        int btnWidth = 85;
         for (Type type : new Type[]{Type.REMOVE_ITEM, Type.REPLACE_ITEM}) {
-            if (mouseX >= btnX && mouseX < btnX + 80 && mouseY >= y - 2 && mouseY < y + 12) {
-                selectedType = type;
-                item2Input.visible = (type == Type.REPLACE_ITEM);
-                previewResult = null;
-                applyButton.active = false;
+            if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y - 2 && mouseY < y + 12) {
+                if (selectedType != type) {
+                    selectedType = type;
+                    updateInputVisibility();
+                    previewResult = null;
+                    applyButton.active = false;
+                }
                 return true;
             }
-            btnX += 85;
+            btnX += btnWidth + 5;
+        }
+
+        // Row 2 operation type selection
+        y = dialogY + 52;
+        btnX = dialogX + 80;
+        for (Type type : new Type[]{Type.SCALE_WEIGHTS, Type.SCALE_COUNTS}) {
+            if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y - 2 && mouseY < y + 12) {
+                if (selectedType != type) {
+                    selectedType = type;
+                    updateInputVisibility();
+                    previewResult = null;
+                    applyButton.active = false;
+                }
+                return true;
+            }
+            btnX += btnWidth + 5;
         }
 
         return super.mouseClicked(mouseX, mouseY, button);

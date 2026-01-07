@@ -1,9 +1,15 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.data.loot.LootEntry;
+import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
+import dev.isotope.data.loot.NumberProvider;
 import dev.isotope.editing.LootEditManager;
+import dev.isotope.editing.LootEditOperation;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.IsotopeToast;
 import dev.isotope.validation.LootTableValidator;
+import dev.isotope.validation.LootTableValidator.IssueType;
 import dev.isotope.validation.LootTableValidator.ValidationIssue;
 import dev.isotope.validation.LootTableValidator.ValidationResult;
 import net.fabricmc.api.EnvType;
@@ -26,16 +32,20 @@ import java.util.function.BiConsumer;
 @Environment(EnvType.CLIENT)
 public class ValidationPanel extends AbstractWidget {
 
-    private static final int ROW_HEIGHT = 24;
+    private static final int ROW_HEIGHT = 28;
     private static final int HEADER_HEIGHT = 24;
     private static final int ICON_SIZE = 8;
+    private static final int FIX_BUTTON_WIDTH = 30;
 
+    @Nullable
+    private ResourceLocation currentTableId;
     @Nullable
     private ValidationResult validationResult;
     private List<ValidationIssue> displayedIssues = new ArrayList<>();
 
     private int scrollOffset = 0;
     private int selectedIndex = -1;
+    private int hoveredFixButton = -1; // Index of hovered fix button
 
     // Callback when an issue is clicked (poolIdx, entryIdx)
     @Nullable
@@ -49,6 +59,8 @@ public class ValidationPanel extends AbstractWidget {
      * Set the loot table to validate.
      */
     public void setTable(@Nullable ResourceLocation tableId) {
+        this.currentTableId = tableId;
+
         if (tableId == null) {
             validationResult = null;
             displayedIssues.clear();
@@ -68,6 +80,7 @@ public class ValidationPanel extends AbstractWidget {
 
         scrollOffset = 0;
         selectedIndex = -1;
+        hoveredFixButton = -1;
     }
 
     /**
@@ -181,6 +194,7 @@ public class ValidationPanel extends AbstractWidget {
                              int x, int y, int width, int mouseX, int mouseY) {
         boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + ROW_HEIGHT;
         boolean selected = index == selectedIndex;
+        boolean canFix = canAutoFix(issue);
 
         // Background
         if (selected) {
@@ -205,13 +219,102 @@ public class ValidationPanel extends AbstractWidget {
         graphics.drawString(mc.font, issue.type().name, x + 22, y + 4,
             selected ? 0xFFFFFFFF : IsotopeColors.TEXT_PRIMARY, false);
 
+        // Fix button (if issue can be auto-fixed)
+        if (canFix) {
+            int btnX = x + width - FIX_BUTTON_WIDTH - 4;
+            int btnY = y + 2;
+            int btnH = ROW_HEIGHT - 4;
+            boolean fixHovered = mouseX >= btnX && mouseX < btnX + FIX_BUTTON_WIDTH &&
+                                 mouseY >= btnY && mouseY < btnY + btnH;
+
+            if (fixHovered) {
+                hoveredFixButton = index;
+                graphics.fill(btnX, btnY, btnX + FIX_BUTTON_WIDTH, btnY + btnH, 0xFF4ade80);
+            } else {
+                graphics.fill(btnX, btnY, btnX + FIX_BUTTON_WIDTH, btnY + btnH, 0xFF2d5a3d);
+            }
+            graphics.drawString(mc.font, "Fix", btnX + 8, y + 8, fixHovered ? 0xFF000000 : 0xFFFFFFFF, false);
+        }
+
         // Message (truncated if needed)
         String message = issue.message();
-        int maxMessageWidth = width - 30;
+        int maxMessageWidth = width - (canFix ? FIX_BUTTON_WIDTH + 40 : 30);
         if (mc.font.width(message) > maxMessageWidth) {
             message = mc.font.plainSubstrByWidth(message, maxMessageWidth - 10) + "...";
         }
-        graphics.drawString(mc.font, message, x + 8, y + 14, IsotopeColors.TEXT_SECONDARY, false);
+        graphics.drawString(mc.font, message, x + 8, y + 16, IsotopeColors.TEXT_SECONDARY, false);
+    }
+
+    /**
+     * Check if an issue can be auto-fixed.
+     */
+    private boolean canAutoFix(ValidationIssue issue) {
+        return switch (issue.type()) {
+            case ZERO_WEIGHT -> true;       // Set weight to 1
+            case ZERO_ROLLS -> true;        // Set rolls to 1
+            case EMPTY_POOL -> true;        // Remove pool
+            case NEGATIVE_COUNT -> true;    // Set min count to 0
+            default -> false;
+        };
+    }
+
+    /**
+     * Apply auto-fix for the given issue.
+     */
+    private void applyFix(ValidationIssue issue) {
+        if (currentTableId == null) return;
+
+        LootEditManager manager = LootEditManager.getInstance();
+        LootTableStructure structure = manager.getEditedStructure(currentTableId)
+            .orElse(manager.getCachedOriginalStructure(currentTableId).orElse(null));
+
+        if (structure == null) return;
+
+        boolean fixed = false;
+        String fixMessage = "";
+
+        switch (issue.type()) {
+            case ZERO_WEIGHT -> {
+                if (issue.entryIndex() >= 0) {
+                    manager.applyOperation(currentTableId,
+                        new LootEditOperation.ModifyEntryWeight(issue.poolIndex(), issue.entryIndex(), 1));
+                    fixed = true;
+                    fixMessage = "Set weight to 1";
+                }
+            }
+            case ZERO_ROLLS -> {
+                if (issue.poolIndex() >= 0 && issue.poolIndex() < structure.pools().size()) {
+                    manager.applyOperation(currentTableId,
+                        new LootEditOperation.ModifyPoolRolls(issue.poolIndex(), new NumberProvider.Constant(1)));
+                    fixed = true;
+                    fixMessage = "Set rolls to 1";
+                }
+            }
+            case EMPTY_POOL -> {
+                if (issue.poolIndex() >= 0 && issue.poolIndex() < structure.pools().size()) {
+                    manager.applyOperation(currentTableId,
+                        new LootEditOperation.RemovePool(issue.poolIndex()));
+                    fixed = true;
+                    fixMessage = "Removed empty pool";
+                }
+            }
+            case NEGATIVE_COUNT -> {
+                // This would require more complex handling to modify the function
+                // For now, just show a message
+                IsotopeToast.info("Manual Fix Needed", "Edit the entry to set count >= 0");
+                return;
+            }
+            default -> {
+                IsotopeToast.info("Cannot Auto-Fix", "This issue requires manual correction");
+                return;
+            }
+        }
+
+        if (fixed) {
+            IsotopeToast.success("Fixed", fixMessage);
+            // Refresh validation
+            setTable(currentTableId);
+        }
     }
 
     @Override
@@ -227,10 +330,26 @@ public class ValidationPanel extends AbstractWidget {
         int index = relativeY / ROW_HEIGHT;
 
         if (index >= 0 && index < displayedIssues.size()) {
-            selectedIndex = index;
             ValidationIssue issue = displayedIssues.get(index);
 
-            // Trigger callback
+            // Check if Fix button was clicked
+            if (canAutoFix(issue)) {
+                int issueY = contentY + 4 + (index * ROW_HEIGHT) - scrollOffset;
+                int btnX = getX() + 4 + width - 8 - FIX_BUTTON_WIDTH - 4;
+                int btnY = issueY + 2;
+                int btnH = ROW_HEIGHT - 4;
+
+                if (mouseX >= btnX && mouseX < btnX + FIX_BUTTON_WIDTH &&
+                    mouseY >= btnY && mouseY < btnY + btnH) {
+                    applyFix(issue);
+                    return true;
+                }
+            }
+
+            // Normal click - select issue and navigate
+            selectedIndex = index;
+
+            // Trigger callback to navigate to issue location
             if (onIssueSelected != null) {
                 onIssueSelected.accept(issue.poolIndex(), issue.entryIndex());
             }

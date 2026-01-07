@@ -2,7 +2,9 @@ package dev.isotope.bulk;
 
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.data.loot.LootEntry;
+import dev.isotope.data.loot.LootFunction;
 import dev.isotope.data.loot.LootPool;
+import dev.isotope.data.loot.NumberProvider;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootEditOperation;
 import dev.isotope.editing.LootTableParser;
@@ -154,6 +156,193 @@ public class BulkOperation {
                 }
             }
         }
+    }
+
+    /**
+     * Preview scaling weights across all tables.
+     */
+    public static BulkResult previewScaleWeights(MinecraftServer server, float scaleFactor) {
+        Map<ResourceLocation, List<String>> changes = new LinkedHashMap<>();
+        int totalChanges = 0;
+
+        for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
+            ResourceLocation tableId = tableInfo.id();
+            LootTableStructure structure = getStructure(server, tableId);
+            if (structure == null) continue;
+
+            List<String> tableChanges = new ArrayList<>();
+            for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
+                LootPool pool = structure.pools().get(poolIdx);
+                for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                    LootEntry entry = pool.entries().get(entryIdx);
+                    int oldWeight = entry.weight();
+                    int newWeight = Math.max(1, Math.round(oldWeight * scaleFactor));
+                    if (newWeight != oldWeight) {
+                        tableChanges.add("Pool " + poolIdx + " entry " + entryIdx + ": " + oldWeight + " → " + newWeight);
+                        totalChanges++;
+                    }
+                }
+            }
+
+            if (!tableChanges.isEmpty()) {
+                changes.put(tableId, tableChanges);
+            }
+        }
+
+        return new BulkResult(Type.SCALE_WEIGHTS, changes.size(), totalChanges, changes);
+    }
+
+    /**
+     * Apply scaling weights across all tables.
+     */
+    public static void applyScaleWeights(MinecraftServer server, float scaleFactor) {
+        LootEditManager manager = LootEditManager.getInstance();
+
+        for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
+            ResourceLocation tableId = tableInfo.id();
+            LootTableStructure structure = getStructure(server, tableId);
+            if (structure == null) continue;
+
+            for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
+                LootPool pool = structure.pools().get(poolIdx);
+                for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                    LootEntry entry = pool.entries().get(entryIdx);
+                    int oldWeight = entry.weight();
+                    int newWeight = Math.max(1, Math.round(oldWeight * scaleFactor));
+                    if (newWeight != oldWeight) {
+                        manager.applyOperation(tableId, new LootEditOperation.ModifyEntryWeight(poolIdx, entryIdx, newWeight));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Preview scaling item counts across all tables.
+     */
+    public static BulkResult previewScaleCounts(MinecraftServer server, float scaleFactor) {
+        Map<ResourceLocation, List<String>> changes = new LinkedHashMap<>();
+        int totalChanges = 0;
+
+        for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
+            ResourceLocation tableId = tableInfo.id();
+            LootTableStructure structure = getStructure(server, tableId);
+            if (structure == null) continue;
+
+            List<String> tableChanges = new ArrayList<>();
+            for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
+                LootPool pool = structure.pools().get(poolIdx);
+                for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                    LootEntry entry = pool.entries().get(entryIdx);
+
+                    // Check for set_count function
+                    for (LootFunction func : entry.functions()) {
+                        String funcName = func.function();
+                        if (funcName.equals("minecraft:set_count") || funcName.equals("set_count")) {
+                            if (func.parameters().has("count")) {
+                                NumberProvider count = parseNumberProvider(func.parameters().get("count"));
+                                if (count != null) {
+                                    String oldCount = formatCount(count);
+                                    NumberProvider newCount = scaleCount(count, scaleFactor);
+                                    String newCountStr = formatCount(newCount);
+                                    if (!oldCount.equals(newCountStr)) {
+                                        tableChanges.add("Pool " + poolIdx + " entry " + entryIdx + ": " + oldCount + " → " + newCountStr);
+                                        totalChanges++;
+                                    }
+                                }
+                            }
+                            break; // Only process first set_count
+                        }
+                    }
+                }
+            }
+
+            if (!tableChanges.isEmpty()) {
+                changes.put(tableId, tableChanges);
+            }
+        }
+
+        return new BulkResult(Type.SCALE_COUNTS, changes.size(), totalChanges, changes);
+    }
+
+    /**
+     * Apply scaling item counts across all tables.
+     */
+    public static void applyScaleCounts(MinecraftServer server, float scaleFactor) {
+        LootEditManager manager = LootEditManager.getInstance();
+
+        for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
+            ResourceLocation tableId = tableInfo.id();
+            LootTableStructure structure = getStructure(server, tableId);
+            if (structure == null) continue;
+
+            for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
+                LootPool pool = structure.pools().get(poolIdx);
+                for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                    LootEntry entry = pool.entries().get(entryIdx);
+
+                    // Check for set_count function
+                    for (LootFunction func : entry.functions()) {
+                        String funcName = func.function();
+                        if (funcName.equals("minecraft:set_count") || funcName.equals("set_count")) {
+                            if (func.parameters().has("count")) {
+                                NumberProvider count = parseNumberProvider(func.parameters().get("count"));
+                                if (count != null) {
+                                    NumberProvider newCount = scaleCount(count, scaleFactor);
+                                    manager.applyOperation(tableId, new LootEditOperation.SetItemCount(poolIdx, entryIdx, newCount));
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // === Helper methods ===
+
+    private static NumberProvider parseNumberProvider(com.google.gson.JsonElement element) {
+        if (element == null) return null;
+
+        if (element.isJsonPrimitive()) {
+            return new NumberProvider.Constant(element.getAsFloat());
+        }
+        if (element.isJsonObject()) {
+            var obj = element.getAsJsonObject();
+            if (obj.has("min") && obj.has("max")) {
+                return new NumberProvider.Uniform(obj.get("min").getAsFloat(), obj.get("max").getAsFloat());
+            }
+            if (obj.has("n") && obj.has("p")) {
+                return new NumberProvider.Binomial(obj.get("n").getAsInt(), obj.get("p").getAsFloat());
+            }
+        }
+        return null;
+    }
+
+    private static NumberProvider scaleCount(NumberProvider provider, float scale) {
+        if (provider instanceof NumberProvider.Constant c) {
+            return new NumberProvider.Constant(Math.max(1, c.value() * scale));
+        } else if (provider instanceof NumberProvider.Uniform u) {
+            return new NumberProvider.Uniform(
+                Math.max(1, u.min() * scale),
+                Math.max(1, u.max() * scale)
+            );
+        } else if (provider instanceof NumberProvider.Binomial b) {
+            return new NumberProvider.Binomial(Math.max(1, Math.round(b.n() * scale)), b.p());
+        }
+        return provider;
+    }
+
+    private static String formatCount(NumberProvider provider) {
+        if (provider instanceof NumberProvider.Constant c) {
+            return String.valueOf((int) c.value());
+        } else if (provider instanceof NumberProvider.Uniform u) {
+            return (int) u.min() + "-" + (int) u.max();
+        } else if (provider instanceof NumberProvider.Binomial b) {
+            return "binomial(" + b.n() + ")";
+        }
+        return "?";
     }
 
     private static LootTableStructure getStructure(MinecraftServer server, ResourceLocation tableId) {

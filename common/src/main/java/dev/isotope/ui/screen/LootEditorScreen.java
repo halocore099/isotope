@@ -24,6 +24,7 @@ import dev.isotope.ui.widget.HistoryLogPanel;
 import dev.isotope.ui.widget.InlineEditField;
 import dev.isotope.ui.widget.LootTableBrowserWidget;
 import dev.isotope.ui.widget.LootTableEditPanel;
+import dev.isotope.ui.widget.ValidationPanel;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -59,6 +60,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     private static final String PANEL_SEARCH = "search";
     private static final String PANEL_ANALYSIS = "analysis";
     private static final String PANEL_HISTORY = "history";
+    private static final String PANEL_VALIDATION = "validation";
 
     // Core widgets
     private ActivityBar activityBar;
@@ -70,6 +72,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     private DropRatePanel dropRatePanel;
     private DiffPanel diffPanel;
     private HistoryLogPanel historyPanel;
+    private ValidationPanel validationPanel;
 
     // Essential toolbar buttons (kept minimal)
     private Button undoButton;
@@ -118,6 +121,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addItem(PANEL_SEARCH, "\u2315", "Global Search (2)")   // ⌕
             .addItem(PANEL_ANALYSIS, "\u2261", "Analysis (3)")      // ≡
             .addItem(PANEL_HISTORY, "\u2398", "History (4)")        // ⎘
+            .addItem(PANEL_VALIDATION, "\u2714", "Validation (5)")  // ✔
             .onSelect(item -> onActivityItemSelected(item.id()));
         activityBar.setSelectedId(activePanel);
         addRenderableWidget(activityBar);
@@ -279,6 +283,22 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
                 addRenderableWidget(historyPanel);
                 historyPanel.refreshEntries();
                 break;
+
+            case PANEL_VALIDATION:
+                validationPanel = new ValidationPanel(leftPanelX, leftPanelY, LEFT_PANEL_WIDTH, leftPanelHeight);
+                validationPanel.setOnIssueSelected((poolIdx, entryIdx) -> {
+                    // Navigate to the issue in the edit panel
+                    if (editPanel != null && poolIdx >= 0) {
+                        editPanel.selectPoolEntry(poolIdx, entryIdx);
+                    }
+                });
+                addRenderableWidget(validationPanel);
+                // Set current table for validation
+                var tableId = getSelectedTable();
+                if (tableId != null) {
+                    validationPanel.setTable(tableId);
+                }
+                break;
         }
 
         // === Command Palette (overlay, initially hidden) ===
@@ -330,6 +350,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("panel-search", "\u2315", "Show Search Panel", "2", () -> switchPanel(PANEL_SEARCH))
             .addCommand("panel-analysis", "\u2261", "Show Analysis Panel", "3", () -> switchPanel(PANEL_ANALYSIS))
             .addCommand("panel-history", "\u2398", "Show History Panel", "4", () -> switchPanel(PANEL_HISTORY))
+            .addCommand("panel-validation", "\u2714", "Show Validation Panel", "5", () -> switchPanel(PANEL_VALIDATION))
             .addCommand("global-search", "\u2315", "Global Item Search", "Ctrl+Shift+F", this::globalSearch)
 
             // Tools
@@ -337,6 +358,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("quickfix", "⚡", "Quick Fix Wizards...", "", this::onOpenQuickFix)
             .addCommand("bulk", "📦", "Bulk Operations...", "", this::onOpenBulkOps)
             .addCommand("validate", "\u2714", "Validate Loot Table", "", this::onValidateTable)
+            .addCommand("validate-all", "\u2714", "Validate All Edited Tables", "", this::onValidateAll)
             .addCommand("kubejs", "K", "Export as KubeJS Script", "", this::onExportKubeJS)
             .addCommand("compare", "\u2194", "Compare Two Tables...", "", this::onOpenCompare)
             .addCommand("sessions", "\u2630", "Manage Sessions...", "", this::onOpenSessions)
@@ -371,7 +393,14 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         var activeTable = getSelectedTable();
         editPanel.setLootTable(activeTable);
         updateAnalysisPanels();
+        updateValidationPanel();
         updateButtonStates();
+    }
+
+    private void updateValidationPanel() {
+        if (validationPanel != null && activePanel.equals(PANEL_VALIDATION)) {
+            validationPanel.setTable(getSelectedTable());
+        }
     }
 
     // ===== Context Menu Handling =====
@@ -396,10 +425,15 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     private ContextMenu createEntryContextMenu(int x, int y, int poolIdx, int entryIdx) {
         boolean canPaste = dev.isotope.editing.ClipboardManager.getInstance().hasEntry();
+        boolean canMoveUp = entryIdx > 0;
+        boolean canMoveDown = editPanel.canMoveDown();
 
         return new ContextMenu(x, y)
             .addItem("\u2398", "Copy", "Ctrl+C", () -> editPanel.copySelected())
             .addItem("\u2399", "Paste", "Ctrl+V", () -> editPanel.pasteFromClipboard(), canPaste)
+            .addSeparator()
+            .addItem("\u2191", "Move Up", "", () -> editPanel.moveEntryUp(poolIdx, entryIdx), canMoveUp)
+            .addItem("\u2193", "Move Down", "", () -> editPanel.moveEntryDown(poolIdx, entryIdx), canMoveDown)
             .addSeparator()
             .addItem("\u2750", "Duplicate", "Ctrl+D", () -> editPanel.duplicateSelected())
             .addItem("\u2715", "Delete", "Del", () -> editPanel.deleteSelected())
@@ -412,7 +446,11 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addItem("+", "Add Item...", "", () -> editPanel.openAddItem(poolIdx))
             .addItem("\u2630", "Add from Template...", "", () -> editPanel.openTemplatePicker(poolIdx))
             .addSeparator()
-            .addItem("\u2715", "Delete Pool", "", () -> editPanel.deletePool(poolIdx));
+            .addItem("\u2750", "Duplicate Pool", "", () -> editPanel.duplicatePool(poolIdx))
+            .addItem("\u2717", "Clear Pool", "", () -> editPanel.clearPool(poolIdx))
+            .addItem("\u2715", "Delete Pool", "", () -> editPanel.deletePool(poolIdx))
+            .addSeparator()
+            .addItem("+", "Add New Pool", "", () -> editPanel.addPool());
     }
 
     private void closeContextMenu() {
@@ -583,6 +621,49 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
     }
 
+    private void onValidateAll() {
+        var editedTables = LootEditManager.getInstance().getEditedTables();
+        if (editedTables.isEmpty()) {
+            IsotopeToast.info("Validate All", "No edited tables to validate");
+            return;
+        }
+
+        int totalErrors = 0;
+        int totalWarnings = 0;
+        int tablesWithIssues = 0;
+
+        for (ResourceLocation tableId : editedTables) {
+            var structure = LootEditManager.getInstance().getEditedStructure(tableId).orElse(null);
+            if (structure == null) continue;
+
+            var result = LootTableValidator.validate(tableId, structure);
+            if (result.hasIssues()) {
+                tablesWithIssues++;
+                totalErrors += result.errorCount();
+                totalWarnings += result.warningCount();
+
+                // Log issues for this table
+                Isotope.LOGGER.info("[Validate All] {}: {} error(s), {} warning(s)",
+                    tableId, result.errorCount(), result.warningCount());
+                for (var issue : result.issues()) {
+                    Isotope.LOGGER.info("  {} - {}: {}", issue.severity().label, issue.type().name, issue.message());
+                }
+            }
+        }
+
+        if (totalErrors == 0 && totalWarnings == 0) {
+            IsotopeToast.success("Validate All", editedTables.size() + " table(s) validated, no issues!");
+        } else {
+            String summary = String.format("%d table(s): %d error(s), %d warning(s)",
+                tablesWithIssues, totalErrors, totalWarnings);
+            if (totalErrors > 0) {
+                IsotopeToast.error("Validate All", summary);
+            } else {
+                IsotopeToast.warning("Validate All", summary);
+            }
+        }
+    }
+
     private void onOpenSessions() {
         if (minecraft != null) {
             minecraft.setScreen(new SessionScreen(this, tabManager));
@@ -622,6 +703,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
         if (activePanel.equals(PANEL_HISTORY) && historyPanel != null) {
             historyPanel.refreshEntries();
+        }
+        if (activePanel.equals(PANEL_VALIDATION)) {
+            updateValidationPanel();
         }
     }
 
@@ -735,8 +819,8 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
 
         // Number keys for quick panel switching
-        if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_4 && modifiers == 0) {
-            String[] panels = {PANEL_BROWSER, PANEL_SEARCH, PANEL_ANALYSIS, PANEL_HISTORY};
+        if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_5 && modifiers == 0) {
+            String[] panels = {PANEL_BROWSER, PANEL_SEARCH, PANEL_ANALYSIS, PANEL_HISTORY, PANEL_VALIDATION};
             int index = keyCode - GLFW.GLFW_KEY_1;
             switchPanel(panels[index]);
             return true;

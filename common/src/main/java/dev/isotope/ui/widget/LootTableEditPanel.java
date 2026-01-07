@@ -1583,6 +1583,32 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     /**
+     * Select a specific pool and entry.
+     * Used for navigation from validation issues.
+     */
+    public void selectPoolEntry(int poolIdx, int entryIdx) {
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null) return;
+
+        // Validate indices
+        if (poolIdx < 0 || poolIdx >= display.pools().size()) return;
+        LootPool pool = display.pools().get(poolIdx);
+
+        // Clear multi-selection
+        multiSelection.clear();
+
+        // Set selection
+        selectedPoolIdx = poolIdx;
+        if (entryIdx >= 0 && entryIdx < pool.entries().size()) {
+            selectedEntryIdx = entryIdx;
+        } else {
+            selectedEntryIdx = -1;
+        }
+
+        // TODO: Could scroll to make selection visible if needed
+    }
+
+    /**
      * Open the save as template dialog for the selected entry.
      */
     public void saveSelectedAsTemplate() {
@@ -1615,6 +1641,127 @@ public class LootTableEditPanel extends AbstractWidget {
         LootEditManager.getInstance().applyOperation(tableId, op);
         multiSelection.clear();
         refreshFromEdits();
+    }
+
+    /**
+     * Move an entry up within its pool.
+     */
+    public void moveEntryUp(int poolIdx, int entryIdx) {
+        if (tableId == null || entryIdx <= 0) return;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null || poolIdx >= display.pools().size()) return;
+
+        LootPool pool = display.pools().get(poolIdx);
+        if (entryIdx >= pool.entries().size()) return;
+
+        // Swap with previous entry using modify operations
+        LootEntry entry = pool.entries().get(entryIdx);
+        LootEntry prevEntry = pool.entries().get(entryIdx - 1);
+
+        LootEditManager manager = LootEditManager.getInstance();
+        // Remove entry, then add at new position
+        manager.applyOperation(tableId, new LootEditOperation.RemoveEntry(poolIdx, entryIdx));
+        manager.applyOperation(tableId, new LootEditOperation.AddEntry(poolIdx, entryIdx - 1, entry));
+
+        selectedEntryIdx = entryIdx - 1;
+        refreshFromEdits();
+    }
+
+    /**
+     * Move an entry down within its pool.
+     */
+    public void moveEntryDown(int poolIdx, int entryIdx) {
+        if (tableId == null) return;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null || poolIdx >= display.pools().size()) return;
+
+        LootPool pool = display.pools().get(poolIdx);
+        if (entryIdx < 0 || entryIdx >= pool.entries().size() - 1) return;
+
+        // Get entry
+        LootEntry entry = pool.entries().get(entryIdx);
+
+        LootEditManager manager = LootEditManager.getInstance();
+        // Remove entry, then add at new position
+        manager.applyOperation(tableId, new LootEditOperation.RemoveEntry(poolIdx, entryIdx));
+        manager.applyOperation(tableId, new LootEditOperation.AddEntry(poolIdx, entryIdx + 1, entry));
+
+        selectedEntryIdx = entryIdx + 1;
+        refreshFromEdits();
+    }
+
+    /**
+     * Add a new empty pool.
+     */
+    public void addPool() {
+        if (tableId == null) return;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        int newPoolIdx = display != null ? display.pools().size() : 0;
+
+        // Create an empty pool with 1 roll
+        LootPool emptyPool = LootPool.simple(1, List.of());
+
+        LootEditManager manager = LootEditManager.getInstance();
+        manager.applyOperation(tableId, new LootEditOperation.AddPool(newPoolIdx, emptyPool));
+        refreshFromEdits();
+        IsotopeToast.success("Pool Added", "New pool created");
+    }
+
+    /**
+     * Duplicate a pool with all its entries.
+     */
+    public void duplicatePool(int poolIdx) {
+        if (tableId == null) return;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null || poolIdx >= display.pools().size()) return;
+
+        LootPool pool = display.pools().get(poolIdx);
+        int newPoolIdx = display.pools().size();
+
+        // Create a copy of the pool
+        LootEditManager manager = LootEditManager.getInstance();
+        manager.applyOperation(tableId, new LootEditOperation.AddPool(newPoolIdx, pool));
+
+        refreshFromEdits();
+        IsotopeToast.success("Pool Duplicated", "Pool copied with " + pool.entries().size() + " entries");
+    }
+
+    /**
+     * Clear all entries from a pool.
+     */
+    public void clearPool(int poolIdx) {
+        if (tableId == null) return;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null || poolIdx >= display.pools().size()) return;
+
+        LootPool pool = display.pools().get(poolIdx);
+        LootEditManager manager = LootEditManager.getInstance();
+
+        // Remove entries in reverse order
+        for (int i = pool.entries().size() - 1; i >= 0; i--) {
+            manager.applyOperation(tableId, new LootEditOperation.RemoveEntry(poolIdx, i));
+        }
+
+        multiSelection.clear();
+        refreshFromEdits();
+        IsotopeToast.success("Pool Cleared", "All entries removed");
+    }
+
+    /**
+     * Check if an entry can move up.
+     */
+    public boolean canMoveUp() {
+        return selectedEntryIdx > 0;
+    }
+
+    /**
+     * Check if an entry can move down.
+     */
+    public boolean canMoveDown() {
+        if (selectedPoolIdx < 0 || selectedEntryIdx < 0) return false;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null || selectedPoolIdx >= display.pools().size()) return false;
+        return selectedEntryIdx < display.pools().get(selectedPoolIdx).entries().size() - 1;
     }
 
     @Override
