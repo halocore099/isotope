@@ -16,10 +16,13 @@ A comprehensive guide to using Isotope IDE for modpack loot table editing and an
    - [Quick Fix Wizards](#quick-fix-wizards)
    - [Bulk Operations](#bulk-operations)
    - [Validation](#validation)
-9. [Exporting Changes](#exporting-changes)
-10. [Sessions and Workflow](#sessions-and-workflow)
-11. [Keyboard Shortcuts](#keyboard-shortcuts)
-12. [Troubleshooting](#troubleshooting)
+9. [In-World Testing](#in-world-testing)
+   - [Locate & Teleport](#locate--teleport)
+   - [Test Arena](#test-arena)
+10. [Exporting Changes](#exporting-changes)
+11. [Sessions and Workflow](#sessions-and-workflow)
+12. [Keyboard Shortcuts](#keyboard-shortcuts)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -555,6 +558,67 @@ Generate a comprehensive report of all validation issues:
 - Markdown (.md) - Default, best for reading and sharing
 - JSON (.json) - Machine-readable for scripts
 - Plain text (.txt) - Simple format for logs
+
+---
+
+## In-World Testing
+
+When accessing Isotope from the **pause menu** (while in a singleplayer world), additional testing features become available in the Structure Detail panel.
+
+### Locate & Teleport
+
+Quickly find and teleport to the nearest instance of any structure in your world.
+
+**How to use:**
+1. Enter a singleplayer world
+2. Press Escape → click **ISOTOPE**
+3. Go to the **Structures** tab
+4. Select a structure from the list
+5. In the detail panel, click **"✈ Locate & Teleport"**
+6. You'll be teleported to the nearest instance
+
+**Notes:**
+- Searches within 100 chunks (~1600 blocks) of your position
+- Shows distance in the success toast
+- Closes Isotope so you can see the world
+- Works with vanilla and modded structures
+
+### Test Arena
+
+Spawn multiple copies of a structure in a grid pattern to compare loot drops across many instances.
+
+**How to use:**
+1. Enter a singleplayer world
+2. Press Escape → click **ISOTOPE**
+3. Go to the **Structures** tab
+4. Select a structure
+5. Click **"☆ Test Arena (Nx)"** in the detail panel
+6. Configure the number of structures (1-64)
+7. Click **"Create Arena"**
+
+**Configuration Options:**
+- **Count input**: Enter any number 1-64
+- **Preset buttons**: Quick select 4, 9, 16, 25, or 36 structures
+- Shows grid dimensions (e.g., "4x4 grid")
+
+**What happens:**
+- Structures spawn 500 blocks away from your current position
+- Arranged in a square grid on a glass platform
+- Spaced 80 blocks apart for easy navigation
+- You're teleported to the center in Creative mode
+- Each structure has unique loot (different random seeds)
+
+**Use cases:**
+- Compare loot distribution across many chests
+- Test edited loot tables with Test Mode enabled
+- Verify drop rates match expectations
+- Screenshot loot variations for documentation
+
+**Tips:**
+- Start with 9 or 16 structures for a good sample size
+- Enable Test Mode (F5) before creating arena to test your edits
+- Use Creative flight to quickly navigate between structures
+- The arena persists in your world (consider using a test world)
 
 ---
 

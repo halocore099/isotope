@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove Empty Pools (cleanup)
 - Normalize Weights (sum to 100 per pool)
 
+#### In-World Testing
+- Locate & Teleport - find and teleport to nearest structure instance
+- Test Arena - spawn multiple structure copies (1-64) in a grid for loot comparison
+- Test Arena configuration screen with preset buttons (4, 9, 16, 25, 36)
+- Glass platform and automatic Creative mode for testing
+- Testing buttons appear in Structure Detail panel when in singleplayer world
+
 #### Keyboard Shortcuts
 - Alt+Up/Down to move entries up/down
 - Panel switching with keys 1-5
