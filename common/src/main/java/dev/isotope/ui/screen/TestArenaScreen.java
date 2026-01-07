@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.testing.TestArenaManager;
+import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import net.fabricmc.api.EnvType;
@@ -72,6 +73,12 @@ public class TestArenaScreen extends Screen {
             Component.literal("Cancel"),
             b -> onClose()
         ).pos(dialogX + DIALOG_WIDTH - 90, dialogY + DIALOG_HEIGHT - 35).size(70, 20).build());
+
+        // Help button (top right)
+        addRenderableWidget(Button.builder(
+            Component.literal("?"),
+            b -> HelpLinks.open(HelpLinks.TEST_ARENA)
+        ).pos(dialogX + DIALOG_WIDTH - 25, dialogY + 2).size(20, 20).build());
     }
 
     private void onCreateArena() {

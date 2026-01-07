@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.session.EditorSession;
 import dev.isotope.session.SessionManager;
 import dev.isotope.session.SessionManager.SessionInfo;
+import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.TabManager;
@@ -96,6 +97,12 @@ public class SessionScreen extends Screen {
             .size(buttonWidth, 20)
             .build();
         addRenderableWidget(closeButton);
+
+        // Help button (top right of dialog)
+        addRenderableWidget(Button.builder(Component.literal("?"), b -> HelpLinks.open(HelpLinks.SESSIONS))
+            .pos(dialogX + DIALOG_WIDTH - 30, dialogY + 5)
+            .size(20, 20)
+            .build());
 
         // Load session list (after buttons are created)
         refreshSessionList();

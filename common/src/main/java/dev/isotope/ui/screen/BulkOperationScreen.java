@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.bulk.BulkOperation;
 import dev.isotope.bulk.BulkOperation.BulkResult;
 import dev.isotope.bulk.BulkOperation.Type;
+import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import net.fabricmc.api.EnvType;
@@ -88,6 +89,12 @@ public class BulkOperationScreen extends Screen {
             Component.literal("Close"),
             b -> onClose()
         ).pos(dialogX + DIALOG_WIDTH - 90, dialogY + DIALOG_HEIGHT - 30).size(80, 20).build());
+
+        // Help button (top right)
+        addRenderableWidget(Button.builder(
+            Component.literal("?"),
+            b -> HelpLinks.open(HelpLinks.BULK_OPERATIONS)
+        ).pos(dialogX + DIALOG_WIDTH - 25, dialogY + 2).size(20, 20).build());
     }
 
     private boolean isItemOperation() {

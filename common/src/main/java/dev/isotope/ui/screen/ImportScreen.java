@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.importing.DatapackImporter;
 import dev.isotope.importing.DatapackImporter.DatapackInfo;
 import dev.isotope.importing.DatapackImporter.ImportResult;
+import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.TabManager;
@@ -97,6 +98,12 @@ public class ImportScreen extends Screen {
             .size(80, 20)
             .build();
         addRenderableWidget(closeButton);
+
+        // Help button (top right of dialog)
+        addRenderableWidget(Button.builder(Component.literal("?"), b -> HelpLinks.open(HelpLinks.DATAPACK_IMPORT))
+            .pos(dialogX + DIALOG_WIDTH - 30, dialogY + 5)
+            .size(20, 20)
+            .build());
 
         // Initial scan
         scanForDatapacks();

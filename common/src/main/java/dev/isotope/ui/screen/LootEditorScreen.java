@@ -10,6 +10,7 @@ import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.validation.LootTableValidator;
 import dev.isotope.session.EditorSession;
 import dev.isotope.session.SessionManager;
+import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.KeyboardShortcuts;
@@ -366,7 +367,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("sessions", "\u2630", "Manage Sessions...", "", this::onOpenSessions)
 
             // Help
-            .addCommand("shortcuts", "?", "Keyboard Shortcuts", "F1", this::showHelp);
+            .addCommand("shortcuts", "?", "Keyboard Shortcuts", "F1", this::showHelp)
+            .addCommand("documentation", "\u2709", "Open Documentation", "", HelpLinks::openDocs)
+            .addCommand("report-issue", "\u2691", "Report Issue on GitHub", "", HelpLinks::openIssues);
     }
 
     private void switchPanel(String panelId) {

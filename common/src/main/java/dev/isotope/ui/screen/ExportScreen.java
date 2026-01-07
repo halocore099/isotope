@@ -4,6 +4,7 @@ import dev.isotope.editing.LootEditManager;
 import dev.isotope.export.ExportManager;
 import dev.isotope.export.ExportManager.ExportConfig;
 import dev.isotope.export.ExportManager.ExportResult;
+import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -112,6 +113,12 @@ public class ExportScreen extends IsotopeScreen {
             .size(100, 20)
             .build();
         this.addRenderableWidget(closeButton);
+
+        // Help button (top right)
+        this.addRenderableWidget(Button.builder(
+            Component.literal("?"),
+            b -> HelpLinks.open(HelpLinks.EXPORTING_CHANGES)
+        ).pos(this.width - 30, 5).size(20, 20).build());
     }
 
     private void addCheckbox(int x, int y, int width, String label, boolean initialValue, Runnable toggle) {

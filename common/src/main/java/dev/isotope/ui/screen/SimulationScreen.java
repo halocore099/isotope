@@ -7,6 +7,7 @@ import dev.isotope.analysis.DropSimulator.SimulationResult;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableParser;
+import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -80,6 +81,12 @@ public class SimulationScreen extends Screen {
             Component.literal("Close"),
             b -> onClose()
         ).pos(dialogX + DIALOG_WIDTH - 70, dialogY + DIALOG_HEIGHT - 30).size(60, 20).build());
+
+        // Help button (top right)
+        addRenderableWidget(Button.builder(
+            Component.literal("?"),
+            b -> HelpLinks.open(HelpLinks.DROP_SIMULATOR)
+        ).pos(dialogX + DIALOG_WIDTH - 25, dialogY + 2).size(20, 20).build());
     }
 
     private void cycleSimulationCount() {

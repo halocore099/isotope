@@ -2,6 +2,7 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
+import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -74,6 +75,12 @@ public class TemplatePickerScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("Cancel"), btn -> onClose())
             .pos(dialogX + DIALOG_WIDTH - 80, dialogY + DIALOG_HEIGHT - 30)
             .size(70, 20)
+            .build());
+
+        // Help button (top right of dialog)
+        addRenderableWidget(Button.builder(Component.literal("?"), btn -> HelpLinks.open(HelpLinks.TEMPLATES))
+            .pos(dialogX + DIALOG_WIDTH - 25, dialogY + 5)
+            .size(20, 20)
             .build());
     }
 
