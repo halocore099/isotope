@@ -130,9 +130,15 @@ public final class StructureLootLinker {
             }
 
             String tablePath = lootTable.path().toLowerCase();
-            // Remove "chests/" prefix for matching
-            String tablePathClean = tablePath.startsWith("chests/") ?
-                tablePath.substring(7) : tablePath;
+            // Remove "chests/" or "chest/" prefix for matching (vanilla vs modded conventions)
+            String tablePathClean;
+            if (tablePath.startsWith("chests/")) {
+                tablePathClean = tablePath.substring(7);
+            } else if (tablePath.startsWith("chest/")) {
+                tablePathClean = tablePath.substring(6);
+            } else {
+                tablePathClean = tablePath;
+            }
 
             Confidence confidence = calculatePathConfidence(structurePath, baseName, tablePathClean);
             if (confidence != null) {

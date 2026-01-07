@@ -32,9 +32,10 @@ public record LootTableInfo(
     }
 
     private static LootTableCategory inferCategory(String path) {
-        if (path.startsWith("chests/")) return LootTableCategory.CHEST;
-        if (path.startsWith("entities/")) return LootTableCategory.ENTITY;
-        if (path.startsWith("blocks/")) return LootTableCategory.BLOCK;
+        // Handle both singular and plural prefixes (vanilla uses "chests/", some mods use "chest/")
+        if (path.startsWith("chests/") || path.startsWith("chest/")) return LootTableCategory.CHEST;
+        if (path.startsWith("entities/") || path.startsWith("entity/")) return LootTableCategory.ENTITY;
+        if (path.startsWith("blocks/") || path.startsWith("block/")) return LootTableCategory.BLOCK;
         if (path.startsWith("gameplay/")) return LootTableCategory.GAMEPLAY;
         if (path.startsWith("archaeology/")) return LootTableCategory.ARCHAEOLOGY;
         if (path.startsWith("equipment/")) return LootTableCategory.EQUIPMENT;
