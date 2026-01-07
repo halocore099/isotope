@@ -4,8 +4,10 @@ import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.hooks.client.screen.ScreenAccess;
 import dev.isotope.Isotope;
 import dev.isotope.registry.RegistryScanner;
+import dev.isotope.testing.TestModeState;
 import dev.isotope.ui.screen.LootEditorScreen;
 import dev.isotope.ui.screen.LoadingScreen;
+import dev.isotope.ui.screen.TestingScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -85,9 +87,12 @@ public final class IsotopeClientInit {
         int x = screen.width / 2 - buttonWidth / 2;
         int y = screen.height / 4 + 120 + 24; // Below other pause menu buttons
 
+        // Check if we're in test mode
+        boolean inTestMode = TestModeState.getInstance().isInTestMode();
+
         // Use vanilla Button for native Minecraft styling
         Button button = Button.builder(
-            Component.literal("ISOTOPE"),
+            Component.literal(inTestMode ? "ISOTOPE [TEST MODE]" : "ISOTOPE"),
             btn -> openFromPauseMenu(screen)
         )
         .pos(x, y)
@@ -96,7 +101,7 @@ public final class IsotopeClientInit {
 
         access.addRenderableWidget(button);
 
-        Isotope.LOGGER.debug("Added ISOTOPE button to pause screen");
+        Isotope.LOGGER.debug("Added ISOTOPE button to pause screen (testMode={})", inTestMode);
     }
 
     /**
@@ -120,6 +125,7 @@ public final class IsotopeClientInit {
     /**
      * Opens ISOTOPE from the pause menu.
      * Registry data is already available from the loaded world.
+     * Opens TestingScreen if in test mode, otherwise normal editor.
      */
     private static void openFromPauseMenu(Screen parentScreen) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -129,7 +135,13 @@ public final class IsotopeClientInit {
             Isotope.LOGGER.warn("Opening ISOTOPE but registries not scanned yet");
         }
 
-        // Open editor directly
-        minecraft.setScreen(new LootEditorScreen());
+        // Check if we're in test mode
+        if (TestModeState.getInstance().isInTestMode()) {
+            // Open testing UI
+            minecraft.setScreen(new TestingScreen());
+        } else {
+            // Open normal editor
+            minecraft.setScreen(new LootEditorScreen());
+        }
     }
 }

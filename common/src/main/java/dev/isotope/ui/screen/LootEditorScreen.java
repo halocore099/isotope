@@ -346,8 +346,11 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
                 if (getSelectedTable() != null) editPanel.duplicateSelected();
             })
 
+            // Testing
+            .addCommand("test-world", "\uD83E\uDDEA", "Test Changes in World...", "", this::onOpenTestSetup)
+
             // View operations
-            .addCommand("toggle-test", "\u25CF", "Toggle Test Mode", "F5", this::onToggleTestMode)
+            .addCommand("toggle-test", "\u25CF", "Toggle Test Mode (Live)", "F5", this::onToggleTestMode)
             .addCommand("panel-browser", "\u2630", "Show Browser Panel", "1", () -> switchPanel(PANEL_BROWSER))
             .addCommand("panel-search", "\u2315", "Show Search Panel", "2", () -> switchPanel(PANEL_SEARCH))
             .addCommand("panel-analysis", "\u2261", "Show Analysis Panel", "3", () -> switchPanel(PANEL_ANALYSIS))
@@ -365,9 +368,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("kubejs", "K", "Export as KubeJS Script", "", this::onExportKubeJS)
             .addCommand("compare", "\u2194", "Compare Two Tables...", "", this::onOpenCompare)
             .addCommand("sessions", "\u2630", "Manage Sessions...", "", this::onOpenSessions)
-
-            // Navigation
-            .addCommand("structures", "\u2302", "Structures Browser (Testing)", "", this::onOpenStructures)
 
             // Help
             .addCommand("shortcuts", "?", "Keyboard Shortcuts", "F1", this::showHelp)
@@ -717,9 +717,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
     }
 
-    private void onOpenStructures() {
+    private void onOpenTestSetup() {
         if (minecraft != null) {
-            minecraft.setScreen(new MainScreen(this));
+            minecraft.setScreen(new TestSetupScreen(this));
         }
     }
 
