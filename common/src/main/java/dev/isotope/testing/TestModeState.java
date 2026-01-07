@@ -1,6 +1,7 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.editing.LootEditManager;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashSet;
@@ -46,6 +47,10 @@ public final class TestModeState {
         this.testedTables.clear();
         this.testedTables.addAll(tables);
         this.worldType = type;
+
+        // Enable test mode in LootEditManager so the mixin uses edited tables
+        LootEditManager.getInstance().setTestModeActive(true);
+
         Isotope.LOGGER.info("Entered test mode: world={}, tables={}, type={}",
             worldName, tables.size(), type.displayName);
     }
@@ -59,6 +64,9 @@ public final class TestModeState {
         this.testWorldName = null;
         this.testedTables.clear();
         this.worldType = WorldType.VOID;
+
+        // Disable test mode in LootEditManager
+        LootEditManager.getInstance().setTestModeActive(false);
     }
 
     /**

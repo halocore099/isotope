@@ -3,9 +3,6 @@ package dev.isotope.testing;
 import dev.isotope.Isotope;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.GenericMessageScreen;
-import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.commons.io.FileUtils;
 
@@ -57,6 +54,12 @@ public final class TestWorldManager {
             worldName, editedTables.size(), worldType.displayName);
     }
 
+    // World name pending deletion (set when exiting, cleared after deletion)
+    private String pendingDeleteWorld = null;
+
+    // Flag to indicate we're in the process of exiting (prevents UI from reopening)
+    private volatile boolean isExiting = false;
+
     /**
      * Exit test mode, disconnect from world, and optionally delete it.
      */
@@ -67,27 +70,74 @@ public final class TestWorldManager {
         String worldName = TestModeState.getInstance().getTestWorldName();
         Isotope.LOGGER.info("Exiting test mode: world={}", worldName);
 
-        // Show message
-        minecraft.forceSetScreen(new GenericMessageScreen(Component.literal("Exiting test mode...")));
+        // Set exiting flag to prevent TestingScreen from reopening
+        isExiting = true;
 
-        // Disconnect from world
-        minecraft.level.disconnect();
-        minecraft.disconnect();
-
-        // Schedule cleanup after disconnect completes
-        if (worldName != null) {
-            String finalWorldName = worldName;
-            new Thread(() -> {
-                try {
-                    // Wait for world to fully close
-                    Thread.sleep(2000);
-                    deleteWorld(finalWorldName);
-                } catch (InterruptedException ignored) {}
-            }, "Isotope-WorldCleanup").start();
-        }
+        // Store world name for deletion after disconnect
+        pendingDeleteWorld = worldName;
 
         // Clear test mode state
         TestModeState.getInstance().exitTestMode();
+
+        // Close current screen first
+        minecraft.setScreen(null);
+
+        // Use clearClientLevel - this is what "Save and Quit to Title" uses
+        // Schedule on next tick to avoid being in a callback chain
+        minecraft.execute(() -> {
+            if (minecraft.level != null) {
+                // Show saving screen and properly close the world
+                minecraft.clearClientLevel(new net.minecraft.client.gui.screens.GenericMessageScreen(
+                    net.minecraft.network.chat.Component.translatable("menu.savingLevel")
+                ));
+            }
+        });
+    }
+
+    /**
+     * Called when returning to title screen to clean up test world.
+     * Should be called from client tick or title screen init.
+     *
+     * @return true if cleanup was triggered (user just exited test mode)
+     */
+    public boolean checkPendingCleanup() {
+        if (pendingDeleteWorld != null) {
+            String worldToDelete = pendingDeleteWorld;
+            pendingDeleteWorld = null;
+            isExiting = false; // Clear exiting flag
+
+            // Delete on background thread
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000); // Wait for world to fully close
+                    deleteWorld(worldToDelete);
+                } catch (InterruptedException ignored) {}
+            }, "Isotope-WorldCleanup").start();
+
+            return true; // Cleanup was triggered
+        }
+
+        // Also clear exiting flag if somehow still set
+        if (isExiting) {
+            isExiting = false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if there's a world pending deletion.
+     */
+    public boolean hasPendingCleanup() {
+        return pendingDeleteWorld != null;
+    }
+
+    /**
+     * Check if we're currently in the process of exiting test mode.
+     * Used to prevent TestingScreen from reopening during exit.
+     */
+    public boolean isExiting() {
+        return isExiting;
     }
 
     /**

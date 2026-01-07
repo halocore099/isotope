@@ -158,10 +158,6 @@ public final class TestArenaManager {
 
         notifyClient(progressCallback, "Spawning " + structureCount + " structures...");
 
-        // Create glass platform first
-        createGlassPlatform(level, startX - 16, startZ - 16,
-            gridSize * STRUCTURE_SPACING + 32, gridSize * STRUCTURE_SPACING + 32);
-
         // Spawn structures in grid
         RandomSource random = level.getRandom();
         int spawned = 0;

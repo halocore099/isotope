@@ -404,6 +404,7 @@ public final class StructureLootLinker {
         m.put("end_city", List.of("chests/end_city_treasure"));
 
         // Overworld dungeons
+        m.put("monster_room", List.of("chests/simple_dungeon")); // Spawner dungeon
         m.put("desert_pyramid", List.of("chests/desert_pyramid"));
         m.put("jungle_pyramid", List.of("chests/jungle_temple"));
         m.put("igloo", List.of("chests/igloo_chest"));

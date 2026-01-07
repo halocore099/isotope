@@ -5,6 +5,7 @@ import dev.architectury.hooks.client.screen.ScreenAccess;
 import dev.isotope.Isotope;
 import dev.isotope.registry.RegistryScanner;
 import dev.isotope.testing.TestModeState;
+import dev.isotope.testing.TestWorldManager;
 import dev.isotope.ui.screen.LootEditorScreen;
 import dev.isotope.ui.screen.LoadingScreen;
 import dev.isotope.ui.screen.TestingScreen;
@@ -47,6 +48,23 @@ public final class IsotopeClientInit {
     private static void onScreenInit(Screen screen, ScreenAccess access) {
         if (screen instanceof TitleScreen) {
             addIsotopeButtonToTitleScreen(screen, access);
+
+            // Also ensure test mode is fully cleared (safety check)
+            if (TestModeState.getInstance().isInTestMode()) {
+                Isotope.LOGGER.warn("Test mode was still active on title screen - clearing");
+                TestModeState.getInstance().exitTestMode();
+            }
+
+            // Clean up any pending test worlds and auto-open editor
+            if (TestWorldManager.getInstance().checkPendingCleanup()) {
+                Isotope.LOGGER.info("Returned from test mode - opening editor");
+                // Use execute to open after title screen is fully initialized
+                Minecraft.getInstance().execute(() -> {
+                    if (RegistryScanner.isScanned()) {
+                        Minecraft.getInstance().setScreen(new LootEditorScreen());
+                    }
+                });
+            }
         } else if (screen instanceof PauseScreen) {
             addIsotopeButtonToPauseScreen(screen, access);
         }
@@ -74,6 +92,12 @@ public final class IsotopeClientInit {
     }
 
     private static void addIsotopeButtonToPauseScreen(Screen screen, ScreenAccess access) {
+        // Don't add button if we're in the process of exiting test mode
+        if (TestWorldManager.getInstance().isExiting()) {
+            Isotope.LOGGER.debug("Skipping ISOTOPE button - exiting test mode");
+            return;
+        }
+
         // Only add if we're in a singleplayer world (integrated server)
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.getSingleplayerServer() == null) {
@@ -128,6 +152,12 @@ public final class IsotopeClientInit {
      * Opens TestingScreen if in test mode, otherwise normal editor.
      */
     private static void openFromPauseMenu(Screen parentScreen) {
+        // Don't open anything if we're exiting test mode
+        if (TestWorldManager.getInstance().isExiting()) {
+            Isotope.LOGGER.debug("Not opening ISOTOPE - exiting test mode");
+            return;
+        }
+
         Minecraft minecraft = Minecraft.getInstance();
 
         // Registries should already be scanned when world loaded

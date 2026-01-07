@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.Isotope;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.testing.TestModeState;
@@ -14,6 +15,14 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.LevelSettings;
+import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -85,12 +94,12 @@ public class TestSetupScreen extends Screen {
         int buttonY = dialogY + 180;
 
         voidButton = addRenderableWidget(Button.builder(
-            Component.literal("Superflat Void"),
+            Component.literal("Superflat"),
             b -> selectWorldType(TestModeState.WorldType.VOID)
         ).pos(dialogX + 30, buttonY).size(160, 20).build());
 
         normalButton = addRenderableWidget(Button.builder(
-            Component.literal("Normal Generation"),
+            Component.literal("Normal (Recommended)"),
             b -> selectWorldType(TestModeState.WorldType.NORMAL)
         ).pos(dialogX + 210, buttonY).size(160, 20).build());
 
@@ -137,19 +146,67 @@ public class TestSetupScreen extends Screen {
             return;
         }
 
+        if (minecraft == null) return;
+
         // Enter test mode
         TestWorldManager.getInstance().enterTestMode(selectedWorldType);
+        String worldName = TestModeState.getInstance().getTestWorldName();
 
-        // Close this screen and go to title screen
-        // User will create the world manually
-        if (minecraft != null) {
-            String worldName = TestModeState.getInstance().getTestWorldName();
-            IsotopeToast.info("Test Mode Active",
-                "Create a world named:\n" + worldName);
+        IsotopeToast.info("Creating World", "Please wait...");
 
-            // Go to title screen so user can create world
-            minecraft.disconnect();
-        }
+        // Create world directly (bypass CreateWorldScreen)
+        minecraft.execute(() -> {
+            try {
+                // Configure game rules
+                GameRules gameRules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+
+                LevelSettings levelSettings = new LevelSettings(
+                    worldName,
+                    GameType.CREATIVE,
+                    false, // hardcore
+                    Difficulty.PEACEFUL,
+                    true, // commands enabled
+                    gameRules,
+                    WorldDataConfiguration.DEFAULT
+                );
+
+                // World options - only generate structures for NORMAL type
+                WorldOptions worldOptions = new WorldOptions(
+                    System.currentTimeMillis(), // Random seed
+                    selectedWorldType == TestModeState.WorldType.NORMAL,  // Only structures on NORMAL
+                    false  // No bonus chest
+                );
+
+                Isotope.LOGGER.info("Creating test world: {} (type: {})", worldName, selectedWorldType);
+
+                // Create the world directly
+                if (selectedWorldType == TestModeState.WorldType.VOID) {
+                    // Create flat world (superflat) - structures won't generate but
+                    // we can still test loot tables. For a true void, would need custom preset.
+                    minecraft.createWorldOpenFlows().createFreshLevel(
+                        worldName,
+                        levelSettings,
+                        worldOptions,
+                        WorldPresets::createFlatWorldDimensions,
+                        null
+                    );
+                } else {
+                    // Normal generation with structures - best for testing teleport/arena
+                    minecraft.createWorldOpenFlows().createFreshLevel(
+                        worldName,
+                        levelSettings,
+                        worldOptions,
+                        WorldPresets::createNormalWorldDimensions,
+                        null
+                    );
+                }
+
+            } catch (Exception e) {
+                Isotope.LOGGER.error("Failed to create test world", e);
+                IsotopeToast.error("Error", "Failed to create world: " + e.getMessage());
+                TestModeState.getInstance().exitTestMode();
+            }
+        });
     }
 
     @Override
@@ -219,8 +276,8 @@ public class TestSetupScreen extends Screen {
 
         // Description of selected type
         String typeDesc = selectedWorldType == TestModeState.WorldType.VOID
-            ? "Flat void world - structures spawn on glass platforms"
-            : "Normal terrain generation - find structures naturally";
+            ? "Flat world - no structures (testing loot drops only)"
+            : "Normal world - has structures (Teleport & Arena work)";
         graphics.drawString(font, typeDesc, dialogX + 30, dialogY + 210, IsotopeColors.TEXT_SECONDARY, false);
 
         // Info text

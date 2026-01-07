@@ -1,6 +1,6 @@
 package dev.isotope.ui.screen;
 
-import dev.isotope.Isotope;
+import dev.isotope.data.StructureLootLink;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.testing.TestArenaManager;
 import dev.isotope.testing.TestModeState;
@@ -26,53 +26,51 @@ import java.util.Set;
 /**
  * In-game testing UI shown when in test mode.
  *
- * Displays edited loot tables with testing actions.
+ * Simplified design with actual Button widgets for all interactions.
  */
 @Environment(EnvType.CLIENT)
 public class TestingScreen extends Screen {
 
-    private static final int PANEL_WIDTH = 380;
-    private static final int HEADER_HEIGHT = 50;
-    private static final int ENTRY_HEIGHT = 80;
-    private static final int FOOTER_HEIGHT = 50;
+    private static final int PANEL_WIDTH = 400;
+    private static final int PANEL_HEIGHT = 350;
 
-    private final List<TestedTableEntry> entries = new ArrayList<>();
-    private int scrollOffset = 0;
+    private final List<TableEntry> entries = new ArrayList<>();
     private int selectedArenaCount = 16;
+    private int scrollOffset = 0;
+    private int maxScroll = 0;
 
-    // Arena count presets
-    private static final int[] ARENA_PRESETS = {4, 9, 16, 25, 36};
+    // Entry buttons (rebuilt on scroll)
+    private final List<Button> entryButtons = new ArrayList<>();
 
-    private record TestedTableEntry(
+    private record TableEntry(
         ResourceLocation tableId,
-        Set<ResourceLocation> structures,
-        boolean expanded
-    ) {
-        public TestedTableEntry withExpanded(boolean expanded) {
-            return new TestedTableEntry(tableId, structures, expanded);
-        }
-    }
+        Set<ResourceLocation> structures
+    ) {}
 
     public TestingScreen() {
         super(Component.literal("ISOTOPE Test Mode"));
-        loadTestedTables();
+        loadEntries();
     }
 
-    private void loadTestedTables() {
+    private void loadEntries() {
         entries.clear();
-
         Set<ResourceLocation> tested = TestModeState.getInstance().getTestedTables();
         StructureLootLinker linker = StructureLootLinker.getInstance();
 
         for (ResourceLocation tableId : tested) {
+            // Use the proper method to get links for this loot table
+            List<StructureLootLink> links = linker.getLinksForLootTable(tableId);
             Set<ResourceLocation> structures = new HashSet<>();
-            for (var link : linker.getAllLinks()) {
-                if (link.lootTableId().equals(tableId)) {
-                    structures.add(link.structureId());
-                }
+            for (var link : links) {
+                structures.add(link.structureId());
             }
-            entries.add(new TestedTableEntry(tableId, structures, false));
+            entries.add(new TableEntry(tableId, structures));
         }
+
+        // Calculate max scroll
+        int contentHeight = entries.size() * 70;
+        int viewHeight = PANEL_HEIGHT - 120; // header + footer
+        maxScroll = Math.max(0, contentHeight - viewHeight);
     }
 
     @Override
@@ -80,44 +78,87 @@ public class TestingScreen extends Screen {
         super.init();
 
         int panelX = (width - PANEL_WIDTH) / 2;
-        int panelY = 20;
+        int panelY = (height - PANEL_HEIGHT) / 2;
 
-        // Exit Test Mode button (top right of panel)
+        // Header buttons
         addRenderableWidget(Button.builder(
             Component.literal("Exit Test Mode"),
             b -> onExitTestMode()
-        ).pos(panelX + PANEL_WIDTH - 110, panelY + 8).size(100, 18).build());
+        ).pos(panelX + PANEL_WIDTH - 115, panelY + 8).size(105, 20).build());
 
-        // Help button
         addRenderableWidget(Button.builder(
             Component.literal("?"),
             b -> HelpLinks.open(HelpLinks.TEST_MODE)
-        ).pos(panelX + PANEL_WIDTH - 135, panelY + 8).size(20, 18).build());
+        ).pos(panelX + PANEL_WIDTH - 140, panelY + 8).size(20, 20).build());
 
-        // Arena count preset buttons at bottom
-        int presetY = height - 35;
-        int presetStartX = panelX + 80;
-        for (int i = 0; i < ARENA_PRESETS.length; i++) {
-            final int count = ARENA_PRESETS[i];
-            Button btn = addRenderableWidget(Button.builder(
+        // Footer - Arena size buttons
+        int footerY = panelY + PANEL_HEIGHT - 35;
+        int[] presets = {4, 9, 16, 25, 36};
+        int presetX = panelX + 100;
+        for (int preset : presets) {
+            final int count = preset;
+            addRenderableWidget(Button.builder(
                 Component.literal(String.valueOf(count)),
-                b -> {
-                    selectedArenaCount = count;
-                    TestArenaManager.getInstance().setStructureCount(count);
-                }
-            ).pos(presetStartX + i * 50, presetY).size(45, 20).build());
+                b -> selectedArenaCount = count
+            ).pos(presetX, footerY).size(40, 20).build());
+            presetX += 45;
         }
 
         // Close button
         addRenderableWidget(Button.builder(
             Component.literal("Close"),
             b -> onClose()
-        ).pos(panelX + PANEL_WIDTH - 70, height - 35).size(60, 20).build());
+        ).pos(panelX + PANEL_WIDTH - 70, footerY).size(60, 20).build());
+
+        // Build entry buttons
+        rebuildEntryButtons();
+    }
+
+    private void rebuildEntryButtons() {
+        // Remove old entry buttons
+        for (Button btn : entryButtons) {
+            removeWidget(btn);
+        }
+        entryButtons.clear();
+
+        int panelX = (width - PANEL_WIDTH) / 2;
+        int panelY = (height - PANEL_HEIGHT) / 2;
+        int contentY = panelY + 45;
+        int contentHeight = PANEL_HEIGHT - 120;
+
+        int entryY = contentY - scrollOffset;
+        for (int i = 0; i < entries.size(); i++) {
+            TableEntry entry = entries.get(i);
+
+            // Only create buttons for visible entries
+            if (entryY + 60 > contentY && entryY < contentY + contentHeight) {
+                final ResourceLocation structureId = entry.structures.isEmpty()
+                    ? null
+                    : entry.structures.iterator().next();
+
+                // Teleport button
+                if (structureId != null) {
+                    Button teleportBtn = Button.builder(
+                        Component.literal("Teleport"),
+                        b -> onTeleport(structureId)
+                    ).pos(panelX + 15, entryY + 35).size(80, 18).build();
+                    entryButtons.add(addRenderableWidget(teleportBtn));
+
+                    // Arena button
+                    Button arenaBtn = Button.builder(
+                        Component.literal("Spawn Arena"),
+                        b -> onSpawnArena(structureId)
+                    ).pos(panelX + 100, entryY + 35).size(90, 18).build();
+                    entryButtons.add(addRenderableWidget(arenaBtn));
+                }
+            }
+
+            entryY += 70;
+        }
     }
 
     private void onExitTestMode() {
         if (minecraft == null) return;
-
         minecraft.setScreen(new ConfirmDialog(
             this,
             "Exit Test Mode",
@@ -128,191 +169,18 @@ public class TestingScreen extends Screen {
         ));
     }
 
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Semi-transparent background
-        graphics.fill(0, 0, width, height, 0xA0000000);
-
-        int panelX = (width - PANEL_WIDTH) / 2;
-        int panelY = 20;
-        int panelHeight = height - 60;
-
-        // Main panel background
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + panelHeight + 2, 0xFF000000);
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + panelHeight, 0xFF1a1a1a);
-
-        // Header
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + HEADER_HEIGHT, 0xFF252525);
-
-        // Test mode indicator
-        graphics.fill(panelX + 8, panelY + 8, panelX + 12, panelY + 28, 0xFF44aa44); // Green bar
-        graphics.drawString(font, "ISOTOPE TEST MODE", panelX + 18, panelY + 12, IsotopeColors.ACCENT_GOLD, false);
-
-        // World info
-        String worldType = TestModeState.getInstance().getWorldType().displayName;
-        graphics.drawString(font, "World: " + worldType, panelX + 18, panelY + 28, IsotopeColors.TEXT_SECONDARY, false);
-
-        // Table count
-        String countText = entries.size() + " edited table" + (entries.size() != 1 ? "s" : "");
-        int countWidth = font.width(countText);
-        graphics.drawString(font, countText, panelX + PANEL_WIDTH - countWidth - 120, panelY + 28, IsotopeColors.TEXT_MUTED, false);
-
-        // Content area
-        int contentY = panelY + HEADER_HEIGHT;
-        int contentHeight = panelHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
-
-        // Scissor for scrolling
-        graphics.enableScissor(panelX, contentY, panelX + PANEL_WIDTH, contentY + contentHeight);
-
-        int entryY = contentY + 8 - scrollOffset;
-        for (int i = 0; i < entries.size(); i++) {
-            TestedTableEntry entry = entries.get(i);
-
-            if (entryY > contentY - ENTRY_HEIGHT && entryY < contentY + contentHeight) {
-                renderEntry(graphics, panelX + 8, entryY, PANEL_WIDTH - 16, entry, mouseX, mouseY, i);
-            }
-
-            entryY += ENTRY_HEIGHT + 4;
-        }
-
-        graphics.disableScissor();
-
-        // Footer
-        int footerY = panelY + panelHeight - FOOTER_HEIGHT;
-        graphics.fill(panelX, footerY, panelX + PANEL_WIDTH, panelY + panelHeight, 0xFF202020);
-
-        // Arena count label
-        graphics.drawString(font, "Arena size:", panelX + 10, footerY + 13, IsotopeColors.TEXT_PRIMARY, false);
-
-        // Render buttons
-        super.render(graphics, mouseX, mouseY, partialTick);
-
-        // Highlight selected arena count
-        int presetStartX = panelX + 80;
-        int presetY = height - 35;
-        for (int i = 0; i < ARENA_PRESETS.length; i++) {
-            if (ARENA_PRESETS[i] == selectedArenaCount) {
-                graphics.renderOutline(presetStartX + i * 50 - 1, presetY - 1, 47, 22, IsotopeColors.ACCENT_GOLD);
-            }
-        }
-    }
-
-    private void renderEntry(GuiGraphics graphics, int x, int y, int width, TestedTableEntry entry,
-                             int mouseX, int mouseY, int index) {
-        // Entry background
-        graphics.fill(x, y, x + width, y + ENTRY_HEIGHT, 0xFF282828);
-        graphics.renderOutline(x, y, width, ENTRY_HEIGHT, 0xFF383838);
-
-        // Table name
-        String tableName = entry.tableId.toString();
-        if (tableName.length() > 45) {
-            tableName = "..." + tableName.substring(tableName.length() - 42);
-        }
-        graphics.drawString(font, tableName, x + 8, y + 6, IsotopeColors.TEXT_PRIMARY, false);
-
-        // Structures info
-        if (entry.structures.isEmpty()) {
-            graphics.drawString(font, "No linked structures", x + 8, y + 20, IsotopeColors.TEXT_MUTED, false);
-        } else {
-            String structInfo = entry.structures.size() + " structure" + (entry.structures.size() != 1 ? "s" : "");
-            graphics.drawString(font, structInfo, x + 8, y + 20, 0xFF88aa88, false);
-
-            // Show first few structure names
-            int structY = y + 32;
-            int count = 0;
-            for (ResourceLocation structId : entry.structures) {
-                if (count >= 2) {
-                    graphics.drawString(font, "  +" + (entry.structures.size() - 2) + " more...",
-                        x + 8, structY, IsotopeColors.TEXT_MUTED, false);
-                    break;
-                }
-                graphics.drawString(font, "  " + structId.getPath(), x + 8, structY, IsotopeColors.TEXT_SECONDARY, false);
-                structY += 10;
-                count++;
-            }
-        }
-
-        // Action buttons
-        int buttonY = y + ENTRY_HEIGHT - 24;
-
-        // Teleport button
-        if (!entry.structures.isEmpty()) {
-            int teleportX = x + 8;
-            boolean teleportHovered = mouseX >= teleportX && mouseX < teleportX + 100 &&
-                                      mouseY >= buttonY && mouseY < buttonY + 18;
-            graphics.fill(teleportX, buttonY, teleportX + 100, buttonY + 18,
-                teleportHovered ? 0xFF4a6a4a : 0xFF3a5a3a);
-            graphics.drawCenteredString(font, "Teleport", teleportX + 50, buttonY + 5, 0xFFaaccaa);
-
-            // Spawn arena button
-            int arenaX = x + 115;
-            boolean arenaHovered = mouseX >= arenaX && mouseX < arenaX + 120 &&
-                                   mouseY >= buttonY && mouseY < buttonY + 18;
-            graphics.fill(arenaX, buttonY, arenaX + 120, buttonY + 18,
-                arenaHovered ? 0xFF5a5a6a : 0xFF4a4a5a);
-            graphics.drawCenteredString(font, "Spawn " + selectedArenaCount + "x Arena",
-                arenaX + 60, buttonY + 5, 0xFFaaaacc);
-        }
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
-            int panelX = (width - PANEL_WIDTH) / 2;
-            int panelY = 20;
-            int contentY = panelY + HEADER_HEIGHT;
-            int contentHeight = height - 60 - HEADER_HEIGHT - FOOTER_HEIGHT;
-
-            // Check entry clicks
-            int entryY = contentY + 8 - scrollOffset;
-            for (int i = 0; i < entries.size(); i++) {
-                TestedTableEntry entry = entries.get(i);
-                int x = panelX + 8;
-                int width = PANEL_WIDTH - 16;
-
-                if (mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT &&
-                    mouseX >= x && mouseX < x + width) {
-
-                    int buttonY = entryY + ENTRY_HEIGHT - 24;
-
-                    // Teleport button
-                    if (!entry.structures.isEmpty() &&
-                        mouseX >= x + 8 && mouseX < x + 108 &&
-                        mouseY >= buttonY && mouseY < buttonY + 18) {
-                        onTeleportToStructure(entry.structures.iterator().next());
-                        return true;
-                    }
-
-                    // Arena button
-                    if (!entry.structures.isEmpty() &&
-                        mouseX >= x + 115 && mouseX < x + 235 &&
-                        mouseY >= buttonY && mouseY < buttonY + 18) {
-                        onSpawnArena(entry.structures.iterator().next());
-                        return true;
-                    }
-                }
-
-                entryY += ENTRY_HEIGHT + 4;
-            }
-        }
-
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    private void onTeleportToStructure(ResourceLocation structureId) {
-        Minecraft minecraft = Minecraft.getInstance();
+    private void onTeleport(ResourceLocation structureId) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
         }
 
-        onClose(); // Close screen first
-
+        onClose();
         minecraft.execute(() -> {
             var result = TestingTools.locateStructure(
                 minecraft.getSingleplayerServer(),
                 structureId,
-                100 // Search radius in chunks
+                100
             );
 
             if (result.found()) {
@@ -332,38 +200,113 @@ public class TestingScreen extends Screen {
     }
 
     private void onSpawnArena(ResourceLocation structureId) {
-        Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
         }
 
-        onClose(); // Close screen first
-
+        onClose();
         IsotopeToast.info("Creating Arena", "Spawning " + selectedArenaCount + " structures...");
-
         TestArenaManager.getInstance().createArena(structureId, msg -> {
             minecraft.execute(() -> IsotopeToast.info("Arena", msg));
         });
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Render widgets first (this calls renderBackground internally)
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        // Now draw our panel content ON TOP of everything
         int panelX = (width - PANEL_WIDTH) / 2;
-        int panelY = 20;
-        int contentY = panelY + HEADER_HEIGHT;
-        int contentHeight = height - 60 - HEADER_HEIGHT - FOOTER_HEIGHT;
+        int panelY = (height - PANEL_HEIGHT) / 2;
 
-        if (mouseX >= panelX && mouseX < panelX + PANEL_WIDTH &&
-            mouseY >= contentY && mouseY < contentY + contentHeight) {
+        // Panel background
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, 0xFF000000);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
-            int totalHeight = entries.size() * (ENTRY_HEIGHT + 4);
-            int maxScroll = Math.max(0, totalHeight - contentHeight + 16);
-            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 30)));
-            return true;
+        // Header
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 40, IsotopeColors.BACKGROUND_SOLID);
+        graphics.fill(panelX + 8, panelY + 10, panelX + 12, panelY + 30, 0xFF44aa44); // Green indicator
+        graphics.drawString(font, "ISOTOPE TEST MODE", panelX + 18, panelY + 14, IsotopeColors.ACCENT_GOLD, false);
+
+        // World type
+        String worldType = TestModeState.getInstance().getWorldType().displayName;
+        graphics.drawString(font, worldType, panelX + 150, panelY + 14, IsotopeColors.TEXT_MUTED, false);
+
+        // Content area
+        int contentY = panelY + 45;
+        int contentHeight = PANEL_HEIGHT - 120;
+
+        // Scissor for scrolling
+        graphics.enableScissor(panelX, contentY, panelX + PANEL_WIDTH, contentY + contentHeight);
+
+        // Render entries
+        int entryY = contentY - scrollOffset;
+        for (TableEntry entry : entries) {
+            if (entryY + 65 > contentY && entryY < contentY + contentHeight) {
+                renderEntry(graphics, panelX + 10, entryY, PANEL_WIDTH - 20, entry);
+            }
+            entryY += 70;
         }
 
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        graphics.disableScissor();
+
+        // Footer
+        int footerY = panelY + PANEL_HEIGHT - 45;
+        graphics.fill(panelX, footerY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, IsotopeColors.BACKGROUND_SOLID);
+        graphics.drawString(font, "Arena size:", panelX + 15, footerY + 12, IsotopeColors.TEXT_PRIMARY, false);
+
+        // Re-render buttons on top of panel
+        for (var widget : this.children()) {
+            if (widget instanceof Button btn) {
+                btn.render(graphics, mouseX, mouseY, partialTick);
+            }
+        }
+
+        // Selected arena highlight
+        int[] presets = {4, 9, 16, 25, 36};
+        int presetX = panelX + 100;
+        int presetButtonY = panelY + PANEL_HEIGHT - 35;
+        for (int preset : presets) {
+            if (preset == selectedArenaCount) {
+                graphics.renderOutline(presetX - 1, presetButtonY - 1, 42, 22, IsotopeColors.ACCENT_GOLD);
+            }
+            presetX += 45;
+        }
+    }
+
+    private void renderEntry(GuiGraphics graphics, int x, int y, int entryWidth, TableEntry entry) {
+        // Entry background
+        graphics.fill(x, y, x + entryWidth, y + 60, IsotopeColors.BACKGROUND_DARK);
+        graphics.renderOutline(x, y, entryWidth, 60, 0xFF383838);
+
+        // Table name
+        String name = entry.tableId.toString();
+        if (name.length() > 50) {
+            name = "..." + name.substring(name.length() - 47);
+        }
+        graphics.drawString(font, name, x + 8, y + 6, IsotopeColors.TEXT_PRIMARY, false);
+
+        // Structure info
+        if (entry.structures.isEmpty()) {
+            graphics.drawString(font, "No linked structures", x + 8, y + 20, IsotopeColors.TEXT_MUTED, false);
+        } else {
+            String info = entry.structures.size() + " structure" + (entry.structures.size() != 1 ? "s" : "");
+            graphics.drawString(font, info, x + 8, y + 20, 0xFF88aa88, false);
+        }
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        int oldOffset = scrollOffset;
+        scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));
+
+        if (oldOffset != scrollOffset) {
+            rebuildEntryButtons();
+        }
+
+        return true;
     }
 
     @Override
@@ -376,5 +319,11 @@ public class TestingScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return true;
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Don't call super - just fill with solid color to prevent blur
+        graphics.fill(0, 0, this.width, this.height, 0xFF1a1a1a);
     }
 }

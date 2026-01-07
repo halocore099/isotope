@@ -1,5 +1,6 @@
 package dev.isotope.mixin;
 
+import dev.isotope.editing.LootEditManager;
 import dev.isotope.observation.LootObserver;
 import dev.isotope.observation.LootTableTracker;
 import net.minecraft.resources.ResourceKey;
@@ -19,13 +20,15 @@ public class ReloadableRegistriesMixin {
 
     /**
      * Before getLootTable returns, set the current table ID in the tracker.
+     * This is needed both for observation/recording AND for test mode loot replacement.
      */
     @Inject(
         method = "getLootTable",
         at = @At("HEAD")
     )
     private void isotope$onGetLootTable(ResourceKey<LootTable> key, CallbackInfoReturnable<LootTable> cir) {
-        if (LootObserver.getInstance().isRecording()) {
+        // Track table ID for both recording AND test mode
+        if (LootObserver.getInstance().isRecording() || LootEditManager.getInstance().isTestModeActive()) {
             LootTableTracker.setCurrentTableId(key.location());
         }
     }
