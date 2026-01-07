@@ -4,6 +4,7 @@ import dev.isotope.Isotope;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableSerializer;
+import dev.isotope.export.ExportManager;
 import dev.isotope.export.KubeJSExporter;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.validation.LootTableValidator;
@@ -359,6 +360,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("bulk", "📦", "Bulk Operations...", "", this::onOpenBulkOps)
             .addCommand("validate", "\u2714", "Validate Loot Table", "", this::onValidateTable)
             .addCommand("validate-all", "\u2714", "Validate All Edited Tables", "", this::onValidateAll)
+            .addCommand("export-validation", "\u2714", "Export Validation Report...", "", this::onExportValidationReport)
             .addCommand("kubejs", "K", "Export as KubeJS Script", "", this::onExportKubeJS)
             .addCommand("compare", "\u2194", "Compare Two Tables...", "", this::onOpenCompare)
             .addCommand("sessions", "\u2630", "Manage Sessions...", "", this::onOpenSessions)
@@ -394,6 +396,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         editPanel.setLootTable(activeTable);
         updateAnalysisPanels();
         updateValidationPanel();
+        updateValidationBadge();
         updateButtonStates();
     }
 
@@ -401,6 +404,28 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         if (validationPanel != null && activePanel.equals(PANEL_VALIDATION)) {
             validationPanel.setTable(getSelectedTable());
         }
+        updateValidationBadge();
+    }
+
+    private void updateValidationBadge() {
+        // Update the badge on the validation activity bar item
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null) {
+            activityBar.setBadge(PANEL_VALIDATION, 0);
+            return;
+        }
+
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+
+        if (structure == null) {
+            activityBar.setBadge(PANEL_VALIDATION, 0);
+            return;
+        }
+
+        var result = LootTableValidator.validate(tableId, structure);
+        int issueCount = result.errorCount() + result.warningCount();
+        activityBar.setBadge(PANEL_VALIDATION, issueCount);
     }
 
     // ===== Context Menu Handling =====
@@ -664,6 +689,22 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
     }
 
+    private void onExportValidationReport() {
+        var editedTables = LootEditManager.getInstance().getEditedTables();
+        if (editedTables.isEmpty()) {
+            IsotopeToast.info("Export Report", "No edited tables to validate");
+            return;
+        }
+
+        // Export as markdown by default (most useful format)
+        ExportManager.getInstance().exportValidationReport(
+            ExportManager.ReportFormat.MARKDOWN,
+            msg -> Isotope.LOGGER.info("[Validation Report] {}", msg)
+        );
+
+        IsotopeToast.success("Report Exported", "Saved to isotope-reports/");
+    }
+
     private void onOpenSessions() {
         if (minecraft != null) {
             minecraft.setScreen(new SessionScreen(this, tabManager));
@@ -707,6 +748,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         if (activePanel.equals(PANEL_VALIDATION)) {
             updateValidationPanel();
         }
+
+        // Always update validation badge when edits occur
+        updateValidationBadge();
     }
 
     @Override
@@ -959,6 +1003,20 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     public void paste() {
         if (getSelectedTable() != null) {
             editPanel.pasteFromClipboard();
+        }
+    }
+
+    @Override
+    public void moveUp() {
+        if (getSelectedTable() != null && editPanel.canMoveUp()) {
+            editPanel.moveEntryUp(editPanel.getSelectedPoolIdx(), editPanel.getSelectedEntryIdx());
+        }
+    }
+
+    @Override
+    public void moveDown() {
+        if (getSelectedTable() != null && editPanel.canMoveDown()) {
+            editPanel.moveEntryDown(editPanel.getSelectedPoolIdx(), editPanel.getSelectedEntryIdx());
         }
     }
 

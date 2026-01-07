@@ -6,6 +6,9 @@ import dev.isotope.Isotope;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableSerializer;
+import dev.isotope.validation.LootTableValidator;
+import dev.isotope.validation.LootTableValidator.ValidationResult;
+import dev.isotope.validation.LootTableValidator.ValidationIssue;
 import dev.isotope.observation.ObservationSession;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -170,6 +173,238 @@ public final class ExportManager {
             """.formatted(packName);
 
         Files.writeString(datapackDir.resolve("pack.mcmeta"), packMcmeta);
+    }
+
+    /**
+     * Export a validation report for all edited loot tables.
+     *
+     * @param format Export format (markdown, json, or text)
+     * @param progressCallback Progress callback for status updates
+     * @return Export result with success status and location
+     */
+    public ExportResult exportValidationReport(ReportFormat format, Consumer<String> progressCallback) {
+        try {
+            LootEditManager editManager = LootEditManager.getInstance();
+            Set<ResourceLocation> editedTables = editManager.getEditedTables();
+
+            progressCallback.accept("Validating " + editedTables.size() + " edited table(s)...");
+
+            // Collect validation results
+            List<ValidationResult> results = new ArrayList<>();
+            int totalErrors = 0;
+            int totalWarnings = 0;
+
+            for (ResourceLocation tableId : editedTables) {
+                Optional<LootTableStructure> structure = editManager.getEditedStructure(tableId);
+                if (structure.isPresent()) {
+                    ValidationResult result = LootTableValidator.validate(tableId, structure.get());
+                    if (result.hasIssues()) {
+                        results.add(result);
+                        totalErrors += result.errorCount();
+                        totalWarnings += result.warningCount();
+                    }
+                }
+            }
+
+            progressCallback.accept("Found " + totalErrors + " error(s), " + totalWarnings + " warning(s)");
+
+            // Generate report content
+            String content;
+            String extension;
+            switch (format) {
+                case MARKDOWN -> {
+                    content = generateMarkdownReport(results, editedTables.size(), totalErrors, totalWarnings);
+                    extension = ".md";
+                }
+                case JSON -> {
+                    content = generateJsonReport(results, editedTables.size(), totalErrors, totalWarnings);
+                    extension = ".json";
+                }
+                default -> {
+                    content = generateTextReport(results, editedTables.size(), totalErrors, totalWarnings);
+                    extension = ".txt";
+                }
+            }
+
+            // Write report
+            Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+            Path reportsDir = gameDir.resolve("isotope-reports");
+            Files.createDirectories(reportsDir);
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            Path reportFile = reportsDir.resolve("validation-report_" + timestamp + extension);
+
+            Files.writeString(reportFile, content);
+
+            progressCallback.accept("Report saved: " + reportFile.getFileName());
+
+            return new ExportResult(true, null, reportsDir, List.of(reportFile.getFileName().toString()));
+
+        } catch (Exception e) {
+            Isotope.LOGGER.error("Validation report export failed", e);
+            return new ExportResult(false, e.getMessage(), null, List.of());
+        }
+    }
+
+    private String generateMarkdownReport(List<ValidationResult> results, int totalTables,
+                                          int totalErrors, int totalWarnings) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("# ISOTOPE Validation Report\n\n");
+        sb.append("Generated: ").append(LocalDateTime.now()).append("\n\n");
+
+        sb.append("## Summary\n\n");
+        sb.append("| Metric | Count |\n");
+        sb.append("|--------|-------|\n");
+        sb.append("| Tables Validated | ").append(totalTables).append(" |\n");
+        sb.append("| Tables with Issues | ").append(results.size()).append(" |\n");
+        sb.append("| Total Errors | ").append(totalErrors).append(" |\n");
+        sb.append("| Total Warnings | ").append(totalWarnings).append(" |\n\n");
+
+        if (results.isEmpty()) {
+            sb.append("✅ **No issues found!** All edited loot tables are valid.\n");
+            return sb.toString();
+        }
+
+        sb.append("## Issues by Table\n\n");
+
+        for (ValidationResult result : results) {
+            sb.append("### `").append(result.tableId()).append("`\n\n");
+            sb.append("- Errors: ").append(result.errorCount()).append("\n");
+            sb.append("- Warnings: ").append(result.warningCount()).append("\n\n");
+
+            if (!result.issues().isEmpty()) {
+                sb.append("| Severity | Type | Message | Location |\n");
+                sb.append("|----------|------|---------|----------|\n");
+
+                for (ValidationIssue issue : result.issues()) {
+                    String severity = switch (issue.severity()) {
+                        case ERROR -> "🔴 Error";
+                        case WARNING -> "🟡 Warning";
+                        case INFO -> "🔵 Info";
+                    };
+                    String location = issue.poolIndex() >= 0
+                        ? "Pool " + (issue.poolIndex() + 1) +
+                          (issue.entryIndex() >= 0 ? ", Entry " + (issue.entryIndex() + 1) : "")
+                        : "—";
+                    sb.append("| ").append(severity)
+                      .append(" | ").append(issue.type().name)
+                      .append(" | ").append(issue.message())
+                      .append(" | ").append(location)
+                      .append(" |\n");
+                }
+                sb.append("\n");
+            }
+        }
+
+        sb.append("---\n\n");
+        sb.append("*Generated by ISOTOPE IDE*\n");
+
+        return sb.toString();
+    }
+
+    private String generateJsonReport(List<ValidationResult> results, int totalTables,
+                                      int totalErrors, int totalWarnings) {
+        Map<String, Object> report = new LinkedHashMap<>();
+
+        report.put("generatedAt", LocalDateTime.now().toString());
+        report.put("isotopeVersion", "0.1.0");
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("tablesValidated", totalTables);
+        summary.put("tablesWithIssues", results.size());
+        summary.put("totalErrors", totalErrors);
+        summary.put("totalWarnings", totalWarnings);
+        report.put("summary", summary);
+
+        List<Map<String, Object>> tables = new ArrayList<>();
+        for (ValidationResult result : results) {
+            Map<String, Object> tableData = new LinkedHashMap<>();
+            tableData.put("tableId", result.tableId().toString());
+            tableData.put("errorCount", result.errorCount());
+            tableData.put("warningCount", result.warningCount());
+
+            List<Map<String, Object>> issues = new ArrayList<>();
+            for (ValidationIssue issue : result.issues()) {
+                Map<String, Object> issueData = new LinkedHashMap<>();
+                issueData.put("severity", issue.severity().name());
+                issueData.put("type", issue.type().name());
+                issueData.put("message", issue.message());
+                issueData.put("poolIndex", issue.poolIndex());
+                issueData.put("entryIndex", issue.entryIndex());
+                issueData.put("suggestion", issue.suggestion());
+                issues.add(issueData);
+            }
+            tableData.put("issues", issues);
+            tables.add(tableData);
+        }
+        report.put("tables", tables);
+
+        return GSON.toJson(report);
+    }
+
+    private String generateTextReport(List<ValidationResult> results, int totalTables,
+                                      int totalErrors, int totalWarnings) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("=".repeat(60)).append("\n");
+        sb.append("ISOTOPE VALIDATION REPORT\n");
+        sb.append("=".repeat(60)).append("\n\n");
+
+        sb.append("Generated: ").append(LocalDateTime.now()).append("\n\n");
+
+        sb.append("SUMMARY\n");
+        sb.append("-".repeat(40)).append("\n");
+        sb.append(String.format("  Tables Validated:    %d%n", totalTables));
+        sb.append(String.format("  Tables with Issues:  %d%n", results.size()));
+        sb.append(String.format("  Total Errors:        %d%n", totalErrors));
+        sb.append(String.format("  Total Warnings:      %d%n", totalWarnings));
+        sb.append("\n");
+
+        if (results.isEmpty()) {
+            sb.append("No issues found! All edited loot tables are valid.\n");
+            return sb.toString();
+        }
+
+        sb.append("ISSUES BY TABLE\n");
+        sb.append("-".repeat(40)).append("\n\n");
+
+        for (ValidationResult result : results) {
+            sb.append("[").append(result.tableId()).append("]\n");
+            sb.append("  Errors: ").append(result.errorCount())
+              .append(", Warnings: ").append(result.warningCount()).append("\n");
+
+            for (ValidationIssue issue : result.issues()) {
+                String prefix = switch (issue.severity()) {
+                    case ERROR -> "  [ERROR]  ";
+                    case WARNING -> "  [WARN]   ";
+                    case INFO -> "  [INFO]   ";
+                };
+                sb.append(prefix).append(issue.type().name).append(": ").append(issue.message()).append("\n");
+                if (issue.poolIndex() >= 0) {
+                    String location = "    Location: Pool " + (issue.poolIndex() + 1);
+                    if (issue.entryIndex() >= 0) {
+                        location += ", Entry " + (issue.entryIndex() + 1);
+                    }
+                    sb.append(location).append("\n");
+                }
+            }
+            sb.append("\n");
+        }
+
+        sb.append("=".repeat(60)).append("\n");
+        sb.append("Generated by ISOTOPE IDE\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * Report format options.
+     */
+    public enum ReportFormat {
+        MARKDOWN,
+        JSON,
+        TEXT
     }
 
     private Path getExportDirectory(ExportConfig config) {

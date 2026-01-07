@@ -250,10 +250,10 @@ public class ValidationPanel extends AbstractWidget {
      */
     private boolean canAutoFix(ValidationIssue issue) {
         return switch (issue.type()) {
-            case ZERO_WEIGHT -> true;       // Set weight to 1
-            case ZERO_ROLLS -> true;        // Set rolls to 1
-            case EMPTY_POOL -> true;        // Remove pool
-            case NEGATIVE_COUNT -> true;    // Set min count to 0
+            case ZERO_WEIGHT -> true;        // Set weight to 1
+            case ZERO_ROLLS -> true;         // Set rolls to 1
+            case EMPTY_POOL -> true;         // Remove pool
+            case UNREACHABLE_ENTRY -> true;  // Set first entry weight to 1
             default -> false;
         };
     }
@@ -298,11 +298,17 @@ public class ValidationPanel extends AbstractWidget {
                     fixMessage = "Removed empty pool";
                 }
             }
-            case NEGATIVE_COUNT -> {
-                // This would require more complex handling to modify the function
-                // For now, just show a message
-                IsotopeToast.info("Manual Fix Needed", "Edit the entry to set count >= 0");
-                return;
+            case UNREACHABLE_ENTRY -> {
+                // All entries have 0 weight - set the first entry to weight 1
+                if (issue.poolIndex() >= 0 && issue.poolIndex() < structure.pools().size()) {
+                    LootPool pool = structure.pools().get(issue.poolIndex());
+                    if (!pool.entries().isEmpty()) {
+                        manager.applyOperation(currentTableId,
+                            new LootEditOperation.ModifyEntryWeight(issue.poolIndex(), 0, 1));
+                        fixed = true;
+                        fixMessage = "Set first entry weight to 1";
+                    }
+                }
             }
             default -> {
                 IsotopeToast.info("Cannot Auto-Fix", "This issue requires manual correction");

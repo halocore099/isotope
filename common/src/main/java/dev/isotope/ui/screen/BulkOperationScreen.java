@@ -52,19 +52,19 @@ public class BulkOperationScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Item input (for remove/replace)
-        itemInput = new EditBox(font, dialogX + 120, dialogY + 95, 200, 18, Component.literal("Item"));
+        itemInput = new EditBox(font, dialogX + 120, dialogY + 112, 200, 18, Component.literal("Item"));
         itemInput.setHint(Component.literal("minecraft:diamond"));
         itemInput.visible = isItemOperation();
         addRenderableWidget(itemInput);
 
         // Second item input (for replace)
-        item2Input = new EditBox(font, dialogX + 120, dialogY + 120, 200, 18, Component.literal("Replace with"));
+        item2Input = new EditBox(font, dialogX + 120, dialogY + 137, 200, 18, Component.literal("Replace with"));
         item2Input.setHint(Component.literal("minecraft:emerald"));
         item2Input.visible = (selectedType == Type.REPLACE_ITEM);
         addRenderableWidget(item2Input);
 
         // Scale factor input (for scale operations)
-        scaleInput = new EditBox(font, dialogX + 120, dialogY + 95, 80, 18, Component.literal("Scale"));
+        scaleInput = new EditBox(font, dialogX + 120, dialogY + 112, 80, 18, Component.literal("Scale"));
         scaleInput.setHint(Component.literal("2.0"));
         scaleInput.setValue("2.0");
         scaleInput.visible = isScaleOperation();
@@ -96,6 +96,10 @@ public class BulkOperationScreen extends Screen {
 
     private boolean isScaleOperation() {
         return selectedType == Type.SCALE_WEIGHTS || selectedType == Type.SCALE_COUNTS;
+    }
+
+    private boolean isNoInputOperation() {
+        return selectedType == Type.REMOVE_EMPTY_POOLS || selectedType == Type.NORMALIZE_WEIGHTS;
     }
 
     private void updateInputVisibility() {
@@ -148,6 +152,12 @@ public class BulkOperationScreen extends Screen {
                 float scale = parseScale();
                 if (scale <= 0) return;
                 previewResult = BulkOperation.previewScaleCounts(minecraft.getSingleplayerServer(), scale);
+            }
+            case REMOVE_EMPTY_POOLS -> {
+                previewResult = BulkOperation.previewRemoveEmptyPools(minecraft.getSingleplayerServer());
+            }
+            case NORMALIZE_WEIGHTS -> {
+                previewResult = BulkOperation.previewNormalizeWeights(minecraft.getSingleplayerServer());
             }
         }
 
@@ -206,6 +216,14 @@ public class BulkOperationScreen extends Screen {
                     IsotopeToast.success("Applied", "Scaled counts in " + previewResult.tablesAffected() + " tables");
                 }
             }
+            case REMOVE_EMPTY_POOLS -> {
+                BulkOperation.applyRemoveEmptyPools(minecraft.getSingleplayerServer());
+                IsotopeToast.success("Applied", "Removed " + previewResult.totalChanges() + " empty pools");
+            }
+            case NORMALIZE_WEIGHTS -> {
+                BulkOperation.applyNormalizeWeights(minecraft.getSingleplayerServer());
+                IsotopeToast.success("Applied", "Normalized weights in " + previewResult.tablesAffected() + " tables");
+            }
         }
 
         previewResult = null;
@@ -246,21 +264,31 @@ public class BulkOperationScreen extends Screen {
             btnX += btnWidth + 5;
         }
 
+        // Row 3 for cleanup operations
+        y = dialogY + 69;
+        btnX = dialogX + 80;
+        for (Type type : new Type[]{Type.REMOVE_EMPTY_POOLS, Type.NORMALIZE_WEIGHTS}) {
+            renderTypeButton(graphics, type, btnX, y, btnWidth, mouseX, mouseY);
+            btnX += btnWidth + 5;
+        }
+
         // Description
-        y = dialogY + 75;
+        y = dialogY + 92;
         graphics.drawString(font, selectedType.description, dialogX + 10, y, IsotopeColors.TEXT_MUTED, false);
 
         // Input labels
         if (isItemOperation()) {
             String label = selectedType == Type.REPLACE_ITEM ? "Item to replace:" : "Item to remove:";
-            graphics.drawString(font, label, dialogX + 10, dialogY + 98, IsotopeColors.TEXT_SECONDARY, false);
+            graphics.drawString(font, label, dialogX + 10, dialogY + 115, IsotopeColors.TEXT_SECONDARY, false);
 
             if (selectedType == Type.REPLACE_ITEM) {
-                graphics.drawString(font, "Replace with:", dialogX + 10, dialogY + 123, IsotopeColors.TEXT_SECONDARY, false);
+                graphics.drawString(font, "Replace with:", dialogX + 10, dialogY + 140, IsotopeColors.TEXT_SECONDARY, false);
             }
         } else if (isScaleOperation()) {
-            graphics.drawString(font, "Scale factor:", dialogX + 10, dialogY + 98, IsotopeColors.TEXT_SECONDARY, false);
-            graphics.drawString(font, "(e.g., 2.0 = double, 0.5 = halve)", dialogX + 210, dialogY + 98, IsotopeColors.TEXT_MUTED, false);
+            graphics.drawString(font, "Scale factor:", dialogX + 10, dialogY + 115, IsotopeColors.TEXT_SECONDARY, false);
+            graphics.drawString(font, "(e.g., 2.0 = double, 0.5 = halve)", dialogX + 210, dialogY + 115, IsotopeColors.TEXT_MUTED, false);
+        } else if (isNoInputOperation()) {
+            graphics.drawString(font, "No parameters required - click Preview", dialogX + 10, dialogY + 115, IsotopeColors.TEXT_MUTED, false);
         }
 
         // Preview results
@@ -343,6 +371,22 @@ public class BulkOperationScreen extends Screen {
         y = dialogY + 52;
         btnX = dialogX + 80;
         for (Type type : new Type[]{Type.SCALE_WEIGHTS, Type.SCALE_COUNTS}) {
+            if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y - 2 && mouseY < y + 12) {
+                if (selectedType != type) {
+                    selectedType = type;
+                    updateInputVisibility();
+                    previewResult = null;
+                    applyButton.active = false;
+                }
+                return true;
+            }
+            btnX += btnWidth + 5;
+        }
+
+        // Row 3 operation type selection
+        y = dialogY + 69;
+        btnX = dialogX + 80;
+        for (Type type : new Type[]{Type.REMOVE_EMPTY_POOLS, Type.NORMALIZE_WEIGHTS}) {
             if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y - 2 && mouseY < y + 12) {
                 if (selectedType != type) {
                     selectedType = type;

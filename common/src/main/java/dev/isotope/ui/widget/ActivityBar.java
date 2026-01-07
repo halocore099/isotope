@@ -27,6 +27,7 @@ public class ActivityBar extends AbstractWidget {
     private static final int ICON_PADDING = 4;
 
     private final List<ActivityItem> items = new ArrayList<>();
+    private final java.util.Map<String, Integer> badges = new java.util.HashMap<>();
     private int selectedIndex = 0;
     private int hoveredIndex = -1;
 
@@ -82,6 +83,26 @@ public class ActivityBar extends AbstractWidget {
         if (index >= 0 && index < items.size()) {
             selectedIndex = index;
         }
+    }
+
+    /**
+     * Set a badge count for an item.
+     * @param id The item ID
+     * @param count The badge count (0 to hide)
+     */
+    public void setBadge(String id, int count) {
+        if (count > 0) {
+            badges.put(id, count);
+        } else {
+            badges.remove(id);
+        }
+    }
+
+    /**
+     * Get the badge count for an item.
+     */
+    public int getBadge(String id) {
+        return badges.getOrDefault(id, 0);
     }
 
     @Override
@@ -143,6 +164,21 @@ public class ActivityBar extends AbstractWidget {
                 iconY,
                 iconColor
             );
+
+            // Render badge if present
+            int badgeCount = badges.getOrDefault(item.id(), 0);
+            if (badgeCount > 0) {
+                String badgeText = badgeCount > 99 ? "99+" : String.valueOf(badgeCount);
+                var font = net.minecraft.client.Minecraft.getInstance().font;
+                int badgeWidth = Math.max(font.width(badgeText) + 4, 12);
+                int badgeX = itemX + width - badgeWidth - 2;
+                int badgeY = itemY + 2;
+
+                // Badge background (red for errors)
+                graphics.fill(badgeX, badgeY, badgeX + badgeWidth, badgeY + 10, 0xFFf14c4c);
+                // Badge text
+                graphics.drawString(font, badgeText, badgeX + 2, badgeY + 1, 0xFFFFFFFF, false);
+            }
 
             itemY += itemHeight;
         }

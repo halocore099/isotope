@@ -441,12 +441,15 @@ Apply changes across ALL loot tables at once - powerful for modpack-wide adjustm
 | Replace Item | Replace one item with another across all tables |
 | Scale Weights | Multiply all entry weights by a factor |
 | Scale Counts | Multiply all item counts by a factor |
+| Remove Empty | Remove all empty pools from all tables (cleanup) |
+| Normalize | Set all weights to sum to 100 per pool |
 
 **Using Bulk Operations:**
-1. Select an operation type (two rows of operation buttons)
+1. Select an operation type (three rows of operation buttons)
 2. For item operations: Enter the item ID (e.g., `minecraft:diamond`)
 3. For Replace: also enter the replacement item ID
 4. For Scale operations: Enter a scale factor (e.g., 2.0 = double, 0.5 = halve)
+5. For cleanup operations (Remove Empty, Normalize): No parameters needed
 5. Click "Preview" to see affected tables
 6. Review the list of changes
 7. Click "Apply" to execute
@@ -456,6 +459,8 @@ Apply changes across ALL loot tables at once - powerful for modpack-wide adjustm
 - Replace one resource with another across your modpack
 - Scale weights to make all items more/less common
 - Scale counts to increase/decrease drop quantities globally
+- Clean up empty pools left over from editing
+- Normalize weights for easier probability understanding
 - Standardize loot across different structures
 
 **Warning:** Bulk operations affect many tables. Always preview before applying and use Test Mode to verify changes in-game.
@@ -517,6 +522,7 @@ Some issues can be automatically fixed with one click:
 | Zero Weight | Set weight to 1 |
 | Zero Rolls | Set rolls to 1 |
 | Empty Pool | Remove the empty pool |
+| Unreachable Entry | Set first entry weight to 1 |
 
 **Using Auto-Fix:**
 1. Open the Validation panel (press 5)
@@ -526,6 +532,29 @@ Some issues can be automatically fixed with one click:
 5. A toast confirms the fix was applied
 
 **Note:** Not all issues can be auto-fixed. Issues like Missing Item or Duplicate Entry require manual review since the correct fix depends on your intent.
+
+#### Validation Badge
+
+The Activity Bar shows a red badge on the Validation icon when the current table has issues:
+- The badge shows the count of errors + warnings
+- Badge updates automatically when you make edits or switch tables
+- A quick glance tells you if there are problems to address
+
+#### Export Validation Report
+
+Generate a comprehensive report of all validation issues:
+
+1. Press Ctrl+P and type "Export Validation Report"
+2. A Markdown report is generated in `<game>/isotope-reports/`
+3. The report includes:
+   - Summary statistics (tables validated, errors, warnings)
+   - Issues grouped by table
+   - Severity, type, message, and location for each issue
+
+**Report Formats:**
+- Markdown (.md) - Default, best for reading and sharing
+- JSON (.json) - Machine-readable for scripts
+- Plain text (.txt) - Simple format for logs
 
 ---
 
@@ -675,6 +704,8 @@ Preserve your work across game restarts:
 |----------|--------|
 | Ctrl+Shift+F | Open global search |
 | Up/Down | Navigate entries |
+| Alt+Up | Move selected entry up |
+| Alt+Down | Move selected entry down |
 | Enter | Select/confirm |
 
 ### Inline Editing

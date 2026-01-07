@@ -1,13 +1,18 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.data.StructureLootLink;
+import dev.isotope.testing.TestArenaManager;
+import dev.isotope.testing.TestingTools;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.screen.TestArenaScreen;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -66,7 +71,7 @@ public class StructureDetailPanel {
 
         // Linked loot table buttons with remove buttons
         for (StructureLootLink link : currentEntry.links()) {
-            if (buttonY + 20 > y + height - 35) break; // Leave room for Add button
+            if (buttonY + 20 > y + height - 100) break; // Leave room for testing buttons
 
             // Loot table button (clickable to view)
             Button lootBtn = Button.builder(
@@ -91,15 +96,87 @@ public class StructureDetailPanel {
             buttonY += 22;
         }
 
-        // "Add Link" button at bottom
+        // "Add Link" button
         Button addButton = Button.builder(
             Component.literal("+ Add Link"),
             b -> onAddLink.accept(currentEntry.info().id())
         )
-        .pos(x + 10, y + height - 30)
-        .size(width - 20, 20)
+        .pos(x + 10, y + height - 95)
+        .size(width - 20, 18)
         .build();
         allButtons.add(addButton);
+
+        // Check if we're in a singleplayer world for testing features
+        Minecraft mc = Minecraft.getInstance();
+        boolean inWorld = mc.getSingleplayerServer() != null;
+
+        if (inWorld) {
+            // Teleport button - find and teleport to this structure
+            Button teleportBtn = Button.builder(
+                Component.literal("\u2708 Locate & Teleport"),
+                b -> onTeleportToStructure()
+            )
+            .pos(x + 10, y + height - 72)
+            .size(width - 20, 18)
+            .build();
+            allButtons.add(teleportBtn);
+
+            // Test Arena button - spawn multiple copies in void world
+            Button arenaBtn = Button.builder(
+                Component.literal("\u2606 Test Arena (" + TestArenaManager.getInstance().getStructureCount() + "x)"),
+                b -> onOpenTestArena()
+            )
+            .pos(x + 10, y + height - 50)
+            .size(width - 20, 18)
+            .build();
+            allButtons.add(arenaBtn);
+        }
+    }
+
+    /**
+     * Teleport to the nearest instance of the current structure.
+     */
+    private void onTeleportToStructure() {
+        if (currentEntry == null) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getSingleplayerServer() == null) {
+            IsotopeToast.error("Not in World", "Teleport requires singleplayer world");
+            return;
+        }
+
+        ResourceLocation structureId = currentEntry.info().id();
+        IsotopeToast.info("Locating...", "Searching for " + structureId.getPath());
+
+        // Run on server thread
+        mc.getSingleplayerServer().execute(() -> {
+            var result = TestingTools.locateAndTeleport(mc.getSingleplayerServer(), structureId);
+
+            // Show result toast on client thread
+            mc.execute(() -> {
+                if (result.found()) {
+                    IsotopeToast.success("Teleported!", "Distance: " + result.distance() + " blocks");
+                    // Close the screen to see the world
+                    mc.setScreen(null);
+                } else {
+                    IsotopeToast.error("Not Found", result.error() != null ? result.error() : "Structure not found nearby");
+                }
+            });
+        });
+    }
+
+    /**
+     * Open test arena configuration screen.
+     */
+    private void onOpenTestArena() {
+        if (currentEntry == null) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        ResourceLocation structureId = currentEntry.info().id();
+
+        // Open the arena configuration screen
+        Screen currentScreen = mc.screen;
+        mc.setScreen(new TestArenaScreen(currentScreen, structureId));
     }
 
     private String truncatePath(String path, int maxWidth) {

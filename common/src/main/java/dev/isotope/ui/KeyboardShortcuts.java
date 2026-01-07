@@ -16,6 +16,8 @@ import org.lwjgl.glfw.GLFW;
  * - Ctrl+D: Duplicate selected entry
  * - Ctrl+C: Copy selected entry
  * - Ctrl+V: Paste entry
+ * - Alt+Up: Move entry up
+ * - Alt+Down: Move entry down
  * - F1: Show keyboard shortcuts help
  */
 public final class KeyboardShortcuts {
@@ -34,6 +36,21 @@ public final class KeyboardShortcuts {
         boolean ctrl = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
         boolean alt = (modifiers & GLFW.GLFW_MOD_ALT) != 0;
+
+        // Alt shortcuts (move up/down)
+        if (alt && !ctrl) {
+            return switch (keyCode) {
+                case GLFW.GLFW_KEY_UP -> {
+                    context.moveUp();
+                    yield true;
+                }
+                case GLFW.GLFW_KEY_DOWN -> {
+                    context.moveDown();
+                    yield true;
+                }
+                default -> false;
+            };
+        }
 
         // Ctrl shortcuts
         if (ctrl && !alt) {
@@ -137,6 +154,12 @@ public final class KeyboardShortcuts {
 
         /** Paste from clipboard */
         default void paste() {}
+
+        /** Move selected entry up (Alt+Up) */
+        default void moveUp() {}
+
+        /** Move selected entry down (Alt+Down) */
+        default void moveDown() {}
 
         /** Handle escape key - close picker or clear selection */
         default void escape() {}

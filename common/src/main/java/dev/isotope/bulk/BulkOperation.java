@@ -26,7 +26,9 @@ public class BulkOperation {
         REMOVE_ITEM("Remove Item", "Remove a specific item from all loot tables"),
         REPLACE_ITEM("Replace Item", "Replace one item with another across all tables"),
         SCALE_WEIGHTS("Scale Weights", "Multiply all weights by a factor"),
-        SCALE_COUNTS("Scale Counts", "Multiply all item counts by a factor");
+        SCALE_COUNTS("Scale Counts", "Multiply all item counts by a factor"),
+        REMOVE_EMPTY_POOLS("Remove Empty", "Remove all empty pools from all tables"),
+        NORMALIZE_WEIGHTS("Normalize", "Set all weights to sum to 100 per pool");
 
         public final String name;
         public final String description;
@@ -294,6 +296,130 @@ public class BulkOperation {
                             }
                             break;
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // === Remove Empty Pools ===
+
+    /**
+     * Preview removing empty pools from all tables.
+     */
+    public static BulkResult previewRemoveEmptyPools(MinecraftServer server) {
+        Map<ResourceLocation, List<String>> changes = new LinkedHashMap<>();
+        int totalChanges = 0;
+
+        for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
+            ResourceLocation tableId = tableInfo.id();
+            LootTableStructure structure = getStructure(server, tableId);
+            if (structure == null) continue;
+
+            List<String> tableChanges = new ArrayList<>();
+            for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
+                LootPool pool = structure.pools().get(poolIdx);
+                if (pool.entries().isEmpty()) {
+                    tableChanges.add("Remove empty pool #" + (poolIdx + 1));
+                    totalChanges++;
+                }
+            }
+
+            if (!tableChanges.isEmpty()) {
+                changes.put(tableId, tableChanges);
+            }
+        }
+
+        return new BulkResult(Type.REMOVE_EMPTY_POOLS, changes.size(), totalChanges, changes);
+    }
+
+    /**
+     * Apply removing empty pools from all tables.
+     */
+    public static void applyRemoveEmptyPools(MinecraftServer server) {
+        LootEditManager manager = LootEditManager.getInstance();
+
+        for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
+            ResourceLocation tableId = tableInfo.id();
+            LootTableStructure structure = getStructure(server, tableId);
+            if (structure == null) continue;
+
+            // Process in reverse to keep indices valid
+            for (int poolIdx = structure.pools().size() - 1; poolIdx >= 0; poolIdx--) {
+                LootPool pool = structure.pools().get(poolIdx);
+                if (pool.entries().isEmpty()) {
+                    manager.applyOperation(tableId, new LootEditOperation.RemovePool(poolIdx));
+                }
+            }
+        }
+    }
+
+    // === Normalize Weights ===
+
+    /**
+     * Preview normalizing weights to sum to 100 per pool.
+     */
+    public static BulkResult previewNormalizeWeights(MinecraftServer server) {
+        Map<ResourceLocation, List<String>> changes = new LinkedHashMap<>();
+        int totalChanges = 0;
+
+        for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
+            ResourceLocation tableId = tableInfo.id();
+            LootTableStructure structure = getStructure(server, tableId);
+            if (structure == null) continue;
+
+            List<String> tableChanges = new ArrayList<>();
+            for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
+                LootPool pool = structure.pools().get(poolIdx);
+                if (pool.entries().isEmpty()) continue;
+
+                int totalWeight = pool.getTotalWeight();
+                if (totalWeight == 0 || totalWeight == 100) continue;
+
+                // Calculate normalized weights
+                for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                    LootEntry entry = pool.entries().get(entryIdx);
+                    int oldWeight = entry.weight();
+                    int newWeight = Math.max(1, Math.round((float) oldWeight * 100 / totalWeight));
+                    if (newWeight != oldWeight) {
+                        tableChanges.add("Pool #" + (poolIdx + 1) + " entry #" + (entryIdx + 1) + ": " + oldWeight + " → " + newWeight);
+                        totalChanges++;
+                    }
+                }
+            }
+
+            if (!tableChanges.isEmpty()) {
+                changes.put(tableId, tableChanges);
+            }
+        }
+
+        return new BulkResult(Type.NORMALIZE_WEIGHTS, changes.size(), totalChanges, changes);
+    }
+
+    /**
+     * Apply normalizing weights to sum to 100 per pool.
+     */
+    public static void applyNormalizeWeights(MinecraftServer server) {
+        LootEditManager manager = LootEditManager.getInstance();
+
+        for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
+            ResourceLocation tableId = tableInfo.id();
+            LootTableStructure structure = getStructure(server, tableId);
+            if (structure == null) continue;
+
+            for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
+                LootPool pool = structure.pools().get(poolIdx);
+                if (pool.entries().isEmpty()) continue;
+
+                int totalWeight = pool.getTotalWeight();
+                if (totalWeight == 0 || totalWeight == 100) continue;
+
+                for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                    LootEntry entry = pool.entries().get(entryIdx);
+                    int oldWeight = entry.weight();
+                    int newWeight = Math.max(1, Math.round((float) oldWeight * 100 / totalWeight));
+                    if (newWeight != oldWeight) {
+                        manager.applyOperation(tableId, new LootEditOperation.ModifyEntryWeight(poolIdx, entryIdx, newWeight));
                     }
                 }
             }
