@@ -70,8 +70,16 @@ public class LootTableBrowserWidget extends AbstractWidget {
         expandedCategories.add(LootTableCategory.ENTITY);
     }
 
+    /**
+     * Clean up resources when the widget is being disposed.
+     * Call this from the parent screen's onClose().
+     */
+    public void cleanup() {
+        BookmarkManager.getInstance().removeListener(bookmarkListener);
+    }
+
     public void loadData() {
-        // Register bookmark listener
+        // Register bookmark listener (removed in cleanup())
         BookmarkManager.getInstance().addListener(bookmarkListener);
 
         // Get all loot tables

@@ -308,8 +308,8 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         registerCommands();
         commandPalette.onClose(v -> {
             commandPaletteVisible = false;
-            commandPalette.visible = false;
         });
+        // Keep visible=false so it doesn't render in super.render() - we render it manually for z-order
         commandPalette.visible = false;
         addRenderableWidget(commandPalette);
 
@@ -813,7 +813,12 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
                 IsotopeColors.BADGE_MODIFIED, false);
         }
 
-        // Context menu (rendered last, on top of everything)
+        // Command palette (rendered after widgets so it's on top)
+        if (commandPaletteVisible && commandPalette != null) {
+            commandPalette.render(graphics, mouseX, mouseY, partialTick);
+        }
+
+        // Context menu (rendered last, on top of everything including command palette)
         if (contextMenuVisible && contextMenu != null) {
             contextMenu.render(graphics, mouseX, mouseY, partialTick);
         }
@@ -839,7 +844,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             } else {
                 // Click outside closes palette
                 commandPaletteVisible = false;
-                commandPalette.visible = false;
                 return true;
             }
         }
@@ -868,14 +872,22 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         boolean ctrl = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
         if (ctrl && keyCode == GLFW.GLFW_KEY_P) {
             commandPaletteVisible = true;
-            commandPalette.visible = true;
+            // Don't set commandPalette.visible - we render it manually for proper z-order
             commandPalette.reset();
             setFocused(commandPalette);
             return true;
         }
 
-        // Number keys for quick panel switching
+        // Number keys for quick panel switching (only if no text field is focused)
         if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_5 && modifiers == 0) {
+            // Don't intercept if a text field might be focused
+            if (getFocused() instanceof net.minecraft.client.gui.components.EditBox) {
+                return false; // Let the edit box handle it
+            }
+            // Also check if edit panel is in editing mode
+            if (editPanel != null && editPanel.isEditing()) {
+                return false;
+            }
             String[] panels = {PANEL_BROWSER, PANEL_SEARCH, PANEL_ANALYSIS, PANEL_HISTORY, PANEL_VALIDATION};
             int index = keyCode - GLFW.GLFW_KEY_1;
             switchPanel(panels[index]);
@@ -996,7 +1008,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     public void escape() {
         if (commandPaletteVisible) {
             commandPaletteVisible = false;
-            commandPalette.visible = false;
         } else if (editPanel.hasSelection()) {
             editPanel.clearSelection();
         } else {
@@ -1054,6 +1065,11 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         // Unregister listeners
         LootEditManager.getInstance().removeListener(editListener);
         tabManager.removeListener(tabListener);
+
+        // Clean up widget resources
+        if (browser != null) {
+            browser.cleanup();
+        }
 
         if (minecraft != null) {
             minecraft.setScreen(null);

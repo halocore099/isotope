@@ -358,7 +358,7 @@ public class GlobalSearchWidget extends AbstractWidget {
 
     @Override
     public boolean charTyped(char c, int modifiers) {
-        if (searchBox != null) {
+        if (searchBox != null && searchBox.isFocused()) {
             return searchBox.charTyped(c, modifiers);
         }
         return false;

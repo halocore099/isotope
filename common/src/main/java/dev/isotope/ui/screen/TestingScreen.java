@@ -159,13 +159,15 @@ public class TestingScreen extends Screen {
 
     private void onExitTestMode() {
         if (minecraft == null) return;
+        // skipCloseAfterConfirm=true because exitTestWorld() handles the screen transition
         minecraft.setScreen(new ConfirmDialog(
             this,
             "Exit Test Mode",
             "This will delete the test world\nand return to the main menu.",
             "Exit",
             () -> TestWorldManager.getInstance().exitTestWorld(),
-            true
+            true,
+            true  // Don't call onClose() after confirm - exitTestWorld handles screen
         ));
     }
 

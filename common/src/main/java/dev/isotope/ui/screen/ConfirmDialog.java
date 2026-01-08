@@ -23,6 +23,7 @@ public class ConfirmDialog extends Screen {
     private final String confirmText;
     private final Runnable onConfirm;
     private final boolean destructive;
+    private final boolean skipCloseAfterConfirm;
 
     /**
      * Create a confirmation dialog.
@@ -36,6 +37,22 @@ public class ConfirmDialog extends Screen {
      */
     public ConfirmDialog(Screen parent, String title, String message, String confirmText,
                          Runnable onConfirm, boolean destructive) {
+        this(parent, title, message, confirmText, onConfirm, destructive, false);
+    }
+
+    /**
+     * Create a confirmation dialog with option to skip close after confirm.
+     *
+     * @param parent              The parent screen to return to
+     * @param title               Dialog title
+     * @param message             Message to display
+     * @param confirmText         Text for confirm button
+     * @param onConfirm           Action to run on confirm
+     * @param destructive         If true, confirm button is red
+     * @param skipCloseAfterConfirm If true, onClose() is not called after confirm (use when callback handles screen)
+     */
+    public ConfirmDialog(Screen parent, String title, String message, String confirmText,
+                         Runnable onConfirm, boolean destructive, boolean skipCloseAfterConfirm) {
         super(Component.literal(title));
         this.parent = parent;
         this.title = title;
@@ -43,6 +60,7 @@ public class ConfirmDialog extends Screen {
         this.confirmText = confirmText;
         this.onConfirm = onConfirm;
         this.destructive = destructive;
+        this.skipCloseAfterConfirm = skipCloseAfterConfirm;
     }
 
     /**
@@ -92,7 +110,9 @@ public class ConfirmDialog extends Screen {
         // Confirm button
         addRenderableWidget(Button.builder(Component.literal(confirmText), b -> {
             onConfirm.run();
-            onClose();
+            if (!skipCloseAfterConfirm) {
+                onClose();
+            }
         })
             .pos(dialogX + DIALOG_WIDTH / 2 + 10, buttonY)
             .size(buttonWidth, 20)

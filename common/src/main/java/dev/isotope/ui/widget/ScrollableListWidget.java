@@ -205,6 +205,11 @@ public class ScrollableListWidget<T> extends AbstractWidget {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!isMouseOver(mouseX, mouseY)) return false;
 
+        // Ignore clicks on the scrollbar area
+        if (hasScrollbar() && mouseX >= getX() + width - SCROLLBAR_WIDTH - 1) {
+            return true; // Consume click but don't select
+        }
+
         int relativeY = (int) mouseY - getY() - 2;
         int clickedIndex = scrollOffset + (relativeY / itemHeight);
 
