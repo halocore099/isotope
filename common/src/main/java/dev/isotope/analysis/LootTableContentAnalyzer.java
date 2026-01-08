@@ -156,6 +156,19 @@ public final class LootTableContentAnalyzer {
     public static LootTableCategory analyzeJson(ResourceLocation tableId, JsonObject json) {
         ContentAnalysis analysis = new ContentAnalysis();
 
+        // Path-based hints for categories that can't be detected from content alone
+        String path = tableId.getPath().toLowerCase();
+        if (path.startsWith("gameplay/") || path.contains("/gameplay/")) {
+            analysis.gameplayScore += 10;
+        }
+        if (path.startsWith("equipment/") || path.contains("/equipment/")) {
+            analysis.equipmentScore += 10;
+        }
+        if (path.startsWith("shearing/") || path.contains("/shearing/")) {
+            // Shearing is a type of gameplay
+            analysis.gameplayScore += 10;
+        }
+
         // Check the loot table type field
         if (json.has("type")) {
             String type = json.get("type").getAsString();
@@ -345,6 +358,8 @@ public final class LootTableContentAnalyzer {
         int blockScore = 0;
         int chestScore = 0;
         int archaeologyScore = 0;
+        int gameplayScore = 0;
+        int equipmentScore = 0;
 
         LootTableCategory getCategory() {
             // Archaeology has highest priority (specific items)
@@ -352,7 +367,7 @@ public final class LootTableContentAnalyzer {
                 return LootTableCategory.ARCHAEOLOGY;
             }
 
-            // Entity and block have strong signals
+            // Entity and block have strong signals from conditions/functions
             if (entityScore >= 5 && entityScore > blockScore && entityScore > chestScore) {
                 return LootTableCategory.ENTITY;
             }
@@ -361,11 +376,22 @@ public final class LootTableContentAnalyzer {
                 return LootTableCategory.BLOCK;
             }
 
-            // Chest is the default for loot with items but no entity/block markers
-            if (chestScore > 0 || (entityScore == 0 && blockScore == 0)) {
+            // Gameplay and equipment from path hints
+            if (gameplayScore > 0) {
+                return LootTableCategory.GAMEPLAY;
+            }
+
+            if (equipmentScore > 0) {
+                return LootTableCategory.EQUIPMENT;
+            }
+
+            // CHEST requires positive evidence - multiple pools OR high chest score
+            // Don't default to CHEST just because there's no entity/block markers
+            if (chestScore >= 3) {
                 return LootTableCategory.CHEST;
             }
 
+            // Default to OTHER for ambiguous tables
             return LootTableCategory.OTHER;
         }
     }
