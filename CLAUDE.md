@@ -22,7 +22,7 @@ Branch-based versioning for different MC versions:
 | Branch | Minecraft | Status |
 |--------|-----------|--------|
 | `main` | 1.21.4 | Active |
-| `1.21.1` | 1.21.1 | Planned |
+| `1.21.1` | 1.21.1 | Active |
 | `1.21` | 1.21 | Planned |
 
 **Releases**: Tag format `vX.X.X` on appropriate branch. Workflow auto-detects MC version from `gradle.properties`.
