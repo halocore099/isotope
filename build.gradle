@@ -28,7 +28,8 @@ allprojects {
     base {
         archivesName = rootProject.archives_base_name
     }
-    version = rootProject.mod_version
+    // Use CI_VERSION env var if set (from git tag), otherwise use gradle.properties
+    version = System.getenv("CI_VERSION") ?: rootProject.mod_version
     group = rootProject.maven_group
 
     repositories {
