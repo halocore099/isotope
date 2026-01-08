@@ -79,7 +79,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     // Essential toolbar buttons (kept minimal)
     private Button undoButton;
     private Button redoButton;
-    private Button testModeButton;
     private Button exportButton;
 
     // Overlay states
@@ -140,15 +139,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .tooltip(Tooltip.create(Component.literal("Export edits as datapack (Ctrl+S)")))
             .build();
         addRenderableWidget(exportButton);
-
-        // Test mode toggle
-        buttonX -= 90;
-        testModeButton = Button.builder(Component.literal(getTestModeLabel()), b -> onToggleTestMode())
-            .pos(buttonX, buttonY)
-            .size(85, 20)
-            .tooltip(Tooltip.create(Component.literal("Toggle test mode (F5)")))
-            .build();
-        addRenderableWidget(testModeButton);
 
         // Redo button
         buttonX -= 45;
@@ -350,7 +340,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("test-world", "\uD83E\uDDEA", "Test Changes in World...", "", this::onOpenTestSetup)
 
             // View operations
-            .addCommand("toggle-test", "\u25CF", "Toggle Test Mode (Live)", "F5", this::onToggleTestMode)
             .addCommand("panel-browser", "\u2630", "Show Browser Panel", "1", () -> switchPanel(PANEL_BROWSER))
             .addCommand("panel-search", "\u2315", "Show Search Panel", "2", () -> switchPanel(PANEL_SEARCH))
             .addCommand("panel-analysis", "\u2261", "Show Analysis Panel", "3", () -> switchPanel(PANEL_ANALYSIS))
@@ -492,17 +481,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     @Nullable
     private ResourceLocation getSelectedTable() {
         return tabManager.getActiveTableId().orElse(null);
-    }
-
-    private String getTestModeLabel() {
-        boolean active = LootEditManager.getInstance().isTestModeActive();
-        return "Test " + (active ? "\u25CF" : "\u25CB");  // ● or ○
-    }
-
-    private void onToggleTestMode() {
-        LootEditManager.getInstance().toggleTestMode();
-        testModeButton.setMessage(Component.literal(getTestModeLabel()));
-        IsotopeToast.info("Test Mode", LootEditManager.getInstance().isTestModeActive() ? "Enabled" : "Disabled");
     }
 
     private void onUndo() {
@@ -891,12 +869,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             String[] panels = {PANEL_BROWSER, PANEL_SEARCH, PANEL_ANALYSIS, PANEL_HISTORY, PANEL_VALIDATION};
             int index = keyCode - GLFW.GLFW_KEY_1;
             switchPanel(panels[index]);
-            return true;
-        }
-
-        // F5 for test mode
-        if (keyCode == GLFW.GLFW_KEY_F5) {
-            onToggleTestMode();
             return true;
         }
 
