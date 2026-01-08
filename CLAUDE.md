@@ -13,8 +13,24 @@
 ## Project Structure
 
 - Uses Architectury for cross-loader (Fabric/NeoForge) support
-- Currently targets MC 1.21.4
 - Multi-project: `common/`, `fabric/`, `neoforge/`
+
+## Multi-Version Strategy
+
+Branch-based versioning for different MC versions:
+
+| Branch | Minecraft | Status |
+|--------|-----------|--------|
+| `main` | 1.21.4 | Active |
+| `1.21.1` | 1.21.1 | Planned |
+| `1.21` | 1.21 | Planned |
+
+**Releases**: Tag format `vX.X.X` on appropriate branch. Workflow auto-detects MC version from `gradle.properties`.
+
+**Why branches instead of Stonecutter?**
+- MC 1.21.x versions are API-compatible with minimal differences
+- Simpler maintenance than preprocessor-based multi-version
+- Each branch is a complete, testable build
 
 ## Key Features (DO NOT REMOVE)
 
