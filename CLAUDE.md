@@ -783,6 +783,73 @@ Captures panel visibility:
 - `SessionManager` - Singleton handling save/load/list/delete
 - `EditorSession` - Record containing session data
 
+## Datapack Importer
+
+Import loot tables from existing datapacks for viewing, comparison, and editing.
+
+### Scan Locations
+
+The importer automatically scans these locations for datapacks:
+- `.minecraft/datapacks/` - Global datapacks folder
+- `.minecraft/isotope-export/` - Isotope's own exports
+- `.minecraft/saves/*/datapacks/` - Per-world datapacks
+
+### DatapackInfo
+
+For each discovered datapack:
+
+| Field | Description |
+|-------|-------------|
+| `name` | Folder name |
+| `path` | Full path to datapack |
+| `lootTableCount` | Number of loot table JSON files |
+| `description` | From `pack.mcmeta` (if present) |
+
+### Import API
+
+| Method | Description |
+|--------|-------------|
+| `findAvailableDatapacks()` | List all datapacks with loot tables |
+| `importFromDatapack(path, callback)` | Import from a standard datapack folder |
+| `importFromPath(pathString, callback)` | Import from any path (auto-detects format) |
+| `applyImportedTables(tables)` | Cache imported tables for viewing |
+
+### ImportResult
+
+| Field | Description |
+|-------|-------------|
+| `success` | Whether import succeeded |
+| `tablesFound` | Total JSON files found |
+| `tablesImported` | Successfully parsed tables |
+| `tablesSkipped` | Failed to parse |
+| `errors` | List of error messages |
+| `importedTables` | List of `ImportedTable` records |
+
+### ImportedTable
+
+| Field | Description |
+|-------|-------------|
+| `tableId` | ResourceLocation derived from path |
+| `sourcePath` | Original file path |
+| `structure` | Parsed `LootTableStructure` |
+
+### Path Detection
+
+The importer auto-detects input type:
+1. **Standard datapack**: Has `pack.mcmeta` file
+2. **Data folder**: Has `data/` subdirectory
+3. **Loot table folder**: Path contains `loot_table`
+
+### Table ID Generation
+
+Table IDs are built from the file path:
+```
+data/minecraft/loot_table/chests/simple_dungeon.json
+  → minecraft:chests/simple_dungeon
+```
+
+**Key Class:** `DatapackImporter` - Singleton with `getInstance()`
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
