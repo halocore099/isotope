@@ -33,25 +33,32 @@ Single branch (`main`) supports the entire 1.21.x line. No per-patch branches ne
 
 The "No Silent Failure" model - multi-layer linking with confidence tracking.
 
-### Structures vs Features
-
-Minecraft has two types of loot-generating worldgen:
-
-| Type | Examples | Engine Behavior | Our Handling |
-|------|----------|-----------------|--------------|
-| **Structure** | Villages, Ancient Cities, Trial Chambers | Tracked with bounding boxes, persistent IDs, in registry | Scanned from `Registries.STRUCTURE` |
-| **Feature** | Dungeons (monster_room), Fossils | Fire-and-forget, no tracking, not in registry | Defined in `FeatureRegistry` |
-
-**Why this matters**: Dungeons aren't "structures" in Minecraft's engine - they're stateless decorations. But users expect to see them linked to their loot tables. We create "virtual structures" for features.
-
 ### Loot Source Types
+
+Minecraft has three categories of loot sources:
+
+| Type | Color | Examples | Trigger | Our Handling |
+|------|-------|----------|---------|--------------|
+| **Structure** | Cyan | Villages, Ancient Cities | Container interaction | Scanned from `Registries.STRUCTURE` |
+| **Feature** | Orange | Dungeons (monster_room) | Container interaction | Defined in `FeatureRegistry` |
+| **Mob** | Purple | Zombie, Creeper, Ender Dragon | Entity death | Scanned from `entities/*.json` |
 
 ```java
 LootSourceType.STRUCTURE  // Cyan - real structures with persistent tracking
 LootSourceType.FEATURE    // Orange - fire-and-forget decorations
+LootSourceType.MOB        // Purple - entity drops on death
 ```
 
-UI shows these with distinct colors so users understand the source type.
+### Chest vs Mob Loot (Key Differences)
+
+| Aspect | Chest/Structure Loot | Mob/Entity Loot |
+|--------|---------------------|-----------------|
+| **Trigger** | Container open | Entity death |
+| **Looting Enchant** | Rarely applies | Critical (0-3+ levels) |
+| **Player Kill** | Rarely required | Often required for rares |
+| **Conditions** | Simple | `killed_by_player`, `random_chance_with_looting` |
+
+**Why this matters**: Mob loot requires understanding killer context. A zombie drops different items depending on whether a player killed it and what Looting level they had.
 
 ### Confidence Levels (never downgrade, only promote)
 
@@ -73,6 +80,7 @@ Layer 1: Registry Scan
          - StructureRegistry (real structures from Registries.STRUCTURE)
          - LootTableRegistry (all loot tables)
          - FeatureRegistry (known features with loot - monster_room, etc.)
+         - EntityLootRegistry (mob loot from entities/*.json)
     ↓
 Layer 2: Template Parsing (StructureTemplateParser)
          - Parses .nbt files for loot table references
@@ -89,7 +97,7 @@ Layer 4: Orphan Detection (OrphanDetector)
          - Tracks runtime-only discoveries
     ↓
 Layer 5: Compile Unified Registry (LootSourceRegistry)
-         - Combines structures + features into single view
+         - Combines structures + features + mobs into single view
          - Used by UI for consistent display
     ↓
 Ready
@@ -103,9 +111,10 @@ Ready
 - `OrphanDetector` - Surfaces gaps and missing links
 - `StructureLootLink` - Link record with confidence and source
 - `FeatureRegistry` - Known features with loot (monster_room → simple_dungeon)
-- `LootSourceRegistry` - Unified view of structures + features
-- `LootSource` - Abstraction representing any loot source (structure or feature)
-- `LootSourceType` - Enum: STRUCTURE vs FEATURE
+- `EntityLootRegistry` - Scans entity loot tables, maps to entity IDs
+- `LootSourceRegistry` - Unified view of structures + features + mobs
+- `LootSource` - Abstraction representing any loot source
+- `LootSourceType` - Enum: STRUCTURE / FEATURE / MOB
 
 ### Design Principles
 
