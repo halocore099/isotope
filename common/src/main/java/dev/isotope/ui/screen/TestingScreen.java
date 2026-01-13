@@ -194,6 +194,12 @@ public class TestingScreen extends Screen {
             b -> cycleKillCondition(1)
         ).pos(killX + 70, footerY).size(20, 20).build());
 
+        // Clear ground items button
+        addRenderableWidget(Button.builder(
+            Component.literal("Clear Items"),
+            b -> onClearGroundItems()
+        ).pos(panelX + PANEL_WIDTH - 130, footerY).size(70, 20).build());
+
         // Close button
         addRenderableWidget(Button.builder(
             Component.literal("Close"),
@@ -337,6 +343,42 @@ public class TestingScreen extends Screen {
             true,
             true  // Don't call onClose() after confirm - exitTestWorld handles screen
         ));
+    }
+
+    private void onClearGroundItems() {
+        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
+            IsotopeToast.error("Error", "Not in singleplayer world");
+            return;
+        }
+
+        minecraft.execute(() -> {
+            var server = minecraft.getSingleplayerServer();
+            var player = server.getPlayerList().getPlayers().stream().findFirst().orElse(null);
+            if (player == null) return;
+
+            var level = player.serverLevel();
+            var pos = player.position();
+            int radius = 100;
+
+            // Find and remove all item entities within radius
+            var items = level.getEntitiesOfClass(
+                net.minecraft.world.entity.item.ItemEntity.class,
+                player.getBoundingBox().inflate(radius)
+            );
+
+            int count = items.size();
+            for (var item : items) {
+                item.discard();
+            }
+
+            minecraft.execute(() -> {
+                if (count > 0) {
+                    IsotopeToast.success("Cleared", "Removed " + count + " items");
+                } else {
+                    IsotopeToast.info("Clear", "No items to clear");
+                }
+            });
+        });
     }
 
     private void onTeleport(ResourceLocation structureId) {
