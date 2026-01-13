@@ -150,6 +150,52 @@ SOURCE_MOB       = 0xFFAA55FF  // Purple - entity drops
 ACCENT_AQUA      = 0xFF55FFFF  // Aqua - looting indicators
 ```
 
+## Test Mode
+
+Test mode creates a temporary creative world to test edited loot tables in-game.
+
+### Test Mode Flow
+
+1. Edit loot tables in the editor
+2. Click "Test Your Changes" → TestSetupScreen shows edited tables
+3. Choose world type (Superflat or Normal)
+4. Create test world → TestingScreen opens in-game
+
+### Structure Loot Testing
+
+| Button | Action |
+|--------|--------|
+| **Teleport** | Locate and teleport to nearest structure |
+| **Spawn Arena** | Create grid of structure copies (4-36) |
+
+### Mob Loot Testing (Phase 3)
+
+Entity loot tables are detected and displayed with purple styling.
+
+| Button | Action |
+|--------|--------|
+| **Spawn** | Spawn one mob near player (AI disabled) |
+| **×5** | Spawn 5 mobs in a grid pattern |
+| **Kill All** | Remove all mobs of that type within 50 blocks |
+| **Test ×10** | Spawn and kill 10 mobs with selected condition |
+
+**Kill Conditions** (cycle with ◀/▶):
+| Condition | Effect |
+|-----------|--------|
+| Player Kill | Triggers `killed_by_player` conditions |
+| Non-Player | Only guaranteed drops (no rare items) |
+| Looting I/II/III | Player kill with looting enchant bonus |
+
+### Key Classes
+
+- `TestModeState` - Singleton tracking test mode state
+- `TestWorldManager` - Creates/deletes test worlds
+- `TestingTools` - Structure locate/teleport utilities
+- `TestMobTools` - Mob spawn/kill utilities with condition support
+- `TestArenaManager` - Structure arena creation
+- `TestSetupScreen` - Pre-test configuration UI
+- `TestingScreen` - In-game test controls
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
