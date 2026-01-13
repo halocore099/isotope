@@ -253,6 +253,22 @@ Test count selector in the header allows choosing how many tests to run for Stat
 
 Selected preset highlighted with aqua outline.
 
+### Luck Parameter
+
+Luck selector in the second header row affects quality-weighted loot table entries for chest loot:
+
+| Value | Effect |
+|-------|--------|
+| **0** | Default, no luck bonus |
+| **1-3** | Moderate luck increase |
+| **5** | Maximum luck (like Luck of the Sea III) |
+
+Higher luck values increase chances of getting rarer items from quality-weighted pools. This simulates the effect of the Luck potion or Luck of the Sea enchantment on fishing.
+
+Selected preset highlighted with green outline. Luck value shown in toast messages and statistics condition.
+
+**Note**: Luck only affects chest/container loot (Stats/Compare). Mob loot uses looting enchant instead.
+
 ### Drop Statistics
 
 The **Stats** button runs multiple loot generations and displays a statistics dialog:
