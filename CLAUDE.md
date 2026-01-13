@@ -370,6 +370,49 @@ Debug commands for inspecting observation data. Requires permission level 2 (op/
 
 **Key Class:** `IsotopeCommands` - Registers commands via Architectury's `CommandRegistrationEvent`
 
+## Validation System
+
+Validates loot table structures and detects potential issues before export.
+
+### Severity Levels
+
+| Severity | Color | Description |
+|----------|-------|-------------|
+| **ERROR** | Red | Will cause problems (broken loot tables) |
+| **WARNING** | Orange | Might cause problems (suboptimal configuration) |
+| **INFO** | Blue | Informational (suggestions for improvement) |
+
+### Issue Types
+
+| Issue | Severity | Description | Suggestion |
+|-------|----------|-------------|------------|
+| `EMPTY_POOL` | Warning | Pool has no entries | Add entries or remove the pool |
+| `ZERO_WEIGHT` | Warning | Entry has weight of 0 | Set weight to at least 1 |
+| `ZERO_ROLLS` | Warning | Pool always rolls 0 times | Set rolls to at least 1 |
+| `MISSING_ITEM` | Error | Item does not exist in registry | Check item ID spelling |
+| `DUPLICATE_ENTRY` | Info | Same item appears multiple times in pool | Consider merging duplicate entries |
+| `NEGATIVE_COUNT` | Error | Item count can be negative | Set minimum count to 0 or higher |
+| `UNREACHABLE_ENTRY` | Error | All entries have 0 weight, nothing can drop | Set at least one entry's weight > 0 |
+| `CONFLICTING_FUNCTIONS` | Warning | Multiple set_count or set_damage functions | Only the last function will apply |
+
+### Validation Result
+
+Each validation returns a `ValidationResult` containing:
+- List of `ValidationIssue` records (type, severity, message, pool/entry index, suggestion)
+- Counts: `errorCount`, `warningCount`, `infoCount`
+- Helper methods: `hasIssues()`, `hasErrors()`
+
+### Key Class
+
+`LootTableValidator` - Static `validate(tableId, structure)` method that checks:
+1. Empty pools
+2. Zero rolls on pools
+3. Zero/invalid weights on entries
+4. Missing items (minecraft namespace only, to avoid false positives with mods)
+5. Duplicate entries per pool
+6. Negative item counts
+7. Conflicting functions (multiple set_count or set_damage)
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
