@@ -161,14 +161,16 @@ Test mode creates a temporary creative world to test edited loot tables in-game.
 3. Choose world type (Superflat or Normal)
 4. Create test world → TestingScreen opens in-game
 
-### Structure Loot Testing
+### Structure/Chest Loot Testing
 
 | Button | Action |
 |--------|--------|
 | **Teleport** | Locate and teleport to nearest structure |
-| **Spawn Arena** | Create grid of structure copies (4-36) |
+| **Arena** | Create grid of structure copies (4-36) |
+| **Gen ×10** | Generate loot 10 times, spawn items on ground |
+| **Stats** | Run 50 rolls and show statistics dialog |
 
-### Mob Loot Testing (Phase 3)
+### Mob Loot Testing
 
 Entity loot tables are detected and displayed with purple styling.
 
@@ -176,8 +178,9 @@ Entity loot tables are detected and displayed with purple styling.
 |--------|--------|
 | **Spawn** | Spawn one mob near player (AI disabled) |
 | **×5** | Spawn 5 mobs in a grid pattern |
-| **Kill All** | Remove all mobs of that type within 50 blocks |
-| **Test ×10** | Spawn and kill 10 mobs with selected condition |
+| **Kill** | Remove all mobs of that type within 50 blocks |
+| **Test ×10** | Spawn and kill 10 mobs, drops on ground |
+| **Stats** | Run 50 kills and show statistics dialog |
 
 **Kill Conditions** (cycle with ◀/▶):
 | Condition | Effect |
@@ -186,6 +189,20 @@ Entity loot tables are detected and displayed with purple styling.
 | Non-Player | Only guaranteed drops (no rare items) |
 | Looting I/II/III | Player kill with looting enchant bonus |
 
+### Drop Statistics
+
+The **Stats** button runs multiple loot generations and displays a statistics dialog:
+
+| Column | Description |
+|--------|-------------|
+| **Item** | Dropped item name |
+| **Total** | Total count across all tests |
+| **Avg** | Average drops per test |
+| **Rate** | % of tests that dropped this item (color-coded) |
+| **Range** | Min-max drops per test |
+
+**Rate colors**: Green (≥75%), Yellow (≥25%), Red (<25%)
+
 ### Key Classes
 
 - `TestModeState` - Singleton tracking test mode state
@@ -193,8 +210,11 @@ Entity loot tables are detected and displayed with purple styling.
 - `TestingTools` - Structure locate/teleport utilities
 - `TestMobTools` - Mob spawn/kill utilities with condition support
 - `TestArenaManager` - Structure arena creation
+- `LootTestRunner` - Runs loot tests and collects statistics
+- `DropStatistics` - Tracks drops across multiple test runs
 - `TestSetupScreen` - Pre-test configuration UI
 - `TestingScreen` - In-game test controls
+- `DropStatisticsDialog` - Statistics display with scrollable table
 
 ## Key Features (DO NOT REMOVE)
 
