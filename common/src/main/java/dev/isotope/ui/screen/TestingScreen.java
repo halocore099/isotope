@@ -53,6 +53,9 @@ public class TestingScreen extends Screen {
     // Auto-collect drops to inventory
     private boolean autoCollect = false;
 
+    // Test count for Stats/Compare (adjustable)
+    private int selectedTestCount = 50;
+
     private record TableEntry(
         ResourceLocation tableId,
         Set<ResourceLocation> structures,
@@ -130,7 +133,28 @@ public class TestingScreen extends Screen {
                 autoCollect = !autoCollect;
                 rebuildWidgets();
             }
-        ).pos(panelX + 150, panelY + 8).size(80, 20).build());
+        ).pos(panelX + 10, panelY + 8).size(80, 20).build());
+
+        // Test count selector in header (for Stats/Compare)
+        addRenderableWidget(Button.builder(
+            Component.literal("Tests:"),
+            b -> {}
+        ).pos(panelX + 95, panelY + 8).size(40, 20).build()).active = false;
+
+        int[] testPresets = {10, 50, 100, 500};
+        int testX = panelX + 138;
+        for (int preset : testPresets) {
+            final int count = preset;
+            Button btn = addRenderableWidget(Button.builder(
+                Component.literal(String.valueOf(count)),
+                b -> selectedTestCount = count
+            ).pos(testX, panelY + 8).size(28, 20).build());
+            // Highlight selected
+            if (preset == selectedTestCount) {
+                btn.setFocused(true);
+            }
+            testX += 30;
+        }
 
         // Footer - Arena size buttons (for structures)
         int footerY = panelY + PANEL_HEIGHT - 35;
@@ -235,7 +259,7 @@ public class TestingScreen extends Screen {
 
                     Button statsBtn = Button.builder(
                         Component.literal("Stats"),
-                        b -> onMobStats(entityId, 50)
+                        b -> onMobStats(entityId, selectedTestCount)
                     ).pos(panelX + 192, entryY + 35).size(40, 18).build();
                     entryButtons.add(addRenderableWidget(statsBtn));
 
@@ -245,7 +269,7 @@ public class TestingScreen extends Screen {
                     if (LootEditManager.getInstance().hasEdits(lootTableId)) {
                         Button compareBtn = Button.builder(
                             Component.literal("Compare"),
-                            b -> onMobCompare(entityId, 50)
+                            b -> onMobCompare(entityId, selectedTestCount)
                         ).pos(panelX + 235, entryY + 35).size(55, 18).build();
                         entryButtons.add(addRenderableWidget(compareBtn));
                     }
@@ -282,7 +306,7 @@ public class TestingScreen extends Screen {
 
                     Button statsBtn = Button.builder(
                         Component.literal("Stats"),
-                        b -> onChestStats(tableId, 50)
+                        b -> onChestStats(tableId, selectedTestCount)
                     ).pos(genX + 53, entryY + 35).size(40, 18).build();
                     entryButtons.add(addRenderableWidget(statsBtn));
 
@@ -290,7 +314,7 @@ public class TestingScreen extends Screen {
                     if (LootEditManager.getInstance().hasEdits(tableId)) {
                         Button compareBtn = Button.builder(
                             Component.literal("Compare"),
-                            b -> onChestCompare(tableId, 50)
+                            b -> onChestCompare(tableId, selectedTestCount)
                         ).pos(genX + 96, entryY + 35).size(55, 18).build();
                         entryButtons.add(addRenderableWidget(compareBtn));
                     }
@@ -652,6 +676,17 @@ public class TestingScreen extends Screen {
                 graphics.renderOutline(presetX - 1, presetButtonY - 1, 42, 22, IsotopeColors.ACCENT_GOLD);
             }
             presetX += 45;
+        }
+
+        // Selected test count highlight (in header)
+        int[] testPresets = {10, 50, 100, 500};
+        int testX = panelX + 138;
+        int testButtonY = panelY + 8;
+        for (int preset : testPresets) {
+            if (preset == selectedTestCount) {
+                graphics.renderOutline(testX - 1, testButtonY - 1, 30, 22, IsotopeColors.ACCENT_AQUA);
+            }
+            testX += 30;
         }
     }
 
