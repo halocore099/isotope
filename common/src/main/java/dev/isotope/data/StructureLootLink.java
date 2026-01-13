@@ -19,15 +19,19 @@ public record StructureLootLink(
     /**
      * Confidence level for the link.
      *
-     * MANUAL - Author explicitly created this link
+     * MANUAL - Author explicitly created this link (highest authority)
      * VERIFIED - Observed at runtime (ground truth)
+     * TEMPLATE - Found in structure template .nbt file (deterministic)
      * HIGH - Strong heuristic match (exact path match)
      * MEDIUM - Moderate heuristic match (partial path match)
      * LOW - Weak heuristic match (namespace only)
+     *
+     * Confidence should only ever be PROMOTED, never downgraded.
      */
     public enum Confidence {
         MANUAL(100, "Manual", 0xFF00FF00),      // Green - author defined
         VERIFIED(90, "Verified", 0xFF00FFFF),   // Cyan - runtime confirmed
+        TEMPLATE(80, "Template", 0xFF44DDFF),   // Light blue - parsed from .nbt
         HIGH(70, "High", 0xFF88FF88),           // Light green
         MEDIUM(50, "Medium", 0xFFFFFF00),       // Yellow
         LOW(30, "Low", 0xFFFF8800);             // Orange
@@ -53,6 +57,7 @@ public record StructureLootLink(
     public enum LinkSource {
         HEURISTIC_PATH,      // Path matching (chests/village_* -> village structure)
         HEURISTIC_NAMESPACE, // Same mod namespace
+        TEMPLATE_PARSE,      // Extracted from structure template .nbt file
         OBSERVATION,         // Runtime observation
         AUTHOR_ADDED,        // Author manually added
         AUTHOR_REMOVED       // Author manually removed (negative link)
@@ -75,6 +80,13 @@ public record StructureLootLink(
     }
 
     /**
+     * Create a template-based link from .nbt file parsing.
+     */
+    public static StructureLootLink fromTemplate(ResourceLocation structureId, ResourceLocation lootTableId) {
+        return new StructureLootLink(structureId, lootTableId, Confidence.TEMPLATE, LinkSource.TEMPLATE_PARSE);
+    }
+
+    /**
      * Create a manual link from author override.
      */
     public static StructureLootLink manual(ResourceLocation structureId, ResourceLocation lootTableId) {
@@ -82,14 +94,30 @@ public record StructureLootLink(
     }
 
     /**
+     * Promote confidence if a higher level is available.
+     * Confidence only goes UP, never down.
+     *
+     * Promotion order: LOW → MEDIUM → HIGH → TEMPLATE → VERIFIED → MANUAL
+     */
+    public StructureLootLink promoteConfidence(Confidence newConfidence, LinkSource newSource) {
+        if (newConfidence.getScore() > confidence.getScore()) {
+            return new StructureLootLink(structureId, lootTableId, newConfidence, newSource);
+        }
+        return this; // Keep current (higher or equal) confidence
+    }
+
+    /**
      * Upgrade confidence if this link is verified by observation.
      */
     public StructureLootLink withVerification() {
-        if (confidence == Confidence.MANUAL) {
-            // Don't downgrade manual links
-            return this;
-        }
-        return new StructureLootLink(structureId, lootTableId, Confidence.VERIFIED, LinkSource.OBSERVATION);
+        return promoteConfidence(Confidence.VERIFIED, LinkSource.OBSERVATION);
+    }
+
+    /**
+     * Upgrade confidence if found in template.
+     */
+    public StructureLootLink withTemplateEvidence() {
+        return promoteConfidence(Confidence.TEMPLATE, LinkSource.TEMPLATE_PARSE);
     }
 
     /**
@@ -104,5 +132,19 @@ public record StructureLootLink(
      */
     public boolean isVerified() {
         return confidence == Confidence.VERIFIED || source == LinkSource.OBSERVATION;
+    }
+
+    /**
+     * Check if this link was found in a structure template.
+     */
+    public boolean isFromTemplate() {
+        return confidence == Confidence.TEMPLATE || source == LinkSource.TEMPLATE_PARSE;
+    }
+
+    /**
+     * Check if this link is based on heuristics (path/namespace matching).
+     */
+    public boolean isHeuristic() {
+        return source == LinkSource.HEURISTIC_PATH || source == LinkSource.HEURISTIC_NAMESPACE;
     }
 }

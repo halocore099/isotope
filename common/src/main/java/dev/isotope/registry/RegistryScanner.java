@@ -3,6 +3,7 @@ package dev.isotope.registry;
 import dev.architectury.event.events.common.LifecycleEvent;
 import dev.isotope.Isotope;
 import dev.isotope.analysis.HeadlessAnalysisWorld;
+import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.server.MinecraftServer;
 
@@ -38,17 +39,34 @@ public final class RegistryScanner {
         // Always scan registries - this is the core of ISOTOPE
         Isotope.LOGGER.info("Scanning registries for structures and loot tables...");
 
+        // Layer 1: Registry scan (authoritative)
         StructureRegistry.getInstance().scan(server);
         LootTableRegistry.getInstance().scan(server);
+
+        // Layer 2: Template parsing (deterministic)
+        Isotope.LOGGER.info("Parsing structure templates for loot table references...");
+        StructureTemplateParser.getInstance().parse(server);
+
+        // Layer 3: Multi-layer linking (heuristics + templates + observations)
         StructureLootLinker.getInstance().link();
+
+        // Layer 4: Orphan detection (surface gaps)
+        OrphanDetector.OrphanReport orphanReport = OrphanDetector.getInstance().detect();
 
         // Pre-parse loot tables for the editor (while server is available)
         LootEditManager.getInstance().preParseLootTables(server);
 
+        // Summary logging
+        var templateStats = StructureTemplateParser.getInstance().getStats();
         Isotope.LOGGER.info("Registry scan complete: {} structures, {} loot tables, {} links",
             StructureRegistry.getInstance().size(),
             LootTableRegistry.getInstance().size(),
             StructureLootLinker.getInstance().getLinkCount());
+        Isotope.LOGGER.info("Template parsing: {} templates scanned, {} loot references found",
+            templateStats.templatesScanned(), templateStats.lootReferencesFound());
+        if (orphanReport.hasOrphans()) {
+            Isotope.LOGGER.info("Orphan detection: {}", orphanReport.summary());
+        }
 
         // Check if this is the temporary registry loading world (main menu flow)
         if (RegistryLoader.getInstance().isTempWorld(server)) {
@@ -96,7 +114,9 @@ public final class RegistryScanner {
         if (currentServer != null) {
             StructureRegistry.getInstance().scan(currentServer);
             LootTableRegistry.getInstance().scan(currentServer);
+            StructureTemplateParser.getInstance().parse(currentServer);
             StructureLootLinker.getInstance().link();
+            OrphanDetector.getInstance().detect();
         }
     }
 }

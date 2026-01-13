@@ -5,23 +5,27 @@ import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.StructureInfo;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.data.StructureLootLink.Confidence;
+import dev.isotope.observation.ObservationCorrelator;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Links structures to loot tables using heuristics.
+ * Links structures to loot tables using multiple evidence sources.
  *
- * This is the core of ISOTOPE's "best-effort discovery" approach.
+ * This is the core of ISOTOPE's "No Silent Failure" model.
  * Links are tagged with confidence levels so authors know what to trust.
  *
- * Heuristic strategies:
- * 1. Exact path match (HIGH): chests/village_plains -> village_plains structure
- * 2. Partial path match (MEDIUM): chests/ancient_city_* -> ancient_city structure
- * 3. Namespace match (LOW): same mod namespace suggests relationship
- * 4. Manual mappings (HIGH): known vanilla structure-loot relationships
+ * Evidence layers (in order of confidence):
+ * 1. MANUAL - Author explicitly defined (highest)
+ * 2. VERIFIED - Runtime observation confirmed
+ * 3. TEMPLATE - Found in structure template .nbt file
+ * 4. HIGH - Strong heuristic (vanilla mapping, exact path match)
+ * 5. MEDIUM - Moderate heuristic (partial path match)
+ * 6. LOW - Weak heuristic (namespace only)
+ *
+ * Key principle: Confidence only goes UP, never down.
  */
 public final class StructureLootLinker {
 
@@ -45,7 +49,13 @@ public final class StructureLootLinker {
     }
 
     /**
-     * Run heuristic linking between structures and loot tables.
+     * Run multi-layer linking between structures and loot tables.
+     *
+     * Layer order (lowest to highest confidence):
+     * 1. Heuristics (path matching, namespace matching)
+     * 2. Template parsing (deterministic .nbt analysis)
+     * 3. Runtime observation (ground truth from gameplay)
+     * 4. Author overrides (final authority)
      */
     public void link() {
         linksByStructure.clear();
@@ -60,25 +70,58 @@ public final class StructureLootLinker {
         }
 
         int linkCount = 0;
+        int templatePromotions = 0;
+        int runtimePromotions = 0;
 
         for (StructureInfo structure : structures.getAll()) {
-            List<StructureLootLink> links = new ArrayList<>();
+            // Start with a map for efficient deduplication during building
+            Map<ResourceLocation, StructureLootLink> linkMap = new LinkedHashMap<>();
 
-            // 1. Check manual vanilla mappings first
-            links.addAll(findVanillaMappings(structure, lootTables));
-
-            // 2. Path-based heuristics
-            links.addAll(findPathMatches(structure, lootTables));
-
-            // 3. Namespace heuristics (only if no other matches for modded content)
-            if (links.isEmpty() && !structure.isVanilla()) {
-                links.addAll(findNamespaceMatches(structure, lootTables));
+            // Layer 1: Heuristics (lowest confidence)
+            // 1a. Namespace heuristics (only for modded, weakest)
+            if (!structure.isVanilla()) {
+                for (StructureLootLink link : findNamespaceMatches(structure, lootTables)) {
+                    addOrPromoteLink(linkMap, link);
+                }
             }
 
-            // 4. Apply author overrides
+            // 1b. Path-based heuristics
+            for (StructureLootLink link : findPathMatches(structure, lootTables)) {
+                addOrPromoteLink(linkMap, link);
+            }
+
+            // 1c. Vanilla mappings (high confidence heuristic)
+            for (StructureLootLink link : findVanillaMappings(structure, lootTables)) {
+                addOrPromoteLink(linkMap, link);
+            }
+
+            // Layer 2: Template parsing (deterministic)
+            StructureTemplateParser templateParser = StructureTemplateParser.getInstance();
+            if (templateParser.isParsed()) {
+                Set<ResourceLocation> templateLootTables = templateParser.getLootTablesForStructure(structure.id());
+                for (ResourceLocation tableId : templateLootTables) {
+                    StructureLootLink templateLink = StructureLootLink.fromTemplate(structure.id(), tableId);
+                    if (addOrPromoteLink(linkMap, templateLink)) {
+                        templatePromotions++;
+                    }
+                }
+            }
+
+            // Layer 3: Runtime observation (ground truth)
+            ObservationCorrelator correlator = ObservationCorrelator.getInstance();
+            Set<ResourceLocation> observedTables = correlator.getLootTablesFor(structure.id());
+            for (ResourceLocation tableId : observedTables) {
+                StructureLootLink verifiedLink = StructureLootLink.verified(structure.id(), tableId);
+                if (addOrPromoteLink(linkMap, verifiedLink)) {
+                    runtimePromotions++;
+                }
+            }
+
+            // Layer 4: Author overrides (final authority)
+            List<StructureLootLink> links = new ArrayList<>(linkMap.values());
             links = applyAuthorOverrides(structure.id(), links);
 
-            // Deduplicate (keep highest confidence for each loot table)
+            // Final deduplication (should be minimal at this point)
             links = deduplicateLinks(links);
 
             if (!links.isEmpty()) {
@@ -90,8 +133,29 @@ public final class StructureLootLinker {
             }
         }
 
-        Isotope.LOGGER.info("StructureLootLinker: created {} links for {} structures",
-            linkCount, linksByStructure.size());
+        Isotope.LOGGER.info("StructureLootLinker: created {} links for {} structures " +
+            "(template promotions: {}, runtime promotions: {})",
+            linkCount, linksByStructure.size(), templatePromotions, runtimePromotions);
+    }
+
+    /**
+     * Add a link or promote existing link if new confidence is higher.
+     * Returns true if this was a promotion (new > existing).
+     */
+    private boolean addOrPromoteLink(Map<ResourceLocation, StructureLootLink> linkMap, StructureLootLink newLink) {
+        StructureLootLink existing = linkMap.get(newLink.lootTableId());
+        if (existing == null) {
+            linkMap.put(newLink.lootTableId(), newLink);
+            return false;
+        }
+
+        // Only promote, never downgrade
+        if (newLink.confidence().getScore() > existing.confidence().getScore()) {
+            linkMap.put(newLink.lootTableId(), newLink);
+            return true;
+        }
+
+        return false;
     }
 
     /**
