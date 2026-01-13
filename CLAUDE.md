@@ -604,6 +604,53 @@ public interface ShortcutContext {
 
 **Key Class:** `KeyboardShortcuts` - Static `handle(keyCode, modifiers, context)` dispatcher
 
+## Bookmark Manager
+
+Persistent bookmarking system for quick access to frequently-used loot tables.
+
+### Storage
+
+Bookmarks are saved to `.minecraft/isotope/bookmarks.json` as a JSON array of ResourceLocation strings:
+
+```json
+[
+  "minecraft:chests/simple_dungeon",
+  "minecraft:chests/stronghold_corridor",
+  "minecraft:entities/zombie"
+]
+```
+
+### API
+
+| Method | Description |
+|--------|-------------|
+| `add(tableId)` | Add a table to bookmarks |
+| `remove(tableId)` | Remove a table from bookmarks |
+| `toggle(tableId)` | Toggle bookmark status, returns new state |
+| `isBookmarked(tableId)` | Check if a table is bookmarked |
+| `getAll()` | Get list of all bookmarked tables |
+| `getCount()` | Get total bookmark count |
+| `clear()` | Remove all bookmarks |
+
+### Listeners
+
+Register for bookmark change notifications:
+
+```java
+BookmarkManager.getInstance().addListener(() -> {
+    // Bookmarks changed - refresh UI
+});
+```
+
+### Features
+
+- **Lazy loading**: Bookmarks loaded from disk on first access
+- **Auto-save**: Changes automatically persisted to disk
+- **Thread-safe**: Uses `CopyOnWriteArrayList` for listeners
+- **Order preserved**: Uses `LinkedHashSet` to maintain insertion order
+
+**Key Class:** `BookmarkManager` - Singleton with `getInstance()`, persists to `isotope/bookmarks.json`
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
