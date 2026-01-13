@@ -2,7 +2,9 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.Isotope;
 import dev.isotope.editing.LootEditManager;
+import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.StructureLootLinker;
+import dev.isotope.testing.TestMobTools;
 import dev.isotope.testing.TestModeState;
 import dev.isotope.testing.TestWorldManager;
 import dev.isotope.ui.HelpLinks;
@@ -52,7 +54,17 @@ public class TestSetupScreen extends Screen {
     private final List<EditedTableInfo> editedTables = new ArrayList<>();
     private int scrollOffset = 0;
 
-    private record EditedTableInfo(ResourceLocation tableId, Set<ResourceLocation> structures, int changeCount) {}
+    private record EditedTableInfo(
+        ResourceLocation tableId,
+        Set<ResourceLocation> structures,
+        int changeCount,
+        boolean isEntityLoot,
+        ResourceLocation entityId
+    ) {
+        boolean isMobLoot() {
+            return isEntityLoot && entityId != null;
+        }
+    }
 
     public TestSetupScreen(@Nullable Screen parent) {
         super(Component.literal("Test Setup"));
@@ -65,8 +77,14 @@ public class TestSetupScreen extends Screen {
 
         Set<ResourceLocation> edited = LootEditManager.getInstance().getEditedTables();
         StructureLootLinker linker = StructureLootLinker.getInstance();
+        EntityLootRegistry entityRegistry = EntityLootRegistry.getInstance();
 
         for (ResourceLocation tableId : edited) {
+            // Check if this is an entity loot table
+            var entityInfo = entityRegistry.getByLootTable(tableId);
+            boolean isEntityLoot = entityInfo.isPresent();
+            ResourceLocation entityId = entityInfo.map(e -> e.entityId()).orElse(null);
+
             // Find structures that use this loot table
             Set<ResourceLocation> structures = new HashSet<>();
             for (var link : linker.getAllLinks()) {
@@ -79,8 +97,16 @@ public class TestSetupScreen extends Screen {
             var edit = LootEditManager.getInstance().getEdit(tableId);
             int changeCount = edit != null ? edit.getOperationCount() : 0;
 
-            editedTables.add(new EditedTableInfo(tableId, structures, changeCount));
+            editedTables.add(new EditedTableInfo(tableId, structures, changeCount, isEntityLoot, entityId));
         }
+
+        // Sort: entity loot first, then structures
+        editedTables.sort((a, b) -> {
+            if (a.isEntityLoot != b.isEntityLoot) {
+                return a.isEntityLoot ? -1 : 1;
+            }
+            return a.tableId.compareTo(b.tableId);
+        });
     }
 
     @Override
@@ -245,19 +271,30 @@ public class TestSetupScreen extends Screen {
             int entryY = listY + 18 - scrollOffset;
             for (EditedTableInfo info : editedTables) {
                 if (entryY > listY + 14 - 20 && entryY < listY + 14 + listHeight) {
-                    // Table name
-                    String tableName = info.tableId.getPath();
-                    if (tableName.length() > 40) {
-                        tableName = "..." + tableName.substring(tableName.length() - 37);
-                    }
-                    graphics.drawString(font, tableName, dialogX + 16, entryY, IsotopeColors.TEXT_PRIMARY, false);
+                    if (info.isMobLoot()) {
+                        // Mob loot entry - show entity name with purple
+                        String entityName = "⚔ " + TestMobTools.getEntityDisplayName(info.entityId);
+                        graphics.drawString(font, entityName, dialogX + 16, entryY, IsotopeColors.SOURCE_MOB, false);
 
-                    // Structure count badge
-                    if (!info.structures.isEmpty()) {
-                        String structText = info.structures.size() + " structure" + (info.structures.size() != 1 ? "s" : "");
+                        // Mob badge
                         int badgeX = dialogX + DIALOG_WIDTH - 100;
-                        graphics.fill(badgeX, entryY - 1, badgeX + 80, entryY + 10, 0xFF3a5a3a);
-                        graphics.drawString(font, structText, badgeX + 4, entryY, 0xFF88cc88, false);
+                        graphics.fill(badgeX, entryY - 1, badgeX + 80, entryY + 10, 0xFF3a2a4a);
+                        graphics.drawString(font, "Mob Loot", badgeX + 4, entryY, IsotopeColors.SOURCE_MOB, false);
+                    } else {
+                        // Structure loot entry
+                        String tableName = info.tableId.getPath();
+                        if (tableName.length() > 40) {
+                            tableName = "..." + tableName.substring(tableName.length() - 37);
+                        }
+                        graphics.drawString(font, tableName, dialogX + 16, entryY, IsotopeColors.TEXT_PRIMARY, false);
+
+                        // Structure count badge
+                        if (!info.structures.isEmpty()) {
+                            String structText = info.structures.size() + " structure" + (info.structures.size() != 1 ? "s" : "");
+                            int badgeX = dialogX + DIALOG_WIDTH - 100;
+                            graphics.fill(badgeX, entryY - 1, badgeX + 80, entryY + 10, 0xFF3a5a3a);
+                            graphics.drawString(font, structText, badgeX + 4, entryY, 0xFF88cc88, false);
+                        }
                     }
                 }
                 entryY += 16;
