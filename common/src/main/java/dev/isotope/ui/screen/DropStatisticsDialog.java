@@ -1,0 +1,253 @@
+package dev.isotope.ui.screen;
+
+import dev.isotope.testing.DropStatistics;
+import dev.isotope.ui.IsotopeColors;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Dialog displaying drop statistics from loot table testing.
+ */
+@Environment(EnvType.CLIENT)
+public class DropStatisticsDialog extends Screen {
+
+    private static final int DIALOG_WIDTH = 350;
+    private static final int DIALOG_HEIGHT = 300;
+
+    @Nullable
+    private final Screen parent;
+    private final DropStatistics statistics;
+
+    private int scrollOffset = 0;
+    private int maxScroll = 0;
+
+    // Cached formatted entries for display
+    private final List<StatEntry> entries = new ArrayList<>();
+
+    private record StatEntry(
+        String itemName,
+        int total,
+        float average,
+        float dropRate,
+        int min,
+        int max
+    ) {}
+
+    public DropStatisticsDialog(@Nullable Screen parent, DropStatistics statistics) {
+        super(Component.literal("Drop Statistics"));
+        this.parent = parent;
+        this.statistics = statistics;
+        buildEntries();
+    }
+
+    private void buildEntries() {
+        entries.clear();
+
+        // Sort items by total count descending
+        List<ResourceLocation> sortedItems = new ArrayList<>(statistics.getDroppedItems());
+        sortedItems.sort((a, b) -> Integer.compare(
+            statistics.getTotalForItem(b),
+            statistics.getTotalForItem(a)
+        ));
+
+        for (ResourceLocation itemId : sortedItems) {
+            int total = statistics.getTotalForItem(itemId);
+            float avg = statistics.getAverageForItem(itemId);
+            float rate = statistics.getDropRateForItem(itemId);
+            int[] minMax = statistics.getMinMaxForItem(itemId);
+
+            entries.add(new StatEntry(
+                formatItemName(itemId),
+                total,
+                avg,
+                rate,
+                minMax[0],
+                minMax[1]
+            ));
+        }
+
+        // Calculate max scroll
+        int contentHeight = entries.size() * 24 + 20;
+        int viewHeight = DIALOG_HEIGHT - 140;
+        maxScroll = Math.max(0, contentHeight - viewHeight);
+    }
+
+    private String formatItemName(ResourceLocation itemId) {
+        String path = itemId.getPath();
+        StringBuilder result = new StringBuilder();
+        boolean capitalize = true;
+        for (char c : path.toCharArray()) {
+            if (c == '_') {
+                result.append(' ');
+                capitalize = true;
+            } else if (capitalize) {
+                result.append(Character.toUpperCase(c));
+                capitalize = false;
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+
+        int dialogX = (width - DIALOG_WIDTH) / 2;
+        int dialogY = (height - DIALOG_HEIGHT) / 2;
+
+        // Close button
+        addRenderableWidget(Button.builder(
+            Component.literal("Close"),
+            b -> onClose()
+        ).pos(dialogX + DIALOG_WIDTH - 70, dialogY + DIALOG_HEIGHT - 30).size(60, 20).build());
+
+        // Run Again button (returns to parent to run another test)
+        addRenderableWidget(Button.builder(
+            Component.literal("Run Again"),
+            b -> onClose()
+        ).pos(dialogX + 10, dialogY + DIALOG_HEIGHT - 30).size(80, 20).build());
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Dim background
+        graphics.fill(0, 0, width, height, 0x80000000);
+
+        int dialogX = (width - DIALOG_WIDTH) / 2;
+        int dialogY = (height - DIALOG_HEIGHT) / 2;
+
+        // Dialog background
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF000000);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+
+        // Header
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 50, 0xFF252525);
+
+        // Title
+        graphics.drawString(font, "Drop Statistics", dialogX + 12, dialogY + 8, IsotopeColors.ACCENT_GOLD, false);
+
+        // Source info
+        graphics.drawString(font, statistics.getSourceName(), dialogX + 12, dialogY + 22,
+            IsotopeColors.TEXT_PRIMARY, false);
+        graphics.drawString(font, statistics.getTestCondition(), dialogX + 12, dialogY + 34,
+            IsotopeColors.SOURCE_MOB, false);
+
+        // Summary stats on right
+        String testInfo = statistics.getTestCount() + " tests";
+        String dropInfo = statistics.getTotalDrops() + " total drops";
+        int rightX = dialogX + DIALOG_WIDTH - 10;
+        graphics.drawString(font, testInfo, rightX - font.width(testInfo), dialogY + 22,
+            IsotopeColors.TEXT_SECONDARY, false);
+        graphics.drawString(font, dropInfo, rightX - font.width(dropInfo), dialogY + 34,
+            IsotopeColors.TEXT_SECONDARY, false);
+
+        // Column headers
+        int headerY = dialogY + 55;
+        graphics.fill(dialogX, headerY, dialogX + DIALOG_WIDTH, headerY + 18, 0xFF2a2a2a);
+        graphics.drawString(font, "Item", dialogX + 12, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Total", dialogX + 150, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Avg", dialogX + 195, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Rate", dialogX + 235, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Range", dialogX + 285, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+
+        // Content area
+        int contentY = dialogY + 75;
+        int contentHeight = DIALOG_HEIGHT - 140;
+
+        // Scissor for scrolling
+        graphics.enableScissor(dialogX, contentY, dialogX + DIALOG_WIDTH, contentY + contentHeight);
+
+        if (entries.isEmpty()) {
+            graphics.drawString(font, "No items dropped", dialogX + 12, contentY + 10,
+                IsotopeColors.TEXT_MUTED, false);
+        } else {
+            int entryY = contentY - scrollOffset;
+            for (int i = 0; i < entries.size(); i++) {
+                StatEntry entry = entries.get(i);
+
+                if (entryY + 24 > contentY && entryY < contentY + contentHeight) {
+                    // Alternating row background
+                    if (i % 2 == 0) {
+                        graphics.fill(dialogX + 5, entryY, dialogX + DIALOG_WIDTH - 5, entryY + 22, 0xFF222222);
+                    }
+
+                    // Item name (truncate if too long)
+                    String name = entry.itemName;
+                    if (font.width(name) > 130) {
+                        name = font.plainSubstrByWidth(name, 125) + "...";
+                    }
+                    graphics.drawString(font, name, dialogX + 12, entryY + 6, IsotopeColors.TEXT_PRIMARY, false);
+
+                    // Total
+                    graphics.drawString(font, String.valueOf(entry.total), dialogX + 150, entryY + 6,
+                        IsotopeColors.ACCENT_GOLD, false);
+
+                    // Average
+                    graphics.drawString(font, String.format("%.1f", entry.average), dialogX + 195, entryY + 6,
+                        IsotopeColors.TEXT_SECONDARY, false);
+
+                    // Drop rate (color coded)
+                    int rateColor = entry.dropRate >= 75 ? IsotopeColors.STATUS_SUCCESS :
+                                   entry.dropRate >= 25 ? IsotopeColors.STATUS_WARNING :
+                                   IsotopeColors.STATUS_ERROR;
+                    graphics.drawString(font, String.format("%.0f%%", entry.dropRate), dialogX + 235, entryY + 6,
+                        rateColor, false);
+
+                    // Range
+                    String range = entry.min == entry.max
+                        ? String.valueOf(entry.min)
+                        : entry.min + "-" + entry.max;
+                    graphics.drawString(font, range, dialogX + 285, entryY + 6,
+                        IsotopeColors.TEXT_MUTED, false);
+                }
+
+                entryY += 24;
+            }
+        }
+
+        graphics.disableScissor();
+
+        // Scrollbar
+        if (maxScroll > 0) {
+            int scrollbarX = dialogX + DIALOG_WIDTH - 8;
+            int scrollbarHeight = contentHeight;
+            int thumbHeight = Math.max(20, (int) ((float) contentHeight / (contentHeight + maxScroll) * scrollbarHeight));
+            int thumbY = contentY + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
+
+            graphics.fill(scrollbarX, contentY, scrollbarX + 4, contentY + scrollbarHeight, 0xFF333333);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF666666);
+        }
+
+        super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));
+        return true;
+    }
+
+    @Override
+    public void onClose() {
+        if (minecraft != null) {
+            minecraft.setScreen(parent);
+        }
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return true;
+    }
+}

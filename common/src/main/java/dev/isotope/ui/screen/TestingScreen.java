@@ -3,6 +3,8 @@ package dev.isotope.ui.screen;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.StructureLootLinker;
+import dev.isotope.testing.DropStatistics;
+import dev.isotope.testing.LootTestRunner;
 import dev.isotope.testing.TestArenaManager;
 import dev.isotope.testing.TestMobTools;
 import dev.isotope.testing.TestModeState;
@@ -191,52 +193,74 @@ public class TestingScreen extends Screen {
             // Only create buttons for visible entries
             if (entryY + 60 > contentY && entryY < contentY + contentHeight) {
                 if (entry.isMobLoot()) {
-                    // Mob loot: Spawn and Kill buttons
+                    // Mob loot: Spawn, Kill, and Stats buttons
                     final ResourceLocation entityId = entry.entityId;
 
                     Button spawnBtn = Button.builder(
                         Component.literal("Spawn"),
                         b -> onSpawnMob(entityId)
-                    ).pos(panelX + 15, entryY + 35).size(60, 18).build();
+                    ).pos(panelX + 15, entryY + 35).size(50, 18).build();
                     entryButtons.add(addRenderableWidget(spawnBtn));
 
                     Button spawn5Btn = Button.builder(
                         Component.literal("×5"),
                         b -> onSpawnMobGrid(entityId, 5)
-                    ).pos(panelX + 78, entryY + 35).size(30, 18).build();
+                    ).pos(panelX + 68, entryY + 35).size(25, 18).build();
                     entryButtons.add(addRenderableWidget(spawn5Btn));
 
                     Button killBtn = Button.builder(
-                        Component.literal("Kill All"),
+                        Component.literal("Kill"),
                         b -> onKillMobs(entityId)
-                    ).pos(panelX + 112, entryY + 35).size(55, 18).build();
+                    ).pos(panelX + 96, entryY + 35).size(35, 18).build();
                     entryButtons.add(addRenderableWidget(killBtn));
 
                     Button testBtn = Button.builder(
                         Component.literal("Test ×10"),
                         b -> onTestMobDrops(entityId, 10)
-                    ).pos(panelX + 170, entryY + 35).size(60, 18).build();
+                    ).pos(panelX + 134, entryY + 35).size(55, 18).build();
                     entryButtons.add(addRenderableWidget(testBtn));
 
+                    Button statsBtn = Button.builder(
+                        Component.literal("Stats"),
+                        b -> onMobStats(entityId, 50)
+                    ).pos(panelX + 192, entryY + 35).size(40, 18).build();
+                    entryButtons.add(addRenderableWidget(statsBtn));
+
                 } else {
-                    // Structure loot: Teleport and Arena buttons
+                    // Structure/chest loot: Teleport, Arena, Generate, Stats buttons
                     final ResourceLocation structureId = entry.structures.isEmpty()
                         ? null
                         : entry.structures.iterator().next();
+                    final ResourceLocation tableId = entry.tableId;
 
                     if (structureId != null) {
                         Button teleportBtn = Button.builder(
                             Component.literal("Teleport"),
                             b -> onTeleport(structureId)
-                        ).pos(panelX + 15, entryY + 35).size(80, 18).build();
+                        ).pos(panelX + 15, entryY + 35).size(65, 18).build();
                         entryButtons.add(addRenderableWidget(teleportBtn));
 
                         Button arenaBtn = Button.builder(
-                            Component.literal("Spawn Arena"),
+                            Component.literal("Arena"),
                             b -> onSpawnArena(structureId)
-                        ).pos(panelX + 100, entryY + 35).size(90, 18).build();
+                        ).pos(panelX + 83, entryY + 35).size(45, 18).build();
                         entryButtons.add(addRenderableWidget(arenaBtn));
                     }
+
+                    // Generate and Stats buttons for chest loot (always shown)
+                    int genX = structureId != null ? panelX + 131 : panelX + 15;
+
+                    Button genBtn = Button.builder(
+                        Component.literal("Gen ×10"),
+                        b -> onGenerateChestLoot(tableId, 10)
+                    ).pos(genX, entryY + 35).size(50, 18).build();
+                    entryButtons.add(addRenderableWidget(genBtn));
+
+                    Button statsBtn = Button.builder(
+                        Component.literal("Stats"),
+                        b -> onChestStats(tableId, 50)
+                    ).pos(genX + 53, entryY + 35).size(40, 18).build();
+                    entryButtons.add(addRenderableWidget(statsBtn));
                 }
             }
 
@@ -383,6 +407,84 @@ public class TestingScreen extends Screen {
             minecraft.execute(() -> {
                 IsotopeToast.success("Test Complete",
                     successful + "/" + count + " mobs tested\nCheck ground for drops!");
+            });
+        });
+    }
+
+    private void onMobStats(ResourceLocation entityId, int count) {
+        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
+            IsotopeToast.error("Error", "Not in singleplayer world");
+            return;
+        }
+
+        IsotopeToast.info("Running Test", "Testing " + count + " mobs with " + selectedKillCondition.displayName + "...");
+
+        minecraft.execute(() -> {
+            var result = LootTestRunner.runMobTest(
+                minecraft.getSingleplayerServer(),
+                entityId,
+                count,
+                selectedKillCondition,
+                null
+            );
+
+            minecraft.execute(() -> {
+                if (result.success()) {
+                    minecraft.setScreen(new DropStatisticsDialog(this, result.statistics()));
+                } else {
+                    IsotopeToast.error("Test Failed", result.error());
+                }
+            });
+        });
+    }
+
+    // === Chest Loot Testing Methods ===
+
+    private void onGenerateChestLoot(ResourceLocation tableId, int count) {
+        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
+            IsotopeToast.error("Error", "Not in singleplayer world");
+            return;
+        }
+
+        minecraft.execute(() -> {
+            int totalItems = LootTestRunner.spawnLootOnGround(
+                minecraft.getSingleplayerServer(),
+                tableId,
+                count
+            );
+
+            minecraft.execute(() -> {
+                if (totalItems > 0) {
+                    IsotopeToast.success("Generated", totalItems + " items from " + count + " rolls");
+                } else {
+                    IsotopeToast.error("Failed", "Could not generate loot");
+                }
+            });
+        });
+    }
+
+    private void onChestStats(ResourceLocation tableId, int count) {
+        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
+            IsotopeToast.error("Error", "Not in singleplayer world");
+            return;
+        }
+
+        IsotopeToast.info("Running Test", "Generating " + count + " chest rolls...");
+
+        minecraft.execute(() -> {
+            var result = LootTestRunner.runChestTest(
+                minecraft.getSingleplayerServer(),
+                tableId,
+                count,
+                null
+            );
+
+            minecraft.execute(() -> {
+                if (result.success()) {
+                    minecraft.setScreen(new DropStatisticsDialog(this, result.statistics()));
+                } else {
+                    IsotopeToast.error("Test Failed", result.error());
+                }
             });
         });
     }
