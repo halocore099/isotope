@@ -297,6 +297,7 @@ The **Stats** button runs multiple loot generations and displays a statistics di
 
 | Column | Description |
 |--------|-------------|
+| **Icon** | 16x16 item icon for visual identification |
 | **Item** | Dropped item name |
 | **Total** | Total count across all tests |
 | **Avg** | Average drops per test |
@@ -313,6 +314,7 @@ The **Compare** button (appears when edits exist) runs loot tests on both the or
 
 | Column | Description |
 |--------|-------------|
+| **Icon** | 16x16 item icon for visual identification |
 | **Item** | Item name |
 | **Original** | Avg drops and rate for vanilla table |
 | **Edited** | Avg drops and rate for edited table |
