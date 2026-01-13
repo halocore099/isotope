@@ -33,6 +33,26 @@ Single branch (`main`) supports the entire 1.21.x line. No per-patch branches ne
 
 The "No Silent Failure" model - multi-layer linking with confidence tracking.
 
+### Structures vs Features
+
+Minecraft has two types of loot-generating worldgen:
+
+| Type | Examples | Engine Behavior | Our Handling |
+|------|----------|-----------------|--------------|
+| **Structure** | Villages, Ancient Cities, Trial Chambers | Tracked with bounding boxes, persistent IDs, in registry | Scanned from `Registries.STRUCTURE` |
+| **Feature** | Dungeons (monster_room), Fossils | Fire-and-forget, no tracking, not in registry | Defined in `FeatureRegistry` |
+
+**Why this matters**: Dungeons aren't "structures" in Minecraft's engine - they're stateless decorations. But users expect to see them linked to their loot tables. We create "virtual structures" for features.
+
+### Loot Source Types
+
+```java
+LootSourceType.STRUCTURE  // Cyan - real structures with persistent tracking
+LootSourceType.FEATURE    // Orange - fire-and-forget decorations
+```
+
+UI shows these with distinct colors so users understand the source type.
+
 ### Confidence Levels (never downgrade, only promote)
 
 | Level | Score | Source | Description |
@@ -49,7 +69,10 @@ The "No Silent Failure" model - multi-layer linking with confidence tracking.
 ```
 Server Start
     ↓
-Layer 1: Registry Scan (StructureRegistry, LootTableRegistry)
+Layer 1: Registry Scan
+         - StructureRegistry (real structures from Registries.STRUCTURE)
+         - LootTableRegistry (all loot tables)
+         - FeatureRegistry (known features with loot - monster_room, etc.)
     ↓
 Layer 2: Template Parsing (StructureTemplateParser)
          - Parses .nbt files for loot table references
@@ -57,12 +80,17 @@ Layer 2: Template Parsing (StructureTemplateParser)
     ↓
 Layer 3: Multi-Layer Linking (StructureLootLinker)
          - Heuristics → Templates → Runtime → Author
+         - Features linked via FeatureRegistry mappings
          - Confidence only goes UP
     ↓
 Layer 4: Orphan Detection (OrphanDetector)
          - Flags unlinked loot tables
          - Flags structures without loot
          - Tracks runtime-only discoveries
+    ↓
+Layer 5: Compile Unified Registry (LootSourceRegistry)
+         - Combines structures + features into single view
+         - Used by UI for consistent display
     ↓
 Ready
 ```
@@ -74,6 +102,10 @@ Ready
 - `ObservationCorrelator` - Runtime structure↔loot correlation
 - `OrphanDetector` - Surfaces gaps and missing links
 - `StructureLootLink` - Link record with confidence and source
+- `FeatureRegistry` - Known features with loot (monster_room → simple_dungeon)
+- `LootSourceRegistry` - Unified view of structures + features
+- `LootSource` - Abstraction representing any loot source (structure or feature)
+- `LootSourceType` - Enum: STRUCTURE vs FEATURE
 
 ### Design Principles
 
