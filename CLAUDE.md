@@ -141,6 +141,10 @@ Visual indicators help users understand loot source types and special conditions
 | "⚗ Looting: X drops" | Aqua | Header | Count of looting-affected entries |
 | ⚔ sword icon | Purple | Entry row | Entry has `killed_by_player` condition |
 | ⚗ potion icon | Aqua | Entry row | Entry has `looting_enchant` or `random_chance_with_looting` |
+| ✦ sparkle icon | Gold | Entry row | Entry has enchantment function |
+| ◆ diamond icon | Green | Entry row | Entry has attribute modifiers |
+| ⚗ potion icon | Orange | Entry row | Entry has potion effect |
+| ⚒ tool icon | Gray | Entry row | Entry has damage/durability set |
 
 **Color Constants (IsotopeColors)**
 ```java
@@ -149,6 +153,38 @@ SOURCE_FEATURE   = 0xFFFFAA00  // Orange - features (dungeons)
 SOURCE_MOB       = 0xFFAA55FF  // Purple - entity drops
 ACCENT_AQUA      = 0xFF55FFFF  // Aqua - looting indicators
 ```
+
+### Loot Function Viewing & Editing
+
+Entries can have functions that modify dropped items (enchantments, attributes, potions, etc.). These are now visible and editable.
+
+**Function Indicators**: Icons appear on entry rows showing what functions are applied (see Edit Panel table above).
+
+**Parameter Summaries**: Functions show readable summaries in the detail panel:
+| Function | Example Summary |
+|----------|-----------------|
+| `enchant_with_levels` | "Lvl 5-15" |
+| `enchant_randomly` | "any" or "3 options" |
+| `set_enchantments` | "Sharpness" or "3 enchants" |
+| `set_damage` | "10-50%" |
+| `set_attributes` | "2 modifiers" |
+| `set_potion` | "Healing" |
+| `looting_enchant` | "+0-1/lvl" |
+| `exploration_map` | "Buried treasure" |
+
+**Add Function Dialog**: Right-click an entry → "Add Function..." opens a dialog with presets:
+- Enchant with Levels (configurable min/max levels, treasure option)
+- Enchant Randomly
+- Set Count (min/max)
+- Set Damage (durability percentage)
+- Looting Enchant (bonus per level)
+- Furnace Smelt
+- Exploration Map (destination)
+- Set Potion (potion type)
+
+**Key Classes**:
+- `LootFunction` - Function data with parameter parsing and type detection
+- `AddFunctionDialog` - Preset-based function creation UI
 
 ## Test Mode
 
