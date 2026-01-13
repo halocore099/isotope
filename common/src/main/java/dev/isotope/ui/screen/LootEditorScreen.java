@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.Isotope;
+import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableSerializer;
@@ -420,6 +421,12 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         var result = LootTableValidator.validate(tableId, structure);
         int issueCount = result.errorCount() + result.warningCount();
+
+        // Add orphan status as a warning if applicable
+        if (OrphanDetector.getInstance().isOrphanLootTable(tableId)) {
+            issueCount++;
+        }
+
         activityBar.setBadge(PANEL_VALIDATION, issueCount);
     }
 

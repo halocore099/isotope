@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
@@ -42,6 +43,7 @@ public class ValidationPanel extends AbstractWidget {
     @Nullable
     private ValidationResult validationResult;
     private List<ValidationIssue> displayedIssues = new ArrayList<>();
+    private boolean isOrphan = false;
 
     private int scrollOffset = 0;
     private int selectedIndex = -1;
@@ -64,8 +66,12 @@ public class ValidationPanel extends AbstractWidget {
         if (tableId == null) {
             validationResult = null;
             displayedIssues.clear();
+            isOrphan = false;
             return;
         }
+
+        // Check orphan status
+        isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId);
 
         LootTableStructure structure = LootEditManager.getInstance().getEditedStructure(tableId)
             .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
@@ -159,16 +165,34 @@ public class ValidationPanel extends AbstractWidget {
             return;
         }
 
-        if (displayedIssues.isEmpty()) {
+        if (displayedIssues.isEmpty() && !isOrphan) {
             // No issues - show success
             graphics.drawString(mc.font, "\u2714 No issues found", getX() + 8, contentY + 10, 0xFF4ade80, false);
             return;
         }
 
-        // Render issues list
-        graphics.enableScissor(getX(), contentY, getX() + width, getY() + height);
+        int issueStartY = contentY;
 
-        int y = contentY + 4 - scrollOffset;
+        // Orphan warning (shown above validation issues)
+        if (isOrphan) {
+            int orphanY = contentY + 4;
+            graphics.fill(getX() + 4, orphanY, getX() + width - 4, orphanY + ROW_HEIGHT, 0xFF3a3020);
+            graphics.fill(getX() + 4, orphanY + 2, getX() + 7, orphanY + ROW_HEIGHT - 2, IsotopeColors.STATUS_WARNING);
+            graphics.drawString(mc.font, "\u26A0", getX() + 12, orphanY + 4, IsotopeColors.STATUS_WARNING, false);
+            graphics.drawString(mc.font, "Orphan", getX() + 26, orphanY + 4, IsotopeColors.TEXT_PRIMARY, false);
+            graphics.drawString(mc.font, "Not linked to any structure", getX() + 12, orphanY + 16,
+                IsotopeColors.TEXT_SECONDARY, false);
+            issueStartY += ROW_HEIGHT + 4;
+        }
+
+        if (displayedIssues.isEmpty()) {
+            return;
+        }
+
+        // Render issues list
+        graphics.enableScissor(getX(), issueStartY, getX() + width, getY() + height);
+
+        int y = issueStartY + 4 - scrollOffset;
         for (int i = 0; i < displayedIssues.size(); i++) {
             if (y + ROW_HEIGHT > contentY - ROW_HEIGHT && y < getY() + height + ROW_HEIGHT) {
                 ValidationIssue issue = displayedIssues.get(i);
@@ -383,10 +407,17 @@ public class ValidationPanel extends AbstractWidget {
     }
 
     /**
-     * Get the number of issues.
+     * Get the number of issues (including orphan warning).
      */
     public int getIssueCount() {
-        return displayedIssues.size();
+        return displayedIssues.size() + (isOrphan ? 1 : 0);
+    }
+
+    /**
+     * Check if this table is orphaned.
+     */
+    public boolean isOrphan() {
+        return isOrphan;
     }
 
     /**

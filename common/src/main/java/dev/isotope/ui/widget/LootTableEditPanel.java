@@ -1,6 +1,7 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.Isotope;
+import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.data.loot.*;
 import dev.isotope.editing.ClipboardManager;
@@ -328,19 +329,31 @@ public class LootTableEditPanel extends AbstractWidget {
         graphics.fill(nsX, y + 4, nsX + nsWidth, y + 16, 0xFF3a3a3a);
         graphics.drawString(font, ns, nsX + 3, y + 6, IsotopeColors.TEXT_MUTED, false);
 
-        // Linked structures
+        // Linked structures or orphan warning
         List<StructureLootLink> links = StructureLootLinker.getInstance().getLinksForLootTable(tableId);
+        boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId);
+
         if (!links.isEmpty()) {
+            // Show linked structures with confidence indicator
             StringBuilder sb = new StringBuilder("Structures: ");
             for (int i = 0; i < Math.min(links.size(), 3); i++) {
                 if (i > 0) sb.append(", ");
-                sb.append(links.get(i).structureId().getPath());
+                StructureLootLink link = links.get(i);
+                sb.append(link.structureId().getPath());
+                // Add confidence badge for non-high confidence links
+                if (link.confidence().getScore() < 70) {
+                    sb.append(" (").append(link.confidence().getLabel().toLowerCase()).append(")");
+                }
             }
             if (links.size() > 3) {
                 sb.append(" +").append(links.size() - 3).append(" more");
             }
             graphics.drawString(font, sb.toString(), getX() + PADDING, y + 20,
                 IsotopeColors.TEXT_MUTED, false);
+        } else if (isOrphan) {
+            // Show orphan warning
+            graphics.drawString(font, "⚠ Orphan: Not linked to any structure", getX() + PADDING, y + 20,
+                IsotopeColors.STATUS_WARNING, false);
         }
 
         // Edit indicator

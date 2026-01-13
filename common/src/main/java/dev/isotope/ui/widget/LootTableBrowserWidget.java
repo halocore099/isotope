@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.BookmarkManager;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
@@ -420,9 +421,17 @@ public class LootTableBrowserWidget extends AbstractWidget {
                             graphics.drawString(font, star, getX() + 3, renderY + 4, starColor, false);
                         }
 
+                        // Orphan indicator (right side)
+                        boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(table.id());
+                        int textRightPadding = 8;
+                        if (isOrphan) {
+                            graphics.drawString(font, "⚠", getX() + width - 12, renderY + 4, IsotopeColors.STATUS_WARNING, false);
+                            textRightPadding = 18;
+                        }
+
                         String path = table.id().getPath();
-                        if (font.width(path) > width - INDENT - 8) {
-                            path = font.plainSubstrByWidth(path, width - INDENT - 16) + "...";
+                        if (font.width(path) > width - INDENT - textRightPadding) {
+                            path = font.plainSubstrByWidth(path, width - INDENT - textRightPadding - 8) + "...";
                         }
                         graphics.drawString(font, path, getX() + INDENT + 4, renderY + 4,
                             isSelected ? 0xFFFFFFFF : IsotopeColors.TEXT_SECONDARY, false);
