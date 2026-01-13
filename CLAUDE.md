@@ -236,6 +236,19 @@ Toggle button in header: `📦 Ground` ↔ `📦 Inventory`
 
 Affects the **Gen ×10** button. If inventory is full, items drop on ground as fallback.
 
+### Adjustable Test Count
+
+Test count selector in the header allows choosing how many tests to run for Stats and Compare:
+
+| Preset | Use Case |
+|--------|----------|
+| **10** | Quick check, rough estimate |
+| **50** | Default, good balance (default) |
+| **100** | More accurate statistics |
+| **500** | High precision, slower |
+
+Selected preset highlighted with aqua outline.
+
 ### Drop Statistics
 
 The **Stats** button runs multiple loot generations and displays a statistics dialog:
