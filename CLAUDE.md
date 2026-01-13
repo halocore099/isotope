@@ -345,6 +345,31 @@ Items are sorted by change magnitude (new/removed first, then largest changes).
 - `DropStatisticsDialog` - Statistics display with scrollable table
 - `CompareStatisticsDialog` - Side-by-side original vs edited comparison
 
+## Console Commands
+
+Debug commands for inspecting observation data. Requires permission level 2 (op/creative).
+
+| Command | Description |
+|---------|-------------|
+| `/isotope status` | Show session state, observed structures count, structures with loot, unique loot tables |
+| `/isotope structures [namespace]` | List observed structures, optionally filtered by namespace (max 20 shown) |
+| `/isotope loottables` | List all observed loot tables (max 20 shown) |
+| `/isotope analyze <structure_id>` | Analyze a specific structure - shows loot tables, invocation counts, observed items |
+| `/isotope session` | Show observation session status and last result details |
+
+**Analyze output includes:**
+- Loot tables found in structure with invocation counts
+- Observed items dropped from those tables
+- Source marked as "OBSERVED (ground truth)"
+
+**Session result details:**
+- Structures placed/failed counts
+- Loot invocations total
+- Structures with loot vs without
+- List of failed structures (if any)
+
+**Key Class:** `IsotopeCommands` - Registers commands via Architectury's `CommandRegistrationEvent`
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
