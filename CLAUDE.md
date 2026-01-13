@@ -850,6 +850,95 @@ data/minecraft/loot_table/chests/simple_dungeon.json
 
 **Key Class:** `DatapackImporter` - Singleton with `getInstance()`
 
+## Mixin Architecture
+
+Three critical mixins enable runtime observation and test mode without modifying core game behavior.
+
+### LootTableMixin
+
+**Target:** `net.minecraft.world.level.storage.loot.LootTable`
+
+**Purpose:** Intercept loot generation for observation and test mode replacement.
+
+**Injected Methods:**
+
+| Method | Injection | Purpose |
+|--------|-----------|---------|
+| `getRandomItems(LootParams, long, Consumer)` | HEAD, cancellable | Main consumer-based generation |
+| `getRandomItems(LootParams, RandomSource)` | HEAD, cancellable | Random source variant |
+| `getRandomItems(LootParams)` | HEAD, cancellable | Simple variant (uses nanoTime) |
+| `getRandomItems(LootParams, long)` | HEAD, cancellable | Seed-based returning list |
+| `fill(Container, LootParams, long)` | HEAD, cancellable | **Critical**: Fills chests with loot |
+
+**Behavior:**
+1. Gets current table ID from `LootTableTracker`
+2. If test mode active AND table has edits:
+   - Generates loot from edited `LootTableStructure` via `LootGenerator`
+   - Cancels vanilla generation
+3. If recording active:
+   - Records invocation to `LootObserver`
+
+### StructureStartMixin
+
+**Target:** `net.minecraft.world.level.levelgen.structure.StructureStart`
+
+**Purpose:** Observe structure placements during world generation.
+
+**Injected Methods:**
+
+| Method | Injection | Purpose |
+|--------|-----------|---------|
+| `placeInChunk(...)` | TAIL | Record structure after placement |
+
+**Behavior:**
+1. Only records if `StructureObserver.isRecording()` is true
+2. Looks up structure's `ResourceLocation` from registry
+3. Creates `StructurePlacement` with:
+   - Structure ID
+   - Origin position (min corner of bounding box)
+   - Full bounding box
+4. Reports to `StructureObserver.onStructurePlaced()`
+
+**Shadowed Fields:**
+- `structure` - The Structure being placed
+- `getBoundingBox()` - Structure bounds
+- `getChunkPos()` - Chunk position
+
+### ReloadableRegistriesMixin
+
+**Target:** `net.minecraft.server.ReloadableServerRegistries.Holder`
+
+**Purpose:** Track which loot table is being looked up (bridges registry to LootTableMixin).
+
+**Injected Methods:**
+
+| Method | Injection | Purpose |
+|--------|-----------|---------|
+| `getLootTable(ResourceKey)` | HEAD | Set current table ID in tracker |
+
+**Behavior:**
+1. Only tracks if recording OR test mode is active
+2. Sets `LootTableTracker.setCurrentTableId(key.location())`
+3. LootTableMixin reads this value to know which table is generating
+
+### Data Flow
+
+```
+Registry Lookup → ReloadableRegistriesMixin → LootTableTracker
+                                                    ↓
+LootTable.fill() → LootTableMixin ← reads table ID
+                         ↓
+              [Test Mode?] → LootGenerator (edited structure)
+              [Recording?] → LootObserver (invocation log)
+
+Structure Generation → StructureStartMixin → StructureObserver
+```
+
+**Key Classes:**
+- `LootTableMixin` - Loot interception and replacement
+- `StructureStartMixin` - Structure placement observation
+- `ReloadableRegistriesMixin` - Table ID tracking bridge
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
