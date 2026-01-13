@@ -236,6 +236,10 @@ Toggle button in header: `📦 Ground` ↔ `📦 Inventory`
 
 Affects the **Gen ×10** button. If inventory is full, items drop on ground as fallback.
 
+### Clear Items Button
+
+**Clear Items** button in the footer removes all dropped items within 100 blocks of the player. Shows toast with count of removed items. Useful for cleaning up after loot testing.
+
 ### Adjustable Test Count
 
 Test count selector in the header allows choosing how many tests to run for Stats and Compare:
