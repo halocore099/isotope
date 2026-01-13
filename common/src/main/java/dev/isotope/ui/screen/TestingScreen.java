@@ -59,6 +59,9 @@ public class TestingScreen extends Screen {
     // Luck parameter for loot generation (0-5)
     private int selectedLuck = 0;
 
+    // Looting level for mob loot (0-3)
+    private int selectedLootingLevel = 0;
+
     private record TableEntry(
         ResourceLocation tableId,
         Set<ResourceLocation> structures,
@@ -155,7 +158,7 @@ public class TestingScreen extends Screen {
             testX += 30;
         }
 
-        // Second row of header - Luck selector
+        // Second row of header - Luck selector (for chests) and Looting selector (for mobs)
         int row2Y = panelY + 30;
         addRenderableWidget(Button.builder(
             Component.literal("Luck:"),
@@ -171,6 +174,23 @@ public class TestingScreen extends Screen {
                 b -> selectedLuck = luck
             ).pos(luckX, row2Y).size(20, 16).build());
             luckX += 22;
+        }
+
+        // Looting selector (for mob loot)
+        addRenderableWidget(Button.builder(
+            Component.literal("Looting:"),
+            b -> {}
+        ).pos(panelX + 170, row2Y).size(45, 16).build()).active = false;
+
+        int[] lootingPresets = {0, 1, 2, 3};
+        int lootingX = panelX + 218;
+        for (int preset : lootingPresets) {
+            final int looting = preset;
+            addRenderableWidget(Button.builder(
+                Component.literal(String.valueOf(looting)),
+                b -> selectedLootingLevel = looting
+            ).pos(lootingX, row2Y).size(20, 16).build());
+            lootingX += 22;
         }
 
         // Footer - Arena size buttons (for structures)
@@ -510,14 +530,17 @@ public class TestingScreen extends Screen {
         }
 
         onClose();
-        IsotopeToast.info("Testing Drops", "Spawning and killing " + count + " mobs with " + selectedKillCondition.displayName);
+        String lootingInfo = selectedLootingLevel > 0 && selectedKillCondition.isPlayerKill()
+            ? " + Looting " + selectedLootingLevel : "";
+        IsotopeToast.info("Testing Drops", "Spawning and killing " + count + " mobs with " + selectedKillCondition.displayName + lootingInfo);
 
         minecraft.execute(() -> {
             int successful = TestMobTools.batchSpawnAndKill(
                 minecraft.getSingleplayerServer(),
                 entityId,
                 count,
-                selectedKillCondition
+                selectedKillCondition,
+                selectedLootingLevel
             );
 
             minecraft.execute(() -> {
@@ -533,7 +556,9 @@ public class TestingScreen extends Screen {
             return;
         }
 
-        IsotopeToast.info("Running Test", "Testing " + count + " mobs with " + selectedKillCondition.displayName + "...");
+        String lootingInfo = selectedLootingLevel > 0 && selectedKillCondition.isPlayerKill()
+            ? " + Looting " + selectedLootingLevel : "";
+        IsotopeToast.info("Running Test", "Testing " + count + " mobs with " + selectedKillCondition.displayName + lootingInfo + "...");
 
         minecraft.execute(() -> {
             var result = LootTestRunner.runMobTest(
@@ -541,6 +566,7 @@ public class TestingScreen extends Screen {
                 entityId,
                 count,
                 selectedKillCondition,
+                selectedLootingLevel,
                 null
             );
 
@@ -625,7 +651,9 @@ public class TestingScreen extends Screen {
             return;
         }
 
-        IsotopeToast.info("Comparing", "Testing original vs edited (" + count + " each)...");
+        String lootingInfo = selectedLootingLevel > 0 && selectedKillCondition.isPlayerKill()
+            ? " + Looting " + selectedLootingLevel : "";
+        IsotopeToast.info("Comparing", "Testing original vs edited (" + count + " each)" + lootingInfo + "...");
 
         minecraft.execute(() -> {
             var result = LootTestRunner.runMobCompare(
@@ -633,6 +661,7 @@ public class TestingScreen extends Screen {
                 entityId,
                 count,
                 selectedKillCondition,
+                selectedLootingLevel,
                 null
             );
 
@@ -761,6 +790,17 @@ public class TestingScreen extends Screen {
                 graphics.renderOutline(luckX - 1, luckButtonY - 1, 22, 18, IsotopeColors.ACCENT_GREEN);
             }
             luckX += 22;
+        }
+
+        // Selected looting highlight (second row, for mobs)
+        int[] lootingPresets = {0, 1, 2, 3};
+        int lootingX = panelX + 218;
+        int lootingButtonY = panelY + 30;
+        for (int preset : lootingPresets) {
+            if (preset == selectedLootingLevel) {
+                graphics.renderOutline(lootingX - 1, lootingButtonY - 1, 22, 18, IsotopeColors.SOURCE_MOB);
+            }
+            lootingX += 22;
         }
     }
 

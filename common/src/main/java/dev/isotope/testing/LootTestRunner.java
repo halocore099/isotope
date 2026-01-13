@@ -80,7 +80,8 @@ public final class LootTestRunner {
      * @param server Minecraft server
      * @param entityId Entity type to test
      * @param count Number of mobs to spawn and kill
-     * @param condition Kill condition
+     * @param condition Kill condition (player kill or non-player)
+     * @param lootingLevel Looting enchant level (0-3), only applies to player kills
      * @param progressCallback Called with progress updates
      * @return TestResult with statistics
      */
@@ -89,6 +90,7 @@ public final class LootTestRunner {
         ResourceLocation entityId,
         int count,
         TestMobTools.KillCondition condition,
+        int lootingLevel,
         @Nullable Consumer<String> progressCallback
     ) {
         try {
@@ -103,7 +105,11 @@ public final class LootTestRunner {
             }
 
             String entityName = TestMobTools.getEntityDisplayName(entityId);
-            DropStatistics stats = new DropStatistics(entityId, entityName, condition.displayName);
+            String conditionText = condition.displayName;
+            if (lootingLevel > 0 && condition.isPlayerKill()) {
+                conditionText += " (Looting " + lootingLevel + ")";
+            }
+            DropStatistics stats = new DropStatistics(entityId, entityName, conditionText);
 
             // Get entity type
             Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
@@ -148,7 +154,9 @@ public final class LootTestRunner {
                     }
 
                     // Get drops before killing (using loot table directly)
-                    List<ItemStack> drops = generateEntityDrops(level, living, damageSource, condition.getLootingLevel());
+                    // Looting only applies to player kills
+                    int effectiveLooting = condition.isPlayerKill() ? lootingLevel : 0;
+                    List<ItemStack> drops = generateEntityDrops(level, living, damageSource, effectiveLooting);
                     stats.recordDrops(drops);
 
                     // Remove the entity
@@ -157,7 +165,7 @@ public final class LootTestRunner {
             }
 
             Isotope.LOGGER.info("Mob test complete: {} {} tested with {}",
-                count, entityName, condition.displayName);
+                count, entityName, conditionText);
 
             return TestResult.success(stats);
 
@@ -510,6 +518,7 @@ public final class LootTestRunner {
      * @param entityId Entity type to compare
      * @param count Number of mobs to test for each version
      * @param condition Kill condition
+     * @param lootingLevel Looting enchant level (0-3)
      * @param progressCallback Called with progress updates
      * @return CompareResult with both statistics
      */
@@ -518,6 +527,7 @@ public final class LootTestRunner {
         ResourceLocation entityId,
         int count,
         TestMobTools.KillCondition condition,
+        int lootingLevel,
         @Nullable Consumer<String> progressCallback
     ) {
         try {
@@ -532,11 +542,17 @@ public final class LootTestRunner {
                 return CompareResult.error("No edits to compare for this entity's loot table");
             }
 
+            // Build condition text for display
+            String conditionText = condition.displayName;
+            if (lootingLevel > 0 && condition.isPlayerKill()) {
+                conditionText += " + Looting " + lootingLevel;
+            }
+
             // Run test with edited version (current state)
             if (progressCallback != null) {
                 progressCallback.accept("Testing edited version...");
             }
-            TestResult editedResult = runMobTest(server, entityId, count, condition, null);
+            TestResult editedResult = runMobTest(server, entityId, count, condition, lootingLevel, null);
             if (!editedResult.success()) {
                 return CompareResult.error("Edited test failed: " + editedResult.error());
             }
@@ -549,18 +565,18 @@ public final class LootTestRunner {
                 if (progressCallback != null) {
                     progressCallback.accept("Testing original version...");
                 }
-                TestResult originalResult = runMobTest(server, entityId, count, condition, null);
+                TestResult originalResult = runMobTest(server, entityId, count, condition, lootingLevel, null);
                 if (!originalResult.success()) {
                     return CompareResult.error("Original test failed: " + originalResult.error());
                 }
 
                 // Rename the statistics for clarity
                 DropStatistics originalStats = new DropStatistics(entityId,
-                    originalResult.statistics().getSourceName(), "Original (" + condition.displayName + ")");
+                    originalResult.statistics().getSourceName(), "Original (" + conditionText + ")");
                 copyStats(originalResult.statistics(), originalStats);
 
                 DropStatistics editedStats = new DropStatistics(entityId,
-                    editedResult.statistics().getSourceName(), "Edited (" + condition.displayName + ")");
+                    editedResult.statistics().getSourceName(), "Edited (" + conditionText + ")");
                 copyStats(editedResult.statistics(), editedStats);
 
                 return CompareResult.success(originalStats, editedStats);

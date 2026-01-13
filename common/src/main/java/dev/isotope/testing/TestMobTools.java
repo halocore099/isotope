@@ -70,13 +70,11 @@ public final class TestMobTools {
 
     /**
      * Kill condition for mob loot testing.
+     * Looting level is now a separate parameter for better UI control.
      */
     public enum KillCondition {
         PLAYER_KILL("Player Kill", "Drops rare items requiring player kill"),
-        NON_PLAYER("Non-Player", "Only drops guaranteed items"),
-        LOOTING_1("Looting I", "Player kill with Looting I enchant"),
-        LOOTING_2("Looting II", "Player kill with Looting II enchant"),
-        LOOTING_3("Looting III", "Player kill with Looting III enchant");
+        NON_PLAYER("Non-Player", "Only drops guaranteed items");
 
         public final String displayName;
         public final String description;
@@ -86,17 +84,8 @@ public final class TestMobTools {
             this.description = description;
         }
 
-        public int getLootingLevel() {
-            return switch (this) {
-                case LOOTING_1 -> 1;
-                case LOOTING_2 -> 2;
-                case LOOTING_3 -> 3;
-                default -> 0;
-            };
-        }
-
         public boolean isPlayerKill() {
-            return this != NON_PLAYER;
+            return this == PLAYER_KILL;
         }
     }
 
@@ -198,9 +187,10 @@ public final class TestMobTools {
      * @param server The Minecraft server
      * @param entity The entity to kill
      * @param condition The kill condition
+     * @param lootingLevel Looting enchant level (0-3), only applies if condition is player kill
      * @return KillResult with drop count
      */
-    public static KillResult killMob(MinecraftServer server, Entity entity, KillCondition condition) {
+    public static KillResult killMob(MinecraftServer server, Entity entity, KillCondition condition, int lootingLevel) {
         try {
             if (!(entity instanceof LivingEntity living)) {
                 return KillResult.error("Entity is not a LivingEntity");
@@ -213,8 +203,8 @@ public final class TestMobTools {
                 return KillResult.error("No player found for player kill");
             }
 
-            // Set up looting if needed
-            if (condition.getLootingLevel() > 0 && player != null) {
+            // Set up looting if needed (only applies to player kills)
+            if (lootingLevel > 0 && condition.isPlayerKill() && player != null) {
                 // Give player a sword with looting for the kill
                 ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
                 // Note: Enchantment application varies by MC version
@@ -238,8 +228,9 @@ public final class TestMobTools {
                 living.kill(level);
             }
 
-            Isotope.LOGGER.info("Killed {} with condition: {}",
-                entity.getType().getDescriptionId(), condition.displayName);
+            String lootingInfo = lootingLevel > 0 && condition.isPlayerKill() ? " (Looting " + lootingLevel + ")" : "";
+            Isotope.LOGGER.info("Killed {} with condition: {}{}",
+                entity.getType().getDescriptionId(), condition.displayName, lootingInfo);
 
             return KillResult.success(0); // Drop count would need tracking
 
@@ -255,15 +246,16 @@ public final class TestMobTools {
      * @param server The Minecraft server
      * @param entityId The entity type
      * @param condition The kill condition
+     * @param lootingLevel Looting enchant level (0-3)
      * @return KillResult
      */
-    public static KillResult spawnAndKill(MinecraftServer server, ResourceLocation entityId, KillCondition condition) {
+    public static KillResult spawnAndKill(MinecraftServer server, ResourceLocation entityId, KillCondition condition, int lootingLevel) {
         SpawnResult spawn = spawnMob(server, entityId, new BlockPos(3, 0, 3));
         if (!spawn.success()) {
             return KillResult.error("Spawn failed: " + spawn.error());
         }
 
-        return killMob(server, spawn.entity(), condition);
+        return killMob(server, spawn.entity(), condition, lootingLevel);
     }
 
     /**
@@ -273,10 +265,11 @@ public final class TestMobTools {
      * @param entityId The entity type
      * @param count Number of mobs to test
      * @param condition The kill condition
+     * @param lootingLevel Looting enchant level (0-3)
      * @return Total kills successful
      */
     public static int batchSpawnAndKill(MinecraftServer server, ResourceLocation entityId,
-                                         int count, KillCondition condition) {
+                                         int count, KillCondition condition, int lootingLevel) {
         int successful = 0;
 
         for (int i = 0; i < count; i++) {
@@ -285,15 +278,16 @@ public final class TestMobTools {
             SpawnResult spawn = spawnMob(server, entityId, offset);
 
             if (spawn.success()) {
-                KillResult kill = killMob(server, spawn.entity(), condition);
+                KillResult kill = killMob(server, spawn.entity(), condition, lootingLevel);
                 if (kill.success()) {
                     successful++;
                 }
             }
         }
 
-        Isotope.LOGGER.info("Batch test complete: {}/{} mobs killed with {}",
-            successful, count, condition.displayName);
+        String lootingInfo = lootingLevel > 0 && condition.isPlayerKill() ? " (Looting " + lootingLevel + ")" : "";
+        Isotope.LOGGER.info("Batch test complete: {}/{} mobs killed with {}{}",
+            successful, count, condition.displayName, lootingInfo);
 
         return successful;
     }
