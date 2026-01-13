@@ -1,6 +1,7 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.EntityLootRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -52,6 +53,24 @@ public final class LootTestRunner {
 
         public static TestResult error(String message) {
             return new TestResult(false, null, message);
+        }
+    }
+
+    /**
+     * Result of a comparison test.
+     */
+    public record CompareResult(
+        boolean success,
+        DropStatistics originalStats,
+        DropStatistics editedStats,
+        @Nullable String error
+    ) {
+        public static CompareResult success(DropStatistics original, DropStatistics edited) {
+            return new CompareResult(true, original, edited, null);
+        }
+
+        public static CompareResult error(String message) {
+            return new CompareResult(false, null, null, message);
         }
     }
 
@@ -403,6 +422,165 @@ public final class LootTestRunner {
             }
         }
         return result.toString();
+    }
+
+    /**
+     * Run comparison test for chest loot (original vs edited).
+     *
+     * @param server Minecraft server
+     * @param lootTableId Loot table to compare
+     * @param count Number of times to generate for each version
+     * @param progressCallback Called with progress updates
+     * @return CompareResult with both statistics
+     */
+    public static CompareResult runChestCompare(
+        MinecraftServer server,
+        ResourceLocation lootTableId,
+        int count,
+        @Nullable Consumer<String> progressCallback
+    ) {
+        try {
+            LootEditManager editManager = LootEditManager.getInstance();
+
+            // Check if table has edits
+            if (!editManager.hasEdits(lootTableId)) {
+                return CompareResult.error("No edits to compare for this table");
+            }
+
+            // Run test with edited version (current state)
+            if (progressCallback != null) {
+                progressCallback.accept("Testing edited version...");
+            }
+            TestResult editedResult = runChestTest(server, lootTableId, count, null);
+            if (!editedResult.success()) {
+                return CompareResult.error("Edited test failed: " + editedResult.error());
+            }
+
+            // Temporarily disable test mode to get original results
+            boolean wasTestModeActive = editManager.isTestModeActive();
+            editManager.setTestModeActive(false);
+
+            try {
+                if (progressCallback != null) {
+                    progressCallback.accept("Testing original version...");
+                }
+                TestResult originalResult = runChestTest(server, lootTableId, count, null);
+                if (!originalResult.success()) {
+                    return CompareResult.error("Original test failed: " + originalResult.error());
+                }
+
+                // Rename the statistics for clarity
+                DropStatistics originalStats = new DropStatistics(lootTableId,
+                    originalResult.statistics().getSourceName(), "Original");
+                copyStats(originalResult.statistics(), originalStats);
+
+                DropStatistics editedStats = new DropStatistics(lootTableId,
+                    editedResult.statistics().getSourceName(), "Edited");
+                copyStats(editedResult.statistics(), editedStats);
+
+                return CompareResult.success(originalStats, editedStats);
+
+            } finally {
+                // Restore test mode
+                editManager.setTestModeActive(wasTestModeActive);
+            }
+
+        } catch (Exception e) {
+            Isotope.LOGGER.error("Compare test failed: {}", e.getMessage());
+            return CompareResult.error("Compare failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Run comparison test for mob loot (original vs edited).
+     *
+     * @param server Minecraft server
+     * @param entityId Entity type to compare
+     * @param count Number of mobs to test for each version
+     * @param condition Kill condition
+     * @param progressCallback Called with progress updates
+     * @return CompareResult with both statistics
+     */
+    public static CompareResult runMobCompare(
+        MinecraftServer server,
+        ResourceLocation entityId,
+        int count,
+        TestMobTools.KillCondition condition,
+        @Nullable Consumer<String> progressCallback
+    ) {
+        try {
+            LootEditManager editManager = LootEditManager.getInstance();
+
+            // Get the loot table ID for this entity
+            ResourceLocation lootTableId = ResourceLocation.fromNamespaceAndPath(
+                entityId.getNamespace(), "entities/" + entityId.getPath());
+
+            // Check if table has edits
+            if (!editManager.hasEdits(lootTableId)) {
+                return CompareResult.error("No edits to compare for this entity's loot table");
+            }
+
+            // Run test with edited version (current state)
+            if (progressCallback != null) {
+                progressCallback.accept("Testing edited version...");
+            }
+            TestResult editedResult = runMobTest(server, entityId, count, condition, null);
+            if (!editedResult.success()) {
+                return CompareResult.error("Edited test failed: " + editedResult.error());
+            }
+
+            // Temporarily disable test mode to get original results
+            boolean wasTestModeActive = editManager.isTestModeActive();
+            editManager.setTestModeActive(false);
+
+            try {
+                if (progressCallback != null) {
+                    progressCallback.accept("Testing original version...");
+                }
+                TestResult originalResult = runMobTest(server, entityId, count, condition, null);
+                if (!originalResult.success()) {
+                    return CompareResult.error("Original test failed: " + originalResult.error());
+                }
+
+                // Rename the statistics for clarity
+                DropStatistics originalStats = new DropStatistics(entityId,
+                    originalResult.statistics().getSourceName(), "Original (" + condition.displayName + ")");
+                copyStats(originalResult.statistics(), originalStats);
+
+                DropStatistics editedStats = new DropStatistics(entityId,
+                    editedResult.statistics().getSourceName(), "Edited (" + condition.displayName + ")");
+                copyStats(editedResult.statistics(), editedStats);
+
+                return CompareResult.success(originalStats, editedStats);
+
+            } finally {
+                // Restore test mode
+                editManager.setTestModeActive(wasTestModeActive);
+            }
+
+        } catch (Exception e) {
+            Isotope.LOGGER.error("Compare test failed: {}", e.getMessage());
+            return CompareResult.error("Compare failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Copy statistics from source to destination.
+     */
+    private static void copyStats(DropStatistics source, DropStatistics dest) {
+        for (int i = 0; i < source.getTestCount(); i++) {
+            dest.startTest();
+        }
+        for (ResourceLocation itemId : source.getDroppedItems()) {
+            // Create fake stacks to record the totals
+            int total = source.getTotalForItem(itemId);
+            if (total > 0) {
+                var itemOpt = BuiltInRegistries.ITEM.getOptional(itemId);
+                if (itemOpt.isPresent()) {
+                    dest.recordDrop(new ItemStack(itemOpt.get(), total));
+                }
+            }
+        }
     }
 
     @Nullable

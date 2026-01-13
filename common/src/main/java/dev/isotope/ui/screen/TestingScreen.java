@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.StructureLootLinker;
+import dev.isotope.editing.LootEditManager;
 import dev.isotope.testing.DropStatistics;
 import dev.isotope.testing.LootTestRunner;
 import dev.isotope.testing.TestArenaManager;
@@ -238,6 +239,17 @@ public class TestingScreen extends Screen {
                     ).pos(panelX + 192, entryY + 35).size(40, 18).build();
                     entryButtons.add(addRenderableWidget(statsBtn));
 
+                    // Compare button - only show if edits exist
+                    ResourceLocation lootTableId = ResourceLocation.fromNamespaceAndPath(
+                        entityId.getNamespace(), "entities/" + entityId.getPath());
+                    if (LootEditManager.getInstance().hasEdits(lootTableId)) {
+                        Button compareBtn = Button.builder(
+                            Component.literal("Compare"),
+                            b -> onMobCompare(entityId, 50)
+                        ).pos(panelX + 235, entryY + 35).size(55, 18).build();
+                        entryButtons.add(addRenderableWidget(compareBtn));
+                    }
+
                 } else {
                     // Structure/chest loot: Teleport, Arena, Generate, Stats buttons
                     final ResourceLocation structureId = entry.structures.isEmpty()
@@ -273,6 +285,15 @@ public class TestingScreen extends Screen {
                         b -> onChestStats(tableId, 50)
                     ).pos(genX + 53, entryY + 35).size(40, 18).build();
                     entryButtons.add(addRenderableWidget(statsBtn));
+
+                    // Compare button - only show if edits exist
+                    if (LootEditManager.getInstance().hasEdits(tableId)) {
+                        Button compareBtn = Button.builder(
+                            Component.literal("Compare"),
+                            b -> onChestCompare(tableId, 50)
+                        ).pos(genX + 96, entryY + 35).size(55, 18).build();
+                        entryButtons.add(addRenderableWidget(compareBtn));
+                    }
                 }
             }
 
@@ -506,6 +527,61 @@ public class TestingScreen extends Screen {
                     minecraft.setScreen(new DropStatisticsDialog(this, result.statistics()));
                 } else {
                     IsotopeToast.error("Test Failed", result.error());
+                }
+            });
+        });
+    }
+
+    // === Compare Methods ===
+
+    private void onMobCompare(ResourceLocation entityId, int count) {
+        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
+            IsotopeToast.error("Error", "Not in singleplayer world");
+            return;
+        }
+
+        IsotopeToast.info("Comparing", "Testing original vs edited (" + count + " each)...");
+
+        minecraft.execute(() -> {
+            var result = LootTestRunner.runMobCompare(
+                minecraft.getSingleplayerServer(),
+                entityId,
+                count,
+                selectedKillCondition,
+                null
+            );
+
+            minecraft.execute(() -> {
+                if (result.success()) {
+                    minecraft.setScreen(new CompareStatisticsDialog(this, result.originalStats(), result.editedStats()));
+                } else {
+                    IsotopeToast.error("Compare Failed", result.error());
+                }
+            });
+        });
+    }
+
+    private void onChestCompare(ResourceLocation tableId, int count) {
+        if (minecraft == null || minecraft.getSingleplayerServer() == null) {
+            IsotopeToast.error("Error", "Not in singleplayer world");
+            return;
+        }
+
+        IsotopeToast.info("Comparing", "Testing original vs edited (" + count + " each)...");
+
+        minecraft.execute(() -> {
+            var result = LootTestRunner.runChestCompare(
+                minecraft.getSingleplayerServer(),
+                tableId,
+                count,
+                null
+            );
+
+            minecraft.execute(() -> {
+                if (result.success()) {
+                    minecraft.setScreen(new CompareStatisticsDialog(this, result.originalStats(), result.editedStats()));
+                } else {
+                    IsotopeToast.error("Compare Failed", result.error());
                 }
             });
         });
