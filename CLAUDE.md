@@ -711,6 +711,78 @@ Each entry contains:
 
 **Key Class:** `HistoryLog` - Singleton with `getInstance()`, in-memory only (not persisted)
 
+## Session Management
+
+Save and restore editor state including open tabs, bookmarks, and UI panel visibility.
+
+### Storage
+
+Sessions are saved to `.minecraft/isotope/sessions/` as JSON files:
+
+```json
+{
+  "id": "uuid-string",
+  "name": "My Session",
+  "createdAt": 1704067200000,
+  "lastModified": 1704153600000,
+  "openTabs": ["minecraft:chests/simple_dungeon", "minecraft:entities/zombie"],
+  "activeTabIndex": 0,
+  "bookmarks": ["minecraft:chests/buried_treasure"],
+  "metadata": {
+    "minecraftVersion": "1.21.4",
+    "isotopeVersion": "1.0.0"
+  },
+  "uiState": {
+    "dropRatesVisible": true,
+    "diffVisible": false,
+    "historyVisible": false
+  }
+}
+```
+
+### SessionManager API
+
+| Method | Description |
+|--------|-------------|
+| `saveSession(name, tabManager)` | Save current state with given name |
+| `saveSession(name, tabManager, uiState)` | Save with UI visibility state |
+| `loadSession(name)` | Load session by name, returns `Optional<EditorSession>` |
+| `applySession(session, tabManager)` | Restore tabs and bookmarks from session |
+| `listSessions()` | Get list of all saved sessions (sorted by date) |
+| `deleteSession(name)` | Delete a session file |
+| `renameSession(oldName, newName)` | Rename a session |
+| `autoSave(tabManager)` | Save to hidden `_autosave` session |
+| `hasAutosave()` | Check if autosave exists |
+| `loadAutosave()` | Load the autosave session |
+
+### SessionInfo (for listing)
+
+| Field | Description |
+|-------|-------------|
+| `name` | Session name |
+| `lastModified` | Timestamp of last save |
+| `formattedDate` | Date formatted as `yyyy-MM-dd HH:mm` |
+| `tabCount` | Number of open tabs |
+| `bookmarkCount` | Number of bookmarks |
+
+### UIState
+
+Captures panel visibility:
+- `dropRatesVisible` - Drop rate visualization panel
+- `diffVisible` - Diff panel (original vs edited)
+- `historyVisible` - History log panel
+
+### Features
+
+- **Autosave**: Hidden `_autosave` session for crash recovery
+- **Filename sanitization**: Names converted to safe filenames (`[^a-zA-Z0-9_-]` → `_`)
+- **Sorted listing**: Sessions sorted by last modified (newest first)
+- **Full restore**: Tabs, active tab index, bookmarks, and UI state all restored
+
+**Key Classes:**
+- `SessionManager` - Singleton handling save/load/list/delete
+- `EditorSession` - Record containing session data
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
