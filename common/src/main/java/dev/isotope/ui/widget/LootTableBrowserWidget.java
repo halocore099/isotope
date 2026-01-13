@@ -4,6 +4,7 @@ import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.BookmarkManager;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
+import dev.isotope.data.RecentTablesManager;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.FeatureRegistry;
@@ -48,11 +49,13 @@ public class LootTableBrowserWidget extends AbstractWidget {
     private String selectedMod = "All";
     private final Set<LootTableCategory> expandedCategories = new HashSet<>();
     private boolean bookmarksSectionExpanded = true;
+    private boolean recentSectionExpanded = true;
     private int scrollOffset = 0;
     private int maxScroll = 0;
 
-    // Bookmark listener
+    // Listeners
     private final BookmarkManager.BookmarkListener bookmarkListener = this::onBookmarksChanged;
+    private final RecentTablesManager.RecentListener recentListener = this::onRecentChanged;
 
     // Data
     private List<String> availableMods = new ArrayList<>();
@@ -99,11 +102,13 @@ public class LootTableBrowserWidget extends AbstractWidget {
      */
     public void cleanup() {
         BookmarkManager.getInstance().removeListener(bookmarkListener);
+        RecentTablesManager.getInstance().removeListener(recentListener);
     }
 
     public void loadData() {
-        // Register bookmark listener (removed in cleanup())
+        // Register listeners (removed in cleanup())
         BookmarkManager.getInstance().addListener(bookmarkListener);
+        RecentTablesManager.getInstance().addListener(recentListener);
 
         // Get all loot tables
         Collection<LootTableInfo> allTables = LootTableRegistry.getInstance().getAll();
@@ -138,6 +143,10 @@ public class LootTableBrowserWidget extends AbstractWidget {
         calculateMaxScroll();
     }
 
+    private void onRecentChanged() {
+        calculateMaxScroll();
+    }
+
     /**
      * Get bookmarked tables that match current filters.
      */
@@ -146,6 +155,32 @@ public class LootTableBrowserWidget extends AbstractWidget {
         String searchText = searchBox != null ? searchBox.getValue().toLowerCase() : "";
 
         for (ResourceLocation id : BookmarkManager.getInstance().getAll()) {
+            // Mod filter
+            if (!selectedMod.equals("All") && !id.getNamespace().equals(selectedMod)) {
+                continue;
+            }
+            // Search filter
+            if (!searchText.isEmpty() && !id.toString().toLowerCase().contains(searchText)) {
+                continue;
+            }
+            result.add(id);
+        }
+        return result;
+    }
+
+    /**
+     * Get recent tables that match current filters.
+     * Excludes tables that are already bookmarked (shown in bookmarks section).
+     */
+    private List<ResourceLocation> getFilteredRecent() {
+        List<ResourceLocation> result = new ArrayList<>();
+        String searchText = searchBox != null ? searchBox.getValue().toLowerCase() : "";
+
+        for (ResourceLocation id : RecentTablesManager.getInstance().getAll()) {
+            // Skip if bookmarked (already shown in bookmarks)
+            if (BookmarkManager.getInstance().isBookmarked(id)) {
+                continue;
+            }
             // Mod filter
             if (!selectedMod.equals("All") && !id.getNamespace().equals(selectedMod)) {
                 continue;
@@ -191,6 +226,15 @@ public class LootTableBrowserWidget extends AbstractWidget {
             contentHeight += CATEGORY_HEIGHT; // Header
             if (bookmarksSectionExpanded) {
                 contentHeight += bookmarks.size() * ITEM_HEIGHT;
+            }
+        }
+
+        // Recent section
+        List<ResourceLocation> recent = getFilteredRecent();
+        if (!recent.isEmpty()) {
+            contentHeight += CATEGORY_HEIGHT; // Header
+            if (recentSectionExpanded) {
+                contentHeight += recent.size() * ITEM_HEIGHT;
             }
         }
 
@@ -348,8 +392,61 @@ public class LootTableBrowserWidget extends AbstractWidget {
             }
         }
 
+        // Recent section
+        List<ResourceLocation> recent = getFilteredRecent();
+        if (!recent.isEmpty()) {
+            boolean catHovered = mouseX >= getX() && mouseX < getX() + width &&
+                mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT &&
+                renderY >= listY && renderY < getY() + height;
+
+            // Recent header
+            if (renderY + CATEGORY_HEIGHT > listY && renderY < getY() + height) {
+                graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, 0xFF202530);
+                if (catHovered) {
+                    graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, 0xFF303540);
+                }
+
+                String arrow = recentSectionExpanded ? "▼" : "▶";
+                graphics.drawString(font, arrow, getX() + 4, renderY + 4, IsotopeColors.ACCENT_AQUA, false);
+                graphics.drawString(font, "⏱ Recent", getX() + 16, renderY + 4,
+                    IsotopeColors.ACCENT_AQUA, false);
+                graphics.drawString(font, "(" + recent.size() + ")", getX() + width - 30, renderY + 4,
+                    IsotopeColors.TEXT_MUTED, false);
+            }
+            renderY += CATEGORY_HEIGHT;
+
+            // Recent entries if expanded
+            if (recentSectionExpanded) {
+                for (ResourceLocation id : recent) {
+                    if (renderY + ITEM_HEIGHT > listY && renderY < getY() + height) {
+                        boolean isSelected = id.equals(selectedTable);
+                        boolean itemHovered = mouseX >= getX() + INDENT && mouseX < getX() + width &&
+                            mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT &&
+                            renderY >= listY && renderY < getY() + height;
+
+                        if (isSelected) {
+                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, 0xFF2a4a5a);
+                        } else if (itemHovered) {
+                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, 0xFF253035);
+                        }
+
+                        // Clock icon
+                        graphics.drawString(font, "⏱", getX() + INDENT - 8, renderY + 4, IsotopeColors.ACCENT_AQUA, false);
+
+                        String path = id.getPath();
+                        if (font.width(path) > width - INDENT - 16) {
+                            path = font.plainSubstrByWidth(path, width - INDENT - 24) + "...";
+                        }
+                        graphics.drawString(font, path, getX() + INDENT + 4, renderY + 4,
+                            isSelected ? 0xFFFFFFFF : IsotopeColors.TEXT_SECONDARY, false);
+                    }
+                    renderY += ITEM_HEIGHT;
+                }
+            }
+        }
+
         // Check if anything to show
-        boolean hasContent = !bookmarks.isEmpty();
+        boolean hasContent = !bookmarks.isEmpty() || !recent.isEmpty();
         if (!hasContent) {
             for (LootTableCategory cat : LootTableCategory.values()) {
                 if (getCategoryCount(cat) > 0) {
@@ -790,6 +887,32 @@ public class LootTableBrowserWidget extends AbstractWidget {
                 for (ResourceLocation id : bookmarks) {
                     if (mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT) {
                         selectedTable = id;
+                        RecentTablesManager.getInstance().recordView(id);
+                        onTableSelected.accept(id);
+                        return true;
+                    }
+                    renderY += ITEM_HEIGHT;
+                }
+            }
+        }
+
+        // Recent section click handling
+        List<ResourceLocation> recent = getFilteredRecent();
+        if (!recent.isEmpty()) {
+            // Recent header click
+            if (mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT) {
+                recentSectionExpanded = !recentSectionExpanded;
+                calculateMaxScroll();
+                return true;
+            }
+            renderY += CATEGORY_HEIGHT;
+
+            // Recent items if expanded
+            if (recentSectionExpanded) {
+                for (ResourceLocation id : recent) {
+                    if (mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT) {
+                        selectedTable = id;
+                        RecentTablesManager.getInstance().recordView(id);
                         onTableSelected.accept(id);
                         return true;
                     }
@@ -825,6 +948,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
                         }
                         // Otherwise select the item
                         selectedTable = table.id();
+                        RecentTablesManager.getInstance().recordView(table.id());
                         onTableSelected.accept(table.id());
                         return true;
                     }
