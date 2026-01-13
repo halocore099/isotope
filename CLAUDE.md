@@ -544,6 +544,66 @@ Cross-table operations that apply changes to **all loot tables** at once. All op
 
 **Key Class:** `BulkOperation` - Static preview/apply method pairs for each `Type`
 
+## Keyboard Shortcuts
+
+Centralized keyboard shortcuts for the loot editor. Screens implement `ShortcutContext` interface to handle supported actions.
+
+### Editing Shortcuts
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+Z` | Undo | Undo the last operation |
+| `Ctrl+Y` | Redo | Redo the last undone operation |
+| `Ctrl+Shift+Z` | Redo | Alternative redo shortcut |
+| `Ctrl+S` | Save/Export | Export current work |
+| `Ctrl+N` | Add New | Add new item to selected pool |
+| `Ctrl+D` | Duplicate | Duplicate selected entry |
+| `Delete` | Delete | Remove selected item |
+| `Backspace` | Delete | Alternative delete shortcut |
+
+### Clipboard Shortcuts
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+C` | Copy | Copy selected entry to clipboard |
+| `Ctrl+V` | Paste | Paste entry from clipboard |
+
+### Navigation Shortcuts
+
+| Shortcut | Action | Description |
+|----------|--------|-------------|
+| `Ctrl+F` | Focus Search | Focus the search box |
+| `Ctrl+Shift+F` | Global Search | Open global search across all tables |
+| `Alt+Up` | Move Up | Move selected entry up in pool |
+| `Alt+Down` | Move Down | Move selected entry down in pool |
+| `Escape` | Close/Clear | Close picker or clear selection |
+| `F1` | Help | Show keyboard shortcuts help |
+
+### Implementation
+
+Screens implement the `ShortcutContext` interface with default no-op methods:
+
+```java
+public interface ShortcutContext {
+    default void undo() {}
+    default void redo() {}
+    default void save() {}
+    default void focusSearch() {}
+    default void globalSearch() {}
+    default void addItem() {}
+    default void delete() {}
+    default void duplicate() {}
+    default void copy() {}
+    default void paste() {}
+    default void moveUp() {}
+    default void moveDown() {}
+    default void escape() {}
+    default void showHelp() {}
+}
+```
+
+**Key Class:** `KeyboardShortcuts` - Static `handle(keyCode, modifiers, context)` dispatcher
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
