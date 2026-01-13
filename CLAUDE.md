@@ -123,6 +123,33 @@ Ready
 3. **Surface gaps intentionally** - Orphans are flagged, not hidden
 4. **Runtime upgrades heuristics** - Observation confirms guesses
 
+### UI Indicators for Loot Sources
+
+Visual indicators help users understand loot source types and special conditions:
+
+**Browser Widget (LootTableBrowserWidget)**
+| Element | Color | Description |
+|---------|-------|-------------|
+| Entity category header | Purple | Distinguishes mob drops from other loot |
+| ⚔ sword icon | Purple | Player kill required for rare drops |
+| ⚠ warning icon | Yellow | Orphan loot table (no linked source) |
+
+**Edit Panel (LootTableEditPanel)**
+| Element | Color | Location | Description |
+|---------|-------|----------|-------------|
+| "Mob: EntityName ⚔" | Purple | Header | Shows linked entity, sword if player kill required |
+| "⚗ Looting: X drops" | Aqua | Header | Count of looting-affected entries |
+| ⚔ sword icon | Purple | Entry row | Entry has `killed_by_player` condition |
+| ⚗ potion icon | Aqua | Entry row | Entry has `looting_enchant` or `random_chance_with_looting` |
+
+**Color Constants (IsotopeColors)**
+```java
+SOURCE_STRUCTURE = 0xFF55FFFF  // Cyan - real structures
+SOURCE_FEATURE   = 0xFFFFAA00  // Orange - features (dungeons)
+SOURCE_MOB       = 0xFFAA55FF  // Purple - entity drops
+ACCENT_AQUA      = 0xFF55FFFF  // Aqua - looting indicators
+```
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
