@@ -651,6 +651,66 @@ BookmarkManager.getInstance().addListener(() -> {
 
 **Key Class:** `BookmarkManager` - Singleton with `getInstance()`, persists to `isotope/bookmarks.json`
 
+## History Log
+
+Session-wide chronological log of all edit operations with timestamps and table context.
+
+### Log Entry Structure
+
+Each entry contains:
+- `timestamp` - Unix timestamp in milliseconds
+- `tableId` - The loot table that was modified
+- `operationType` - Type code (e.g., `ADD_ENTRY`, `MODIFY_WEIGHT`)
+- `description` - Human-readable description from the operation
+- `formattedTime` - Time formatted as `HH:mm:ss`
+
+### Operation Types
+
+| Type | Description |
+|------|-------------|
+| `ADD_POOL` | Added a new pool |
+| `REMOVE_POOL` | Removed a pool |
+| `MODIFY_ROLLS` | Changed pool roll count |
+| `ADD_ENTRY` | Added entry to pool |
+| `REMOVE_ENTRY` | Removed entry from pool |
+| `MODIFY_WEIGHT` | Changed entry weight |
+| `MODIFY_ITEM` | Changed entry item |
+| `SET_COUNT` | Set item count |
+| `ADD_FUNCTION` | Added function to entry |
+| `REMOVE_FUNCTION` | Removed function from entry |
+| `ADD_CONDITION` | Added condition to entry |
+| `REMOVE_CONDITION` | Removed condition from entry |
+| `ADD_POOL_FUNC` | Added function to pool |
+| `REMOVE_POOL_FUNC` | Removed function from pool |
+| `ADD_POOL_COND` | Added condition to pool |
+| `REMOVE_POOL_COND` | Removed condition from pool |
+| `UNDO` | Undo operation |
+| `REDO` | Redo operation |
+| `BATCH` | Multiple operations at once |
+
+### API
+
+| Method | Description |
+|--------|-------------|
+| `log(tableId, operation)` | Log a single operation |
+| `logUndo(tableId)` | Log an undo action |
+| `logRedo(tableId)` | Log a redo action |
+| `logBatch(tableId, count, desc)` | Log a batch operation |
+| `getAll()` | Get all entries (oldest first) |
+| `getRecent(count)` | Get the most recent N entries |
+| `getForTable(tableId)` | Get entries for a specific table |
+| `getCount()` | Get total entry count |
+| `clear()` | Clear all entries |
+
+### Features
+
+- **Max entries**: 500 (oldest trimmed automatically)
+- **Time format**: `HH:mm:ss` local time
+- **Thread-safe**: Uses `CopyOnWriteArrayList`
+- **Listener support**: Register for change notifications
+
+**Key Class:** `HistoryLog` - Singleton with `getInstance()`, in-memory only (not persisted)
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
