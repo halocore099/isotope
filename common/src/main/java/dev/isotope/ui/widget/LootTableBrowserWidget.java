@@ -4,6 +4,7 @@ import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.BookmarkManager;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
+import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
@@ -67,6 +68,12 @@ public class LootTableBrowserWidget extends AbstractWidget {
     private ResourceLocation hoveredOrphanTable = null;
     private int hoveredOrphanX = 0;
     private int hoveredOrphanY = 0;
+
+    // Mob tooltip state
+    @Nullable
+    private ResourceLocation hoveredMobTable = null;
+    private int hoveredMobX = 0;
+    private int hoveredMobY = 0;
 
     public LootTableBrowserWidget(int x, int y, int width, int height, Consumer<ResourceLocation> onTableSelected) {
         super(x, y, width, height, Component.empty());
@@ -227,8 +234,9 @@ public class LootTableBrowserWidget extends AbstractWidget {
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Minecraft.getInstance().font;
 
-        // Reset orphan tooltip state
+        // Reset tooltip states
         hoveredOrphanTable = null;
+        hoveredMobTable = null;
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1e1e1e);
@@ -395,10 +403,12 @@ public class LootTableBrowserWidget extends AbstractWidget {
                 }
 
                 String arrow = expanded ? "▼" : "▶";
-                graphics.drawString(font, arrow, getX() + 4, renderY + 4, IsotopeColors.TEXT_MUTED, false);
+                // Use purple for Entity category (mob drops)
+                int catColor = (cat == LootTableCategory.ENTITY) ? IsotopeColors.SOURCE_MOB : IsotopeColors.TEXT_PRIMARY;
+                int arrowColor = (cat == LootTableCategory.ENTITY) ? IsotopeColors.SOURCE_MOB : IsotopeColors.TEXT_MUTED;
+                graphics.drawString(font, arrow, getX() + 4, renderY + 4, arrowColor, false);
                 String catName = cat.name().charAt(0) + cat.name().substring(1).toLowerCase();
-                graphics.drawString(font, catName, getX() + 16, renderY + 4,
-                    IsotopeColors.TEXT_PRIMARY, false);
+                graphics.drawString(font, catName, getX() + 16, renderY + 4, catColor, false);
                 graphics.drawString(font, "(" + count + ")", getX() + width - 30, renderY + 4,
                     IsotopeColors.TEXT_MUTED, false);
             }
@@ -430,22 +440,42 @@ public class LootTableBrowserWidget extends AbstractWidget {
                             graphics.drawString(font, star, getX() + 3, renderY + 4, starColor, false);
                         }
 
-                        // Orphan indicator (right side)
-                        boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(table.id());
+                        // Right-side indicators (player kill, orphan)
                         int textRightPadding = 8;
+                        int nextIconX = getX() + width - 12;
+
+                        // Orphan indicator (rightmost)
+                        boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(table.id());
                         if (isOrphan) {
-                            int orphanIconX = getX() + width - 12;
-                            graphics.drawString(font, "⚠", orphanIconX, renderY + 4, IsotopeColors.STATUS_WARNING, false);
-                            textRightPadding = 18;
+                            graphics.drawString(font, "⚠", nextIconX, renderY + 4, IsotopeColors.STATUS_WARNING, false);
+                            textRightPadding += 10;
 
                             // Check if hovering over orphan icon
-                            boolean orphanHovered = mouseX >= orphanIconX - 2 && mouseX < getX() + width &&
+                            boolean orphanHovered = mouseX >= nextIconX - 2 && mouseX < nextIconX + 10 &&
                                 mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT &&
                                 renderY >= listY && renderY < getY() + height;
                             if (orphanHovered) {
                                 hoveredOrphanTable = table.id();
                                 hoveredOrphanX = mouseX;
                                 hoveredOrphanY = renderY + ITEM_HEIGHT;
+                            }
+                            nextIconX -= 10;
+                        }
+
+                        // Player kill indicator for entity loot (sword icon)
+                        var entityInfo = EntityLootRegistry.getInstance().getByLootTable(table.id());
+                        if (entityInfo.isPresent() && entityInfo.get().requiresPlayerKill()) {
+                            graphics.drawString(font, "⚔", nextIconX, renderY + 4, IsotopeColors.SOURCE_MOB, false);
+                            textRightPadding += 10;
+
+                            // Check if hovering over mob icon
+                            boolean mobHovered = mouseX >= nextIconX - 2 && mouseX < nextIconX + 10 &&
+                                mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT &&
+                                renderY >= listY && renderY < getY() + height;
+                            if (mobHovered) {
+                                hoveredMobTable = table.id();
+                                hoveredMobX = mouseX;
+                                hoveredMobY = renderY + ITEM_HEIGHT;
                             }
                         }
 
@@ -539,6 +569,58 @@ public class LootTableBrowserWidget extends AbstractWidget {
                     String text = line;
                     if (line.startsWith("§e")) {
                         color = IsotopeColors.STATUS_WARNING;
+                        text = line.substring(2);
+                    } else if (line.startsWith("§7")) {
+                        color = IsotopeColors.TEXT_MUTED;
+                        text = line.substring(2);
+                    }
+                    graphics.drawString(font, text, tooltipX + 4, lineY, color, false);
+                    lineY += 10;
+                }
+            }
+        }
+
+        // Mob tooltip (player kill info)
+        if (hoveredMobTable != null) {
+            var entityInfo = EntityLootRegistry.getInstance().getByLootTable(hoveredMobTable);
+            if (entityInfo.isPresent()) {
+                var entity = entityInfo.get();
+
+                // Build tooltip lines
+                List<String> lines = new ArrayList<>();
+                lines.add("§p" + entity.displayName());
+                if (entity.requiresPlayerKill()) {
+                    lines.add("§7⚔ Player kill required");
+                    lines.add("§7for rare drops");
+                }
+
+                // Calculate tooltip dimensions
+                int tooltipWidth = 0;
+                for (String line : lines) {
+                    tooltipWidth = Math.max(tooltipWidth, font.width(line.replace("§p", "").replace("§7", "")));
+                }
+                tooltipWidth += 12;
+                int tooltipHeight = lines.size() * 10 + 6;
+
+                // Position tooltip (prefer right side, fall back to left)
+                int tooltipX = hoveredMobX + 8;
+                if (tooltipX + tooltipWidth > getX() + width + 100) {
+                    tooltipX = hoveredMobX - tooltipWidth - 8;
+                }
+                int tooltipY = hoveredMobY;
+
+                // Draw tooltip background (purple tint for mobs)
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF2a1a3e);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF352540);
+
+                // Draw lines
+                int lineY = tooltipY + 4;
+                for (String line : lines) {
+                    int color = 0xFFFFFFFF;
+                    String text = line;
+                    if (line.startsWith("§p")) {
+                        color = IsotopeColors.SOURCE_MOB;
                         text = line.substring(2);
                     } else if (line.startsWith("§7")) {
                         color = IsotopeColors.TEXT_MUTED;

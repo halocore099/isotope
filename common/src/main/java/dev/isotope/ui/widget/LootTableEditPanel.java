@@ -383,13 +383,21 @@ public class LootTableEditPanel extends AbstractWidget {
         boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId);
 
         if (entityInfo.isPresent()) {
-            // This is an entity/mob loot table - show mob indicator
+            // This is an entity/mob loot table - show mob indicator with looting info
             var entity = entityInfo.get();
             String mobText = "Mob: " + entity.displayName();
             if (entity.requiresPlayerKill()) {
-                mobText += " (player kill)";
+                mobText += " ⚔";
             }
             graphics.drawString(font, mobText, getX() + PADDING, y + 20, IsotopeColors.SOURCE_MOB, false);
+
+            // Show looting info if any entries have looting bonuses
+            int lootingAffectedCount = countLootingAffectedEntries();
+            if (lootingAffectedCount > 0) {
+                int lootingX = getX() + PADDING + font.width(mobText) + 8;
+                String lootingText = "⚗ Looting: " + lootingAffectedCount + " drop" + (lootingAffectedCount > 1 ? "s" : "");
+                graphics.drawString(font, lootingText, lootingX, y + 20, IsotopeColors.ACCENT_AQUA, false);
+            }
         } else if (!links.isEmpty()) {
             // Separate features from structures
             List<StructureLootLink> featureLinks = new ArrayList<>();
@@ -722,8 +730,25 @@ public class LootTableEditPanel extends AbstractWidget {
         }
         x += countBoxWidth + 10;
 
-        // Remove button
+        // Entry condition indicators (for mob drops)
+        boolean hasLooting = hasLootingFunction(entry) || hasRandomChanceWithLootingCondition(entry);
+        boolean hasPlayerKill = hasKilledByPlayerCondition(entry);
         int removeX = getX() + width - PADDING - 20;
+        int indicatorX = removeX - 6;
+
+        // Player kill indicator (sword icon in purple)
+        if (hasPlayerKill) {
+            indicatorX -= 10;
+            graphics.drawString(font, "⚔", indicatorX, y + 7, IsotopeColors.SOURCE_MOB, false);
+        }
+
+        // Looting indicator (potion icon in aqua)
+        if (hasLooting) {
+            indicatorX -= 10;
+            graphics.drawString(font, "⚗", indicatorX, y + 7, IsotopeColors.ACCENT_AQUA, false);
+        }
+
+        // Remove button
         boolean removeHovered = mouseX >= removeX && mouseX < removeX + 16 &&
             mouseY >= y + 4 && mouseY < y + 20;
         if (removeHovered) {
@@ -768,6 +793,63 @@ public class LootTableEditPanel extends AbstractWidget {
             case NumberProvider.Uniform u -> (int) u.min() + "-" + (int) u.max();
             case NumberProvider.Binomial b -> "B(" + b.n() + "," + b.p() + ")";
         };
+    }
+
+    /**
+     * Count entries that have looting_enchant functions (affected by Looting enchantment).
+     */
+    private int countLootingAffectedEntries() {
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null) return 0;
+
+        int count = 0;
+        for (LootPool pool : display.pools()) {
+            for (LootEntry entry : pool.entries()) {
+                if (hasLootingFunction(entry)) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Check if an entry has a looting_enchant function.
+     */
+    private boolean hasLootingFunction(LootEntry entry) {
+        for (LootFunction func : entry.functions()) {
+            String funcType = func.function();
+            if (funcType.equals("minecraft:looting_enchant") || funcType.equals("looting_enchant")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if an entry has a killed_by_player condition.
+     */
+    private boolean hasKilledByPlayerCondition(LootEntry entry) {
+        for (LootCondition cond : entry.conditions()) {
+            String condType = cond.condition();
+            if (condType.equals("minecraft:killed_by_player") || condType.equals("killed_by_player")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if an entry has random_chance_with_looting condition.
+     */
+    private boolean hasRandomChanceWithLootingCondition(LootEntry entry) {
+        for (LootCondition cond : entry.conditions()) {
+            String condType = cond.condition();
+            if (condType.equals("minecraft:random_chance_with_looting") || condType.equals("random_chance_with_looting")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
