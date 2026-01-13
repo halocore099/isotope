@@ -189,6 +189,17 @@ Entity loot tables are detected and displayed with purple styling.
 | Non-Player | Only guaranteed drops (no rare items) |
 | Looting I/II/III | Player kill with looting enchant bonus |
 
+### Auto-Collect Option
+
+Toggle button in header: `📦 Ground` ↔ `📦 Inventory`
+
+| Mode | Behavior |
+|------|----------|
+| **📦 Ground** | Items spawn on ground near player (default) |
+| **📦 Inventory** | Items go directly to player inventory |
+
+Affects the **Gen ×10** button. If inventory is full, items drop on ground as fallback.
+
 ### Drop Statistics
 
 The **Stats** button runs multiple loot generations and displays a statistics dialog:
