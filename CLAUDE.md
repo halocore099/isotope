@@ -15,22 +15,19 @@
 - Uses Architectury for cross-loader (Fabric/NeoForge) support
 - Multi-project: `common/`, `fabric/`, `neoforge/`
 
-## Multi-Version Strategy
+## Version Support
 
-Branch-based versioning for different MC versions:
+**Supported**: Minecraft 1.21.x (all patch versions from 1.21 to 1.21.4+)
 
-| Branch | Minecraft | Status |
-|--------|-----------|--------|
-| `main` | 1.21.4 | Active |
-| `1.21.1` | 1.21.1 | Active |
-| `1.21` | 1.21 | Planned |
+Single branch (`main`) supports the entire 1.21.x line. No per-patch branches needed.
 
-**Releases**: Tag format `vX.X.X` on appropriate branch. Workflow auto-detects MC version from `gradle.properties`.
+**Why this works**:
+- Architectury insulates from loader quirks
+- Data models use `String` types + raw `JsonObject` (tolerates unknown loot features)
+- Mixins use safe patterns (`@Inject` at `HEAD`/`TAIL` only, no bytecode manipulation)
+- MC 1.21.x has no breaking API changes between patches
 
-**Why branches instead of Stonecutter?**
-- MC 1.21.x versions are API-compatible with minimal differences
-- Simpler maintenance than preprocessor-based multi-version
-- Each branch is a complete, testable build
+**Releases**: Tag format `vX.X.X`. Published to all 1.21.x game versions on Modrinth/CurseForge.
 
 ## Key Features (DO NOT REMOVE)
 

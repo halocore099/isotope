@@ -48,11 +48,11 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Isotope IDE v${{ steps.version.outputs.VERSION }} (MC ${{ steps.mcversion.outputs.MC_VERSION }})
+          name: Isotope IDE v${{ steps.version.outputs.VERSION }} (MC 1.21.x)
           body: |
             ## Isotope IDE v${{ steps.version.outputs.VERSION }}
 
-            **Minecraft ${{ steps.mcversion.outputs.MC_VERSION }}**
+            **Minecraft 1.21.x** (1.21 - 1.21.4+)
 
             Visual loot table editor and worldgen analysis toolkit for modpack developers.
 
@@ -61,7 +61,7 @@ jobs:
             - **NeoForge**: `isotope-neoforge-${{ steps.version.outputs.VERSION }}.jar`
 
             ### Requirements
-            - Minecraft ${{ steps.mcversion.outputs.MC_VERSION }}
+            - Minecraft 1.21.x
             - Fabric Loader 0.16.0+ or NeoForge 21.x+
             - Architectury API
 
@@ -83,12 +83,12 @@ jobs:
             fabric/build/libs/isotope-fabric-${{ steps.version.outputs.VERSION }}.jar
             neoforge/build/libs/isotope-neoforge-${{ steps.version.outputs.VERSION }}.jar
           name: Isotope IDE v${{ steps.version.outputs.VERSION }}
-          version: ${{ steps.version.outputs.VERSION }}+${{ steps.mcversion.outputs.MC_VERSION }}
+          version: ${{ steps.version.outputs.VERSION }}+1.21.x
           version-type: beta
           loaders: |
             fabric
             neoforge
-          game-versions: ${{ steps.mcversion.outputs.MC_VERSION }}
+          game-versions: ">=1.21 <1.22"
           dependencies: |
             architectury-api | depends | *
             fabric-api | depends | * | fabric
@@ -103,12 +103,12 @@ jobs:
             fabric/build/libs/isotope-fabric-${{ steps.version.outputs.VERSION }}.jar
             neoforge/build/libs/isotope-neoforge-${{ steps.version.outputs.VERSION }}.jar
           name: Isotope IDE v${{ steps.version.outputs.VERSION }}
-          version: ${{ steps.version.outputs.VERSION }}+${{ steps.mcversion.outputs.MC_VERSION }}
+          version: ${{ steps.version.outputs.VERSION }}+1.21.x
           version-type: beta
           loaders: |
             fabric
             neoforge
-          game-versions: ${{ steps.mcversion.outputs.MC_VERSION }}
+          game-versions: ">=1.21 <1.22"
           dependencies: |
             architectury-api | depends | *
             fabric-api | depends | * | fabric
