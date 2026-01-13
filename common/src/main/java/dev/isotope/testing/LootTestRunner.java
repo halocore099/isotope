@@ -218,6 +218,7 @@ public final class LootTestRunner {
      * @param server Minecraft server
      * @param lootTableId Loot table to simulate
      * @param count Number of times to generate
+     * @param luck Luck value (0-5, affects quality-weighted entries)
      * @param progressCallback Called with progress updates
      * @return TestResult with statistics
      */
@@ -225,6 +226,7 @@ public final class LootTestRunner {
         MinecraftServer server,
         ResourceLocation lootTableId,
         int count,
+        int luck,
         @Nullable Consumer<String> progressCallback
     ) {
         try {
@@ -236,7 +238,8 @@ public final class LootTestRunner {
             }
 
             String tableName = formatTableName(lootTableId);
-            DropStatistics stats = new DropStatistics(lootTableId, tableName, "Chest Loot");
+            String condition = luck > 0 ? "Chest Loot (Luck " + luck + ")" : "Chest Loot";
+            DropStatistics stats = new DropStatistics(lootTableId, tableName, condition);
 
             // Get loot table
             LootTable lootTable = server.reloadableRegistries()
@@ -256,12 +259,12 @@ public final class LootTestRunner {
                 stats.startTest();
 
                 // Generate loot
-                List<ItemStack> drops = generateChestLoot(level, lootTable, origin);
+                List<ItemStack> drops = generateChestLoot(level, lootTable, origin, luck);
                 stats.recordDrops(drops);
             }
 
-            Isotope.LOGGER.info("Chest test complete: {} generated {} times",
-                lootTableId, count);
+            Isotope.LOGGER.info("Chest test complete: {} generated {} times (luck {})",
+                lootTableId, count, luck);
 
             return TestResult.success(stats);
 
@@ -272,15 +275,22 @@ public final class LootTestRunner {
     }
 
     /**
-     * Generate chest loot from a loot table.
+     * Generate chest loot from a loot table (with default luck of 0).
      */
     private static List<ItemStack> generateChestLoot(ServerLevel level, LootTable lootTable, Vec3 origin) {
+        return generateChestLoot(level, lootTable, origin, 0);
+    }
+
+    /**
+     * Generate chest loot from a loot table with specified luck.
+     */
+    private static List<ItemStack> generateChestLoot(ServerLevel level, LootTable lootTable, Vec3 origin, int luck) {
         List<ItemStack> drops = new ArrayList<>();
 
         try {
             LootParams params = new LootParams.Builder(level)
                 .withParameter(LootContextParams.ORIGIN, origin)
-                .withLuck(0)
+                .withLuck(luck)
                 .create(LootContextParamSets.CHEST);
 
             lootTable.getRandomItems(params, drops::add);
@@ -430,6 +440,7 @@ public final class LootTestRunner {
      * @param server Minecraft server
      * @param lootTableId Loot table to compare
      * @param count Number of times to generate for each version
+     * @param luck Luck value (0-5)
      * @param progressCallback Called with progress updates
      * @return CompareResult with both statistics
      */
@@ -437,6 +448,7 @@ public final class LootTestRunner {
         MinecraftServer server,
         ResourceLocation lootTableId,
         int count,
+        int luck,
         @Nullable Consumer<String> progressCallback
     ) {
         try {
@@ -451,7 +463,7 @@ public final class LootTestRunner {
             if (progressCallback != null) {
                 progressCallback.accept("Testing edited version...");
             }
-            TestResult editedResult = runChestTest(server, lootTableId, count, null);
+            TestResult editedResult = runChestTest(server, lootTableId, count, luck, null);
             if (!editedResult.success()) {
                 return CompareResult.error("Edited test failed: " + editedResult.error());
             }
@@ -464,7 +476,7 @@ public final class LootTestRunner {
                 if (progressCallback != null) {
                     progressCallback.accept("Testing original version...");
                 }
-                TestResult originalResult = runChestTest(server, lootTableId, count, null);
+                TestResult originalResult = runChestTest(server, lootTableId, count, luck, null);
                 if (!originalResult.success()) {
                     return CompareResult.error("Original test failed: " + originalResult.error());
                 }

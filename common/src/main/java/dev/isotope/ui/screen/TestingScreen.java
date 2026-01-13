@@ -56,6 +56,9 @@ public class TestingScreen extends Screen {
     // Test count for Stats/Compare (adjustable)
     private int selectedTestCount = 50;
 
+    // Luck parameter for loot generation (0-5)
+    private int selectedLuck = 0;
+
     private record TableEntry(
         ResourceLocation tableId,
         Set<ResourceLocation> structures,
@@ -145,15 +148,29 @@ public class TestingScreen extends Screen {
         int testX = panelX + 138;
         for (int preset : testPresets) {
             final int count = preset;
-            Button btn = addRenderableWidget(Button.builder(
+            addRenderableWidget(Button.builder(
                 Component.literal(String.valueOf(count)),
                 b -> selectedTestCount = count
             ).pos(testX, panelY + 8).size(28, 20).build());
-            // Highlight selected
-            if (preset == selectedTestCount) {
-                btn.setFocused(true);
-            }
             testX += 30;
+        }
+
+        // Second row of header - Luck selector
+        int row2Y = panelY + 30;
+        addRenderableWidget(Button.builder(
+            Component.literal("Luck:"),
+            b -> {}
+        ).pos(panelX + 10, row2Y).size(35, 16).build()).active = false;
+
+        int[] luckPresets = {0, 1, 2, 3, 5};
+        int luckX = panelX + 48;
+        for (int preset : luckPresets) {
+            final int luck = preset;
+            addRenderableWidget(Button.builder(
+                Component.literal(String.valueOf(luck)),
+                b -> selectedLuck = luck
+            ).pos(luckX, row2Y).size(20, 16).build());
+            luckX += 22;
         }
 
         // Footer - Arena size buttons (for structures)
@@ -578,13 +595,15 @@ public class TestingScreen extends Screen {
             return;
         }
 
-        IsotopeToast.info("Running Test", "Generating " + count + " chest rolls...");
+        String luckInfo = selectedLuck > 0 ? " (Luck " + selectedLuck + ")" : "";
+        IsotopeToast.info("Running Test", "Generating " + count + " chest rolls" + luckInfo + "...");
 
         minecraft.execute(() -> {
             var result = LootTestRunner.runChestTest(
                 minecraft.getSingleplayerServer(),
                 tableId,
                 count,
+                selectedLuck,
                 null
             );
 
@@ -633,13 +652,15 @@ public class TestingScreen extends Screen {
             return;
         }
 
-        IsotopeToast.info("Comparing", "Testing original vs edited (" + count + " each)...");
+        String luckInfo = selectedLuck > 0 ? " (Luck " + selectedLuck + ")" : "";
+        IsotopeToast.info("Comparing", "Testing original vs edited (" + count + " each)" + luckInfo + "...");
 
         minecraft.execute(() -> {
             var result = LootTestRunner.runChestCompare(
                 minecraft.getSingleplayerServer(),
                 tableId,
                 count,
+                selectedLuck,
                 null
             );
 
@@ -675,9 +696,9 @@ public class TestingScreen extends Screen {
         String worldType = TestModeState.getInstance().getWorldType().displayName;
         graphics.drawString(font, worldType, panelX + 150, panelY + 14, IsotopeColors.TEXT_MUTED, false);
 
-        // Content area
-        int contentY = panelY + 45;
-        int contentHeight = PANEL_HEIGHT - 120;
+        // Content area (adjusted for second header row)
+        int contentY = panelY + 52;
+        int contentHeight = PANEL_HEIGHT - 127;
 
         // Scissor for scrolling
         graphics.enableScissor(panelX, contentY, panelX + PANEL_WIDTH, contentY + contentHeight);
@@ -729,6 +750,17 @@ public class TestingScreen extends Screen {
                 graphics.renderOutline(testX - 1, testButtonY - 1, 30, 22, IsotopeColors.ACCENT_AQUA);
             }
             testX += 30;
+        }
+
+        // Selected luck highlight (second row)
+        int[] luckPresets = {0, 1, 2, 3, 5};
+        int luckX = panelX + 48;
+        int luckButtonY = panelY + 30;
+        for (int preset : luckPresets) {
+            if (preset == selectedLuck) {
+                graphics.renderOutline(luckX - 1, luckButtonY - 1, 22, 18, IsotopeColors.ACCENT_GREEN);
+            }
+            luckX += 22;
         }
     }
 
