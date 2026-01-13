@@ -18,6 +18,8 @@ import java.util.*;
  *
  * Examples:
  * - monster_room (dungeon) -> chests/simple_dungeon
+ * - bonus_chest -> chests/spawn_bonus_chest
+ * - desert_well -> archaeology/desert_well
  */
 public final class FeatureRegistry {
 
@@ -49,11 +51,24 @@ public final class FeatureRegistry {
             "Spawner dungeon - a fire-and-forget feature, not a tracked structure",
             List.of("minecraft:chests/simple_dungeon"));
 
+        // Bonus Chest (spawn_bonus_chest feature)
+        // Only generated when "Bonus Chest" world option is enabled
+        registerFeature("minecraft:bonus_chest",
+            "Bonus Chest",
+            "Starting chest when 'Bonus Chest' world option is enabled",
+            List.of("minecraft:chests/spawn_bonus_chest"));
+
+        // Desert Well (desert_well feature)
+        // In 1.20+ contains suspicious sand with archaeology loot
+        registerFeature("minecraft:desert_well",
+            "Desert Well",
+            "Desert well with suspicious sand (archaeology)",
+            List.of("minecraft:archaeology/desert_well"));
+
         // Note: Other vanilla features don't have loot tables:
         // - Fossils: decorative bone blocks only
-        // - Desert wells: decorative, no loot
         // - Amethyst geodes: decorative, no loot
-        // - Trees, ores, etc.: no loot tables
+        // - Trees, ores, lakes, etc.: no loot tables
 
         initialized = true;
         Isotope.LOGGER.info("FeatureRegistry: initialized {} features with loot", features.size());
