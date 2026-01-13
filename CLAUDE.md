@@ -939,6 +939,64 @@ Structure Generation → StructureStartMixin → StructureObserver
 - `StructureStartMixin` - Structure placement observation
 - `ReloadableRegistriesMixin` - Table ID tracking bridge
 
+## Search Index
+
+Inverted index for finding items across all loot tables.
+
+### Index Structure
+
+Two indexes maintained:
+- **Inverted index** (`itemIndex`): Item ID → List of `SearchHit` (where item appears)
+- **Forward index** (`tableItems`): Table ID → Set of item IDs (what items are in table)
+
+### SearchHit Record
+
+```java
+record SearchHit(
+    ResourceLocation table,  // Loot table containing the item
+    int pool,                // Pool index (0-based)
+    int entry,               // Entry index within pool (0-based)
+    String context           // Display string: "Pool 1, Entry 2: diamond (W:5)"
+)
+```
+
+### API
+
+| Method | Description |
+|--------|-------------|
+| `indexTable(structure)` | Add a loot table to the index |
+| `search(query)` | Find items/tables matching query string |
+| `findTablesWithItem(itemId)` | Get all tables containing a specific item |
+| `getItemsInTable(tableId)` | Get all items in a specific table |
+| `isIndexed(tableId)` | Check if table is in index |
+| `getStats()` | Get index statistics string |
+| `rebuild()` | Clear and rebuild entire index |
+| `clear()` | Clear all index data |
+
+### Search Behavior
+
+1. Query is case-insensitive
+2. Matches against both full item ID (`minecraft:diamond`) and path (`diamond`)
+3. Results deduplicated by table+pool+entry
+4. Sorted alphabetically by table path
+5. Returns empty list for blank queries
+
+### Statistics
+
+`getStats()` returns: `"{tables} tables, {uniqueItems} unique items, {totalHits} total hits"`
+
+### Context String Format
+
+```
+Pool {N}, Entry {M}: {item_path} (W:{weight})
+```
+
+Example: `"Pool 1, Entry 3: diamond_sword (W:5)"`
+
+**Key Classes:**
+- `SearchIndex` - Singleton with `getInstance()`
+- `SearchHit` - Record representing a search result location
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
