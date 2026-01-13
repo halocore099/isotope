@@ -214,6 +214,28 @@ The **Stats** button runs multiple loot generations and displays a statistics di
 
 **Rate colors**: Green (≥75%), Yellow (≥25%), Red (<25%)
 
+### Compare Mode
+
+The **Compare** button (appears when edits exist) runs loot tests on both the original and edited versions, then displays a side-by-side comparison dialog.
+
+| Column | Description |
+|--------|-------------|
+| **Item** | Item name |
+| **Original** | Avg drops and rate for vanilla table |
+| **Edited** | Avg drops and rate for edited table |
+| **Diff** | Change in average (+X.X or -X.X) and rate change |
+
+**Row highlighting**:
+| Color | Meaning |
+|-------|---------|
+| Green tint | NEW - Item added by edits |
+| Red tint | GONE - Item removed by edits |
+| Yellow tint | CHANGED - Item rates modified |
+
+Items are sorted by change magnitude (new/removed first, then largest changes).
+
+**How it works**: Temporarily disables test mode to generate original loot, then re-enables to generate edited loot. Both results displayed in `CompareStatisticsDialog`.
+
 ### Key Classes
 
 - `TestModeState` - Singleton tracking test mode state
@@ -226,6 +248,7 @@ The **Stats** button runs multiple loot generations and displays a statistics di
 - `TestSetupScreen` - Pre-test configuration UI
 - `TestingScreen` - In-game test controls
 - `DropStatisticsDialog` - Statistics display with scrollable table
+- `CompareStatisticsDialog` - Side-by-side original vs edited comparison
 
 ## Key Features (DO NOT REMOVE)
 
