@@ -132,7 +132,10 @@ Visual indicators help users understand loot source types and special conditions
 |---------|-------|-------------|
 | Entity category header | Purple | Distinguishes mob drops from other loot |
 | ⚔ sword icon | Purple | Player kill required for rare drops |
+| ⚙ gear icon | Orange | Linked to a feature (dungeon, bonus chest, etc.) |
 | ⚠ warning icon | Yellow | Orphan loot table (no linked source) |
+
+**Feature Tooltip**: Hovering over ⚙ shows feature name, description, and "Not a tracked structure" note. Features are fire-and-forget decorations without persistent tracking like real structures.
 
 **Edit Panel (LootTableEditPanel)**
 | Element | Color | Location | Description |
