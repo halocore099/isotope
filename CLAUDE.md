@@ -493,6 +493,57 @@ Wizard-style operations for common loot table balancing tasks. All fixes can be 
 
 **Key Class:** `QuickFix` - Static methods `preview()` and `apply()` with `FixType` enum
 
+## Bulk Operations
+
+Cross-table operations that apply changes to **all loot tables** at once. All operations support preview before applying.
+
+### Available Operations
+
+| Operation | Description | Parameters |
+|-----------|-------------|------------|
+| **Remove Item** | Remove a specific item from all loot tables | `itemToRemove` |
+| **Replace Item** | Replace one item with another across all tables | `oldItem`, `newItem` |
+| **Scale Weights** | Multiply all weights by a factor | `scaleFactor` (e.g., 0.5, 2.0) |
+| **Scale Counts** | Multiply all item counts by a factor | `scaleFactor` |
+| **Remove Empty** | Remove all empty pools from all tables | - |
+| **Normalize** | Set all weights to sum to 100 per pool | - |
+
+### Workflow
+
+1. **Preview**: Each operation has a `preview*()` method returning `BulkResult`:
+   ```java
+   BulkResult result = BulkOperation.previewRemoveItem(server, itemId);
+   // result.tablesAffected() - number of tables that will be modified
+   // result.totalChanges() - total number of individual changes
+   // result.changesByTable() - Map of tableId → list of change descriptions
+   ```
+
+2. **Apply**: Each operation has an `apply*()` method:
+   ```java
+   BulkOperation.applyRemoveItem(server, itemId);
+   ```
+
+### Operation Details
+
+| Operation | Min Weight | Min Count | Processing Order |
+|-----------|------------|-----------|------------------|
+| Scale Weights | 1 | - | Forward |
+| Scale Counts | - | 1 | Forward |
+| Remove Item | - | - | Reverse (preserves indices) |
+| Remove Empty | - | - | Reverse (preserves indices) |
+| Normalize | 1 | - | Forward |
+
+### Use Cases
+
+- **Remove Item**: Remove a specific item that shouldn't drop anywhere (e.g., debug item)
+- **Replace Item**: Swap one resource for another across all structures
+- **Scale Weights**: Make all items more/less rare globally
+- **Scale Counts**: Increase/decrease all drop quantities
+- **Remove Empty**: Clean up tables after bulk entry removal
+- **Normalize**: Standardize weights for easier percentage calculations
+
+**Key Class:** `BulkOperation` - Static preview/apply method pairs for each `Type`
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
