@@ -10,13 +10,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Unified registry providing all loot sources (structures + features).
+ * Unified registry providing all loot sources (structures + features + mobs).
  *
  * This is the primary interface for UI components that need to display
- * all sources of loot tables, regardless of whether they are real structures
- * or fire-and-forget features like dungeons.
+ * all sources of loot tables, regardless of whether they are real structures,
+ * fire-and-forget features like dungeons, or entity/mob drops.
  *
- * Call compile() after StructureRegistry and FeatureRegistry are initialized.
+ * Call compile() after StructureRegistry, FeatureRegistry, and EntityLootRegistry are initialized.
  */
 public final class LootSourceRegistry {
 
@@ -32,14 +32,15 @@ public final class LootSourceRegistry {
     }
 
     /**
-     * Compile all loot sources from structures and features.
-     * Call this after StructureRegistry and FeatureRegistry are initialized.
+     * Compile all loot sources from structures, features, and mobs.
+     * Call this after StructureRegistry, FeatureRegistry, and EntityLootRegistry are initialized.
      */
     public void compile() {
         sources.clear();
 
         int structureCount = 0;
         int featureCount = 0;
+        int mobCount = 0;
 
         // Add real structures first
         for (StructureInfo info : StructureRegistry.getInstance().getAll()) {
@@ -58,9 +59,19 @@ public final class LootSourceRegistry {
             }
         }
 
+        // Add mobs/entities
+        for (EntityLootRegistry.EntityLootInfo entity : EntityLootRegistry.getInstance().getAll()) {
+            LootSource source = entity.toLootSource();
+            // Only add if not already present
+            if (!sources.containsKey(source.id())) {
+                sources.put(source.id(), source);
+                mobCount++;
+            }
+        }
+
         compiled = true;
-        Isotope.LOGGER.info("LootSourceRegistry: compiled {} total sources ({} structures, {} features)",
-            sources.size(), structureCount, featureCount);
+        Isotope.LOGGER.info("LootSourceRegistry: compiled {} total sources ({} structures, {} features, {} mobs)",
+            sources.size(), structureCount, featureCount, mobCount);
     }
 
     /**
@@ -110,6 +121,13 @@ public final class LootSourceRegistry {
      */
     public List<LootSource> getFeatures() {
         return getByType(LootSourceType.FEATURE);
+    }
+
+    /**
+     * Get all mobs (entity loot sources).
+     */
+    public List<LootSource> getMobs() {
+        return getByType(LootSourceType.MOB);
     }
 
     /**

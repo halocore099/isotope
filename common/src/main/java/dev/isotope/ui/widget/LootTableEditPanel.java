@@ -12,6 +12,7 @@ import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.screen.BatchWeightScreen;
 import dev.isotope.ui.screen.TemplateEditorScreen;
 import dev.isotope.ui.screen.TemplatePickerScreen;
+import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.FeatureRegistry;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.data.EntryTemplate;
@@ -374,11 +375,22 @@ public class LootTableEditPanel extends AbstractWidget {
         graphics.fill(nsX, y + 4, nsX + nsWidth, y + 16, 0xFF3a3a3a);
         graphics.drawString(font, ns, nsX + 3, y + 6, IsotopeColors.TEXT_MUTED, false);
 
+        // Check if this is an entity loot table
+        var entityInfo = EntityLootRegistry.getInstance().getByLootTable(tableId);
+
         // Linked structures or orphan warning
         List<StructureLootLink> links = StructureLootLinker.getInstance().getLinksForLootTable(tableId);
         boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId);
 
-        if (!links.isEmpty()) {
+        if (entityInfo.isPresent()) {
+            // This is an entity/mob loot table - show mob indicator
+            var entity = entityInfo.get();
+            String mobText = "Mob: " + entity.displayName();
+            if (entity.requiresPlayerKill()) {
+                mobText += " (player kill)";
+            }
+            graphics.drawString(font, mobText, getX() + PADDING, y + 20, IsotopeColors.SOURCE_MOB, false);
+        } else if (!links.isEmpty()) {
             // Separate features from structures
             List<StructureLootLink> featureLinks = new ArrayList<>();
             List<StructureLootLink> structureLinks = new ArrayList<>();

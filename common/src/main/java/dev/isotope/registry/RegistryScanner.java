@@ -37,14 +37,15 @@ public final class RegistryScanner {
         currentServer = server;
 
         // Always scan registries - this is the core of ISOTOPE
-        Isotope.LOGGER.info("Scanning registries for structures and loot tables...");
+        Isotope.LOGGER.info("Scanning registries for structures, loot tables, and entities...");
 
         // Layer 1: Registry scan (authoritative)
         StructureRegistry.getInstance().scan(server);
         LootTableRegistry.getInstance().scan(server);
 
-        // Layer 1.5: Initialize known features (static definitions)
+        // Layer 1.5: Initialize known features and scan entity loot tables
         FeatureRegistry.getInstance().initialize();
+        EntityLootRegistry.getInstance().initialize();
 
         // Layer 2: Template parsing (deterministic)
         Isotope.LOGGER.info("Parsing structure templates for loot table references...");
@@ -64,9 +65,10 @@ public final class RegistryScanner {
 
         // Summary logging
         var templateStats = StructureTemplateParser.getInstance().getStats();
-        Isotope.LOGGER.info("Registry scan complete: {} structures, {} loot tables, {} links",
+        Isotope.LOGGER.info("Registry scan complete: {} structures, {} loot tables, {} entities, {} links",
             StructureRegistry.getInstance().size(),
             LootTableRegistry.getInstance().size(),
+            EntityLootRegistry.getInstance().size(),
             StructureLootLinker.getInstance().getLinkCount());
         Isotope.LOGGER.info("Template parsing: {} templates scanned, {} loot references found",
             templateStats.templatesScanned(), templateStats.lootReferencesFound());
@@ -121,6 +123,7 @@ public final class RegistryScanner {
             StructureRegistry.getInstance().scan(currentServer);
             LootTableRegistry.getInstance().scan(currentServer);
             FeatureRegistry.getInstance().initialize();
+            EntityLootRegistry.getInstance().initialize();
             StructureTemplateParser.getInstance().parse(currentServer);
             StructureLootLinker.getInstance().link();
             OrphanDetector.getInstance().detect();

@@ -52,6 +52,7 @@ public final class IsotopeColors {
     // === Loot source type colors ===
     public static final int SOURCE_STRUCTURE = 0xFF55FFFF;      // Cyan - real structures
     public static final int SOURCE_FEATURE = 0xFFFFAA00;        // Orange - features (dungeons, etc.)
+    public static final int SOURCE_MOB = 0xFFAA55FF;            // Purple - mob/entity drops
 
     // === Badge colors ===
     public static final int BADGE_HAS_LOOT = 0xFF55AA55;        // Muted green

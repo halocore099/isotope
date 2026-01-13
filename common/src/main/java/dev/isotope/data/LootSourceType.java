@@ -9,6 +9,10 @@ package dev.isotope.data;
  * FEATURE - Fire-and-forget decorations without persistent tracking
  *           (dungeons/monster_room, fossils, etc.)
  *           These generate loot but aren't tracked like structures.
+ *
+ * MOB - Entity/mob loot tables triggered on death
+ *       (zombie drops, creeper drops, etc.)
+ *       Killer-dependent with Looting enchant support.
  */
 public enum LootSourceType {
     /**
@@ -21,7 +25,14 @@ public enum LootSourceType {
      * Feature: fire-and-forget decoration with loot but no tracking.
      * Examples: dungeons (monster_room), fossils
      */
-    FEATURE("Feature", 0xFFFFAA00);      // Orange
+    FEATURE("Feature", 0xFFFFAA00),      // Orange
+
+    /**
+     * Mob/entity loot: drops on entity death.
+     * Killer-dependent (Looting enchant, player kill requirements).
+     * Examples: zombie, creeper, ender_dragon
+     */
+    MOB("Mob", 0xFFAA55FF);              // Purple
 
     private final String label;
     private final int color;

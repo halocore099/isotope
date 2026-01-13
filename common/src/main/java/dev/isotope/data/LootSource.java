@@ -48,6 +48,20 @@ public record LootSource(
     }
 
     /**
+     * Create a mob/entity loot source.
+     */
+    public static LootSource mob(ResourceLocation entityId, String displayName, String description) {
+        return new LootSource(
+            entityId,
+            entityId.getNamespace(),
+            entityId.getPath(),
+            LootSourceType.MOB,
+            displayName,
+            description
+        );
+    }
+
+    /**
      * Create from ID with auto-detected type.
      */
     public static LootSource fromId(ResourceLocation id, LootSourceType type) {
@@ -75,6 +89,10 @@ public record LootSource(
 
     public boolean isFeature() {
         return type == LootSourceType.FEATURE;
+    }
+
+    public boolean isMob() {
+        return type == LootSourceType.MOB;
     }
 
     /**
