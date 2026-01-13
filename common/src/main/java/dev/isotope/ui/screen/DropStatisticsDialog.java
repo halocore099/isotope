@@ -2,8 +2,10 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.testing.DropStatistics;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.IsotopeToast;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -113,11 +115,46 @@ public class DropStatisticsDialog extends Screen {
             b -> onClose()
         ).pos(dialogX + DIALOG_WIDTH - 70, dialogY + DIALOG_HEIGHT - 30).size(60, 20).build());
 
+        // Copy to clipboard button
+        addRenderableWidget(Button.builder(
+            Component.literal("Copy"),
+            b -> copyToClipboard()
+        ).pos(dialogX + DIALOG_WIDTH - 120, dialogY + DIALOG_HEIGHT - 30).size(45, 20).build());
+
         // Run Again button (returns to parent to run another test)
         addRenderableWidget(Button.builder(
             Component.literal("Run Again"),
             b -> onClose()
         ).pos(dialogX + 10, dialogY + DIALOG_HEIGHT - 30).size(80, 20).build());
+    }
+
+    private void copyToClipboard() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Drop Statistics: ").append(statistics.getSourceName()).append("\n");
+        sb.append("Condition: ").append(statistics.getTestCondition()).append("\n");
+        sb.append("Tests: ").append(statistics.getTestCount()).append(" | Total drops: ").append(statistics.getTotalDrops()).append("\n");
+        sb.append("\n");
+        sb.append(String.format("%-25s %6s %6s %6s %8s\n", "Item", "Total", "Avg", "Rate", "Range"));
+        sb.append("-".repeat(55)).append("\n");
+
+        for (StatEntry entry : entries) {
+            String range = entry.min == entry.max
+                ? String.valueOf(entry.min)
+                : entry.min + "-" + entry.max;
+            sb.append(String.format("%-25s %6d %6.1f %5.0f%% %8s\n",
+                truncate(entry.itemName, 25),
+                entry.total,
+                entry.average,
+                entry.dropRate,
+                range));
+        }
+
+        Minecraft.getInstance().keyboardHandler.setClipboard(sb.toString());
+        IsotopeToast.success("Copied", "Statistics copied to clipboard");
+    }
+
+    private String truncate(String s, int maxLen) {
+        return s.length() > maxLen ? s.substring(0, maxLen - 2) + ".." : s;
     }
 
     @Override

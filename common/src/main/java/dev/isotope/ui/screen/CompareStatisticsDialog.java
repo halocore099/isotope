@@ -2,8 +2,10 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.testing.DropStatistics;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.IsotopeToast;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -149,6 +151,44 @@ public class CompareStatisticsDialog extends Screen {
             Component.literal("Close"),
             b -> onClose()
         ).pos(dialogX + DIALOG_WIDTH - 70, dialogY + DIALOG_HEIGHT - 30).size(60, 20).build());
+
+        // Copy to clipboard button
+        addRenderableWidget(Button.builder(
+            Component.literal("Copy"),
+            b -> copyToClipboard()
+        ).pos(dialogX + DIALOG_WIDTH - 120, dialogY + DIALOG_HEIGHT - 30).size(45, 20).build());
+    }
+
+    private void copyToClipboard() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Compare Statistics: ").append(originalStats.getSourceName()).append("\n");
+        sb.append("Tests: ").append(originalStats.getTestCount()).append(" each\n");
+        sb.append("\n");
+        sb.append(String.format("%-25s %12s %12s %10s\n", "Item", "Original", "Edited", "Diff"));
+        sb.append("-".repeat(62)).append("\n");
+
+        for (CompareEntry entry : entries) {
+            String status = entry.isNew() ? "[NEW]" :
+                           entry.isRemoved() ? "[GONE]" :
+                           "";
+            String origText = String.format("%.1f (%.0f%%)", entry.originalAvg(), entry.originalRate());
+            String editText = String.format("%.1f (%.0f%%)", entry.editedAvg(), entry.editedRate());
+            String diffText = entry.isNew() || entry.isRemoved() ? status :
+                             String.format("%+.1f", entry.avgDiff());
+
+            sb.append(String.format("%-25s %12s %12s %10s\n",
+                truncate(entry.itemName(), 25),
+                origText,
+                editText,
+                diffText));
+        }
+
+        Minecraft.getInstance().keyboardHandler.setClipboard(sb.toString());
+        IsotopeToast.success("Copied", "Comparison copied to clipboard");
+    }
+
+    private String truncate(String s, int maxLen) {
+        return s.length() > maxLen ? s.substring(0, maxLen - 2) + ".." : s;
     }
 
     @Override
