@@ -4,8 +4,11 @@ import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.BookmarkManager;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
+import dev.isotope.data.StructureLootLink;
 import dev.isotope.registry.EntityLootRegistry;
+import dev.isotope.registry.FeatureRegistry;
 import dev.isotope.registry.LootTableRegistry;
+import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -74,6 +77,12 @@ public class LootTableBrowserWidget extends AbstractWidget {
     private ResourceLocation hoveredMobTable = null;
     private int hoveredMobX = 0;
     private int hoveredMobY = 0;
+
+    // Feature tooltip state
+    @Nullable
+    private ResourceLocation hoveredFeatureTable = null;
+    private int hoveredFeatureX = 0;
+    private int hoveredFeatureY = 0;
 
     public LootTableBrowserWidget(int x, int y, int width, int height, Consumer<ResourceLocation> onTableSelected) {
         super(x, y, width, height, Component.empty());
@@ -237,6 +246,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         // Reset tooltip states
         hoveredOrphanTable = null;
         hoveredMobTable = null;
+        hoveredFeatureTable = null;
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1e1e1e);
@@ -477,6 +487,26 @@ public class LootTableBrowserWidget extends AbstractWidget {
                                 hoveredMobX = mouseX;
                                 hoveredMobY = renderY + ITEM_HEIGHT;
                             }
+                            nextIconX -= 10;
+                        }
+
+                        // Feature indicator (dungeon icon for features like monster_room)
+                        var featureLink = StructureLootLinker.getInstance().getLinksForLootTable(table.id()).stream()
+                            .filter(StructureLootLink::isFeatureMapping)
+                            .findFirst();
+                        if (featureLink.isPresent()) {
+                            graphics.drawString(font, "⚙", nextIconX, renderY + 4, IsotopeColors.SOURCE_FEATURE, false);
+                            textRightPadding += 10;
+
+                            // Check if hovering over feature icon
+                            boolean featureHovered = mouseX >= nextIconX - 2 && mouseX < nextIconX + 10 &&
+                                mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT &&
+                                renderY >= listY && renderY < getY() + height;
+                            if (featureHovered) {
+                                hoveredFeatureTable = table.id();
+                                hoveredFeatureX = mouseX;
+                                hoveredFeatureY = renderY + ITEM_HEIGHT;
+                            }
                         }
 
                         String path = table.id().getPath();
@@ -621,6 +651,63 @@ public class LootTableBrowserWidget extends AbstractWidget {
                     String text = line;
                     if (line.startsWith("§p")) {
                         color = IsotopeColors.SOURCE_MOB;
+                        text = line.substring(2);
+                    } else if (line.startsWith("§7")) {
+                        color = IsotopeColors.TEXT_MUTED;
+                        text = line.substring(2);
+                    }
+                    graphics.drawString(font, text, tooltipX + 4, lineY, color, false);
+                    lineY += 10;
+                }
+            }
+        }
+
+        // Feature tooltip
+        if (hoveredFeatureTable != null) {
+            var featureLinks = StructureLootLinker.getInstance().getLinksForLootTable(hoveredFeatureTable).stream()
+                .filter(StructureLootLink::isFeatureMapping)
+                .toList();
+            if (!featureLinks.isEmpty()) {
+                var link = featureLinks.get(0);
+                var featureDef = FeatureRegistry.getInstance().get(link.structureId());
+
+                // Build tooltip lines
+                List<String> lines = new ArrayList<>();
+                if (featureDef.isPresent()) {
+                    lines.add("§f" + featureDef.get().displayName());
+                    lines.add("§7" + featureDef.get().description());
+                } else {
+                    lines.add("§fFeature: " + link.structureId().getPath());
+                }
+                lines.add("§7⚙ Not a tracked structure");
+
+                // Calculate tooltip dimensions
+                int tooltipWidth = 0;
+                for (String line : lines) {
+                    tooltipWidth = Math.max(tooltipWidth, font.width(line.replace("§f", "").replace("§7", "")));
+                }
+                tooltipWidth += 12;
+                int tooltipHeight = lines.size() * 10 + 6;
+
+                // Position tooltip (prefer right side, fall back to left)
+                int tooltipX = hoveredFeatureX + 8;
+                if (tooltipX + tooltipWidth > getX() + width + 100) {
+                    tooltipX = hoveredFeatureX - tooltipWidth - 8;
+                }
+                int tooltipY = hoveredFeatureY;
+
+                // Draw tooltip background (orange tint for features)
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF3e2a1a);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF402520);
+
+                // Draw lines
+                int lineY = tooltipY + 4;
+                for (String line : lines) {
+                    int color = 0xFFFFFFFF;
+                    String text = line;
+                    if (line.startsWith("§f")) {
+                        color = IsotopeColors.SOURCE_FEATURE;
                         text = line.substring(2);
                     } else if (line.startsWith("§7")) {
                         color = IsotopeColors.TEXT_MUTED;
