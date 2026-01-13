@@ -730,9 +730,14 @@ public class LootTableEditPanel extends AbstractWidget {
         }
         x += countBoxWidth + 10;
 
-        // Entry condition indicators (for mob drops)
+        // Entry function/condition indicators
         boolean hasLooting = hasLootingFunction(entry) || hasRandomChanceWithLootingCondition(entry);
         boolean hasPlayerKill = hasKilledByPlayerCondition(entry);
+        boolean hasEnchant = hasEnchantmentFunction(entry);
+        boolean hasAttribute = hasAttributeFunction(entry);
+        boolean hasPotion = hasPotionFunction(entry);
+        boolean hasDamage = hasDamageFunction(entry);
+
         int removeX = getX() + width - PADDING - 20;
         int indicatorX = removeX - 6;
 
@@ -746,6 +751,30 @@ public class LootTableEditPanel extends AbstractWidget {
         if (hasLooting) {
             indicatorX -= 10;
             graphics.drawString(font, "⚗", indicatorX, y + 7, IsotopeColors.ACCENT_AQUA, false);
+        }
+
+        // Enchantment indicator (sparkle in gold)
+        if (hasEnchant) {
+            indicatorX -= 10;
+            graphics.drawString(font, "✦", indicatorX, y + 7, IsotopeColors.ACCENT_GOLD, false);
+        }
+
+        // Attribute indicator (diamond in green)
+        if (hasAttribute) {
+            indicatorX -= 10;
+            graphics.drawString(font, "◆", indicatorX, y + 7, IsotopeColors.ACCENT_GREEN, false);
+        }
+
+        // Potion indicator
+        if (hasPotion) {
+            indicatorX -= 10;
+            graphics.drawString(font, "⚗", indicatorX, y + 7, IsotopeColors.SOURCE_FEATURE, false);
+        }
+
+        // Damage/durability indicator
+        if (hasDamage) {
+            indicatorX -= 10;
+            graphics.drawString(font, "⚒", indicatorX, y + 7, IsotopeColors.TEXT_SECONDARY, false);
         }
 
         // Remove button
@@ -846,6 +875,54 @@ public class LootTableEditPanel extends AbstractWidget {
         for (LootCondition cond : entry.conditions()) {
             String condType = cond.condition();
             if (condType.equals("minecraft:random_chance_with_looting") || condType.equals("random_chance_with_looting")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if an entry has any enchantment function.
+     */
+    private boolean hasEnchantmentFunction(LootEntry entry) {
+        for (LootFunction func : entry.functions()) {
+            if (func.isEnchantment()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if an entry has attribute modifiers.
+     */
+    private boolean hasAttributeFunction(LootEntry entry) {
+        for (LootFunction func : entry.functions()) {
+            if (func.isAttribute()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if an entry has a potion function.
+     */
+    private boolean hasPotionFunction(LootEntry entry) {
+        for (LootFunction func : entry.functions()) {
+            if (func.isPotion()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if an entry has a damage/durability function.
+     */
+    private boolean hasDamageFunction(LootEntry entry) {
+        for (LootFunction func : entry.functions()) {
+            if (func.isDamage()) {
                 return true;
             }
         }

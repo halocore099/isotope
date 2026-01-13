@@ -4,6 +4,7 @@ import dev.isotope.Isotope;
 import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.editing.LootEditManager;
+import dev.isotope.editing.LootEditOperation;
 import dev.isotope.editing.LootTableSerializer;
 import dev.isotope.export.ExportManager;
 import dev.isotope.export.KubeJSExporter;
@@ -462,10 +463,23 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addItem("\u2191", "Move Up", "", () -> editPanel.moveEntryUp(poolIdx, entryIdx), canMoveUp)
             .addItem("\u2193", "Move Down", "", () -> editPanel.moveEntryDown(poolIdx, entryIdx), canMoveDown)
             .addSeparator()
+            .addItem("✦", "Add Function...", "", () -> openAddFunctionDialog(poolIdx, entryIdx))
+            .addSeparator()
             .addItem("\u2750", "Duplicate", "Ctrl+D", () -> editPanel.duplicateSelected())
             .addItem("\u2715", "Delete", "Del", () -> editPanel.deleteSelected())
             .addSeparator()
             .addItem("\u2606", "Save as Template...", "", () -> editPanel.saveSelectedAsTemplate());
+    }
+
+    private void openAddFunctionDialog(int poolIdx, int entryIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new AddFunctionDialog(this, function -> {
+            LootEditOperation op = new LootEditOperation.AddFunction(poolIdx, entryIdx, function);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
     }
 
     private ContextMenu createPoolContextMenu(int x, int y, int poolIdx) {
