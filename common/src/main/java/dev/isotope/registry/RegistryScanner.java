@@ -43,6 +43,9 @@ public final class RegistryScanner {
         StructureRegistry.getInstance().scan(server);
         LootTableRegistry.getInstance().scan(server);
 
+        // Layer 1.5: Initialize known features (static definitions)
+        FeatureRegistry.getInstance().initialize();
+
         // Layer 2: Template parsing (deterministic)
         Isotope.LOGGER.info("Parsing structure templates for loot table references...");
         StructureTemplateParser.getInstance().parse(server);
@@ -52,6 +55,9 @@ public final class RegistryScanner {
 
         // Layer 4: Orphan detection (surface gaps)
         OrphanDetector.OrphanReport orphanReport = OrphanDetector.getInstance().detect();
+
+        // Layer 5: Compile unified source registry (structures + features)
+        LootSourceRegistry.getInstance().compile();
 
         // Pre-parse loot tables for the editor (while server is available)
         LootEditManager.getInstance().preParseLootTables(server);
@@ -114,9 +120,11 @@ public final class RegistryScanner {
         if (currentServer != null) {
             StructureRegistry.getInstance().scan(currentServer);
             LootTableRegistry.getInstance().scan(currentServer);
+            FeatureRegistry.getInstance().initialize();
             StructureTemplateParser.getInstance().parse(currentServer);
             StructureLootLinker.getInstance().link();
             OrphanDetector.getInstance().detect();
+            LootSourceRegistry.getInstance().compile();
         }
     }
 }

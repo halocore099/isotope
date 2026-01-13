@@ -12,6 +12,7 @@ import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.screen.BatchWeightScreen;
 import dev.isotope.ui.screen.TemplateEditorScreen;
 import dev.isotope.ui.screen.TemplatePickerScreen;
+import dev.isotope.registry.FeatureRegistry;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.ui.IsotopeColors;
@@ -378,22 +379,57 @@ public class LootTableEditPanel extends AbstractWidget {
         boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId);
 
         if (!links.isEmpty()) {
-            // Show linked structures with confidence indicator
-            StringBuilder sb = new StringBuilder("Structures: ");
-            for (int i = 0; i < Math.min(links.size(), 3); i++) {
-                if (i > 0) sb.append(", ");
-                StructureLootLink link = links.get(i);
-                sb.append(link.structureId().getPath());
-                // Add confidence badge for non-high confidence links
-                if (link.confidence().getScore() < 70) {
-                    sb.append(" (").append(link.confidence().getLabel().toLowerCase()).append(")");
+            // Separate features from structures
+            List<StructureLootLink> featureLinks = new ArrayList<>();
+            List<StructureLootLink> structureLinks = new ArrayList<>();
+            for (StructureLootLink link : links) {
+                if (link.isFeatureMapping()) {
+                    featureLinks.add(link);
+                } else {
+                    structureLinks.add(link);
                 }
             }
-            if (links.size() > 3) {
-                sb.append(" +").append(links.size() - 3).append(" more");
+
+            int textX = getX() + PADDING;
+            int textY = y + 20;
+
+            // Show features first (with orange color and display name)
+            if (!featureLinks.isEmpty()) {
+                StringBuilder sb = new StringBuilder("Features: ");
+                for (int i = 0; i < Math.min(featureLinks.size(), 2); i++) {
+                    if (i > 0) sb.append(", ");
+                    StructureLootLink link = featureLinks.get(i);
+                    // Use display name from FeatureRegistry if available
+                    String displayName = FeatureRegistry.getInstance().get(link.structureId())
+                        .map(f -> f.displayName())
+                        .orElse(link.structureId().getPath());
+                    sb.append(displayName);
+                }
+                if (featureLinks.size() > 2) {
+                    sb.append(" +").append(featureLinks.size() - 2).append(" more");
+                }
+                graphics.drawString(font, sb.toString(), textX, textY, IsotopeColors.SOURCE_FEATURE, false);
+                textX += font.width(sb.toString()) + 8;
             }
-            graphics.drawString(font, sb.toString(), getX() + PADDING, y + 20,
-                IsotopeColors.TEXT_MUTED, false);
+
+            // Show structures (with cyan/muted color)
+            if (!structureLinks.isEmpty()) {
+                StringBuilder sb = new StringBuilder(featureLinks.isEmpty() ? "Structures: " : "");
+                for (int i = 0; i < Math.min(structureLinks.size(), 3); i++) {
+                    if (i > 0 || !featureLinks.isEmpty()) sb.append(", ");
+                    StructureLootLink link = structureLinks.get(i);
+                    sb.append(link.structureId().getPath());
+                    // Add confidence badge for non-high confidence links
+                    if (link.confidence().getScore() < 70) {
+                        sb.append(" (").append(link.confidence().getLabel().toLowerCase()).append(")");
+                    }
+                }
+                if (structureLinks.size() > 3) {
+                    sb.append(" +").append(structureLinks.size() - 3).append(" more");
+                }
+                int color = featureLinks.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.SOURCE_STRUCTURE;
+                graphics.drawString(font, sb.toString(), textX, textY, color, false);
+            }
         } else if (isOrphan) {
             // Show orphan warning
             String orphanText = "⚠ Orphan: Not linked to any structure";

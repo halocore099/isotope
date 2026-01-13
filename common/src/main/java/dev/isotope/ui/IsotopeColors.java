@@ -49,6 +49,10 @@ public final class IsotopeColors {
     public static final int CONFIDENCE_MEDIUM = 0xFFFFFF55;     // Yellow
     public static final int CONFIDENCE_LOW = 0xFFFFAA00;        // Orange
 
+    // === Loot source type colors ===
+    public static final int SOURCE_STRUCTURE = 0xFF55FFFF;      // Cyan - real structures
+    public static final int SOURCE_FEATURE = 0xFFFFAA00;        // Orange - features (dungeons, etc.)
+
     // === Badge colors ===
     public static final int BADGE_HAS_LOOT = 0xFF55AA55;        // Muted green
     public static final int BADGE_NO_LOOT = 0xFF555555;         // Gray

@@ -60,7 +60,8 @@ public record StructureLootLink(
         TEMPLATE_PARSE,      // Extracted from structure template .nbt file
         OBSERVATION,         // Runtime observation
         AUTHOR_ADDED,        // Author manually added
-        AUTHOR_REMOVED       // Author manually removed (negative link)
+        AUTHOR_REMOVED,      // Author manually removed (negative link)
+        FEATURE_MAPPING      // From known feature-to-loot mappings (dungeons, etc.)
     }
 
     /**
@@ -91,6 +92,14 @@ public record StructureLootLink(
      */
     public static StructureLootLink manual(ResourceLocation structureId, ResourceLocation lootTableId) {
         return new StructureLootLink(structureId, lootTableId, Confidence.MANUAL, LinkSource.AUTHOR_ADDED);
+    }
+
+    /**
+     * Create a feature link from known feature-to-loot mappings.
+     * Features are treated like structures but are actually fire-and-forget decorations.
+     */
+    public static StructureLootLink feature(ResourceLocation featureId, ResourceLocation lootTableId) {
+        return new StructureLootLink(featureId, lootTableId, Confidence.HIGH, LinkSource.FEATURE_MAPPING);
     }
 
     /**
@@ -146,5 +155,12 @@ public record StructureLootLink(
      */
     public boolean isHeuristic() {
         return source == LinkSource.HEURISTIC_PATH || source == LinkSource.HEURISTIC_NAMESPACE;
+    }
+
+    /**
+     * Check if this link is from a feature mapping (dungeons, etc.).
+     */
+    public boolean isFeatureMapping() {
+        return source == LinkSource.FEATURE_MAPPING;
     }
 }

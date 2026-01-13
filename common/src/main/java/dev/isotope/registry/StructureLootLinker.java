@@ -133,9 +133,33 @@ public final class StructureLootLinker {
             }
         }
 
-        Isotope.LOGGER.info("StructureLootLinker: created {} links for {} structures " +
+        // Feature linking (features like dungeons that have loot but aren't real structures)
+        int featureLinks = 0;
+        FeatureRegistry features = FeatureRegistry.getInstance();
+        if (features.isInitialized()) {
+            for (FeatureRegistry.FeatureDefinition feature : features.getAll()) {
+                List<StructureLootLink> featureLinkList = new ArrayList<>();
+
+                for (ResourceLocation tableId : feature.lootTables()) {
+                    if (lootTables.get(tableId).isPresent()) {
+                        StructureLootLink link = StructureLootLink.feature(feature.id(), tableId);
+                        featureLinkList.add(link);
+                    }
+                }
+
+                if (!featureLinkList.isEmpty()) {
+                    linksByStructure.put(feature.id(), featureLinkList);
+                    for (StructureLootLink link : featureLinkList) {
+                        linksByLootTable.computeIfAbsent(link.lootTableId(), k -> new ArrayList<>()).add(link);
+                    }
+                    featureLinks += featureLinkList.size();
+                }
+            }
+        }
+
+        Isotope.LOGGER.info("StructureLootLinker: created {} links for {} structures, {} feature links " +
             "(template promotions: {}, runtime promotions: {})",
-            linkCount, linksByStructure.size(), templatePromotions, runtimePromotions);
+            linkCount, linksByStructure.size(), featureLinks, templatePromotions, runtimePromotions);
     }
 
     /**
@@ -474,7 +498,7 @@ public final class StructureLootLinker {
         m.put("end_city", List.of("chests/end_city_treasure"));
 
         // Overworld dungeons
-        m.put("monster_room", List.of("chests/simple_dungeon")); // Spawner dungeon
+        // NOTE: monster_room is a FEATURE, not a structure. It's handled by FeatureRegistry.
         m.put("desert_pyramid", List.of("chests/desert_pyramid"));
         m.put("jungle_pyramid", List.of("chests/jungle_temple"));
         m.put("igloo", List.of("chests/igloo_chest"));
