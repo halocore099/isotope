@@ -49,6 +49,9 @@ public class TestingScreen extends Screen {
     // Kill condition for mob testing
     private TestMobTools.KillCondition selectedKillCondition = TestMobTools.KillCondition.PLAYER_KILL;
 
+    // Auto-collect drops to inventory
+    private boolean autoCollect = false;
+
     private record TableEntry(
         ResourceLocation tableId,
         Set<ResourceLocation> structures,
@@ -118,6 +121,15 @@ public class TestingScreen extends Screen {
             Component.literal("?"),
             b -> HelpLinks.open(HelpLinks.TEST_MODE)
         ).pos(panelX + PANEL_WIDTH - 140, panelY + 8).size(20, 20).build());
+
+        // Auto-collect toggle in header
+        addRenderableWidget(Button.builder(
+            Component.literal(autoCollect ? "📦 Inventory" : "📦 Ground"),
+            b -> {
+                autoCollect = !autoCollect;
+                rebuildWidgets();
+            }
+        ).pos(panelX + 150, panelY + 8).size(80, 20).build());
 
         // Footer - Arena size buttons (for structures)
         int footerY = panelY + PANEL_HEIGHT - 35;
@@ -447,15 +459,25 @@ public class TestingScreen extends Screen {
         }
 
         minecraft.execute(() -> {
-            int totalItems = LootTestRunner.spawnLootOnGround(
-                minecraft.getSingleplayerServer(),
-                tableId,
-                count
-            );
+            int totalItems;
+            if (autoCollect) {
+                totalItems = LootTestRunner.collectLootToInventory(
+                    minecraft.getSingleplayerServer(),
+                    tableId,
+                    count
+                );
+            } else {
+                totalItems = LootTestRunner.spawnLootOnGround(
+                    minecraft.getSingleplayerServer(),
+                    tableId,
+                    count
+                );
+            }
 
+            final String destination = autoCollect ? "inventory" : "ground";
             minecraft.execute(() -> {
                 if (totalItems > 0) {
-                    IsotopeToast.success("Generated", totalItems + " items from " + count + " rolls");
+                    IsotopeToast.success("Generated", totalItems + " items to " + destination);
                 } else {
                     IsotopeToast.error("Failed", "Could not generate loot");
                 }

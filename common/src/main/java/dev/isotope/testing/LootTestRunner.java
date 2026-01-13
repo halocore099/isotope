@@ -325,6 +325,58 @@ public final class LootTestRunner {
     }
 
     /**
+     * Generate loot and add directly to player inventory.
+     *
+     * @param server Minecraft server
+     * @param lootTableId Loot table to generate
+     * @param count Number of times to generate
+     * @return Number of items collected
+     */
+    public static int collectLootToInventory(
+        MinecraftServer server,
+        ResourceLocation lootTableId,
+        int count
+    ) {
+        try {
+            ServerLevel level = server.overworld();
+            ServerPlayer player = getPlayer(server);
+
+            if (level == null || player == null) return 0;
+
+            LootTable lootTable = server.reloadableRegistries()
+                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
+
+            if (lootTable == LootTable.EMPTY) return 0;
+
+            int totalItems = 0;
+            Vec3 origin = player.position();
+
+            for (int i = 0; i < count; i++) {
+                List<ItemStack> drops = generateChestLoot(level, lootTable, origin);
+
+                for (ItemStack stack : drops) {
+                    if (!stack.isEmpty()) {
+                        // Add to player inventory
+                        if (player.getInventory().add(stack.copy())) {
+                            totalItems += stack.getCount();
+                        } else {
+                            // Inventory full - drop on ground
+                            player.drop(stack.copy(), false);
+                            totalItems += stack.getCount();
+                        }
+                    }
+                }
+            }
+
+            return totalItems;
+
+        } catch (Exception e) {
+            Isotope.LOGGER.error("Failed to collect loot: {}", e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Format loot table ID to display name.
      */
     private static String formatTableName(ResourceLocation tableId) {
