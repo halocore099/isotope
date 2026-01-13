@@ -455,6 +455,44 @@ EntryTemplate(
 
 **Key Class:** `EntryTemplate` - Record with `BUILTIN_TEMPLATES` list containing all 10 default templates
 
+## Quick Fixes
+
+Wizard-style operations for common loot table balancing tasks. All fixes can be previewed before applying.
+
+### Available Fix Types
+
+| Fix Type | Description | Effect |
+|----------|-------------|--------|
+| **Balance Weights** | Normalize all entry weights to sum to 100 | Scales weights proportionally |
+| **Nerf Rare Items** | Halve weight of items with <5% drop rate | Reduces rare item chances |
+| **Buff Rare Items** | Double weight of items with <5% drop rate | Increases rare item chances |
+| **Nerf Common Items** | Halve weight of items with >50% drop rate | Reduces common item dominance |
+| **Buff Common Items** | Double weight of items with >50% drop rate | Increases common item chances |
+| **Cap Quantity** | Set max item count to 3 for all entries | Limits stack sizes |
+| **Double Quantity** | Double all item counts | Increases all drop amounts |
+| **Halve Quantity** | Halve all item counts | Decreases all drop amounts |
+| **Remove Enchanted** | Remove enchantment functions from all entries | Strips enchant_randomly, enchant_with_levels, etc. |
+| **Remove Duplicates** | Remove duplicate item entries per pool | Keeps first occurrence only |
+
+### Workflow
+
+1. **Preview**: `QuickFix.preview(type, tableId, structure)` returns `FixResult` with:
+   - Description of what will change
+   - Count of changes to be made
+   - List of `LootEditOperation` objects
+
+2. **Apply**: `QuickFix.apply(tableId, result)` executes all operations through `LootEditManager`
+
+### Implementation Details
+
+- **Weight adjustments**: Minimum weight of 1 enforced to prevent 0-weight entries
+- **Quantity scaling**: Uses `NumberProvider` (Constant, Uniform, Binomial) - all values capped at minimum 1
+- **Duplicate removal**: Processes entries in reverse order to maintain valid indices during removal
+- **Rare threshold**: <5% drop rate (weight/totalWeight < 0.05)
+- **Common threshold**: >50% drop rate (weight/totalWeight > 0.5)
+
+**Key Class:** `QuickFix` - Static methods `preview()` and `apply()` with `FixType` enum
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
