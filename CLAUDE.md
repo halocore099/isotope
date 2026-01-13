@@ -267,6 +267,8 @@ The **Stats** button runs multiple loot generations and displays a statistics di
 
 **Rate colors**: Green (≥75%), Yellow (≥25%), Red (<25%)
 
+**Copy button**: Exports formatted statistics to clipboard for sharing/documentation.
+
 ### Compare Mode
 
 The **Compare** button (appears when edits exist) runs loot tests on both the original and edited versions, then displays a side-by-side comparison dialog.
@@ -286,6 +288,8 @@ The **Compare** button (appears when edits exist) runs loot tests on both the or
 | Yellow tint | CHANGED - Item rates modified |
 
 Items are sorted by change magnitude (new/removed first, then largest changes).
+
+**Copy button**: Exports comparison table to clipboard with Original, Edited, and Diff columns.
 
 **How it works**: Temporarily disables test mode to generate original loot, then re-enables to generate edited loot. Both results displayed in `CompareStatisticsDialog`.
 
