@@ -413,6 +413,48 @@ Each validation returns a `ValidationResult` containing:
 6. Negative item counts
 7. Conflicting functions (multiple set_count or set_damage)
 
+## Entry Templates
+
+Pre-configured templates for quickly creating common loot entries with standard weights, counts, and functions.
+
+### Built-in Templates
+
+| Template | Category | Weight | Count | Default Item | Functions |
+|----------|----------|--------|-------|--------------|-----------|
+| **Common Item** | Basic | 10 | 1-3 | - | set_count |
+| **Uncommon Item** | Basic | 5 | 1-2 | - | set_count |
+| **Rare Item** | Basic | 1 | 1 | - | set_count |
+| **Food Stack** | Food | 10 | 2-5 | - | set_count |
+| **Enchanted Gear** | Equipment | 3 | 1 | - | enchant_randomly |
+| **Treasure** | Valuables | 1 | 1 | Diamond | set_count |
+| **Emerald Stack** | Valuables | 8 | 1-4 | Emerald | set_count |
+| **Arrow Stack** | Combat | 10 | 4-12 | Arrow | set_count |
+| **Iron Ingots** | Resources | 10 | 1-4 | Iron Ingot | set_count |
+| **Gold Ingots** | Resources | 5 | 1-3 | Gold Ingot | set_count |
+
+### Usage
+
+Templates can be used to create entries:
+- **With custom item**: `template.createEntry(itemId)` - uses template settings with specified item
+- **With default item**: `template.createEntry()` - uses template's default item (if set)
+
+### Template Structure
+
+```java
+EntryTemplate(
+    id,           // Unique identifier
+    name,         // Display name
+    description,  // Description text
+    category,     // Category for grouping (Basic, Food, Equipment, etc.)
+    defaultItem,  // Optional default item ResourceLocation
+    defaultWeight,// Weight for drop chance
+    defaultCount, // NumberProvider (Constant or Uniform range)
+    functions     // List of LootFunctions to apply
+)
+```
+
+**Key Class:** `EntryTemplate` - Record with `BUILTIN_TEMPLATES` list containing all 10 default templates
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
