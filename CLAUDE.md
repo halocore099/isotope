@@ -656,6 +656,50 @@ BookmarkManager.getInstance().addListener(() -> {
 
 **Key Class:** `BookmarkManager` - Singleton with `getInstance()`, persists to `isotope/bookmarks.json`
 
+## Recent Tables
+
+Automatically tracks recently viewed loot tables for quick access.
+
+### Storage
+
+Recent tables are saved to `.minecraft/isotope/recent.json` as a JSON array of ResourceLocation strings (most recent first):
+
+```json
+[
+  "minecraft:chests/simple_dungeon",
+  "minecraft:entities/zombie",
+  "minecraft:chests/village/village_weaponsmith"
+]
+```
+
+### API
+
+| Method | Description |
+|--------|-------------|
+| `recordView(tableId)` | Record a table as recently viewed (moves to front) |
+| `remove(tableId)` | Remove a table from recent history |
+| `isRecent(tableId)` | Check if a table is in recent history |
+| `getAll()` | Get all recent tables (most recent first) |
+| `getCount()` | Get total recent count |
+| `clear()` | Remove all recent history |
+
+### Features
+
+- **Max entries**: Limited to 15 most recent tables
+- **Auto-reorder**: Viewing an existing table moves it to front
+- **Bookmark exclusion**: Tables in Bookmarks are hidden from Recent (no duplicates)
+- **Lazy loading**: Loaded from disk on first access
+- **Auto-save**: Changes automatically persisted to disk
+
+### UI Display
+
+The Recent section appears in the browser widget after Bookmarks:
+- Aqua colored header with clock icon (⏱)
+- Collapsible like other sections
+- Shows table path with clock icon per entry
+
+**Key Class:** `RecentTablesManager` - Singleton with `getInstance()`, persists to `isotope/recent.json`
+
 ## History Log
 
 Session-wide chronological log of all edit operations with timestamps and table context.
