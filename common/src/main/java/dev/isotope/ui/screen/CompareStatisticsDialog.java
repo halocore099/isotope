@@ -9,8 +9,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -234,7 +236,7 @@ public class CompareStatisticsDialog extends Screen {
         int headerY = dialogY + 55;
         graphics.fill(dialogX, headerY, dialogX + DIALOG_WIDTH, headerY + 18, 0xFF2a2a2a);
 
-        graphics.drawString(font, "Item", dialogX + 12, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Item", dialogX + 30, headerY + 5, IsotopeColors.TEXT_MUTED, false);
         graphics.drawString(font, "Original", dialogX + 180, headerY + 5, IsotopeColors.TEXT_MUTED, false);
         graphics.drawString(font, "Edited", dialogX + 280, headerY + 5, IsotopeColors.TEXT_MUTED, false);
         graphics.drawString(font, "Diff", dialogX + 380, headerY + 5, IsotopeColors.TEXT_MUTED, false);
@@ -268,15 +270,23 @@ public class CompareStatisticsDialog extends Screen {
                         graphics.fill(dialogX + 5, entryY, dialogX + DIALOG_WIDTH - 5, entryY + 20, bgColor);
                     }
 
+                    // Item icon
+                    try {
+                        ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(entry.itemId));
+                        graphics.renderItem(stack, dialogX + 10, entryY + 2);
+                    } catch (Exception ignored) {
+                        // Item not found, skip icon
+                    }
+
                     // Item name
                     String name = entry.itemName;
-                    if (font.width(name) > 160) {
-                        name = font.plainSubstrByWidth(name, 155) + "...";
+                    if (font.width(name) > 140) {
+                        name = font.plainSubstrByWidth(name, 135) + "...";
                     }
                     int nameColor = entry.isNew() ? IsotopeColors.STATUS_SUCCESS :
                                    entry.isRemoved() ? IsotopeColors.STATUS_ERROR :
                                    IsotopeColors.TEXT_PRIMARY;
-                    graphics.drawString(font, name, dialogX + 12, entryY + 5, nameColor, false);
+                    graphics.drawString(font, name, dialogX + 30, entryY + 5, nameColor, false);
 
                     // Original stats
                     String origText = String.format("%.1f (%.0f%%)", entry.originalAvg, entry.originalRate);

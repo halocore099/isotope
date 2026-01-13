@@ -9,8 +9,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ public class DropStatisticsDialog extends Screen {
     private final List<StatEntry> entries = new ArrayList<>();
 
     private record StatEntry(
+        ResourceLocation itemId,
         String itemName,
         int total,
         float average,
@@ -69,6 +72,7 @@ public class DropStatisticsDialog extends Screen {
             int[] minMax = statistics.getMinMaxForItem(itemId);
 
             entries.add(new StatEntry(
+                itemId,
                 formatItemName(itemId),
                 total,
                 avg,
@@ -193,11 +197,11 @@ public class DropStatisticsDialog extends Screen {
         // Column headers
         int headerY = dialogY + 55;
         graphics.fill(dialogX, headerY, dialogX + DIALOG_WIDTH, headerY + 18, 0xFF2a2a2a);
-        graphics.drawString(font, "Item", dialogX + 12, headerY + 5, IsotopeColors.TEXT_MUTED, false);
-        graphics.drawString(font, "Total", dialogX + 150, headerY + 5, IsotopeColors.TEXT_MUTED, false);
-        graphics.drawString(font, "Avg", dialogX + 195, headerY + 5, IsotopeColors.TEXT_MUTED, false);
-        graphics.drawString(font, "Rate", dialogX + 235, headerY + 5, IsotopeColors.TEXT_MUTED, false);
-        graphics.drawString(font, "Range", dialogX + 285, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Item", dialogX + 30, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Total", dialogX + 165, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Avg", dialogX + 210, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Rate", dialogX + 250, headerY + 5, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Range", dialogX + 300, headerY + 5, IsotopeColors.TEXT_MUTED, false);
 
         // Content area
         int contentY = dialogY + 75;
@@ -220,33 +224,41 @@ public class DropStatisticsDialog extends Screen {
                         graphics.fill(dialogX + 5, entryY, dialogX + DIALOG_WIDTH - 5, entryY + 22, 0xFF222222);
                     }
 
+                    // Item icon
+                    try {
+                        ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(entry.itemId));
+                        graphics.renderItem(stack, dialogX + 10, entryY + 3);
+                    } catch (Exception ignored) {
+                        // Item not found, skip icon
+                    }
+
                     // Item name (truncate if too long)
                     String name = entry.itemName;
-                    if (font.width(name) > 130) {
-                        name = font.plainSubstrByWidth(name, 125) + "...";
+                    if (font.width(name) > 115) {
+                        name = font.plainSubstrByWidth(name, 110) + "...";
                     }
-                    graphics.drawString(font, name, dialogX + 12, entryY + 6, IsotopeColors.TEXT_PRIMARY, false);
+                    graphics.drawString(font, name, dialogX + 30, entryY + 6, IsotopeColors.TEXT_PRIMARY, false);
 
                     // Total
-                    graphics.drawString(font, String.valueOf(entry.total), dialogX + 150, entryY + 6,
+                    graphics.drawString(font, String.valueOf(entry.total), dialogX + 165, entryY + 6,
                         IsotopeColors.ACCENT_GOLD, false);
 
                     // Average
-                    graphics.drawString(font, String.format("%.1f", entry.average), dialogX + 195, entryY + 6,
+                    graphics.drawString(font, String.format("%.1f", entry.average), dialogX + 210, entryY + 6,
                         IsotopeColors.TEXT_SECONDARY, false);
 
                     // Drop rate (color coded)
                     int rateColor = entry.dropRate >= 75 ? IsotopeColors.STATUS_SUCCESS :
                                    entry.dropRate >= 25 ? IsotopeColors.STATUS_WARNING :
                                    IsotopeColors.STATUS_ERROR;
-                    graphics.drawString(font, String.format("%.0f%%", entry.dropRate), dialogX + 235, entryY + 6,
+                    graphics.drawString(font, String.format("%.0f%%", entry.dropRate), dialogX + 250, entryY + 6,
                         rateColor, false);
 
                     // Range
                     String range = entry.min == entry.max
                         ? String.valueOf(entry.min)
                         : entry.min + "-" + entry.max;
-                    graphics.drawString(font, range, dialogX + 285, entryY + 6,
+                    graphics.drawString(font, range, dialogX + 300, entryY + 6,
                         IsotopeColors.TEXT_MUTED, false);
                 }
 
