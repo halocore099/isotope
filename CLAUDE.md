@@ -223,7 +223,8 @@ Entity loot tables are detected and displayed with purple styling.
 |-----------|--------|
 | Player Kill | Triggers `killed_by_player` conditions |
 | Non-Player | Only guaranteed drops (no rare items) |
-| Looting I/II/III | Player kill with looting enchant bonus |
+
+Looting level (0-3) is now a separate selector in the header row. See [Looting Selector](#looting-selector).
 
 ### Auto-Collect Option
 
@@ -268,6 +269,27 @@ Higher luck values increase chances of getting rarer items from quality-weighted
 Selected preset highlighted with green outline. Luck value shown in toast messages and statistics condition.
 
 **Note**: Luck only affects chest/container loot (Stats/Compare). Mob loot uses looting enchant instead.
+
+### Looting Selector
+
+Looting selector in the second header row (next to luck) affects mob loot drops:
+
+| Value | Effect |
+|-------|--------|
+| **0** | No looting bonus |
+| **1** | Looting I enchantment |
+| **2** | Looting II enchantment |
+| **3** | Looting III enchantment |
+
+Looting increases drop quantities and rare drop chances for mobs. Only applies when kill condition is "Player Kill".
+
+Selected preset highlighted with purple outline. Looting value shown in toast messages and statistics condition.
+
+**Kill Conditions** (simplified):
+| Condition | Description |
+|-----------|-------------|
+| **Player Kill** | Triggers `killed_by_player` conditions, looting applies |
+| **Non-Player** | Only guaranteed drops, looting ignored |
 
 ### Drop Statistics
 
