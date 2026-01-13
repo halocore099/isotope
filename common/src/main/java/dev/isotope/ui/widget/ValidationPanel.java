@@ -49,6 +49,11 @@ public class ValidationPanel extends AbstractWidget {
     private int selectedIndex = -1;
     private int hoveredFixButton = -1; // Index of hovered fix button
 
+    // Orphan tooltip state
+    private boolean orphanRowHovered = false;
+    private int orphanTooltipX = 0;
+    private int orphanTooltipY = 0;
+
     // Callback when an issue is clicked (poolIdx, entryIdx)
     @Nullable
     private BiConsumer<Integer, Integer> onIssueSelected;
@@ -174,14 +179,30 @@ public class ValidationPanel extends AbstractWidget {
         int issueStartY = contentY;
 
         // Orphan warning (shown above validation issues)
+        orphanRowHovered = false;
         if (isOrphan) {
             int orphanY = contentY + 4;
-            graphics.fill(getX() + 4, orphanY, getX() + width - 4, orphanY + ROW_HEIGHT, 0xFF3a3020);
-            graphics.fill(getX() + 4, orphanY + 2, getX() + 7, orphanY + ROW_HEIGHT - 2, IsotopeColors.STATUS_WARNING);
+            int orphanRowX = getX() + 4;
+            int orphanRowW = width - 8;
+
+            // Check if hovering over orphan row
+            orphanRowHovered = mouseX >= orphanRowX && mouseX < orphanRowX + orphanRowW &&
+                mouseY >= orphanY && mouseY < orphanY + ROW_HEIGHT;
+
+            // Highlight on hover
+            int bgColor = orphanRowHovered ? 0xFF4a4030 : 0xFF3a3020;
+            graphics.fill(orphanRowX, orphanY, getX() + width - 4, orphanY + ROW_HEIGHT, bgColor);
+            graphics.fill(orphanRowX, orphanY + 2, getX() + 7, orphanY + ROW_HEIGHT - 2, IsotopeColors.STATUS_WARNING);
             graphics.drawString(mc.font, "\u26A0", getX() + 12, orphanY + 4, IsotopeColors.STATUS_WARNING, false);
             graphics.drawString(mc.font, "Orphan", getX() + 26, orphanY + 4, IsotopeColors.TEXT_PRIMARY, false);
             graphics.drawString(mc.font, "Not linked to any structure", getX() + 12, orphanY + 16,
                 IsotopeColors.TEXT_SECONDARY, false);
+
+            if (orphanRowHovered) {
+                orphanTooltipX = mouseX + 8;
+                orphanTooltipY = orphanY + ROW_HEIGHT + 4;
+            }
+
             issueStartY += ROW_HEIGHT + 4;
         }
 
@@ -211,6 +232,44 @@ public class ValidationPanel extends AbstractWidget {
 
             graphics.fill(getX() + width - 6, contentY, getX() + width - 2, getY() + height, 0xFF1a1a1a);
             graphics.fill(getX() + width - 5, scrollbarY, getX() + width - 3, scrollbarY + scrollbarHeight, IsotopeColors.TEXT_MUTED);
+        }
+
+        // Orphan tooltip (render last so it's on top)
+        if (orphanRowHovered && currentTableId != null) {
+            var orphanInfo = OrphanDetector.getInstance().getLootTableOrphanInfo(currentTableId);
+            if (!orphanInfo.reasons().isEmpty()) {
+                // Build tooltip lines
+                List<String> lines = new ArrayList<>();
+                lines.add("Orphan Reasons:");
+                for (var reason : orphanInfo.reasons()) {
+                    lines.add("• " + reason.getDescription());
+                }
+
+                // Calculate tooltip dimensions
+                int tooltipWidth = 0;
+                for (String line : lines) {
+                    tooltipWidth = Math.max(tooltipWidth, mc.font.width(line));
+                }
+                tooltipWidth += 12;
+                int tooltipHeight = lines.size() * 10 + 6;
+
+                // Position tooltip
+                int tooltipX = Math.min(orphanTooltipX, getX() + width - tooltipWidth - 4);
+                int tooltipY = orphanTooltipY;
+
+                // Draw tooltip background
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF1a1a2e);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF252540);
+
+                // Draw lines
+                int lineY = tooltipY + 4;
+                for (int i = 0; i < lines.size(); i++) {
+                    int color = i == 0 ? IsotopeColors.STATUS_WARNING : IsotopeColors.TEXT_MUTED;
+                    graphics.drawString(mc.font, lines.get(i), tooltipX + 4, lineY, color, false);
+                    lineY += 10;
+                }
+            }
         }
     }
 

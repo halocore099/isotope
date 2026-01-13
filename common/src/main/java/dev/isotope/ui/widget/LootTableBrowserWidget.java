@@ -62,6 +62,12 @@ public class LootTableBrowserWidget extends AbstractWidget {
     // Mod dropdown state
     private boolean modDropdownOpen = false;
 
+    // Orphan tooltip state
+    @Nullable
+    private ResourceLocation hoveredOrphanTable = null;
+    private int hoveredOrphanX = 0;
+    private int hoveredOrphanY = 0;
+
     public LootTableBrowserWidget(int x, int y, int width, int height, Consumer<ResourceLocation> onTableSelected) {
         super(x, y, width, height, Component.empty());
         this.onTableSelected = onTableSelected;
@@ -220,6 +226,9 @@ public class LootTableBrowserWidget extends AbstractWidget {
     @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Minecraft.getInstance().font;
+
+        // Reset orphan tooltip state
+        hoveredOrphanTable = null;
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1e1e1e);
@@ -425,8 +434,19 @@ public class LootTableBrowserWidget extends AbstractWidget {
                         boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(table.id());
                         int textRightPadding = 8;
                         if (isOrphan) {
-                            graphics.drawString(font, "⚠", getX() + width - 12, renderY + 4, IsotopeColors.STATUS_WARNING, false);
+                            int orphanIconX = getX() + width - 12;
+                            graphics.drawString(font, "⚠", orphanIconX, renderY + 4, IsotopeColors.STATUS_WARNING, false);
                             textRightPadding = 18;
+
+                            // Check if hovering over orphan icon
+                            boolean orphanHovered = mouseX >= orphanIconX - 2 && mouseX < getX() + width &&
+                                mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT &&
+                                renderY >= listY && renderY < getY() + height;
+                            if (orphanHovered) {
+                                hoveredOrphanTable = table.id();
+                                hoveredOrphanX = mouseX;
+                                hoveredOrphanY = renderY + ITEM_HEIGHT;
+                            }
                         }
 
                         String path = table.id().getPath();
@@ -477,6 +497,56 @@ public class LootTableBrowserWidget extends AbstractWidget {
                 int color = mod.equals(selectedMod) ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_PRIMARY;
                 graphics.drawString(font, display, dropdownX + 4, itemY + 2, color, false);
                 itemY += 14;
+            }
+        }
+
+        // Orphan tooltip (render last so it's on top)
+        if (hoveredOrphanTable != null) {
+            var orphanInfo = OrphanDetector.getInstance().getLootTableOrphanInfo(hoveredOrphanTable);
+            if (!orphanInfo.reasons().isEmpty()) {
+                // Build tooltip lines
+                List<String> lines = new ArrayList<>();
+                lines.add("§eOrphan Reasons:");
+                for (var reason : orphanInfo.reasons()) {
+                    lines.add("§7• " + reason.getDescription());
+                }
+
+                // Calculate tooltip dimensions
+                int tooltipWidth = 0;
+                for (String line : lines) {
+                    tooltipWidth = Math.max(tooltipWidth, font.width(line.replace("§e", "").replace("§7", "")));
+                }
+                tooltipWidth += 12;
+                int tooltipHeight = lines.size() * 10 + 6;
+
+                // Position tooltip (prefer right side, fall back to left)
+                int tooltipX = hoveredOrphanX + 8;
+                if (tooltipX + tooltipWidth > getX() + width + 100) {
+                    tooltipX = hoveredOrphanX - tooltipWidth - 8;
+                }
+                int tooltipY = hoveredOrphanY;
+
+                // Draw tooltip background
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF1a1a2e);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF252540);
+
+                // Draw lines
+                int lineY = tooltipY + 4;
+                for (String line : lines) {
+                    // Handle simple formatting codes
+                    int color = 0xFFFFFFFF;
+                    String text = line;
+                    if (line.startsWith("§e")) {
+                        color = IsotopeColors.STATUS_WARNING;
+                        text = line.substring(2);
+                    } else if (line.startsWith("§7")) {
+                        color = IsotopeColors.TEXT_MUTED;
+                        text = line.substring(2);
+                    }
+                    graphics.drawString(font, text, tooltipX + 4, lineY, color, false);
+                    lineY += 10;
+                }
             }
         }
     }

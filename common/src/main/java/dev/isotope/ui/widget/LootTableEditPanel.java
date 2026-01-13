@@ -77,6 +77,11 @@ public class LootTableEditPanel extends AbstractWidget {
 
     // Multi-selection for batch operations
     private final Set<EntryKey> multiSelection = new LinkedHashSet<>();
+
+    // Orphan tooltip state
+    private boolean orphanWarningHovered = false;
+    private int orphanTooltipX = 0;
+    private int orphanTooltipY = 0;
     private EntryKey lastClickedEntry = null; // For shift-click range selection
 
     // Batch action hover state
@@ -315,6 +320,45 @@ public class LootTableEditPanel extends AbstractWidget {
             graphics.fill(scrollbarX, getY(), scrollbarX + 4, getY() + height, 0xFF2a2a2a);
             graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
         }
+
+        // Orphan tooltip (render last so it's on top)
+        if (orphanWarningHovered && tableId != null) {
+            var font = Minecraft.getInstance().font;
+            var orphanInfo = OrphanDetector.getInstance().getLootTableOrphanInfo(tableId);
+            if (!orphanInfo.reasons().isEmpty()) {
+                // Build tooltip lines
+                List<String> lines = new ArrayList<>();
+                lines.add("Orphan Reasons:");
+                for (var reason : orphanInfo.reasons()) {
+                    lines.add("• " + reason.getDescription());
+                }
+
+                // Calculate tooltip dimensions
+                int tooltipWidth = 0;
+                for (String line : lines) {
+                    tooltipWidth = Math.max(tooltipWidth, font.width(line));
+                }
+                tooltipWidth += 12;
+                int tooltipHeight = lines.size() * 10 + 6;
+
+                // Position tooltip
+                int tooltipX = orphanTooltipX;
+                int tooltipY = orphanTooltipY;
+
+                // Draw tooltip background
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF1a1a2e);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF252540);
+
+                // Draw lines
+                int lineY = tooltipY + 4;
+                for (int i = 0; i < lines.size(); i++) {
+                    int color = i == 0 ? IsotopeColors.STATUS_WARNING : IsotopeColors.TEXT_MUTED;
+                    graphics.drawString(font, lines.get(i), tooltipX + 4, lineY, color, false);
+                    lineY += 10;
+                }
+            }
+        }
     }
 
     private void renderHeader(GuiGraphics graphics, Font font, int y, int mouseX, int mouseY) {
@@ -352,8 +396,21 @@ public class LootTableEditPanel extends AbstractWidget {
                 IsotopeColors.TEXT_MUTED, false);
         } else if (isOrphan) {
             // Show orphan warning
-            graphics.drawString(font, "⚠ Orphan: Not linked to any structure", getX() + PADDING, y + 20,
-                IsotopeColors.STATUS_WARNING, false);
+            String orphanText = "⚠ Orphan: Not linked to any structure";
+            int textX = getX() + PADDING;
+            int textY = y + 20;
+            int textWidth = font.width(orphanText);
+            graphics.drawString(font, orphanText, textX, textY, IsotopeColors.STATUS_WARNING, false);
+
+            // Check if hovering over orphan warning
+            orphanWarningHovered = mouseX >= textX && mouseX < textX + textWidth &&
+                mouseY >= textY - 2 && mouseY < textY + 12;
+            if (orphanWarningHovered) {
+                orphanTooltipX = mouseX;
+                orphanTooltipY = textY + 14;
+            }
+        } else {
+            orphanWarningHovered = false;
         }
 
         // Edit indicator
