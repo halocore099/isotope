@@ -189,6 +189,37 @@ Entries can have functions that modify dropped items (enchantments, attributes, 
 - `LootFunction` - Function data with parameter parsing and type detection
 - `AddFunctionDialog` - Preset-based function creation UI
 
+### Loot Condition Editing
+
+Entries can have conditions that control when they drop (player kill, random chance, weather, etc.).
+
+**Condition Indicators**: Icons appear on entry rows:
+- ⚔ sword icon (purple) - Entry has `killed_by_player` condition
+- ⚗ potion icon (aqua) - Entry has `random_chance_with_looting` condition
+
+**Parameter Summaries**: Conditions show readable summaries in the detail panel:
+| Condition | Example Summary |
+|-----------|-----------------|
+| `random_chance` | "25%" |
+| `random_chance_with_looting` | "10% +2%/lvl" |
+| `weather_check` | "rain" or "thunder" |
+| `time_check` | "13000-23000" |
+| `inverted` | "NOT killed by player" |
+
+**Add Condition Dialog**: Right-click an entry → "Add Condition..." opens a dialog with presets:
+- Random Chance (configurable percentage 0-100%)
+- Random Chance + Looting (base chance + per-level bonus)
+- Killed by Player (no parameters)
+- Survives Explosion (no parameters)
+- Weather: Raining (only when raining)
+- Weather: Thunderstorm (only during thunderstorms)
+- Time Check (configurable min/max day time 0-24000)
+- Inverted: Not Player Kill (drops when NOT killed by player)
+
+**Key Classes**:
+- `LootCondition` - Condition data with parameter parsing and factory methods
+- `AddConditionDialog` - Preset-based condition creation UI
+
 ## Test Mode
 
 Test mode creates a temporary creative world to test edited loot tables in-game.

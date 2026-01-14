@@ -464,6 +464,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addItem("\u2193", "Move Down", "", () -> editPanel.moveEntryDown(poolIdx, entryIdx), canMoveDown)
             .addSeparator()
             .addItem("✦", "Add Function...", "", () -> openAddFunctionDialog(poolIdx, entryIdx))
+            .addItem("?", "Add Condition...", "", () -> openAddConditionDialog(poolIdx, entryIdx))
             .addSeparator()
             .addItem("\u2750", "Duplicate", "Ctrl+D", () -> editPanel.duplicateSelected())
             .addItem("\u2715", "Delete", "Del", () -> editPanel.deleteSelected())
@@ -477,6 +478,17 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         minecraft.setScreen(new AddFunctionDialog(this, function -> {
             LootEditOperation op = new LootEditOperation.AddFunction(poolIdx, entryIdx, function);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    private void openAddConditionDialog(int poolIdx, int entryIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new AddConditionDialog(this, condition -> {
+            LootEditOperation op = new LootEditOperation.AddCondition(poolIdx, entryIdx, condition);
             LootEditManager.getInstance().applyOperation(tableId, op);
             editPanel.refresh();
         }));
