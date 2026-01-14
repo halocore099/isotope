@@ -1,9 +1,12 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.LootSource;
 import dev.isotope.data.LootSourceType;
+import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.StructureInfo;
+import dev.isotope.data.StructureLootLink;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.*;
@@ -181,5 +184,146 @@ public final class LootSourceRegistry {
     public void reset() {
         sources.clear();
         compiled = false;
+    }
+
+    /**
+     * Dump comprehensive debug information about all loot tables and their linked sources.
+     * Call this after compile() to output full mapping info to logs.
+     */
+    public void dumpDebugInfo() {
+        Isotope.LOGGER.info("╔══════════════════════════════════════════════════════════════════╗");
+        Isotope.LOGGER.info("║              ISOTOPE DEBUG DUMP - LOOT TABLE MAPPINGS            ║");
+        Isotope.LOGGER.info("╚══════════════════════════════════════════════════════════════════╝");
+
+        LootTableRegistry lootTables = LootTableRegistry.getInstance();
+        StructureLootLinker linker = StructureLootLinker.getInstance();
+        OrphanDetector orphans = OrphanDetector.getInstance();
+
+        // === SECTION 1: Structures and their loot tables ===
+        Isotope.LOGGER.info("");
+        Isotope.LOGGER.info("┌─────────────────────────────────────────────────────────────────┐");
+        Isotope.LOGGER.info("│ STRUCTURES → LOOT TABLES                                        │");
+        Isotope.LOGGER.info("└─────────────────────────────────────────────────────────────────┘");
+
+        List<LootSource> structures = new ArrayList<>(getByType(LootSourceType.STRUCTURE));
+        structures.sort(Comparator.comparing(s -> s.id().toString()));
+
+        for (LootSource structure : structures) {
+            List<StructureLootLink> links = linker.getLinksForStructure(structure.id());
+            if (links.isEmpty()) {
+                Isotope.LOGGER.info("  {} (NO LOOT TABLES)", structure.id());
+            } else {
+                Isotope.LOGGER.info("  {} ({} tables)", structure.id(), links.size());
+                for (StructureLootLink link : links) {
+                    Isotope.LOGGER.info("    └─ {} [{}]", link.lootTableId(), link.confidence());
+                }
+            }
+        }
+
+        // === SECTION 2: Features and their loot tables ===
+        Isotope.LOGGER.info("");
+        Isotope.LOGGER.info("┌─────────────────────────────────────────────────────────────────┐");
+        Isotope.LOGGER.info("│ FEATURES → LOOT TABLES                                          │");
+        Isotope.LOGGER.info("└─────────────────────────────────────────────────────────────────┘");
+
+        List<LootSource> features = new ArrayList<>(getByType(LootSourceType.FEATURE));
+        features.sort(Comparator.comparing(s -> s.id().toString()));
+
+        for (LootSource feature : features) {
+            List<StructureLootLink> links = linker.getLinksForStructure(feature.id());
+            if (links.isEmpty()) {
+                Isotope.LOGGER.info("  {} (NO LOOT TABLES)", feature.id());
+            } else {
+                Isotope.LOGGER.info("  {} ({} tables)", feature.id(), links.size());
+                for (StructureLootLink link : links) {
+                    Isotope.LOGGER.info("    └─ {} [{}]", link.lootTableId(), link.confidence());
+                }
+            }
+        }
+
+        // === SECTION 3: Mobs and their loot tables ===
+        Isotope.LOGGER.info("");
+        Isotope.LOGGER.info("┌─────────────────────────────────────────────────────────────────┐");
+        Isotope.LOGGER.info("│ MOBS → LOOT TABLES                                              │");
+        Isotope.LOGGER.info("└─────────────────────────────────────────────────────────────────┘");
+
+        List<LootSource> mobs = new ArrayList<>(getByType(LootSourceType.MOB));
+        mobs.sort(Comparator.comparing(s -> s.id().toString()));
+
+        for (LootSource mob : mobs) {
+            // Mobs link directly to their loot table via their ID
+            Isotope.LOGGER.info("  {} → entities/{}", mob.id(), mob.id().getPath());
+        }
+
+        // === SECTION 4: Loot tables grouped by category ===
+        Isotope.LOGGER.info("");
+        Isotope.LOGGER.info("┌─────────────────────────────────────────────────────────────────┐");
+        Isotope.LOGGER.info("│ LOOT TABLES BY CATEGORY                                         │");
+        Isotope.LOGGER.info("└─────────────────────────────────────────────────────────────────┘");
+
+        Map<LootTableInfo.LootTableCategory, List<LootTableInfo>> byCategory = lootTables.getAll().stream()
+            .collect(Collectors.groupingBy(LootTableInfo::category, TreeMap::new, Collectors.toList()));
+
+        for (var entry : byCategory.entrySet()) {
+            Isotope.LOGGER.info("");
+            Isotope.LOGGER.info("  ── {} ({} tables) ──", entry.getKey(), entry.getValue().size());
+            List<LootTableInfo> tables = entry.getValue();
+            tables.sort(Comparator.comparing(t -> t.id().toString()));
+
+            for (LootTableInfo table : tables) {
+                List<StructureLootLink> links = linker.getLinksForLootTable(table.id());
+                boolean isOrphan = orphans.isOrphanLootTable(table.id());
+
+                if (links.isEmpty()) {
+                    String orphanMark = isOrphan ? " [ORPHAN]" : "";
+                    Isotope.LOGGER.info("    {} → (no source){}", table.id(), orphanMark);
+                } else {
+                    StringBuilder sourcesStr = new StringBuilder();
+                    for (int i = 0; i < links.size(); i++) {
+                        if (i > 0) sourcesStr.append(", ");
+                        sourcesStr.append(links.get(i).structureId());
+                    }
+                    Isotope.LOGGER.info("    {} → {}", table.id(), sourcesStr);
+                }
+            }
+        }
+
+        // === SECTION 5: Orphan summary ===
+        Isotope.LOGGER.info("");
+        Isotope.LOGGER.info("┌─────────────────────────────────────────────────────────────────┐");
+        Isotope.LOGGER.info("│ ORPHANS (no linked source)                                      │");
+        Isotope.LOGGER.info("└─────────────────────────────────────────────────────────────────┘");
+
+        Set<ResourceLocation> orphanTables = orphans.getOrphanLootTables();
+        Set<ResourceLocation> orphanStructs = orphans.getOrphanStructures();
+
+        if (orphanTables.isEmpty() && orphanStructs.isEmpty()) {
+            Isotope.LOGGER.info("  No orphans detected!");
+        } else {
+            if (!orphanTables.isEmpty()) {
+                Isotope.LOGGER.info("  Orphan Loot Tables ({}):", orphanTables.size());
+                List<ResourceLocation> sortedOrphanTables = new ArrayList<>(orphanTables);
+                sortedOrphanTables.sort(Comparator.comparing(ResourceLocation::toString));
+                for (ResourceLocation table : sortedOrphanTables) {
+                    LootTableInfo info = lootTables.get(table).orElse(null);
+                    String category = info != null ? info.category().toString() : "UNKNOWN";
+                    Isotope.LOGGER.info("    └─ {} [{}]", table, category);
+                }
+            }
+
+            if (!orphanStructs.isEmpty()) {
+                Isotope.LOGGER.info("  Orphan Structures ({}):", orphanStructs.size());
+                List<ResourceLocation> sortedOrphanStructs = new ArrayList<>(orphanStructs);
+                sortedOrphanStructs.sort(Comparator.comparing(ResourceLocation::toString));
+                for (ResourceLocation struct : sortedOrphanStructs) {
+                    Isotope.LOGGER.info("    └─ {}", struct);
+                }
+            }
+        }
+
+        Isotope.LOGGER.info("");
+        Isotope.LOGGER.info("══════════════════════════════════════════════════════════════════");
+        Isotope.LOGGER.info("  END OF DEBUG DUMP");
+        Isotope.LOGGER.info("══════════════════════════════════════════════════════════════════");
     }
 }

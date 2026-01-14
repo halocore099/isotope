@@ -203,6 +203,7 @@ public final class StructureLootLinker {
 
     /**
      * Find links using path-based heuristics.
+     * Checks CHEST, DISPENSER, SPAWNER, POTS, and ARCHAEOLOGY categories.
      */
     private List<StructureLootLink> findPathMatches(StructureInfo structure, LootTableRegistry lootTables) {
         List<StructureLootLink> links = new ArrayList<>();
@@ -211,22 +212,29 @@ public final class StructureLootLinker {
         // Extract structure "base name" (e.g., "village_plains" -> "village")
         String baseName = extractBaseName(structurePath);
 
-        for (LootTableInfo lootTable : lootTables.getChestLootTables()) {
+        // Categories that can be linked to structures
+        Set<LootTableInfo.LootTableCategory> linkableCategories = Set.of(
+            LootTableInfo.LootTableCategory.CHEST,
+            LootTableInfo.LootTableCategory.DISPENSER,
+            LootTableInfo.LootTableCategory.SPAWNER,
+            LootTableInfo.LootTableCategory.POTS,
+            LootTableInfo.LootTableCategory.ARCHAEOLOGY
+        );
+
+        for (LootTableInfo lootTable : lootTables.getAll()) {
+            // Only check linkable categories
+            if (!linkableCategories.contains(lootTable.category())) {
+                continue;
+            }
+
             // Only match same namespace or vanilla-to-vanilla
             if (!structure.namespace().equals(lootTable.namespace())) {
                 continue;
             }
 
             String tablePath = lootTable.path().toLowerCase();
-            // Remove "chests/" or "chest/" prefix for matching (vanilla vs modded conventions)
-            String tablePathClean;
-            if (tablePath.startsWith("chests/")) {
-                tablePathClean = tablePath.substring(7);
-            } else if (tablePath.startsWith("chest/")) {
-                tablePathClean = tablePath.substring(6);
-            } else {
-                tablePathClean = tablePath;
-            }
+            // Remove category prefix for matching
+            String tablePathClean = stripCategoryPrefix(tablePath);
 
             Confidence confidence = calculatePathConfidence(structurePath, baseName, tablePathClean);
             if (confidence != null) {
@@ -238,25 +246,90 @@ public final class StructureLootLinker {
     }
 
     /**
+     * Strip common category prefixes from loot table path for matching.
+     */
+    private String stripCategoryPrefix(String path) {
+        String[] prefixes = {
+            "chests/", "chest/",
+            "dispensers/", "dispenser/",
+            "spawners/", "spawner/",
+            "pots/", "pot/",
+            "archaeology/"
+        };
+        for (String prefix : prefixes) {
+            if (path.startsWith(prefix)) {
+                return path.substring(prefix.length());
+            }
+        }
+        return path;
+    }
+
+    /**
      * Calculate confidence based on path matching.
      */
     private Confidence calculatePathConfidence(String structurePath, String baseName, String tablePath) {
+        // Remove any remaining subpath (trial_chambers/corridor -> trial_chambers)
+        String tableBase = tablePath.contains("/") ? tablePath.substring(0, tablePath.indexOf('/')) : tablePath;
+
         // Exact match: village_plains -> village_plains
-        if (tablePath.equals(structurePath) || tablePath.startsWith(structurePath + "_")) {
+        if (tablePath.equals(structurePath) || tablePath.startsWith(structurePath + "_") ||
+            tablePath.startsWith(structurePath + "/")) {
+            return Confidence.HIGH;
+        }
+
+        // Table base matches structure: trial_chambers -> trial_chambers/corridor
+        if (tableBase.equals(structurePath)) {
             return Confidence.HIGH;
         }
 
         // Base name match: village_plains -> village_*
-        if (tablePath.startsWith(baseName + "_") || tablePath.equals(baseName)) {
+        if (tablePath.startsWith(baseName + "_") || tablePath.equals(baseName) ||
+            tableBase.equals(baseName)) {
             return Confidence.MEDIUM;
         }
 
         // Contains structure name: ancient_city -> ancient_city_ice_box
-        if (tablePath.contains(structurePath) || structurePath.contains(tablePath.replace("_", ""))) {
+        if (tablePath.contains(structurePath) || structurePath.contains(tableBase)) {
             return Confidence.MEDIUM;
         }
 
+        // Fuzzy match: share significant word (jungle_pyramid ↔ jungle_temple)
+        // Split both paths into words and look for common significant terms
+        Set<String> structureWords = extractSignificantWords(structurePath);
+        Set<String> tableWords = extractSignificantWords(tablePath);
+
+        // Find common words
+        Set<String> commonWords = new HashSet<>(structureWords);
+        commonWords.retainAll(tableWords);
+
+        // If they share a significant word (not just "the", "a", etc.), it's a LOW match
+        if (!commonWords.isEmpty()) {
+            return Confidence.LOW;
+        }
+
         return null;
+    }
+
+    /**
+     * Extract significant words from a path for fuzzy matching.
+     * Splits on underscores and filters out common suffixes.
+     */
+    private Set<String> extractSignificantWords(String path) {
+        Set<String> words = new HashSet<>();
+        // Remove any directory separators first
+        String cleanPath = path.replace("/", "_");
+
+        for (String word : cleanPath.split("_")) {
+            // Skip common non-distinctive words
+            if (word.length() >= 3 &&
+                !word.equals("the") && !word.equals("big") && !word.equals("small") &&
+                !word.equals("chest") && !word.equals("chests") &&
+                !word.equals("common") && !word.equals("rare") &&
+                !word.equals("dispenser") && !word.equals("spawner")) {
+                words.add(word);
+            }
+        }
+        return words;
     }
 
     /**

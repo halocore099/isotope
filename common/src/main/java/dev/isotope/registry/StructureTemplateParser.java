@@ -2,6 +2,7 @@ package dev.isotope.registry;
 
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureLootLink;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -116,9 +117,20 @@ public final class StructureTemplateParser {
         Set<ResourceLocation> visitedPools = new HashSet<>();
 
         try {
-            // Get the start pool
-            var startPoolHolder = structure.startPool();
-            if (startPoolHolder.isBound()) {
+            // Get the start pool - use reflection to handle API changes across versions
+            Holder<StructureTemplatePool> startPoolHolder = null;
+            try {
+                // Try direct field access (1.21.4+)
+                var field = JigsawStructure.class.getDeclaredField("startPool");
+                field.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                var holder = (Holder<StructureTemplatePool>) field.get(structure);
+                startPoolHolder = holder;
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                // Field not accessible, skip
+            }
+
+            if (startPoolHolder != null && startPoolHolder.isBound()) {
                 ResourceLocation poolId = startPoolHolder.unwrapKey()
                     .map(ResourceKey::location)
                     .orElse(null);

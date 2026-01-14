@@ -225,11 +225,10 @@ public class DropStatisticsDialog extends Screen {
                     }
 
                     // Item icon
-                    try {
-                        ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(entry.itemId));
+                    var itemOpt = BuiltInRegistries.ITEM.get(entry.itemId);
+                    if (itemOpt.isPresent()) {
+                        ItemStack stack = new ItemStack(itemOpt.get().value());
                         graphics.renderItem(stack, dialogX + 10, entryY + 3);
-                    } catch (Exception ignored) {
-                        // Item not found, skip icon
                     }
 
                     // Item name (truncate if too long)

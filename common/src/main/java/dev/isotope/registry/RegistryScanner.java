@@ -60,6 +60,9 @@ public final class RegistryScanner {
         // Layer 5: Compile unified source registry (structures + features)
         LootSourceRegistry.getInstance().compile();
 
+        // Debug dump: output all loot table → source mappings to log
+        LootSourceRegistry.getInstance().dumpDebugInfo();
+
         // Pre-parse loot tables for the editor (while server is available)
         LootEditManager.getInstance().preParseLootTables(server);
 

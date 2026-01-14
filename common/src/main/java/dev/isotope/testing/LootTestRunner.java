@@ -187,11 +187,11 @@ public final class LootTestRunner {
         List<ItemStack> drops = new ArrayList<>();
 
         try {
-            ResourceLocation lootTableId = entity.getLootTable().orElse(null);
-            if (lootTableId == null) return drops;
+            var lootTableKey = entity.getLootTable().orElse(null);
+            if (lootTableKey == null) return drops;
 
             LootTable lootTable = level.getServer().reloadableRegistries()
-                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
+                .getLootTable(lootTableKey);
 
             if (lootTable == LootTable.EMPTY) return drops;
 
@@ -201,7 +201,7 @@ public final class LootTestRunner {
                 .withParameter(LootContextParams.DAMAGE_SOURCE, damageSource);
 
             if (damageSource.getEntity() != null) {
-                paramsBuilder.withParameter(LootContextParams.KILLER_ENTITY, damageSource.getEntity());
+                paramsBuilder.withParameter(LootContextParams.ATTACKING_ENTITY, damageSource.getEntity());
                 if (damageSource.getEntity() instanceof ServerPlayer killer) {
                     paramsBuilder.withParameter(LootContextParams.LAST_DAMAGE_PLAYER, killer);
                 }

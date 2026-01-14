@@ -325,7 +325,7 @@ public class LootTableEditPanel extends AbstractWidget {
 
         // Orphan tooltip (render last so it's on top)
         if (orphanWarningHovered && tableId != null) {
-            var font = Minecraft.getInstance().font;
+            var tooltipFont = Minecraft.getInstance().font;
             var orphanInfo = OrphanDetector.getInstance().getLootTableOrphanInfo(tableId);
             if (!orphanInfo.reasons().isEmpty()) {
                 // Build tooltip lines
@@ -338,7 +338,7 @@ public class LootTableEditPanel extends AbstractWidget {
                 // Calculate tooltip dimensions
                 int tooltipWidth = 0;
                 for (String line : lines) {
-                    tooltipWidth = Math.max(tooltipWidth, font.width(line));
+                    tooltipWidth = Math.max(tooltipWidth, tooltipFont.width(line));
                 }
                 tooltipWidth += 12;
                 int tooltipHeight = lines.size() * 10 + 6;
@@ -356,7 +356,7 @@ public class LootTableEditPanel extends AbstractWidget {
                 int lineY = tooltipY + 4;
                 for (int i = 0; i < lines.size(); i++) {
                     int color = i == 0 ? IsotopeColors.STATUS_WARNING : IsotopeColors.TEXT_MUTED;
-                    graphics.drawString(font, lines.get(i), tooltipX + 4, lineY, color, false);
+                    graphics.drawString(tooltipFont, lines.get(i), tooltipX + 4, lineY, color, false);
                     lineY += 10;
                 }
             }

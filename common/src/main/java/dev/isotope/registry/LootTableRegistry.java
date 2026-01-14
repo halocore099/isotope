@@ -76,21 +76,30 @@ public final class LootTableRegistry {
             // Now analyze each table with content-based detection
             for (ResourceLocation id : tableIds) {
                 LootTableCategory category = null;
+                String path = id.getPath();
 
-                // Try content-based analysis first
-                try {
-                    category = LootTableContentAnalyzer.analyze(server, id);
-                    if (category != null) {
-                        contentAnalyzed++;
-                    }
-                } catch (Exception e) {
-                    Isotope.LOGGER.debug("Content analysis failed for {}: {}", id, e.getMessage());
-                }
-
-                // Fall back to path-based detection
-                if (category == null) {
-                    category = LootTableInfo.inferCategoryFromPath(id.getPath());
+                // FIRST: Check if path clearly indicates category (authoritative)
+                // This prevents content analysis from miscategorizing obvious paths
+                LootTableCategory pathCategory = LootTableInfo.inferCategoryFromPath(path);
+                if (pathCategory != LootTableCategory.OTHER) {
+                    // Path is clear - use it directly (entities/, blocks/, chests/, etc.)
+                    category = pathCategory;
                     pathFallback++;
+                } else {
+                    // Path is ambiguous - try content-based analysis
+                    try {
+                        category = LootTableContentAnalyzer.analyze(server, id);
+                        if (category != null) {
+                            contentAnalyzed++;
+                        }
+                    } catch (Exception e) {
+                        Isotope.LOGGER.debug("Content analysis failed for {}: {}", id, e.getMessage());
+                    }
+
+                    // Final fallback to OTHER if content analysis also failed
+                    if (category == null) {
+                        category = LootTableCategory.OTHER;
+                    }
                 }
 
                 LootTableInfo info = LootTableInfo.fromIdWithCategory(id, category);

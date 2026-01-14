@@ -19,6 +19,9 @@ public record LootTableInfo(
         ARCHAEOLOGY,
         EQUIPMENT,
         SHEARING,
+        DISPENSER,   // Dispenser loot (jungle temple, trial chambers)
+        SPAWNER,     // Spawner drops (trial chambers)
+        POTS,        // Decorated pot loot
         OTHER
     }
 
@@ -59,6 +62,9 @@ public record LootTableInfo(
         if (path.startsWith("archaeology/")) return LootTableCategory.ARCHAEOLOGY;
         if (path.startsWith("equipment/")) return LootTableCategory.EQUIPMENT;
         if (path.startsWith("shearing/")) return LootTableCategory.SHEARING;
+        if (path.startsWith("dispensers/") || path.startsWith("dispenser/")) return LootTableCategory.DISPENSER;
+        if (path.startsWith("spawners/") || path.startsWith("spawner/")) return LootTableCategory.SPAWNER;
+        if (path.startsWith("pots/") || path.startsWith("pot/")) return LootTableCategory.POTS;
         return LootTableCategory.OTHER;
     }
 
