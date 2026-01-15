@@ -279,15 +279,54 @@ public class KubeJSExporter {
                         }
                         sb.append(".explorationMap('").append(destination).append("')");
                     } else if (funcName.contains("apply_bonus")) {
-                        // apply_bonus for fortune/looting - add as comment since it's complex
-                        String formula = "unknown";
+                        // apply_bonus for fortune/looting
+                        String enchantment = "fortune";
+                        if (func.parameters().has("enchantment")) {
+                            String enchId = func.parameters().get("enchantment").getAsString();
+                            // Extract just the enchantment name
+                            if (enchId.contains(":")) {
+                                enchantment = enchId.substring(enchId.indexOf(":") + 1);
+                            } else {
+                                enchantment = enchId;
+                            }
+                        }
+
+                        String formula = "";
                         if (func.parameters().has("formula")) {
                             formula = func.parameters().get("formula").getAsString();
                         }
-                        // End the chain and add a comment
-                        sb.append(";\n");
-                        sb.append("            // apply_bonus (formula: ").append(formula).append(")\n");
-                        continue; // Skip adding to unhandled
+
+                        if (formula.contains("ore_drops")) {
+                            // Ore drops formula: like diamond ore
+                            sb.append(".applyOreBonus('").append(enchantment).append("')");
+                        } else if (formula.contains("uniform_bonus_count")) {
+                            // Uniform bonus: adds bonusMultiplier * level items
+                            int bonusMultiplier = 1;
+                            if (func.parameters().has("parameters") && func.parameters().get("parameters").isJsonObject()) {
+                                var params = func.parameters().getAsJsonObject("parameters");
+                                if (params.has("bonusMultiplier")) {
+                                    bonusMultiplier = params.get("bonusMultiplier").getAsInt();
+                                }
+                            }
+                            sb.append(".applyBonus('").append(enchantment).append("', uniformBonusCount(").append(bonusMultiplier).append("))");
+                        } else if (formula.contains("binomial_with_bonus_count")) {
+                            // Binomial bonus: probability-based per level
+                            int extra = 0;
+                            float probability = 0.5f;
+                            if (func.parameters().has("parameters") && func.parameters().get("parameters").isJsonObject()) {
+                                var params = func.parameters().getAsJsonObject("parameters");
+                                if (params.has("extra")) {
+                                    extra = params.get("extra").getAsInt();
+                                }
+                                if (params.has("probability")) {
+                                    probability = params.get("probability").getAsFloat();
+                                }
+                            }
+                            sb.append(".applyBonus('").append(enchantment).append("', binomialWithBonusCount(").append(extra).append(", ").append(probability).append("))");
+                        } else {
+                            // Unknown formula, use generic applyBonus
+                            sb.append(".applyBonus('").append(enchantment).append("')");
+                        }
                     } else if (funcName.contains("copy_nbt")) {
                         // copy_nbt copies NBT from source
                         String source = "block_entity";
@@ -296,19 +335,40 @@ public class KubeJSExporter {
                         }
                         sb.append(".copyNBT('").append(source).append("')");
                     } else if (funcName.contains("set_contents")) {
-                        // set_contents for shulker boxes, bundles - add as comment
-                        sb.append(";\n");
-                        sb.append("            // set_contents (container contents)\n");
-                        continue;
+                        // set_contents for shulker boxes, bundles
+                        // Use addFunction with raw JSON since KubeJS supports it
+                        String type = "minecraft:shulker_box";
+                        if (func.parameters().has("type")) {
+                            type = func.parameters().get("type").getAsString();
+                        }
+                        sb.append(".addFunction({function: 'minecraft:set_contents', type: '").append(type).append("'");
+                        if (func.parameters().has("entries")) {
+                            sb.append(", entries: ").append(func.parameters().get("entries").toString());
+                        }
+                        sb.append("})");
                     } else if (funcName.contains("set_banner_pattern")) {
-                        // set_banner_pattern - add as comment
-                        sb.append(";\n");
-                        sb.append("            // set_banner_pattern\n");
-                        continue;
+                        // set_banner_pattern - use raw JSON function
+                        sb.append(".addFunction({function: 'minecraft:set_banner_pattern'");
+                        if (func.parameters().has("patterns")) {
+                            sb.append(", patterns: ").append(func.parameters().get("patterns").toString());
+                        }
+                        if (func.parameters().has("append")) {
+                            sb.append(", append: ").append(func.parameters().get("append").getAsBoolean());
+                        }
+                        sb.append("})");
                     } else {
                         // Track unhandled functions
                         unhandledFunctions.add(funcName);
                     }
+                }
+
+                // Add entry conditions using .when()
+                if (!entry.conditions().isEmpty()) {
+                    sb.append(".when(c => {\n");
+                    for (LootCondition cond : entry.conditions()) {
+                        sb.append(generateEntryConditionCode(cond));
+                    }
+                    sb.append("            })");
                 }
 
                 sb.append(";\n");
@@ -316,11 +376,6 @@ public class KubeJSExporter {
                 // Add comments for unhandled functions
                 for (String funcName : unhandledFunctions) {
                     sb.append("            // TODO: ").append(funcName).append(" function\n");
-                }
-
-                // Add entry conditions
-                for (LootCondition cond : entry.conditions()) {
-                    sb.append(generateConditionComment(cond, "entry"));
                 }
             }
         } else if (entryType.equals("minecraft:empty") || entryType.equals("empty")) {
@@ -350,23 +405,93 @@ public class KubeJSExporter {
     }
 
     /**
-     * Generate a comment for entry-level conditions (KubeJS entry conditions are complex).
+     * Generate KubeJS code for entry-level conditions inside .when() callback.
      */
-    private String generateConditionComment(LootCondition condition, String context) {
+    private String generateEntryConditionCode(LootCondition condition) {
+        StringBuilder sb = new StringBuilder();
         String condType = condition.condition();
 
-        // Some conditions can be noted inline
         if (condType.contains("killed_by_player")) {
-            return "            // Requires: killed_by_player\n";
+            sb.append("                c.killedByPlayer();\n");
+        } else if (condType.contains("random_chance_with_looting")) {
+            float chance = 0.1f;
+            float multiplier = 0.02f;
+            if (condition.parameters().has("chance")) {
+                chance = condition.parameters().get("chance").getAsFloat();
+            }
+            if (condition.parameters().has("looting_multiplier")) {
+                multiplier = condition.parameters().get("looting_multiplier").getAsFloat();
+            }
+            sb.append("                c.randomChanceWithLooting(").append(chance).append(", ").append(multiplier).append(");\n");
         } else if (condType.contains("random_chance")) {
             float chance = 0.5f;
             if (condition.parameters().has("chance")) {
                 chance = condition.parameters().get("chance").getAsFloat();
             }
-            return "            // Requires: random_chance(" + (int)(chance * 100) + "%)\n";
+            sb.append("                c.randomChance(").append(chance).append(");\n");
+        } else if (condType.contains("survives_explosion")) {
+            sb.append("                c.survivesExplosion();\n");
+        } else if (condType.contains("match_tool")) {
+            // match_tool checks tool properties - use raw JSON
+            sb.append("                c.addCondition({condition: 'minecraft:match_tool'");
+            if (condition.parameters().has("predicate")) {
+                sb.append(", predicate: ").append(condition.parameters().get("predicate").toString());
+            }
+            sb.append("});\n");
+        } else if (condType.contains("table_bonus")) {
+            // table_bonus uses enchantment levels for drop chance
+            String enchantment = "fortune";
+            if (condition.parameters().has("enchantment")) {
+                String enchId = condition.parameters().get("enchantment").getAsString();
+                if (enchId.contains(":")) {
+                    enchantment = enchId.substring(enchId.indexOf(":") + 1);
+                } else {
+                    enchantment = enchId;
+                }
+            }
+            sb.append("                c.addCondition({condition: 'minecraft:table_bonus', enchantment: '").append(enchantment).append("'");
+            if (condition.parameters().has("chances")) {
+                sb.append(", chances: ").append(condition.parameters().get("chances").toString());
+            }
+            sb.append("});\n");
+        } else if (condType.contains("entity_properties")) {
+            // entity_properties checks entity attributes
+            String entity = "this";
+            if (condition.parameters().has("entity")) {
+                entity = condition.parameters().get("entity").getAsString();
+            }
+            sb.append("                c.addCondition({condition: 'minecraft:entity_properties', entity: '").append(entity).append("'");
+            if (condition.parameters().has("predicate")) {
+                sb.append(", predicate: ").append(condition.parameters().get("predicate").toString());
+            }
+            sb.append("});\n");
+        } else if (condType.contains("inverted")) {
+            // inverted wraps another condition
+            sb.append("                c.addCondition({condition: 'minecraft:inverted'");
+            if (condition.parameters().has("term")) {
+                sb.append(", term: ").append(condition.parameters().get("term").toString());
+            }
+            sb.append("});\n");
+        } else if (condType.contains("alternative") || condType.contains("any_of")) {
+            // alternative/any_of - OR condition
+            sb.append("                c.addCondition({condition: '").append(condType).append("'");
+            if (condition.parameters().has("terms")) {
+                sb.append(", terms: ").append(condition.parameters().get("terms").toString());
+            }
+            sb.append("});\n");
+        } else if (condType.contains("reference")) {
+            // reference to a predicate
+            sb.append("                c.addCondition({condition: 'minecraft:reference'");
+            if (condition.parameters().has("name")) {
+                sb.append(", name: '").append(condition.parameters().get("name").getAsString()).append("'");
+            }
+            sb.append("});\n");
+        } else {
+            // Unknown condition - use raw JSON
+            sb.append("                c.addCondition({condition: '").append(condType).append("'});\n");
         }
 
-        return "";
+        return sb.toString();
     }
 
     /**
@@ -529,15 +654,70 @@ public class KubeJSExporter {
             }
             sb.append("            ").append(target).append(".copyNBT('").append(source).append("');\n");
         } else if (funcName.contains("apply_bonus")) {
-            // apply_bonus for fortune/looting - add as comment
-            String formula = "unknown";
+            // apply_bonus for fortune/looting
+            String enchantment = "fortune";
+            if (function.parameters().has("enchantment")) {
+                String enchId = function.parameters().get("enchantment").getAsString();
+                if (enchId.contains(":")) {
+                    enchantment = enchId.substring(enchId.indexOf(":") + 1);
+                } else {
+                    enchantment = enchId;
+                }
+            }
+
+            String formula = "";
             if (function.parameters().has("formula")) {
                 formula = function.parameters().get("formula").getAsString();
             }
-            sb.append("            // apply_bonus (formula: ").append(formula).append(")\n");
-        } else if (funcName.contains("set_contents") || funcName.contains("set_banner_pattern")) {
-            // Complex functions - add as comment
-            sb.append("            // Function: ").append(funcName).append(" (complex, not supported)\n");
+
+            if (formula.contains("ore_drops")) {
+                sb.append("            ").append(target).append(".applyOreBonus('").append(enchantment).append("');\n");
+            } else if (formula.contains("uniform_bonus_count")) {
+                int bonusMultiplier = 1;
+                if (function.parameters().has("parameters") && function.parameters().get("parameters").isJsonObject()) {
+                    var params = function.parameters().getAsJsonObject("parameters");
+                    if (params.has("bonusMultiplier")) {
+                        bonusMultiplier = params.get("bonusMultiplier").getAsInt();
+                    }
+                }
+                sb.append("            ").append(target).append(".applyBonus('").append(enchantment).append("', uniformBonusCount(").append(bonusMultiplier).append("));\n");
+            } else if (formula.contains("binomial_with_bonus_count")) {
+                int extra = 0;
+                float probability = 0.5f;
+                if (function.parameters().has("parameters") && function.parameters().get("parameters").isJsonObject()) {
+                    var params = function.parameters().getAsJsonObject("parameters");
+                    if (params.has("extra")) {
+                        extra = params.get("extra").getAsInt();
+                    }
+                    if (params.has("probability")) {
+                        probability = params.get("probability").getAsFloat();
+                    }
+                }
+                sb.append("            ").append(target).append(".applyBonus('").append(enchantment).append("', binomialWithBonusCount(").append(extra).append(", ").append(probability).append("));\n");
+            } else {
+                sb.append("            ").append(target).append(".applyBonus('").append(enchantment).append("');\n");
+            }
+        } else if (funcName.contains("set_contents")) {
+            // set_contents for shulker boxes, bundles - use addFunction with raw JSON
+            String type = "minecraft:shulker_box";
+            if (function.parameters().has("type")) {
+                type = function.parameters().get("type").getAsString();
+            }
+            sb.append("            ").append(target).append(".addFunction({function: 'minecraft:set_contents', type: '").append(type).append("'");
+            if (function.parameters().has("entries")) {
+                sb.append(", entries: ").append(function.parameters().get("entries").toString());
+            }
+            sb.append("});\n");
+        } else if (funcName.contains("set_banner_pattern")) {
+            // set_banner_pattern - use addFunction with raw JSON
+            sb.append("            ").append(target).append(".addFunction({function: 'minecraft:set_banner_pattern'");
+            if (function.parameters().has("patterns")) {
+                sb.append(", patterns: ").append(function.parameters().get("patterns").toString());
+            }
+            if (function.parameters().has("append")) {
+                sb.append(", append: ").append(function.parameters().get("append").getAsBoolean());
+            }
+            sb.append("});\n");
         } else {
             // Add comment for unhandled functions
             sb.append("            // Function: ").append(funcName).append("\n");
