@@ -1022,6 +1022,82 @@ data/minecraft/loot_table/chests/simple_dungeon.json
 
 **Key Class:** `DatapackImporter` - Singleton with `getInstance()`
 
+## KubeJS Export
+
+Exports edited loot tables as KubeJS server scripts for modpack distribution.
+
+### Output Location
+
+Scripts are exported to `.minecraft/kubejs/server_scripts/isotope_loot_<timestamp>.js`
+
+### Supported Entry Functions
+
+These functions are converted to chained KubeJS method calls on item entries:
+
+| Function | KubeJS Output | Example |
+|----------|---------------|---------|
+| `set_count` | `.count(n)` or `.count([min, max])` | `.count([1, 3])` |
+| `set_damage` | `.damage(n)` | `.damage(0.5)` |
+| `enchant_randomly` | `.enchantRandomly()` | - |
+| `enchant_with_levels` | `.enchantWithLevels(n)` | `.enchantWithLevels([5, 15])` |
+| `looting_enchant` | `.lootingEnchant(min, max)` | `.lootingEnchant(0, 1)` |
+| `furnace_smelt` | `.furnaceSmelt()` | - |
+| `limit_count` | `.limitCount(min, max)` | `.limitCount(0, 64)` |
+| `set_nbt` | `.nbt({...})` | `.nbt({Damage: 0})` |
+| `set_name` | `.customName(Component.literal(...))` | - |
+| `set_lore` | `.lore([Component.literal(...)])` | - |
+| `set_potion` | `.potion('id')` | `.potion('minecraft:healing')` |
+| `exploration_map` | `.explorationMap('dest')` | `.explorationMap('buried_treasure')` |
+| `copy_nbt` | `.copyNBT('source')` | `.copyNBT('block_entity')` |
+
+### Supported Pool Functions
+
+Same functions available at pool level via `generateFunctionCode()`:
+
+| Function | KubeJS Output |
+|----------|---------------|
+| `copy_name` | `pool.copyName('source')` |
+| All entry functions | `pool.<function>()` |
+
+### Supported Conditions
+
+| Condition | KubeJS Output |
+|-----------|---------------|
+| `random_chance` | `pool.randomChance(0.5)` |
+| `random_chance_with_looting` | `pool.randomChanceWithLooting(0.1, 0.02)` |
+| `killed_by_player` | `pool.killedByPlayer()` |
+| `survives_explosion` | `pool.survivesExplosion()` |
+
+### Functions as Comments
+
+Complex functions that can't be directly converted are added as comments:
+
+| Function | Comment Output |
+|----------|----------------|
+| `apply_bonus` | `// apply_bonus (formula: ...)` |
+| `set_contents` | `// set_contents (container contents)` |
+| `set_banner_pattern` | `// set_banner_pattern` |
+| Other conditions | `// Condition: <type>` |
+
+### Generated Script Structure
+
+```javascript
+ServerEvents.lootTables(event => {
+    // minecraft:chests/simple_dungeon
+    event.modify('minecraft:chests/simple_dungeon', loot => {
+        loot.clearPools();
+        loot.addPool(pool => {
+            pool.rolls = [1, 3];
+            pool.addItem('minecraft:diamond', 5).count([1, 2]);
+            pool.addItem('minecraft:gold_ingot', 10).count([2, 4]);
+            pool.addEmpty(20);
+        });
+    });
+});
+```
+
+**Key Class:** `KubeJSExporter` - Singleton with `getInstance()`
+
 ## Mixin Architecture
 
 Three critical mixins enable runtime observation and test mode without modifying core game behavior.
