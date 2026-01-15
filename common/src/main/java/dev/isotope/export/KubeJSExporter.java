@@ -181,28 +181,78 @@ public class KubeJSExporter {
 
                 sb.append(")");
 
-                // Check for set_count function to add count
+                // Build chained function calls
+                List<String> unhandledFunctions = new ArrayList<>();
+
                 for (LootFunction func : entry.functions()) {
                     String funcName = func.function();
-                    if (funcName.equals("minecraft:set_count") || funcName.equals("set_count")) {
+
+                    if (funcName.contains("set_count")) {
                         if (func.parameters().has("count")) {
                             NumberProvider count = parseNumberProvider(func.parameters().get("count"));
                             if (count != null) {
                                 sb.append(".count(").append(numberProviderToJS(count)).append(")");
                             }
                         }
+                    } else if (funcName.contains("set_damage")) {
+                        if (func.parameters().has("damage")) {
+                            NumberProvider damage = parseNumberProvider(func.parameters().get("damage"));
+                            if (damage != null) {
+                                sb.append(".damage(").append(numberProviderToJS(damage)).append(")");
+                            }
+                        }
+                    } else if (funcName.contains("enchant_randomly")) {
+                        sb.append(".enchantRandomly()");
+                    } else if (funcName.contains("enchant_with_levels")) {
+                        if (func.parameters().has("levels")) {
+                            NumberProvider levels = parseNumberProvider(func.parameters().get("levels"));
+                            if (levels != null) {
+                                sb.append(".enchantWithLevels(").append(numberProviderToJS(levels)).append(")");
+                            }
+                        }
+                    } else if (funcName.contains("looting_enchant")) {
+                        int countMin = 0;
+                        int countMax = 1;
+                        if (func.parameters().has("count")) {
+                            NumberProvider count = parseNumberProvider(func.parameters().get("count"));
+                            if (count != null) {
+                                countMin = (int) count.getMin();
+                                countMax = (int) count.getMax();
+                            }
+                        }
+                        sb.append(".lootingEnchant(").append(countMin).append(", ").append(countMax).append(")");
+                    } else if (funcName.contains("furnace_smelt")) {
+                        sb.append(".furnaceSmelt()");
+                    } else if (funcName.contains("limit_count")) {
+                        int min = 0;
+                        int max = 64;
+                        if (func.parameters().has("limit")) {
+                            var limit = func.parameters().get("limit");
+                            if (limit.isJsonObject()) {
+                                var obj = limit.getAsJsonObject();
+                                if (obj.has("min")) min = obj.get("min").getAsInt();
+                                if (obj.has("max")) max = obj.get("max").getAsInt();
+                            } else if (limit.isJsonPrimitive()) {
+                                max = limit.getAsInt();
+                            }
+                        }
+                        sb.append(".limitCount(").append(min).append(", ").append(max).append(")");
+                    } else {
+                        // Track unhandled functions
+                        unhandledFunctions.add(funcName);
                     }
                 }
 
                 sb.append(";\n");
 
-                // Add other functions (excluding set_count which we handled)
-                for (LootFunction func : entry.functions()) {
-                    String funcName = func.function();
-                    if (!funcName.equals("minecraft:set_count") && !funcName.equals("set_count")) {
-                        // For complex functions, add a comment
-                        sb.append("            // TODO: ").append(funcName).append(" function\n");
-                    }
+                // Add comments for unhandled functions
+                for (String funcName : unhandledFunctions) {
+                    sb.append("            // TODO: ").append(funcName).append(" function\n");
+                }
+
+                // Add entry conditions
+                for (LootCondition cond : entry.conditions()) {
+                    sb.append(generateConditionComment(cond, "entry"));
                 }
             }
         } else if (entryType.equals("minecraft:empty") || entryType.equals("empty")) {
@@ -232,14 +282,75 @@ public class KubeJSExporter {
     }
 
     /**
+     * Generate a comment for entry-level conditions (KubeJS entry conditions are complex).
+     */
+    private String generateConditionComment(LootCondition condition, String context) {
+        String condType = condition.condition();
+
+        // Some conditions can be noted inline
+        if (condType.contains("killed_by_player")) {
+            return "            // Requires: killed_by_player\n";
+        } else if (condType.contains("random_chance")) {
+            float chance = 0.5f;
+            if (condition.parameters().has("chance")) {
+                chance = condition.parameters().get("chance").getAsFloat();
+            }
+            return "            // Requires: random_chance(" + (int)(chance * 100) + "%)\n";
+        }
+
+        return "";
+    }
+
+    /**
      * Generate KubeJS code for a condition.
      */
     private String generateConditionCode(LootCondition condition, String target) {
         StringBuilder sb = new StringBuilder();
         String condType = condition.condition();
 
-        // KubeJS condition syntax varies - add as comment for manual adjustment
-        sb.append("            // Condition: ").append(condType).append("\n");
+        if (condType.contains("random_chance_with_looting")) {
+            // random_chance_with_looting(chance, lootingMultiplier)
+            float chance = 0.1f;
+            float multiplier = 0.02f;
+            if (condition.parameters().has("chance")) {
+                chance = condition.parameters().get("chance").getAsFloat();
+            }
+            if (condition.parameters().has("looting_multiplier")) {
+                multiplier = condition.parameters().get("looting_multiplier").getAsFloat();
+            }
+            sb.append("            ").append(target).append(".randomChanceWithLooting(")
+              .append(chance).append(", ").append(multiplier).append(");\n");
+        } else if (condType.contains("random_chance")) {
+            // random_chance(chance)
+            float chance = 0.5f;
+            if (condition.parameters().has("chance")) {
+                chance = condition.parameters().get("chance").getAsFloat();
+            }
+            sb.append("            ").append(target).append(".randomChance(").append(chance).append(");\n");
+        } else if (condType.contains("killed_by_player")) {
+            sb.append("            ").append(target).append(".killedByPlayer();\n");
+        } else if (condType.contains("survives_explosion")) {
+            sb.append("            ").append(target).append(".survivesExplosion();\n");
+        } else if (condType.contains("entity_properties")) {
+            // entity_properties is complex - add as comment with info
+            String entity = "this";
+            if (condition.parameters().has("entity")) {
+                entity = condition.parameters().get("entity").getAsString();
+            }
+            sb.append("            // Condition: entity_properties (entity: ").append(entity).append(")\n");
+        } else if (condType.contains("match_tool")) {
+            // match_tool checks the tool used
+            sb.append("            // Condition: match_tool (check tool properties)\n");
+        } else if (condType.contains("table_bonus")) {
+            // table_bonus is enchantment level based
+            sb.append("            // Condition: table_bonus (enchantment level scaling)\n");
+        } else if (condType.contains("inverted")) {
+            // inverted wraps another condition
+            sb.append("            // Condition: inverted (negates inner condition)\n");
+        } else {
+            // Unknown condition - add as comment
+            sb.append("            // Condition: ").append(condType).append("\n");
+        }
 
         return sb.toString();
     }
@@ -268,6 +379,51 @@ public class KubeJSExporter {
                 if (damage != null) {
                     sb.append("            ").append(target).append(".damage(")
                       .append(numberProviderToJS(damage)).append(");\n");
+                }
+            }
+        } else if (funcName.contains("looting_enchant")) {
+            // looting_enchant adds bonus items per looting level
+            int countMin = 0;
+            int countMax = 1;
+            if (function.parameters().has("count")) {
+                NumberProvider count = parseNumberProvider(function.parameters().get("count"));
+                if (count != null) {
+                    countMin = (int) count.getMin();
+                    countMax = (int) count.getMax();
+                }
+            }
+            sb.append("            ").append(target).append(".lootingEnchant(")
+              .append(countMin).append(", ").append(countMax).append(");\n");
+        } else if (funcName.contains("furnace_smelt")) {
+            sb.append("            ").append(target).append(".furnaceSmelt();\n");
+        } else if (funcName.contains("copy_name")) {
+            String source = "block_entity";
+            if (function.parameters().has("source")) {
+                source = function.parameters().get("source").getAsString();
+            }
+            sb.append("            ").append(target).append(".copyName('").append(source).append("');\n");
+        } else if (funcName.contains("limit_count")) {
+            // limit_count restricts the stack size
+            int min = 0;
+            int max = 64;
+            if (function.parameters().has("limit")) {
+                var limit = function.parameters().get("limit");
+                if (limit.isJsonObject()) {
+                    var obj = limit.getAsJsonObject();
+                    if (obj.has("min")) min = obj.get("min").getAsInt();
+                    if (obj.has("max")) max = obj.get("max").getAsInt();
+                } else if (limit.isJsonPrimitive()) {
+                    max = limit.getAsInt();
+                }
+            }
+            sb.append("            ").append(target).append(".limitCount(").append(min).append(", ").append(max).append(");\n");
+        } else if (funcName.contains("set_count")) {
+            // set_count - handled at entry level but also valid at pool level
+            if (function.parameters().has("count")) {
+                NumberProvider count = parseNumberProvider(function.parameters().get("count"));
+                if (count != null) {
+                    sb.append("            ").append(target).append(".count(")
+                      .append(numberProviderToJS(count)).append(");\n");
                 }
             }
         } else {
