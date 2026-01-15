@@ -230,7 +230,7 @@ Pools can have their own functions and conditions that apply to all entries in t
 
 **Visual Display**: When a pool has functions or conditions, they appear below the pool header:
 ```
-Pool 1          Rolls: 1-3                    [x]
+Pool 1          Rolls: 1-3    Luck: +1        [x]
   Functions: set_count (1-3)              [X]
   Conditions: random_chance (25%)         [X]
   ├─ diamond           W: 5   Qty: 1-2
@@ -244,6 +244,29 @@ Pool 1          Rolls: 1-3                    [x]
 - `RemovePoolFunction(poolIndex, functionIndex)` - Remove function from pool
 - `AddPoolCondition(poolIndex, condition)` - Add condition to pool
 - `RemovePoolCondition(poolIndex, conditionIndex)` - Remove condition from pool
+
+### Bonus Rolls (Luck-Based)
+
+Pools have bonus rolls that add extra rolls based on the player's luck attribute. This affects quality-weighted loot when players have Luck potion effects or Luck of the Sea enchantment.
+
+**Visual Display**: Bonus rolls appear in the pool header:
+- `Luck: +1` (green) - Pool has bonus rolls configured
+- `[+Luck]` (muted, clickable) - Pool has no bonus rolls, click to add
+
+**Editing Bonus Rolls**: Right-click pool header → "Set Bonus Rolls..." opens dialog with presets:
+
+| Preset | Effect |
+|--------|--------|
+| None (0) | No bonus rolls |
+| +1 per luck | 1 extra roll per luck point |
+| +2 per luck | 2 extra rolls per luck point |
+| +0-1 per luck | 0-1 extra rolls per luck point |
+| +0-2 per luck | 0-2 extra rolls per luck point |
+| +1-2 per luck | 1-2 extra rolls per luck point |
+
+**Key Classes**:
+- `BonusRollsDialog` - Preset-based bonus rolls selection
+- `ModifyBonusRolls` operation - Changes pool bonus rolls
 
 ## Test Mode
 
