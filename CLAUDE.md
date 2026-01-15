@@ -245,6 +245,95 @@ Pool 1          Rolls: 1-3    Luck: +1        [x]
 - `AddPoolCondition(poolIndex, condition)` - Add condition to pool
 - `RemovePoolCondition(poolIndex, conditionIndex)` - Remove condition from pool
 
+### Table-Level Functions
+
+Loot tables can have functions that apply to all pools and entries in the table. These are separate from pool-level and entry-level functions.
+
+**Adding Table Functions**: Right-click anywhere in the edit panel header area (or use the command menu) → "Add Table Function..." opens the AddFunctionDialog. The selected function applies to the entire table.
+
+**Visual Display**: Table functions appear at the top of the edit panel, before any pools:
+```
+minecraft:chests/simple_dungeon
+  Table Functions: set_count (1-3)          [X]
+  Pool 1          Rolls: 1-3                [x]
+  ├─ diamond           W: 5
+  └─ gold_ingot        W: 10
+```
+
+**Remove Buttons**: Each table function has an [X] button to remove it.
+
+**Key Operations**:
+- `AddTableFunction(function)` - Add function to table
+- `RemoveTableFunction(functionIndex)` - Remove function from table
+
+**Key Classes**:
+- `LootEditOperation.AddTableFunction` - Operation record
+- `LootEditOperation.RemoveTableFunction` - Operation record
+- `LootEditApplicator` - Applies operations to table structure
+
+### Random Sequence Editing (1.20+)
+
+Loot tables in Minecraft 1.20+ can specify a random sequence identifier that controls loot generation randomness. This allows the same seed to produce different results for different tables.
+
+**Editing Random Sequence**: Right-click in the edit panel header → "Edit Random Sequence..." opens a dialog with:
+- Current value display (or "Not set")
+- Input field for the sequence identifier
+- Clear button to remove the sequence
+
+**Common Values**:
+- Not set (default) - Uses global random
+- `minecraft:chests/simple_dungeon` - Unique to this table
+- Custom identifiers for specific randomization needs
+
+**Visual Display**: The random sequence appears in the table header when set:
+```
+minecraft:chests/simple_dungeon
+  Random Seq: minecraft:chests/simple_dungeon
+  Pool 1          Rolls: 1-3
+```
+
+**Key Operation**: `SetRandomSequence(Optional<ResourceLocation>)` - Sets or clears the random sequence
+
+**Key Classes**:
+- `RandomSequenceDialog` - Dialog for editing random sequence
+- `LootEditOperation.SetRandomSequence` - Operation record
+- `LootTableStructure.withRandomSequence()` - Builder method
+
+### Composite Entry Children
+
+Composite entries (alternatives, group, sequence) contain child entries that can be viewed and edited.
+
+**Composite Entry Types**:
+| Type | Behavior | Icon |
+|------|----------|------|
+| `alternatives` | First matching child drops (like OR) | Aqua colored |
+| `group` | All children drop together (like AND) | Aqua colored |
+| `sequence` | Children drop in order until one fails | Aqua colored |
+
+**Visual Display**: Composite entries show type and child count:
+```
+Pool 1          Rolls: 1-3
+├─ alternatives (3)     W: 10    [Edit]
+├─ diamond              W: 5
+└─ gold_ingot           W: 10
+```
+
+**Editing Children**: Click "Edit" button on a composite entry to open the CompositeChildrenDialog:
+- Shows all child entries with icons, names, and weights
+- "Add Child" button opens ItemPickerScreen to add new child
+- [X] button on each child removes it
+- Scrollable list for entries with many children
+
+**Key Operations**:
+- `AddChild(poolIndex, entryIndex, childIndex, child)` - Add child to composite
+- `RemoveChild(poolIndex, entryIndex, childIndex)` - Remove child from composite
+- `ModifyChild(poolIndex, entryIndex, childIndex, newChild)` - Replace child
+
+**Key Classes**:
+- `CompositeChildrenDialog` - Dialog for viewing/editing children
+- `LootEntry.withChildren()` - Builder method for updating children
+- `LootEntry.isComposite()` - Check if entry is a composite type
+
 ### Bonus Rolls (Luck-Based)
 
 Pools have bonus rolls that add extra rolls based on the player's luck attribute. This affects quality-weighted loot when players have Luck potion effects or Luck of the Sea enchantment.
@@ -678,6 +767,7 @@ Centralized keyboard shortcuts for the loot editor. Screens implement `ShortcutC
 |----------|--------|-------------|
 | `Ctrl+C` | Copy | Copy selected entry to clipboard |
 | `Ctrl+V` | Paste | Paste entry from clipboard |
+| `Ctrl+Shift+V` | Import JSON | Import loot table JSON from clipboard |
 
 ### Navigation Shortcuts
 
@@ -883,6 +973,12 @@ Each entry contains:
 | `REMOVE_POOL_FUNC` | Removed function from pool |
 | `ADD_POOL_COND` | Added condition to pool |
 | `REMOVE_POOL_COND` | Removed condition from pool |
+| `ADD_TABLE_FUNC` | Added function to table |
+| `REMOVE_TABLE_FUNC` | Removed function from table |
+| `SET_RANDOM_SEQ` | Set/cleared random sequence |
+| `ADD_CHILD` | Added child to composite entry |
+| `REMOVE_CHILD` | Removed child from composite entry |
+| `MODIFY_CHILD` | Modified child in composite entry |
 | `UNDO` | Undo operation |
 | `REDO` | Redo operation |
 | `BATCH` | Multiple operations at once |
@@ -1125,6 +1221,98 @@ ServerEvents.lootTables(event => {
 
 **Key Class:** `KubeJSExporter` - Singleton with `getInstance()`
 
+## CraftTweaker Export
+
+Exports edited loot tables as CraftTweaker ZenScript files for modpack distribution.
+
+### Output Location
+
+Scripts are exported to `.minecraft/scripts/isotope_loot_<timestamp>.zs`
+
+### Script Structure
+
+```zenscript
+import crafttweaker.api.loot.LootManager;
+import crafttweaker.api.loot.modifier.CommonLootModifiers;
+
+// Isotope Loot Table Export
+// Generated: 2024-01-15 12:30:45
+
+// minecraft:chests/simple_dungeon
+LootManager.getTable(<resource:minecraft:chests/simple_dungeon>).removePool("pool1");
+LootManager.getTable(<resource:minecraft:chests/simple_dungeon>).addPool("pool1", (builder) => {
+    builder.rolls(1, 3);
+    builder.bonusRolls(0, 1);
+    builder.addEntry(<item:minecraft:diamond>, 5, 1, (entry) => {
+        entry.addFunction(CommonLootModifiers.setCount(1, 2));
+    });
+    builder.addEntry(<item:minecraft:gold_ingot>, 10, 1);
+    builder.addEmptyEntry(20);
+});
+```
+
+### Supported Entry Functions
+
+These functions are converted to CraftTweaker modifier calls:
+
+| Function | CraftTweaker Output |
+|----------|---------------------|
+| `set_count` | `CommonLootModifiers.setCount(min, max)` |
+| `set_damage` | `CommonLootModifiers.setDamage(min, max)` |
+| `enchant_randomly` | `CommonLootModifiers.enchantRandomly()` |
+| `enchant_with_levels` | `CommonLootModifiers.enchantWithLevels(min, max)` |
+| `looting_enchant` | `CommonLootModifiers.lootingEnchant(min, max)` |
+| `furnace_smelt` | `CommonLootModifiers.smelt()` |
+| `exploration_map` | `// exploration_map (comment)` |
+| `set_potion` | `// set_potion (comment)` |
+
+### Supported Conditions
+
+| Condition | CraftTweaker Output |
+|-----------|---------------------|
+| `random_chance` | `LootConditions.randomChance(chance)` |
+| `killed_by_player` | `LootConditions.killedByPlayer()` |
+| `survives_explosion` | `LootConditions.survivesExplosion()` |
+
+### Features
+
+- **Pool naming**: Pools are named `pool1`, `pool2`, etc.
+- **Entry quality**: Passed as third parameter to `addEntry()`
+- **Empty entries**: Uses `addEmptyEntry(weight)`
+- **Comments**: Complex functions that can't be directly converted are added as comments
+- **Timestamped filenames**: Each export creates a unique file
+
+**Key Class:** `CraftTweakerExporter` - Static `export()` method
+
+## JSON Import from Clipboard
+
+Import loot tables directly from JSON in the clipboard.
+
+### Usage
+
+1. Copy loot table JSON to clipboard (from wiki, other tools, etc.)
+2. In the loot editor, press `Ctrl+Shift+V` or use command menu "Import JSON from Clipboard"
+3. JSON is parsed and applied as edit operations
+4. Full undo/redo support for imported changes
+
+### Supported JSON Formats
+
+- Complete loot table JSON (with `pools` array)
+- Single pool JSON (array of entries)
+- Must be valid Minecraft loot table format
+
+### Error Handling
+
+- Invalid JSON shows error toast with parse details
+- Partial imports not supported (all-or-nothing)
+- Non-loot-table JSON detected and rejected
+
+### Key Implementation
+
+- `LootEditorScreen.onImportJsonFromClipboard()` - Handles clipboard read and parsing
+- Creates series of `AddPool` and `AddEntry` operations
+- Uses `LootTableStructure.fromJson()` for parsing
+
 ## Mixin Architecture
 
 Three critical mixins enable runtime observation and test mode without modifying core game behavior.
@@ -1288,6 +1476,11 @@ Example: `"Pool 1, Entry 3: diamond_sword (W:5)"`
 - Datapack import/export
 - Compare mode
 - Structure badges on loot tables
+- Table/pool/entry-level function editing
+- Random sequence editing (1.20+)
+- Composite entry children editing
+- KubeJS and CraftTweaker export
+- JSON import from clipboard
 
 ## Build Commands
 
