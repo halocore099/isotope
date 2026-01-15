@@ -31,7 +31,13 @@ public sealed interface LootEditOperation permits
         LootEditOperation.AddPoolFunction,
         LootEditOperation.RemovePoolFunction,
         LootEditOperation.AddPoolCondition,
-        LootEditOperation.RemovePoolCondition {
+        LootEditOperation.RemovePoolCondition,
+        LootEditOperation.AddTableFunction,
+        LootEditOperation.RemoveTableFunction,
+        LootEditOperation.SetRandomSequence,
+        LootEditOperation.AddChild,
+        LootEditOperation.RemoveChild,
+        LootEditOperation.ModifyChild {
 
     /**
      * Get a human-readable description of this operation.
@@ -242,6 +248,75 @@ public sealed interface LootEditOperation permits
         @Override
         public String getDescription() {
             return "Remove condition #" + (conditionIndex + 1) + " from pool #" + (poolIndex + 1);
+        }
+    }
+
+    // ===== Table Function Operations =====
+
+    /**
+     * Add a function to the table (applies to all pools/entries).
+     */
+    record AddTableFunction(LootFunction function) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return "Add " + function.getDisplayName() + " to table";
+        }
+    }
+
+    /**
+     * Remove a function from the table.
+     */
+    record RemoveTableFunction(int functionIndex) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return "Remove function #" + (functionIndex + 1) + " from table";
+        }
+    }
+
+    // ===== Random Sequence Operations =====
+
+    /**
+     * Set the random sequence for the table (1.20+ feature for deterministic loot).
+     */
+    record SetRandomSequence(Optional<ResourceLocation> randomSequence) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return randomSequence.map(rs -> "Set random sequence to " + rs.toString())
+                .orElse("Remove random sequence");
+        }
+    }
+
+    // ===== Composite Entry Child Operations =====
+
+    /**
+     * Add a child entry to a composite entry (alternatives/group/sequence).
+     */
+    record AddChild(int poolIndex, int entryIndex, int childIndex, LootEntry child) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            String childName = child.name().map(ResourceLocation::getPath).orElse("child");
+            return "Add " + childName + " to composite entry #" + (entryIndex + 1) + " in pool #" + (poolIndex + 1);
+        }
+    }
+
+    /**
+     * Remove a child entry from a composite entry.
+     */
+    record RemoveChild(int poolIndex, int entryIndex, int childIndex) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return "Remove child #" + (childIndex + 1) + " from entry #" + (entryIndex + 1) + " in pool #" + (poolIndex + 1);
+        }
+    }
+
+    /**
+     * Modify a child entry within a composite entry (for weight, item changes, etc.).
+     */
+    record ModifyChild(int poolIndex, int entryIndex, int childIndex, LootEntry newChild) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            String childName = newChild.name().map(ResourceLocation::getPath).orElse("child");
+            return "Modify child #" + (childIndex + 1) + " (" + childName + ") in entry #" + (entryIndex + 1);
         }
     }
 }

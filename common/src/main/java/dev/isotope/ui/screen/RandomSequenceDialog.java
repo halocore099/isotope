@@ -1,0 +1,212 @@
+package dev.isotope.ui.screen;
+
+import dev.isotope.ui.IsotopeColors;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
+import java.util.function.Consumer;
+
+/**
+ * Dialog for editing the random sequence of a loot table.
+ *
+ * Random sequence is a 1.20+ feature that allows for deterministic loot generation
+ * based on world seed and block position.
+ */
+public class RandomSequenceDialog extends Screen {
+
+    private static final int DIALOG_WIDTH = 280;
+    private static final int DIALOG_HEIGHT = 140;
+
+    @Nullable
+    private final Screen parent;
+    private final Optional<ResourceLocation> currentSequence;
+    private final Consumer<Optional<ResourceLocation>> onSequenceSelected;
+
+    private String inputText;
+    private boolean inputFocused = true;
+
+    public RandomSequenceDialog(@Nullable Screen parent, Optional<ResourceLocation> currentSequence,
+                                 Consumer<Optional<ResourceLocation>> onSequenceSelected) {
+        super(Component.literal("Edit Random Sequence"));
+        this.parent = parent;
+        this.currentSequence = currentSequence;
+        this.onSequenceSelected = onSequenceSelected;
+        this.inputText = currentSequence.map(ResourceLocation::toString).orElse("");
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Dim background
+        graphics.fill(0, 0, width, height, 0x80000000);
+
+        int dialogX = (width - DIALOG_WIDTH) / 2;
+        int dialogY = (height - DIALOG_HEIGHT) / 2;
+
+        // Dialog background
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, 0xFF404040);
+
+        // Title
+        graphics.drawCenteredString(font, "Edit Random Sequence", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
+
+        // Subtitle
+        graphics.drawCenteredString(font, "1.20+ feature for deterministic loot", dialogX + DIALOG_WIDTH / 2, dialogY + 22, IsotopeColors.TEXT_MUTED);
+
+        // Input label
+        graphics.drawString(font, "Sequence ID:", dialogX + 10, dialogY + 42, IsotopeColors.TEXT_SECONDARY);
+
+        // Input box
+        int inputX = dialogX + 10;
+        int inputY = dialogY + 54;
+        int inputWidth = DIALOG_WIDTH - 20;
+        int inputHeight = 18;
+        int inputBgColor = inputFocused ? 0xFF3a3a3a : 0xFF2a2a2a;
+        int inputBorderColor = inputFocused ? 0xFF55FF55 : 0xFF404040;
+        graphics.fill(inputX, inputY, inputX + inputWidth, inputY + inputHeight, inputBgColor);
+        graphics.renderOutline(inputX, inputY, inputWidth, inputHeight, inputBorderColor);
+
+        // Input text with cursor
+        String displayText = inputText;
+        if (inputFocused && (System.currentTimeMillis() / 500) % 2 == 0) {
+            displayText += "_";
+        }
+        graphics.drawString(font, displayText, inputX + 4, inputY + 5, IsotopeColors.TEXT_PRIMARY);
+
+        // Hint
+        graphics.drawString(font, "e.g., minecraft:blocks/ancient_city", dialogX + 10, dialogY + 76, IsotopeColors.TEXT_MUTED);
+        graphics.drawString(font, "Leave empty to remove sequence", dialogX + 10, dialogY + 88, IsotopeColors.TEXT_MUTED);
+
+        // Buttons row
+        int buttonY = dialogY + DIALOG_HEIGHT - 28;
+        int buttonWidth = 70;
+        int gap = 10;
+        int totalWidth = buttonWidth * 2 + gap;
+        int startX = dialogX + (DIALOG_WIDTH - totalWidth) / 2;
+
+        // Apply button
+        boolean applyHovered = mouseX >= startX && mouseX < startX + buttonWidth &&
+            mouseY >= buttonY && mouseY < buttonY + 20;
+        graphics.fill(startX, buttonY, startX + buttonWidth, buttonY + 20,
+            applyHovered ? 0xFF3a5a3a : 0xFF2a4a2a);
+        graphics.drawCenteredString(font, "Apply", startX + buttonWidth / 2, buttonY + 6,
+            applyHovered ? 0xFF55FF55 : 0xFF88FF88);
+
+        // Cancel button
+        int cancelX = startX + buttonWidth + gap;
+        boolean cancelHovered = mouseX >= cancelX && mouseX < cancelX + buttonWidth &&
+            mouseY >= buttonY && mouseY < buttonY + 20;
+        graphics.fill(cancelX, buttonY, cancelX + buttonWidth, buttonY + 20,
+            cancelHovered ? 0xFF4a3a3a : 0xFF2a2a2a);
+        graphics.drawCenteredString(font, "Cancel", cancelX + buttonWidth / 2, buttonY + 6,
+            cancelHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            int dialogX = (width - DIALOG_WIDTH) / 2;
+            int dialogY = (height - DIALOG_HEIGHT) / 2;
+
+            // Check input box click
+            int inputX = dialogX + 10;
+            int inputY = dialogY + 54;
+            int inputWidth = DIALOG_WIDTH - 20;
+            if (mouseX >= inputX && mouseX < inputX + inputWidth &&
+                mouseY >= inputY && mouseY < inputY + 18) {
+                inputFocused = true;
+                return true;
+            }
+
+            // Check buttons
+            int buttonY = dialogY + DIALOG_HEIGHT - 28;
+            int buttonWidth = 70;
+            int gap = 10;
+            int totalWidth = buttonWidth * 2 + gap;
+            int startX = dialogX + (DIALOG_WIDTH - totalWidth) / 2;
+
+            // Apply button
+            if (mouseX >= startX && mouseX < startX + buttonWidth &&
+                mouseY >= buttonY && mouseY < buttonY + 20) {
+                applySelection();
+                return true;
+            }
+
+            // Cancel button
+            int cancelX = startX + buttonWidth + gap;
+            if (mouseX >= cancelX && mouseX < cancelX + buttonWidth &&
+                mouseY >= buttonY && mouseY < buttonY + 20) {
+                onClose();
+                return true;
+            }
+        }
+
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) { // Escape
+            onClose();
+            return true;
+        }
+
+        if (keyCode == 257 || keyCode == 335) { // Enter
+            applySelection();
+            return true;
+        }
+
+        if (inputFocused) {
+            if (keyCode == 259) { // Backspace
+                if (!inputText.isEmpty()) {
+                    inputText = inputText.substring(0, inputText.length() - 1);
+                }
+                return true;
+            }
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        if (inputFocused) {
+            // Allow alphanumeric, underscore, colon, slash for ResourceLocation
+            if (Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == '/' || chr == '.') {
+                inputText += chr;
+                return true;
+            }
+        }
+        return super.charTyped(chr, modifiers);
+    }
+
+    private void applySelection() {
+        Optional<ResourceLocation> result;
+        if (inputText.isEmpty()) {
+            result = Optional.empty();
+        } else {
+            String input = inputText;
+            if (!input.contains(":")) {
+                input = "minecraft:" + input;
+            }
+            result = Optional.of(ResourceLocation.parse(input));
+        }
+        onSequenceSelected.accept(result);
+        onClose();
+    }
+
+    @Override
+    public void onClose() {
+        if (minecraft != null) {
+            minecraft.setScreen(parent);
+        }
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+}

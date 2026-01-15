@@ -178,11 +178,13 @@ public class HistoryLogPanel extends AbstractWidget {
     private int getOperationColor(String operationType) {
         return switch (operationType) {
             case "ADD_POOL", "ADD_ENTRY", "ADD_FUNCTION", "ADD_CONDITION",
-                 "ADD_POOL_FUNC", "ADD_POOL_COND" -> 0xFF55FF55;  // Green
+                 "ADD_POOL_FUNC", "ADD_POOL_COND", "ADD_TABLE_FUNC", "ADD_CHILD" -> 0xFF55FF55;  // Green
             case "REMOVE_POOL", "REMOVE_ENTRY", "REMOVE_FUNCTION", "REMOVE_CONDITION",
-                 "REMOVE_POOL_FUNC", "REMOVE_POOL_COND" -> 0xFFFF5555;  // Red
+                 "REMOVE_POOL_FUNC", "REMOVE_POOL_COND", "REMOVE_TABLE_FUNC", "REMOVE_CHILD" -> 0xFFFF5555;  // Red
             case "UNDO" -> 0xFF888888;  // Gray
             case "REDO" -> 0xFFAAAAFF;  // Light blue
+            case "SET_RANDOM_SEQ" -> 0xFF55FFFF;  // Cyan
+            case "MODIFY_CHILD" -> 0xFFFF9955;  // Orange
             default -> 0xFFFFFF55;  // Yellow for modifications
         };
     }

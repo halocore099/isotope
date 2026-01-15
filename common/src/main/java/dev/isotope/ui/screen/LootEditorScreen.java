@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.Isotope;
 import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.data.LootTableInfo;
+import dev.isotope.data.loot.LootFunction;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootEditOperation;
 import dev.isotope.editing.LootTableSerializer;
@@ -180,6 +181,8 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         editPanel = new LootTableEditPanel(editX, editY, editWidth, editHeight);
         editPanel.setContextMenuListener(this::onContextMenuRequested);
+        editPanel.setOnAddTableFunction(this::openAddTableFunctionDialog);
+        editPanel.setOnEditRandomSequence(this::openEditRandomSequenceDialog);
         addRenderableWidget(editPanel);
 
         // === Left Panel (varies by activity bar selection) ===
@@ -320,6 +323,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             // File operations
             .addCommand("export", "\u2913", "Export as Datapack", "Ctrl+S", this::onExport)
             .addCommand("copy-json", "\u2398", "Copy JSON to Clipboard", "", this::onCopyJson)
+            .addCommand("import-json", "\u2912", "Import JSON from Clipboard", "Ctrl+Shift+V", this::onImportJsonFromClipboard)
             .addCommand("import", "\u2912", "Import from Datapack...", "", this::onOpenImport)
 
             // Edit operations
@@ -357,6 +361,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("validate-all", "\u2714", "Validate All Edited Tables", "", this::onValidateAll)
             .addCommand("export-validation", "\u2714", "Export Validation Report...", "", this::onExportValidationReport)
             .addCommand("kubejs", "K", "Export as KubeJS Script", "", this::onExportKubeJS)
+            .addCommand("crafttweaker", "C", "Export as CraftTweaker Script", "", this::onExportCraftTweaker)
             .addCommand("compare", "\u2194", "Compare Two Tables...", "", this::onOpenCompare)
             .addCommand("sessions", "\u2630", "Manage Sessions...", "", this::onOpenSessions)
 
@@ -456,7 +461,21 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         boolean canMoveUp = entryIdx > 0;
         boolean canMoveDown = editPanel.canMoveDown();
 
-        return new ContextMenu(x, y)
+        // Check if entry is composite
+        boolean isComposite = false;
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId != null) {
+            var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+                .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+            if (structure != null && poolIdx < structure.pools().size()) {
+                var pool = structure.pools().get(poolIdx);
+                if (entryIdx < pool.entries().size()) {
+                    isComposite = pool.entries().get(entryIdx).isComposite();
+                }
+            }
+        }
+
+        var menu = new ContextMenu(x, y)
             .addItem("\u2398", "Copy", "Ctrl+C", () -> editPanel.copySelected())
             .addItem("\u2399", "Paste", "Ctrl+V", () -> editPanel.pasteFromClipboard(), canPaste)
             .addSeparator()
@@ -466,7 +485,14 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addItem("✦", "Add Function...", "", () -> openAddFunctionDialog(poolIdx, entryIdx))
             .addItem("?", "Add Condition...", "", () -> openAddConditionDialog(poolIdx, entryIdx))
             .addItem("⇄", "Change Type...", "", () -> openChangeTypeDialog(poolIdx, entryIdx))
-            .addItem("★", "Set Quality...", "", () -> openSetQualityDialog(poolIdx, entryIdx))
+            .addItem("★", "Set Quality...", "", () -> openSetQualityDialog(poolIdx, entryIdx));
+
+        // Add "Edit Children..." option for composite entries
+        if (isComposite) {
+            menu.addItem("⊞", "Edit Children...", "", () -> openEditChildrenDialog(poolIdx, entryIdx));
+        }
+
+        return menu
             .addSeparator()
             .addItem("\u2750", "Duplicate", "Ctrl+D", () -> editPanel.duplicateSelected())
             .addItem("\u2715", "Delete", "Del", () -> editPanel.deleteSelected())
@@ -529,6 +555,61 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         minecraft.setScreen(new QualityDialog(this, poolIdx, entryIdx, currentQuality, newQuality -> {
             LootEditOperation op = new LootEditOperation.ModifyEntryQuality(poolIdx, entryIdx, newQuality);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    private void openEditChildrenDialog(int poolIdx, int entryIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        // Get current entry
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+        if (structure == null || poolIdx >= structure.pools().size()) return;
+        var pool = structure.pools().get(poolIdx);
+        if (entryIdx >= pool.entries().size()) return;
+        var entry = pool.entries().get(entryIdx);
+
+        if (!entry.isComposite()) return;
+
+        minecraft.setScreen(new CompositeChildrenDialog(this, poolIdx, entryIdx, entry.type(), entry.children(), operation -> {
+            LootEditOperation op = switch (operation) {
+                case CompositeChildrenDialog.ChildOperation.Add add ->
+                    new LootEditOperation.AddChild(poolIdx, entryIdx, add.index(), add.child());
+                case CompositeChildrenDialog.ChildOperation.Remove remove ->
+                    new LootEditOperation.RemoveChild(poolIdx, entryIdx, remove.index());
+                case CompositeChildrenDialog.ChildOperation.Modify modify ->
+                    new LootEditOperation.ModifyChild(poolIdx, entryIdx, modify.index(), modify.newChild());
+            };
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    private void openAddTableFunctionDialog() {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new AddFunctionDialog(this, function -> {
+            LootEditOperation op = new LootEditOperation.AddTableFunction(function);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    private void openEditRandomSequenceDialog() {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        // Get current random sequence from the structure
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+        if (structure == null) return;
+
+        minecraft.setScreen(new RandomSequenceDialog(this, structure.randomSequence(), newSequence -> {
+            LootEditOperation op = new LootEditOperation.SetRandomSequence(newSequence);
             LootEditManager.getInstance().applyOperation(tableId, op);
             editPanel.refresh();
         }));
@@ -650,6 +731,81 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
     }
 
+    private void onImportJsonFromClipboard() {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null) {
+            IsotopeToast.info("Import JSON", "Select a loot table first");
+            return;
+        }
+
+        if (minecraft == null) return;
+
+        String clipboardText = minecraft.keyboardHandler.getClipboard();
+        if (clipboardText == null || clipboardText.isEmpty()) {
+            IsotopeToast.warning("Import JSON", "Clipboard is empty");
+            return;
+        }
+
+        // Try to parse the JSON
+        try {
+            var parsed = dev.isotope.editing.LootTableParser.parseFromString(tableId, clipboardText);
+            if (parsed.isEmpty()) {
+                IsotopeToast.error("Import Failed", "Could not parse JSON as loot table");
+                return;
+            }
+
+            var structure = parsed.get();
+
+            // Store as the original (cached) if we don't have one yet
+            var editManager = LootEditManager.getInstance();
+            var existing = editManager.getCachedOriginalStructure(tableId);
+            if (existing.isEmpty()) {
+                editManager.cacheOriginalStructure(tableId, structure);
+            }
+
+            // Apply the structure by adding operations for each pool
+            // This is a bit of a workaround - we clear the existing pools and add the new ones
+            var currentStructure = editManager.getEditedStructure(tableId)
+                .orElse(existing.orElse(null));
+
+            if (currentStructure != null) {
+                // Remove all existing pools (in reverse order)
+                for (int i = currentStructure.pools().size() - 1; i >= 0; i--) {
+                    editManager.applyOperation(tableId, new LootEditOperation.RemovePool(i));
+                }
+
+                // Remove all existing table functions (in reverse order)
+                for (int i = currentStructure.functions().size() - 1; i >= 0; i--) {
+                    editManager.applyOperation(tableId, new LootEditOperation.RemoveTableFunction(i));
+                }
+            }
+
+            // Add the imported pools
+            for (int i = 0; i < structure.pools().size(); i++) {
+                editManager.applyOperation(tableId,
+                    new LootEditOperation.AddPool(i, structure.pools().get(i)));
+            }
+
+            // Add the imported table functions
+            for (LootFunction func : structure.functions()) {
+                editManager.applyOperation(tableId, new LootEditOperation.AddTableFunction(func));
+            }
+
+            // Set random sequence if present
+            if (structure.randomSequence().isPresent()) {
+                editManager.applyOperation(tableId,
+                    new LootEditOperation.SetRandomSequence(structure.randomSequence()));
+            }
+
+            editPanel.refresh();
+            IsotopeToast.success("Imported", "Loaded " + structure.pools().size() + " pool(s) from clipboard");
+
+        } catch (Exception e) {
+            IsotopeToast.error("Import Failed", "Invalid JSON: " + e.getMessage());
+            Isotope.LOGGER.error("Failed to import JSON from clipboard", e);
+        }
+    }
+
     private void onOpenImport() {
         if (minecraft != null) {
             minecraft.setScreen(new ImportScreen(this, tabManager));
@@ -707,6 +863,23 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         if (result.success()) {
             IsotopeToast.success("KubeJS Export", "Script saved to kubejs/server_scripts/");
+        } else {
+            IsotopeToast.error("Export Failed", result.error());
+        }
+    }
+
+    private void onExportCraftTweaker() {
+        if (LootEditManager.getInstance().getEditedTables().isEmpty()) {
+            IsotopeToast.warning("No Edits", "No edited loot tables to export");
+            return;
+        }
+
+        var result = dev.isotope.export.CraftTweakerExporter.getInstance().export(msg -> {
+            Isotope.LOGGER.info("[CraftTweaker Export] {}", msg);
+        });
+
+        if (result.success()) {
+            IsotopeToast.success("CraftTweaker Export", "Script saved to scripts/");
         } else {
             IsotopeToast.error("Export Failed", result.error());
         }

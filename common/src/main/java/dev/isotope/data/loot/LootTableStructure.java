@@ -183,4 +183,11 @@ public record LootTableStructure(
     public LootTableStructure withId(ResourceLocation newId) {
         return new LootTableStructure(newId, type, pools, functions, randomSequence);
     }
+
+    /**
+     * Create a copy with a new random sequence.
+     */
+    public LootTableStructure withRandomSequence(Optional<ResourceLocation> newRandomSequence) {
+        return new LootTableStructure(id, type, pools, functions, newRandomSequence);
+    }
 }

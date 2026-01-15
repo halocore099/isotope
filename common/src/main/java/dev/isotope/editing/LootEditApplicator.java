@@ -42,6 +42,12 @@ public final class LootEditApplicator {
             case LootEditOperation.RemovePoolFunction p -> applyRemovePoolFunction(structure, p);
             case LootEditOperation.AddPoolCondition p -> applyAddPoolCondition(structure, p);
             case LootEditOperation.RemovePoolCondition p -> applyRemovePoolCondition(structure, p);
+            case LootEditOperation.AddTableFunction p -> applyAddTableFunction(structure, p);
+            case LootEditOperation.RemoveTableFunction p -> applyRemoveTableFunction(structure, p);
+            case LootEditOperation.SetRandomSequence p -> applySetRandomSequence(structure, p);
+            case LootEditOperation.AddChild p -> applyAddChild(structure, p);
+            case LootEditOperation.RemoveChild p -> applyRemoveChild(structure, p);
+            case LootEditOperation.ModifyChild p -> applyModifyChild(structure, p);
         };
     }
 
@@ -249,6 +255,29 @@ public final class LootEditApplicator {
         return structure.withPoolReplaced(op.poolIndex(), pool.withConditions(newConditions));
     }
 
+    // ===== Table Function Operations =====
+
+    private static LootTableStructure applyAddTableFunction(LootTableStructure structure, LootEditOperation.AddTableFunction op) {
+        List<LootFunction> newFunctions = new ArrayList<>(structure.functions());
+        newFunctions.add(op.function());
+        return structure.withFunctions(newFunctions);
+    }
+
+    private static LootTableStructure applyRemoveTableFunction(LootTableStructure structure, LootEditOperation.RemoveTableFunction op) {
+        if (op.functionIndex() < 0 || op.functionIndex() >= structure.functions().size()) {
+            return structure;
+        }
+        List<LootFunction> newFunctions = new ArrayList<>(structure.functions());
+        newFunctions.remove(op.functionIndex());
+        return structure.withFunctions(newFunctions);
+    }
+
+    // ===== Random Sequence Operations =====
+
+    private static LootTableStructure applySetRandomSequence(LootTableStructure structure, LootEditOperation.SetRandomSequence op) {
+        return structure.withRandomSequence(op.randomSequence());
+    }
+
     // ===== Helpers =====
 
     /**
@@ -287,5 +316,34 @@ public final class LootEditApplicator {
                 yield LootFunction.setCount(0, b.n());
             }
         };
+    }
+
+    // ===== Composite Entry Child Operations =====
+
+    private static LootTableStructure applyAddChild(LootTableStructure structure, LootEditOperation.AddChild op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry -> {
+            if (!entry.isComposite()) {
+                return entry; // Not a composite entry, no change
+            }
+            return entry.withChildAdded(op.childIndex(), op.child());
+        });
+    }
+
+    private static LootTableStructure applyRemoveChild(LootTableStructure structure, LootEditOperation.RemoveChild op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry -> {
+            if (!entry.isComposite()) {
+                return entry; // Not a composite entry, no change
+            }
+            return entry.withChildRemoved(op.childIndex());
+        });
+    }
+
+    private static LootTableStructure applyModifyChild(LootTableStructure structure, LootEditOperation.ModifyChild op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry -> {
+            if (!entry.isComposite()) {
+                return entry; // Not a composite entry, no change
+            }
+            return entry.withChildReplaced(op.childIndex(), op.newChild());
+        });
     }
 }

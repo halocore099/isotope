@@ -243,4 +243,44 @@ public record LootEntry(
         // For item, loot_table, tag - require a name, preserve functions
         return new LootEntry(newType, newName, weight, quality, conditions, functions, List.of());
     }
+
+    /**
+     * Create a copy with modified children (for composite entries).
+     */
+    public LootEntry withChildren(List<LootEntry> newChildren) {
+        return new LootEntry(type, name, weight, quality, conditions, functions, newChildren);
+    }
+
+    /**
+     * Create a copy with a child added at the specified index.
+     */
+    public LootEntry withChildAdded(int index, LootEntry child) {
+        List<LootEntry> newChildren = new ArrayList<>(children);
+        newChildren.add(Math.min(index, newChildren.size()), child);
+        return withChildren(newChildren);
+    }
+
+    /**
+     * Create a copy with the child at the specified index removed.
+     */
+    public LootEntry withChildRemoved(int index) {
+        if (index < 0 || index >= children.size()) {
+            return this;
+        }
+        List<LootEntry> newChildren = new ArrayList<>(children);
+        newChildren.remove(index);
+        return withChildren(newChildren);
+    }
+
+    /**
+     * Create a copy with the child at the specified index replaced.
+     */
+    public LootEntry withChildReplaced(int index, LootEntry newChild) {
+        if (index < 0 || index >= children.size()) {
+            return this;
+        }
+        List<LootEntry> newChildren = new ArrayList<>(children);
+        newChildren.set(index, newChild);
+        return withChildren(newChildren);
+    }
 }

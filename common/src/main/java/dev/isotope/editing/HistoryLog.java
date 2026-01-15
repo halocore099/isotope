@@ -75,6 +75,12 @@ public final class HistoryLog {
                 case LootEditOperation.RemovePoolFunction ignored -> "REMOVE_POOL_FUNC";
                 case LootEditOperation.AddPoolCondition ignored -> "ADD_POOL_COND";
                 case LootEditOperation.RemovePoolCondition ignored -> "REMOVE_POOL_COND";
+                case LootEditOperation.AddTableFunction ignored -> "ADD_TABLE_FUNC";
+                case LootEditOperation.RemoveTableFunction ignored -> "REMOVE_TABLE_FUNC";
+                case LootEditOperation.SetRandomSequence ignored -> "SET_RANDOM_SEQ";
+                case LootEditOperation.AddChild ignored -> "ADD_CHILD";
+                case LootEditOperation.RemoveChild ignored -> "REMOVE_CHILD";
+                case LootEditOperation.ModifyChild ignored -> "MODIFY_CHILD";
             };
         }
     }

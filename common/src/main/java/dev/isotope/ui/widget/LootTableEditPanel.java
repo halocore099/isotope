@@ -76,6 +76,7 @@ public class LootTableEditPanel extends AbstractWidget {
     // Pool function/condition remove button tracking (poolIdx, funcIdx/condIdx, x, y, width, height)
     private final List<int[]> removePoolFunctionBtns = new ArrayList<>();
     private final List<int[]> removePoolConditionBtns = new ArrayList<>();
+    private final List<int[]> removeTableFunctionBtns = new ArrayList<>();
     private static final int POOL_FUNC_COND_LINE_HEIGHT = 14;
 
     // Selection state for keyboard shortcuts
@@ -152,8 +153,27 @@ public class LootTableEditPanel extends AbstractWidget {
     @Nullable
     private ContextMenuListener contextMenuListener;
 
+    @Nullable
+    private Runnable onAddTableFunctionCallback;
+
     public void setContextMenuListener(@Nullable ContextMenuListener listener) {
         this.contextMenuListener = listener;
+    }
+
+    public void setOnAddTableFunction(@Nullable Runnable callback) {
+        this.onAddTableFunctionCallback = callback;
+    }
+
+    // Track add table function button bounds
+    private int[] addTableFunctionBtn = null;
+    // Track random sequence edit button bounds
+    private int[] randomSequenceEditBtn = null;
+
+    @Nullable
+    private Runnable onEditRandomSequenceCallback;
+
+    public void setOnEditRandomSequence(@Nullable Runnable callback) {
+        this.onEditRandomSequenceCallback = callback;
     }
 
     public LootTableEditPanel(int x, int y, int width, int height) {
@@ -223,6 +243,12 @@ public class LootTableEditPanel extends AbstractWidget {
         }
 
         int contentHeight = HEADER_HEIGHT;
+
+        // Table-level functions section (always shown)
+        contentHeight += POOL_FUNC_COND_LINE_HEIGHT + 6; // Header
+        contentHeight += display.functions().size() * POOL_FUNC_COND_LINE_HEIGHT;
+        contentHeight += 4; // Spacer
+
         for (int i = 0; i < display.pools().size(); i++) {
             LootPool pool = display.pools().get(i);
             contentHeight += POOL_HEADER_HEIGHT;
@@ -324,6 +350,10 @@ public class LootTableEditPanel extends AbstractWidget {
         if (multiSelection.size() > 1) {
             y = renderBatchActionBar(graphics, font, y, mouseX, mouseY);
         }
+
+        // Table-level functions section (always show header with [+] button)
+        removeTableFunctionBtns.clear();
+        y = renderTableFunctions(graphics, font, y, display, mouseX, mouseY);
 
         // Pools and entries
         hoveredRemovePool = -1;
@@ -799,6 +829,97 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     /**
+     * Render table-level functions section.
+     */
+    private int renderTableFunctions(GuiGraphics graphics, Font font, int y,
+                                      LootTableStructure display, int mouseX, int mouseY) {
+        int x = getX() + PADDING;
+        int maxX = getX() + width - PADDING - 20;
+
+        // Header with [+] button
+        addTableFunctionBtn = null;
+        if (y + POOL_FUNC_COND_LINE_HEIGHT + 4 > getY() && y < getY() + height) {
+            graphics.fill(x, y, getX() + width - PADDING, y + POOL_FUNC_COND_LINE_HEIGHT + 4, 0xFF252530);
+            graphics.drawString(font, "✦ Table Functions", x + 4, y + 4, IsotopeColors.ACCENT_GOLD, false);
+
+            // [+] add button on the right
+            int btnX = getX() + width - PADDING - 16;
+            int btnY = y + 1;
+            int btnW = 14;
+            int btnH = POOL_FUNC_COND_LINE_HEIGHT;
+            boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
+                mouseY >= btnY && mouseY < btnY + btnH;
+            if (hovered) {
+                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF3a4a3a);
+            }
+            graphics.drawString(font, "+", btnX + 4, btnY + 2,
+                hovered ? 0xFF55FF55 : IsotopeColors.TEXT_SECONDARY, false);
+            addTableFunctionBtn = new int[]{btnX, btnY, btnW, btnH};
+        }
+        y += POOL_FUNC_COND_LINE_HEIGHT + 6;
+
+        // Function list
+        int funcIndex = 0;
+        for (LootFunction func : display.functions()) {
+            if (y + POOL_FUNC_COND_LINE_HEIGHT > getY() && y < getY() + height) {
+                String funcName = "  " + func.getDisplayName();
+                String params = func.getParameterSummary();
+                graphics.drawString(font, funcName, x + 4, y + 2, IsotopeColors.TEXT_SECONDARY, false);
+                if (!params.isEmpty()) {
+                    int funcWidth = font.width(funcName);
+                    graphics.drawString(font, " (" + params + ")", x + 4 + funcWidth, y + 2,
+                        IsotopeColors.TEXT_MUTED, false);
+                }
+
+                // [X] remove button
+                int btnX = maxX;
+                int btnY = y;
+                int btnW = 14;
+                int btnH = POOL_FUNC_COND_LINE_HEIGHT;
+                boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
+                    mouseY >= btnY && mouseY < btnY + btnH;
+                if (hovered) {
+                    graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF4a2a2a);
+                }
+                graphics.drawString(font, "×", btnX + 4, btnY + 2,
+                    hovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+                removeTableFunctionBtns.add(new int[]{funcIndex, btnX, btnY, btnW, btnH});
+            }
+            y += POOL_FUNC_COND_LINE_HEIGHT;
+            funcIndex++;
+        }
+
+        // Random sequence row
+        randomSequenceEditBtn = null;
+        if (y + POOL_FUNC_COND_LINE_HEIGHT > getY() && y < getY() + height) {
+            String seqText = display.randomSequence()
+                .map(rs -> "Random Sequence: " + rs.toString())
+                .orElse("Random Sequence: (none)");
+            int textColor = display.randomSequence().isPresent() ?
+                IsotopeColors.TEXT_SECONDARY : IsotopeColors.TEXT_MUTED;
+            graphics.drawString(font, "  " + seqText, x + 4, y + 2, textColor, false);
+
+            // [Edit] button
+            int btnX = maxX - 10;
+            int btnY = y;
+            int btnW = 24;
+            int btnH = POOL_FUNC_COND_LINE_HEIGHT;
+            boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
+                mouseY >= btnY && mouseY < btnY + btnH;
+            if (hovered) {
+                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF3a4a3a);
+            }
+            graphics.drawString(font, "✎", btnX + 8, btnY + 2,
+                hovered ? 0xFF55FF55 : IsotopeColors.TEXT_MUTED, false);
+            randomSequenceEditBtn = new int[]{btnX, btnY, btnW, btnH};
+        }
+        y += POOL_FUNC_COND_LINE_HEIGHT;
+
+        y += 4; // Spacer after table functions
+        return y;
+    }
+
+    /**
      * Render pool-level functions and conditions below the pool header.
      */
     private int renderPoolFunctionsAndConditions(GuiGraphics graphics, Font font, int y, int poolIdx,
@@ -922,12 +1043,19 @@ public class LootTableEditPanel extends AbstractWidget {
         }
         x += 20;
 
-        // Item name
-        String itemName = entry.name().map(ResourceLocation::getPath).orElse(entry.type());
+        // Item name - use getDisplayName() for composite entries to show child count
+        String itemName;
+        int nameColor = IsotopeColors.TEXT_PRIMARY;
+        if (entry.isComposite()) {
+            itemName = entry.getDisplayName();  // Shows "alternatives (3)" etc.
+            nameColor = IsotopeColors.ACCENT_AQUA;
+        } else {
+            itemName = entry.name().map(ResourceLocation::getPath).orElse(entry.type());
+        }
         if (font.width(itemName) > 100) {
             itemName = font.plainSubstrByWidth(itemName, 95) + "...";
         }
-        graphics.drawString(font, itemName, x, y + 8, IsotopeColors.TEXT_PRIMARY, false);
+        graphics.drawString(font, itemName, x, y + 8, nameColor, false);
         x += 105;
 
         // Weight
@@ -1269,6 +1397,49 @@ public class LootTableEditPanel extends AbstractWidget {
             multiSelection.clear();
             refreshFromEdits();
             return true;
+        }
+
+        // Check for add table function button click
+        if (addTableFunctionBtn != null) {
+            int btnX = addTableFunctionBtn[0];
+            int btnY = addTableFunctionBtn[1];
+            int btnW = addTableFunctionBtn[2];
+            int btnH = addTableFunctionBtn[3];
+            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+                if (onAddTableFunctionCallback != null) {
+                    onAddTableFunctionCallback.run();
+                }
+                return true;
+            }
+        }
+
+        // Check for random sequence edit button click
+        if (randomSequenceEditBtn != null) {
+            int btnX = randomSequenceEditBtn[0];
+            int btnY = randomSequenceEditBtn[1];
+            int btnW = randomSequenceEditBtn[2];
+            int btnH = randomSequenceEditBtn[3];
+            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+                if (onEditRandomSequenceCallback != null) {
+                    onEditRandomSequenceCallback.run();
+                }
+                return true;
+            }
+        }
+
+        // Check for table function remove click
+        for (int[] btn : removeTableFunctionBtns) {
+            int funcIdx = btn[0];
+            int btnX = btn[1];
+            int btnY = btn[2];
+            int btnW = btn[3];
+            int btnH = btn[4];
+            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+                LootEditOperation op = new LootEditOperation.RemoveTableFunction(funcIdx);
+                LootEditManager.getInstance().applyOperation(tableId, op);
+                refreshFromEdits();
+                return true;
+            }
         }
 
         // Check for pool function remove click

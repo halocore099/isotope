@@ -1,0 +1,297 @@
+package dev.isotope.ui.screen;
+
+import dev.isotope.data.loot.LootEntry;
+import dev.isotope.ui.IsotopeColors;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+/**
+ * Dialog for viewing and editing children of composite entries (alternatives, group, sequence).
+ */
+public class CompositeChildrenDialog extends Screen {
+
+    private static final int DIALOG_WIDTH = 400;
+    private static final int DIALOG_HEIGHT = 320;
+    private static final int CHILD_HEIGHT = 24;
+    private static final int HEADER_HEIGHT = 50;
+    private static final int BUTTON_HEIGHT = 28;
+
+    @Nullable
+    private final Screen parent;
+    private final int poolIdx;
+    private final int entryIdx;
+    private final String compositeType;
+    private final List<LootEntry> children;
+    private final Consumer<ChildOperation> onOperation;
+
+    private int scrollOffset = 0;
+    private int hoveredChildIdx = -1;
+
+    public sealed interface ChildOperation {
+        record Add(int index, LootEntry child) implements ChildOperation {}
+        record Remove(int index) implements ChildOperation {}
+        record Modify(int index, LootEntry newChild) implements ChildOperation {}
+    }
+
+    public CompositeChildrenDialog(@Nullable Screen parent, int poolIdx, int entryIdx,
+                                    String compositeType, List<LootEntry> children,
+                                    Consumer<ChildOperation> onOperation) {
+        super(Component.literal("Edit Composite Entry"));
+        this.parent = parent;
+        this.poolIdx = poolIdx;
+        this.entryIdx = entryIdx;
+        this.compositeType = compositeType;
+        this.children = new ArrayList<>(children);
+        this.onOperation = onOperation;
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Dim background
+        graphics.fill(0, 0, width, height, 0x80000000);
+
+        int dialogX = (width - DIALOG_WIDTH) / 2;
+        int dialogY = (height - DIALOG_HEIGHT) / 2;
+
+        // Dialog background
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, 0xFF404040);
+
+        // Title
+        String typeLabel = compositeType.replace("minecraft:", "");
+        graphics.drawCenteredString(font, "Edit " + typeLabel + " Entry", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
+
+        // Subtitle explaining behavior
+        String subtitle = switch (compositeType) {
+            case "minecraft:alternatives" -> "First matching child drops (like OR)";
+            case "minecraft:group" -> "All children drop together (like AND)";
+            case "minecraft:sequence" -> "Children drop in order until one fails";
+            default -> "Composite entry with children";
+        };
+        graphics.drawCenteredString(font, subtitle, dialogX + DIALOG_WIDTH / 2, dialogY + 22, IsotopeColors.TEXT_MUTED);
+
+        // Children count
+        String countText = children.size() + " children";
+        graphics.drawString(font, countText, dialogX + 10, dialogY + 40, IsotopeColors.TEXT_SECONDARY);
+
+        // Add child button
+        int addBtnX = dialogX + DIALOG_WIDTH - 110;
+        int addBtnY = dialogY + 36;
+        boolean addHovered = mouseX >= addBtnX && mouseX < addBtnX + 100 && mouseY >= addBtnY && mouseY < addBtnY + 18;
+        graphics.fill(addBtnX, addBtnY, addBtnX + 100, addBtnY + 18, addHovered ? 0xFF3a5a3a : 0xFF2a4a2a);
+        graphics.drawCenteredString(font, "+ Add Child", addBtnX + 50, addBtnY + 5, addHovered ? 0xFF55FF55 : 0xFF88FF88);
+
+        // Children list area
+        int listX = dialogX + 10;
+        int listY = dialogY + HEADER_HEIGHT + 8;
+        int listWidth = DIALOG_WIDTH - 20;
+        int listHeight = DIALOG_HEIGHT - HEADER_HEIGHT - BUTTON_HEIGHT - 16;
+
+        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, 0xFF252525);
+        graphics.renderOutline(listX, listY, listWidth, listHeight, 0xFF404040);
+
+        // Render visible children
+        int maxVisible = listHeight / CHILD_HEIGHT;
+        hoveredChildIdx = -1;
+
+        for (int i = 0; i < Math.min(maxVisible, children.size() - scrollOffset); i++) {
+            int childIdx = scrollOffset + i;
+            if (childIdx >= children.size()) break;
+
+            LootEntry child = children.get(childIdx);
+            int childY = listY + i * CHILD_HEIGHT;
+
+            boolean isHovered = mouseX >= listX && mouseX < listX + listWidth &&
+                mouseY >= childY && mouseY < childY + CHILD_HEIGHT;
+
+            if (isHovered) {
+                hoveredChildIdx = childIdx;
+                graphics.fill(listX + 1, childY, listX + listWidth - 1, childY + CHILD_HEIGHT, 0xFF353535);
+            }
+
+            // Index number
+            graphics.drawString(font, String.valueOf(childIdx + 1) + ".", listX + 8, childY + 8, IsotopeColors.TEXT_MUTED);
+
+            // Item icon
+            int iconX = listX + 30;
+            if (child.name().isPresent()) {
+                ResourceLocation itemId = child.name().get();
+                var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+                if (itemOpt.isPresent()) {
+                    ItemStack stack = new ItemStack(itemOpt.get().value());
+                    graphics.renderItem(stack, iconX, childY + 4);
+                }
+            }
+
+            // Child name
+            String childName = child.getDisplayName();
+            if (font.width(childName) > 180) {
+                childName = font.plainSubstrByWidth(childName, 175) + "...";
+            }
+            graphics.drawString(font, childName, iconX + 22, childY + 8, IsotopeColors.TEXT_PRIMARY);
+
+            // Weight
+            graphics.drawString(font, "W:" + child.weight(), listX + listWidth - 100, childY + 8, IsotopeColors.TEXT_MUTED);
+
+            // Remove button
+            int removeBtnX = listX + listWidth - 30;
+            boolean removeHovered = mouseX >= removeBtnX && mouseX < removeBtnX + 20 &&
+                mouseY >= childY + 4 && mouseY < childY + 20;
+            if (removeHovered) {
+                graphics.fill(removeBtnX, childY + 4, removeBtnX + 20, childY + 20, 0xFF4a2a2a);
+            }
+            graphics.drawString(font, "×", removeBtnX + 7, childY + 7, removeHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED);
+        }
+
+        // Scroll indicators
+        if (scrollOffset > 0) {
+            graphics.drawCenteredString(font, "▲ Scroll up", listX + listWidth / 2, listY - 10, IsotopeColors.TEXT_MUTED);
+        }
+        if (scrollOffset + maxVisible < children.size()) {
+            graphics.drawCenteredString(font, "▼ Scroll down", listX + listWidth / 2, listY + listHeight + 2, IsotopeColors.TEXT_MUTED);
+        }
+
+        // Empty state
+        if (children.isEmpty()) {
+            graphics.drawCenteredString(font, "No children yet", listX + listWidth / 2, listY + listHeight / 2 - 4, IsotopeColors.TEXT_MUTED);
+            graphics.drawCenteredString(font, "Click '+ Add Child' to add one", listX + listWidth / 2, listY + listHeight / 2 + 8, IsotopeColors.TEXT_MUTED);
+        }
+
+        // Close button
+        int closeBtnX = dialogX + (DIALOG_WIDTH - 80) / 2;
+        int closeBtnY = dialogY + DIALOG_HEIGHT - BUTTON_HEIGHT;
+        boolean closeHovered = mouseX >= closeBtnX && mouseX < closeBtnX + 80 && mouseY >= closeBtnY && mouseY < closeBtnY + 20;
+        graphics.fill(closeBtnX, closeBtnY, closeBtnX + 80, closeBtnY + 20, closeHovered ? 0xFF4a4a4a : 0xFF2a2a2a);
+        graphics.drawCenteredString(font, "Close", closeBtnX + 40, closeBtnY + 6, closeHovered ? 0xFFffffff : IsotopeColors.TEXT_MUTED);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
+
+        int dialogX = (width - DIALOG_WIDTH) / 2;
+        int dialogY = (height - DIALOG_HEIGHT) / 2;
+
+        // Add child button
+        int addBtnX = dialogX + DIALOG_WIDTH - 110;
+        int addBtnY = dialogY + 36;
+        if (mouseX >= addBtnX && mouseX < addBtnX + 100 && mouseY >= addBtnY && mouseY < addBtnY + 18) {
+            openAddChildDialog();
+            return true;
+        }
+
+        // Close button
+        int closeBtnX = dialogX + (DIALOG_WIDTH - 80) / 2;
+        int closeBtnY = dialogY + DIALOG_HEIGHT - BUTTON_HEIGHT;
+        if (mouseX >= closeBtnX && mouseX < closeBtnX + 80 && mouseY >= closeBtnY && mouseY < closeBtnY + 20) {
+            onClose();
+            return true;
+        }
+
+        // Children list
+        int listX = dialogX + 10;
+        int listY = dialogY + HEADER_HEIGHT + 8;
+        int listWidth = DIALOG_WIDTH - 20;
+        int listHeight = DIALOG_HEIGHT - HEADER_HEIGHT - BUTTON_HEIGHT - 16;
+        int maxVisible = listHeight / CHILD_HEIGHT;
+
+        for (int i = 0; i < Math.min(maxVisible, children.size() - scrollOffset); i++) {
+            int childIdx = scrollOffset + i;
+            if (childIdx >= children.size()) break;
+
+            int childY = listY + i * CHILD_HEIGHT;
+
+            // Remove button
+            int removeBtnX = listX + listWidth - 30;
+            if (mouseX >= removeBtnX && mouseX < removeBtnX + 20 &&
+                mouseY >= childY + 4 && mouseY < childY + 20) {
+                removeChild(childIdx);
+                return true;
+            }
+        }
+
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        int dialogX = (width - DIALOG_WIDTH) / 2;
+        int dialogY = (height - DIALOG_HEIGHT) / 2;
+        int listX = dialogX + 10;
+        int listY = dialogY + HEADER_HEIGHT + 8;
+        int listWidth = DIALOG_WIDTH - 20;
+        int listHeight = DIALOG_HEIGHT - HEADER_HEIGHT - BUTTON_HEIGHT - 16;
+
+        if (mouseX >= listX && mouseX < listX + listWidth &&
+            mouseY >= listY && mouseY < listY + listHeight) {
+            if (scrollY > 0 && scrollOffset > 0) {
+                scrollOffset--;
+            } else if (scrollY < 0) {
+                int maxVisible = listHeight / CHILD_HEIGHT;
+                if (scrollOffset + maxVisible < children.size()) {
+                    scrollOffset++;
+                }
+            }
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    private void openAddChildDialog() {
+        if (minecraft == null) return;
+
+        // Open item picker to create a new child entry
+        minecraft.setScreen(new ItemPickerScreen(this, item -> {
+            if (item != null) {
+                LootEntry newChild = LootEntry.item(item);
+                int index = children.size();
+                children.add(newChild);
+                onOperation.accept(new ChildOperation.Add(index, newChild));
+            }
+        }));
+    }
+
+    private void removeChild(int index) {
+        if (index >= 0 && index < children.size()) {
+            children.remove(index);
+            onOperation.accept(new ChildOperation.Remove(index));
+
+            // Adjust scroll if needed
+            int listHeight = DIALOG_HEIGHT - HEADER_HEIGHT - BUTTON_HEIGHT - 16;
+            int maxVisible = listHeight / CHILD_HEIGHT;
+            if (scrollOffset > 0 && scrollOffset + maxVisible > children.size()) {
+                scrollOffset = Math.max(0, children.size() - maxVisible);
+            }
+        }
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == 256) { // Escape
+            onClose();
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public void onClose() {
+        if (minecraft != null) {
+            minecraft.setScreen(parent);
+        }
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+}
