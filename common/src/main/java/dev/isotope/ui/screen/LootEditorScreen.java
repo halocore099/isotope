@@ -28,6 +28,7 @@ import dev.isotope.ui.widget.GlobalSearchWidget;
 import dev.isotope.ui.widget.HistoryLogPanel;
 import dev.isotope.ui.widget.InlineEditField;
 import dev.isotope.ui.widget.LootTableBrowserWidget;
+import dev.isotope.ui.widget.LootFlowPanel;
 import dev.isotope.ui.widget.LootTableEditPanel;
 import dev.isotope.ui.widget.ValidationPanel;
 import net.fabricmc.api.EnvType;
@@ -66,6 +67,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     private static final String PANEL_ANALYSIS = "analysis";
     private static final String PANEL_HISTORY = "history";
     private static final String PANEL_VALIDATION = "validation";
+    private static final String PANEL_FLOW = "flow";
 
     // Core widgets
     private ActivityBar activityBar;
@@ -78,6 +80,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     private DiffPanel diffPanel;
     private HistoryLogPanel historyPanel;
     private ValidationPanel validationPanel;
+    private LootFlowPanel flowPanel;
 
     // Essential toolbar buttons (kept minimal)
     private Button undoButton;
@@ -126,6 +129,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addItem(PANEL_ANALYSIS, "\u2261", "Analysis (3)")      // ≡
             .addItem(PANEL_HISTORY, "\u2398", "History (4)")        // ⎘
             .addItem(PANEL_VALIDATION, "\u2714", "Validation (5)")  // ✔
+            .addItem(PANEL_FLOW, "\u2192", "Loot Flow (6)")         // →
             .onSelect(item -> onActivityItemSelected(item.id()));
         activityBar.setSelectedId(activePanel);
         addRenderableWidget(activityBar);
@@ -296,6 +300,13 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
                     validationPanel.setTable(tableId);
                 }
                 break;
+
+            case PANEL_FLOW:
+                flowPanel = new LootFlowPanel(leftPanelX, leftPanelY, LEFT_PANEL_WIDTH, leftPanelHeight);
+                flowPanel.setOnTableSelected(this::onTableSelected);
+                addRenderableWidget(flowPanel);
+                flowPanel.initialize();
+                break;
         }
 
         // === Command Palette (overlay, initially hidden) ===
@@ -351,6 +362,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addCommand("panel-analysis", "\u2261", "Show Analysis Panel", "3", () -> switchPanel(PANEL_ANALYSIS))
             .addCommand("panel-history", "\u2398", "Show History Panel", "4", () -> switchPanel(PANEL_HISTORY))
             .addCommand("panel-validation", "\u2714", "Show Validation Panel", "5", () -> switchPanel(PANEL_VALIDATION))
+            .addCommand("panel-flow", "\u2192", "Show Loot Flow Panel", "6", () -> switchPanel(PANEL_FLOW))
             .addCommand("global-search", "\u2315", "Global Item Search", "Ctrl+Shift+F", this::globalSearch)
 
             // Tools
@@ -1146,7 +1158,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
 
         // Number keys for quick panel switching (only if no text field is focused)
-        if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_5 && modifiers == 0) {
+        if (keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_6 && modifiers == 0) {
             // Don't intercept if a text field might be focused
             if (getFocused() instanceof net.minecraft.client.gui.components.EditBox) {
                 return false; // Let the edit box handle it
@@ -1155,7 +1167,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             if (editPanel != null && editPanel.isEditing()) {
                 return false;
             }
-            String[] panels = {PANEL_BROWSER, PANEL_SEARCH, PANEL_ANALYSIS, PANEL_HISTORY, PANEL_VALIDATION};
+            String[] panels = {PANEL_BROWSER, PANEL_SEARCH, PANEL_ANALYSIS, PANEL_HISTORY, PANEL_VALIDATION, PANEL_FLOW};
             int index = keyCode - GLFW.GLFW_KEY_1;
             switchPanel(panels[index]);
             return true;

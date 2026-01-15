@@ -1675,6 +1675,53 @@ Example: `"Pool 1, Entry 3: diamond_sword (W:5)"`
 - `SearchIndex` - Singleton with `getInstance()`
 - `SearchHit` - Record representing a search result location
 
+## Loot Flow Visualization
+
+Graph-based visualization of loot table relationships for a namespace.
+
+### Layout
+
+3-column hierarchical layout (left to right):
+- **Column 0**: Sources (structures, features, mobs)
+- **Column 1**: Primary loot tables linked to sources
+- **Column 2**: Nested table references (via `minecraft:loot_table` entries)
+
+### Visual Elements
+
+| Element | Color | Description |
+|---------|-------|-------------|
+| Structure node | Cyan | Real structure from registry |
+| Feature node | Orange | Dungeon, bonus chest, etc. |
+| Mob node | Purple | Entity with loot drops |
+| Loot table node | Gold | Primary loot table |
+| Nested table node | Aqua | Referenced via loot_table entry |
+| Edge | Gray | Connection with confidence-based opacity |
+
+### Interactions
+
+| Action | Effect |
+|--------|--------|
+| **Drag** | Pan the view |
+| **Scroll** | Zoom in/out (0.25x - 2.0x) |
+| **Hover node** | Show tooltip with details |
+| **Click table** | Open loot table in editor |
+| **< / > buttons** | Cycle through namespaces |
+
+### Access
+
+- Activity bar icon (6th position): `→`
+- Keyboard shortcut: `6`
+- Command palette: "Show Loot Flow Panel"
+
+### Key Classes
+
+- `FlowNode` - Node record (id, type, position, dimensions)
+- `FlowEdge` - Edge record (from, to, confidence)
+- `FlowGraph` - Graph container with query methods
+- `FlowGraphBuilder` - Builds graph from registry data
+- `FlowLayoutEngine` - Computes hierarchical node positions
+- `LootFlowPanel` - Main panel widget with rendering
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
@@ -1696,6 +1743,7 @@ Example: `"Pool 1, Entry 3: diamond_sword (W:5)"`
 - Composite entry children editing
 - KubeJS and CraftTweaker export
 - JSON import from clipboard
+- Loot flow visualization
 
 ## Build Commands
 
