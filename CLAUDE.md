@@ -220,6 +220,31 @@ Entries can have conditions that control when they drop (player kill, random cha
 - `LootCondition` - Condition data with parameter parsing and factory methods
 - `AddConditionDialog` - Preset-based condition creation UI
 
+### Pool-Level Functions & Conditions
+
+Pools can have their own functions and conditions that apply to all entries in the pool.
+
+**Adding Pool Functions/Conditions**: Right-click on a pool header to access:
+- "Add Pool Function..." - Opens the same AddFunctionDialog, applies function to entire pool
+- "Add Pool Condition..." - Opens the same AddConditionDialog, applies condition to entire pool
+
+**Visual Display**: When a pool has functions or conditions, they appear below the pool header:
+```
+Pool 1          Rolls: 1-3                    [x]
+  Functions: set_count (1-3)              [X]
+  Conditions: random_chance (25%)         [X]
+  ├─ diamond           W: 5   Qty: 1-2
+  └─ gold_ingot        W: 10  Qty: 2-4
+```
+
+**Remove Buttons**: Each pool function/condition has an [X] button to remove it.
+
+**Key Operations**:
+- `AddPoolFunction(poolIndex, function)` - Add function to pool
+- `RemovePoolFunction(poolIndex, functionIndex)` - Remove function from pool
+- `AddPoolCondition(poolIndex, condition)` - Add condition to pool
+- `RemovePoolCondition(poolIndex, conditionIndex)` - Remove condition from pool
+
 ## Test Mode
 
 Test mode creates a temporary creative world to test edited loot tables in-game.

@@ -494,10 +494,35 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }));
     }
 
+    private void openAddPoolFunctionDialog(int poolIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new AddFunctionDialog(this, function -> {
+            LootEditOperation op = new LootEditOperation.AddPoolFunction(poolIdx, function);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    private void openAddPoolConditionDialog(int poolIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new AddConditionDialog(this, condition -> {
+            LootEditOperation op = new LootEditOperation.AddPoolCondition(poolIdx, condition);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
     private ContextMenu createPoolContextMenu(int x, int y, int poolIdx) {
         return new ContextMenu(x, y)
             .addItem("+", "Add Item...", "", () -> editPanel.openAddItem(poolIdx))
             .addItem("\u2630", "Add from Template...", "", () -> editPanel.openTemplatePicker(poolIdx))
+            .addSeparator()
+            .addItem("\u2726", "Add Pool Function...", "", () -> openAddPoolFunctionDialog(poolIdx))
+            .addItem("?", "Add Pool Condition...", "", () -> openAddPoolConditionDialog(poolIdx))
             .addSeparator()
             .addItem("\u2750", "Duplicate Pool", "", () -> editPanel.duplicatePool(poolIdx))
             .addItem("\u2717", "Clear Pool", "", () -> editPanel.clearPool(poolIdx))

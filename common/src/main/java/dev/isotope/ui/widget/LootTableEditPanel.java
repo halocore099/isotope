@@ -73,6 +73,11 @@ public class LootTableEditPanel extends AbstractWidget {
     private int hoveredRemoveEntry = -1;
     private int hoveredRemoveEntryPool = -1;
 
+    // Pool function/condition remove button tracking (poolIdx, funcIdx/condIdx, x, y, width, height)
+    private final List<int[]> removePoolFunctionBtns = new ArrayList<>();
+    private final List<int[]> removePoolConditionBtns = new ArrayList<>();
+    private static final int POOL_FUNC_COND_LINE_HEIGHT = 14;
+
     // Selection state for keyboard shortcuts
     private int selectedPoolIdx = -1;
     private int selectedEntryIdx = -1;
@@ -203,13 +208,32 @@ public class LootTableEditPanel extends AbstractWidget {
 
         int contentHeight = HEADER_HEIGHT;
         for (int i = 0; i < display.pools().size(); i++) {
+            LootPool pool = display.pools().get(i);
             contentHeight += POOL_HEADER_HEIGHT;
-            contentHeight += display.pools().get(i).entries().size() * ENTRY_HEIGHT;
+            // Add height for pool functions and conditions
+            contentHeight += getPoolFuncCondHeight(pool);
+            contentHeight += pool.entries().size() * ENTRY_HEIGHT;
             contentHeight += 24; // Add item button
         }
         contentHeight += 30; // Add pool button
 
         maxScroll = Math.max(0, contentHeight - height);
+    }
+
+    /**
+     * Calculate the extra height needed for pool functions and conditions display.
+     */
+    private int getPoolFuncCondHeight(LootPool pool) {
+        int height = 0;
+        if (pool.hasFunctions()) {
+            height += POOL_FUNC_COND_LINE_HEIGHT; // "Functions:" label
+            height += pool.functions().size() * POOL_FUNC_COND_LINE_HEIGHT;
+        }
+        if (pool.hasConditions()) {
+            height += POOL_FUNC_COND_LINE_HEIGHT; // "Conditions:" label
+            height += pool.conditions().size() * POOL_FUNC_COND_LINE_HEIGHT;
+        }
+        return height;
     }
 
     private void refreshFromEdits() {
@@ -289,6 +313,8 @@ public class LootTableEditPanel extends AbstractWidget {
         hoveredRemovePool = -1;
         hoveredRemoveEntry = -1;
         hoveredRemoveEntryPool = -1;
+        removePoolFunctionBtns.clear();
+        removePoolConditionBtns.clear();
 
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);
@@ -551,6 +577,9 @@ public class LootTableEditPanel extends AbstractWidget {
         }
         y += POOL_HEADER_HEIGHT;
 
+        // Pool functions and conditions
+        y = renderPoolFunctionsAndConditions(graphics, font, y, poolIdx, pool, mouseX, mouseY);
+
         // Entries
         for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
             LootEntry entry = pool.entries().get(entryIdx);
@@ -589,6 +618,97 @@ public class LootTableEditPanel extends AbstractWidget {
                 templateHovered ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_MUTED, false);
         }
         y += 24;
+
+        return y;
+    }
+
+    /**
+     * Render pool-level functions and conditions below the pool header.
+     */
+    private int renderPoolFunctionsAndConditions(GuiGraphics graphics, Font font, int y, int poolIdx,
+                                                  LootPool pool, int mouseX, int mouseY) {
+        if (!pool.hasFunctions() && !pool.hasConditions()) {
+            return y;
+        }
+
+        int x = getX() + PADDING + 10; // Indent slightly
+        int maxX = getX() + width - PADDING - 20;
+
+        // Render functions
+        if (pool.hasFunctions()) {
+            if (y + POOL_FUNC_COND_LINE_HEIGHT > getY() && y < getY() + height) {
+                graphics.drawString(font, "Functions:", x, y + 2, IsotopeColors.ACCENT_GOLD, false);
+            }
+            y += POOL_FUNC_COND_LINE_HEIGHT;
+
+            int funcIndex = 0;
+            for (LootFunction func : pool.functions()) {
+                if (y + POOL_FUNC_COND_LINE_HEIGHT > getY() && y < getY() + height) {
+                    String funcName = "  " + func.getDisplayName();
+                    String params = func.getParameterSummary();
+                    graphics.drawString(font, funcName, x, y + 2, IsotopeColors.TEXT_SECONDARY, false);
+                    if (!params.isEmpty()) {
+                        int funcWidth = font.width(funcName);
+                        graphics.drawString(font, " (" + params + ")", x + funcWidth, y + 2,
+                            IsotopeColors.TEXT_MUTED, false);
+                    }
+
+                    // [X] remove button
+                    int btnX = maxX;
+                    int btnY = y;
+                    int btnW = 14;
+                    int btnH = POOL_FUNC_COND_LINE_HEIGHT;
+                    boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
+                        mouseY >= btnY && mouseY < btnY + btnH;
+                    if (hovered) {
+                        graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF4a2a2a);
+                    }
+                    graphics.drawString(font, "×", btnX + 4, btnY + 2,
+                        hovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+                    removePoolFunctionBtns.add(new int[]{poolIdx, funcIndex, btnX, btnY, btnW, btnH});
+                }
+                y += POOL_FUNC_COND_LINE_HEIGHT;
+                funcIndex++;
+            }
+        }
+
+        // Render conditions
+        if (pool.hasConditions()) {
+            if (y + POOL_FUNC_COND_LINE_HEIGHT > getY() && y < getY() + height) {
+                graphics.drawString(font, "Conditions:", x, y + 2, IsotopeColors.ACCENT_GOLD, false);
+            }
+            y += POOL_FUNC_COND_LINE_HEIGHT;
+
+            int condIndex = 0;
+            for (LootCondition cond : pool.conditions()) {
+                if (y + POOL_FUNC_COND_LINE_HEIGHT > getY() && y < getY() + height) {
+                    String condName = "  " + cond.getDisplayName();
+                    String params = cond.getParameterSummary();
+                    graphics.drawString(font, condName, x, y + 2, IsotopeColors.TEXT_SECONDARY, false);
+                    if (!params.isEmpty()) {
+                        int condWidth = font.width(condName);
+                        graphics.drawString(font, " " + params, x + condWidth, y + 2,
+                            IsotopeColors.TEXT_MUTED, false);
+                    }
+
+                    // [X] remove button
+                    int btnX = maxX;
+                    int btnY = y;
+                    int btnW = 14;
+                    int btnH = POOL_FUNC_COND_LINE_HEIGHT;
+                    boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
+                        mouseY >= btnY && mouseY < btnY + btnH;
+                    if (hovered) {
+                        graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF4a2a2a);
+                    }
+                    graphics.drawString(font, "×", btnX + 4, btnY + 2,
+                        hovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+                    removePoolConditionBtns.add(new int[]{poolIdx, condIndex, btnX, btnY, btnW, btnH});
+                }
+                y += POOL_FUNC_COND_LINE_HEIGHT;
+                condIndex++;
+            }
+        }
 
         return y;
     }
@@ -975,6 +1095,38 @@ public class LootTableEditPanel extends AbstractWidget {
             return true;
         }
 
+        // Check for pool function remove click
+        for (int[] btn : removePoolFunctionBtns) {
+            int poolIdx = btn[0];
+            int funcIdx = btn[1];
+            int btnX = btn[2];
+            int btnY = btn[3];
+            int btnW = btn[4];
+            int btnH = btn[5];
+            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+                LootEditOperation op = new LootEditOperation.RemovePoolFunction(poolIdx, funcIdx);
+                LootEditManager.getInstance().applyOperation(tableId, op);
+                refreshFromEdits();
+                return true;
+            }
+        }
+
+        // Check for pool condition remove click
+        for (int[] btn : removePoolConditionBtns) {
+            int poolIdx = btn[0];
+            int condIdx = btn[1];
+            int btnX = btn[2];
+            int btnY = btn[3];
+            int btnW = btn[4];
+            int btnH = btn[5];
+            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+                LootEditOperation op = new LootEditOperation.RemovePoolCondition(poolIdx, condIdx);
+                LootEditManager.getInstance().applyOperation(tableId, op);
+                refreshFromEdits();
+                return true;
+            }
+        }
+
         // Check for remove entry click
         if (hoveredRemoveEntry >= 0 && hoveredRemoveEntryPool >= 0) {
             LootEditOperation op = new LootEditOperation.RemoveEntry(hoveredRemoveEntryPool, hoveredRemoveEntry);
@@ -1012,6 +1164,7 @@ public class LootTableEditPanel extends AbstractWidget {
             }
 
             y += POOL_HEADER_HEIGHT;
+            y += getPoolFuncCondHeight(pool); // Account for pool functions/conditions
 
             for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
                 LootEntry entry = pool.entries().get(entryIdx);
@@ -1590,6 +1743,7 @@ public class LootTableEditPanel extends AbstractWidget {
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);
             entryY += POOL_HEADER_HEIGHT;
+            entryY += getPoolFuncCondHeight(pool); // Account for pool functions/conditions
 
             for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
                 if (poolIdx == selectedPoolIdx && entryIdx == selectedEntryIdx) {
