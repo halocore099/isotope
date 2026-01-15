@@ -549,9 +549,14 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private ContextMenu createPoolContextMenu(int x, int y, int poolIdx) {
+        boolean canPaste = dev.isotope.editing.ClipboardManager.getInstance().hasPool();
+
         return new ContextMenu(x, y)
             .addItem("+", "Add Item...", "", () -> editPanel.openAddItem(poolIdx))
             .addItem("\u2630", "Add from Template...", "", () -> editPanel.openTemplatePicker(poolIdx))
+            .addSeparator()
+            .addItem("\u2398", "Copy Pool", "Ctrl+C", () -> editPanel.copyPool(poolIdx))
+            .addItem("\u2399", "Paste Pool", "Ctrl+V", () -> editPanel.pastePoolFromClipboard(), canPaste)
             .addSeparator()
             .addItem("\u2726", "Add Pool Function...", "", () -> openAddPoolFunctionDialog(poolIdx))
             .addItem("?", "Add Pool Condition...", "", () -> openAddPoolConditionDialog(poolIdx))

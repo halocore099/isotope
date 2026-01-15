@@ -2629,6 +2629,37 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     /**
+     * Copy a pool to the clipboard.
+     */
+    public void copyPool(int poolIdx) {
+        if (tableId == null) return;
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null || poolIdx >= display.pools().size()) return;
+
+        LootPool pool = display.pools().get(poolIdx);
+        ClipboardManager.getInstance().copyPool(pool, tableId);
+
+        IsotopeToast.info("Copied", "Pool with " + pool.entries().size() + " entries");
+    }
+
+    /**
+     * Paste a pool from the clipboard.
+     */
+    public void pastePoolFromClipboard() {
+        if (tableId == null) {
+            IsotopeToast.info("Paste", "No loot table selected");
+            return;
+        }
+
+        if (!ClipboardManager.getInstance().hasPool()) {
+            IsotopeToast.info("Paste", "No pool in clipboard");
+            return;
+        }
+
+        pastePool();
+    }
+
+    /**
      * Clear all entries from a pool.
      */
     public void clearPool(int poolIdx) {
