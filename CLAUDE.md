@@ -65,8 +65,12 @@ LootSourceType.MOB        // Purple - entity drops on death
 | Level | Score | Source | Description |
 |-------|-------|--------|-------------|
 | MANUAL | 100 | User override | Author explicitly defined |
+| MOD_DECLARED | 95 | Mod API | Mod explicitly declared link |
 | VERIFIED | 90 | Runtime observation | Seen during gameplay |
+| CONFIRMED | 88 | Multi-source | Multiple independent sources agree |
+| RUNTIME_ASSIGNED | 85 | setLootTable() hook | Captured from container assignment |
 | TEMPLATE | 80 | .nbt parsing | Found in structure template |
+| LEARNED | 75 | Past sessions | Previously verified, loaded from disk |
 | HIGH | 70 | Heuristics | Vanilla mapping / exact path match |
 | MEDIUM | 50 | Heuristics | Partial path match |
 | LOW | 30 | Heuristics | Namespace only |
@@ -79,24 +83,79 @@ Server Start
 Layer 1: Registry Scan
          - StructureRegistry (real structures from Registries.STRUCTURE)
          - LootTableRegistry (all loot tables)
-         - FeatureRegistry (known features with loot - monster_room, etc.)
+         - StructureClassRegistry (class -> structure ID mapping)
+         - FeatureRegistry (known features with loot)
+         - WorldgenFeatureParser (dynamic feature discovery from JSON)
          - EntityLootRegistry (mob loot from entities/*.json)
+    ↓
+Layer 1.5: Content Analysis (LootTableContentAnalyzer)
+         - Analyzes loot table JSON for signature items
+         - Signature items hint at specific structure origin
+         - Example: heart_of_the_sea → buried_treasure (95% confidence)
+         - Example: echo_shard → ancient_city (90% confidence)
     ↓
 Layer 2: Template Parsing (StructureTemplateParser)
          - Parses .nbt files for loot table references
          - Handles jigsaw structures recursively
     ↓
-Layer 3: Multi-Layer Linking (StructureLootLinker)
-         - Heuristics → Templates → Runtime → Author
-         - Features linked via FeatureRegistry mappings
-         - Confidence only goes UP
+Layer 2.1: Spawner Entity Analysis (SpawnerEntityExtractor)
+         - Extracts entity types from spawner blocks in templates
+         - Links spawned entity's loot table to the structure
+         - Example: dungeon with zombie spawner → minecraft:entities/zombie
     ↓
-Layer 4: Orphan Detection (OrphanDetector)
+Layer 2.2: Template Pool Parsing (TemplatePoolParser)
+         - Parses worldgen/template_pool/*.json for jigsaw loot
+         - Resolves pool hierarchy (fallback pools, nested pools)
+         - Matches pools to structures by naming conventions
+    ↓
+Layer 2.25: Processor List Parsing (ProcessorListParser)
+         - Parses worldgen/processor_list/*.json for loot tables
+         - Cross-references with template pools (pool → processor → loot)
+         - Extracts loot from rule processor output_nbt
+    ↓
+Layer 2.27: Structure Config Parsing (StructureConfigParser)
+         - Parses worldgen/structure/*.json for structure definitions
+         - Maps jigsaw structures to their start_pool
+         - Extracts type-based loot (buried_treasure, shipwreck, etc.)
+    ↓
+Layer 2.28: Mod-Declared Links (ModLinkScanner, ModLinkRegistry)
+         - Scans for isotope_links.json and loot_metadata.json via ResourceManager
+         - Public API for mods to register links programmatically
+         - MOD_DECLARED confidence (95) - very high trust
+    ↓
+Layer 2.29: Datapack Metadata (DatapackLootMetadataScanner)
+         - Direct folder scan for loot_metadata.json in datapacks
+         - Catches unloaded datapacks not in ResourceManager
+         - Same format as isotope_links.json
+    ↓
+Layer 2.3: Learned Links (LearnedLinksManager)
+         - Pre-populates from persistent learned_links.json
+         - Previously verified links from past sessions
+    ↓
+Layer 2.5: Runtime Assignment (LootObserver)
+         - setLootTable() hook captures direct causation
+         - Uses StructureClassRegistry for 100% accurate caller ID
+    ↓
+Layer 3: Runtime Observation (ObservationCorrelator)
+         - Spatial correlation during gameplay
+         - Ground truth from actual loot generation
+    ↓
+Layer 3.5: Confirmation Scoring (ConfirmationScorer)
+         - Boosts confidence when 2+ source categories agree
+         - Categories: STATIC_ANALYSIS, DYNAMIC_ANALYSIS, HISTORICAL, AUTHOR
+    ↓
+Layer 4: Namespace Validation (NamespaceValidator)
+         - Flags suspicious cross-namespace links
+         - Warns on cross-mod links
+    ↓
+Layer 5: Author Overrides
+         - Manual links have final authority
+    ↓
+Layer 6: Orphan Detection (OrphanDetector)
          - Flags unlinked loot tables
          - Flags structures without loot
-         - Tracks runtime-only discoveries
     ↓
-Layer 5: Compile Unified Registry (LootSourceRegistry)
+Layer 7: Compile Unified Registry (LootSourceRegistry)
          - Combines structures + features + mobs into single view
          - Used by UI for consistent display
     ↓
@@ -106,7 +165,21 @@ Ready
 ### Key Classes
 
 - `StructureTemplateParser` - Extracts loot tables from .nbt structure templates
+- `SpawnerEntityExtractor` - Extracts entity types from spawner blocks in templates
+- `LootTableContentAnalyzer` - Analyzes loot tables for signature items hinting at structure
+- `TemplatePoolParser` - Extracts loot tables from template_pool JSON files
+- `ProcessorListParser` - Extracts loot tables from processor_list JSON files
+- `StructureConfigParser` - Extracts loot tables from structure definition JSON files
+- `ModLinkRegistry` - Public API for mods to register structure-loot links
+- `ModLinkScanner` - Scans for isotope_links.json and loot_metadata.json via ResourceManager
+- `DatapackLootMetadataScanner` - Direct folder scan for loot_metadata.json in datapacks
 - `StructureLootLinker` - Multi-layer linking with confidence promotion
+- `StructureClassRegistry` - Maps structure implementation classes to registry IDs
+- `WorldgenFeatureParser` - Dynamic feature discovery from worldgen JSON
+- `LearnedLinksManager` - Persistent learned links with version-based confidence decay
+- `UserCorrectionManager` - Persistent user corrections (manual adds/removes)
+- `ConfirmationScorer` - Multi-source corroboration scoring
+- `NamespaceValidator` - Cross-namespace validation and warnings
 - `ObservationCorrelator` - Runtime structure↔loot correlation
 - `OrphanDetector` - Surfaces gaps and missing links
 - `StructureLootLink` - Link record with confidence and source
@@ -119,9 +192,151 @@ Ready
 ### Design Principles
 
 1. **No silent failures** - Every link has a confidence level
-2. **Confidence only promotes** - Never downgrade existing evidence
+2. **Confidence only promotes** - Never downgrade existing evidence (within a session)
 3. **Surface gaps intentionally** - Orphans are flagged, not hidden
 4. **Runtime upgrades heuristics** - Observation confirms guesses
+5. **Multi-source corroboration** - Independent sources agreeing boosts confidence
+6. **Learned links decay over time** - Links from old MC versions are demoted to prevent stale data
+
+### Confidence Decay (Learned Links)
+
+Learned links automatically decay based on Minecraft version age:
+
+| Version Age | Confidence | Notes |
+|-------------|------------|-------|
+| 0-1 versions | LEARNED (75) | Current or recent, full confidence |
+| 2 versions | MEDIUM (50) | Decayed, may need re-verification |
+| 3+ versions | LOW (30) | Stale, likely outdated |
+
+**Key behaviors:**
+- Re-verifying a link in the current version resets its age
+- Links track the MC version when learned/last verified
+- `purgeStaleLinks(maxAge)` can remove very old links
+- `getDecayStatistics()` shows breakdown of link ages
+
+### User Correction Feedback
+
+User manual corrections are persisted to improve future linking accuracy.
+
+**Storage:** `.minecraft/isotope/user_corrections.json`
+
+**Correction Types:**
+| Type | Description | Meaning |
+|------|-------------|---------|
+| ADDED | User manually added a link | False negative - system missed this link |
+| REMOVED | User manually removed a link | False positive - system incorrectly suggested this |
+| RESTORED | User restored a removed link | User changed their mind |
+
+**How it works:**
+- When user adds a link via UI, `UserCorrectionManager.recordAddedLink()` is called
+- When user removes a link, `UserCorrectionManager.recordRemovedLink()` is called
+- Corrections are applied in `applyAuthorOverrides()` during linking
+- Original source/confidence is tracked for analysis
+
+**Correction data includes:**
+- Structure and loot table IDs
+- Correction type
+- Timestamp
+- Original source (what suggested the link before correction)
+- Original confidence level
+- Minecraft version
+
+This creates a feedback loop where the system learns from user behavior.
+
+### Spawner Entity Analysis
+
+Structures containing spawner blocks (mob_spawner) have their spawned entity's loot table linked to the structure.
+
+**How it works:**
+- During template parsing, `SpawnerEntityExtractor` scans NBT for spawner blocks
+- Extracts entity types from `SpawnData.entity.id` and `SpawnPotentials[].data.entity.id`
+- Maps entity IDs to their loot tables via `EntityLootRegistry`
+- Creates `StructureLootLink` with `SPAWNER_ENTITY` source and `TEMPLATE` confidence
+
+**Example:**
+A dungeon (monster_room feature) with a zombie spawner will link to `minecraft:entities/zombie`, allowing users to see and edit zombie drops in the context of dungeon loot.
+
+**Spawner NBT structure parsed:**
+```
+{
+  "id": "minecraft:mob_spawner",
+  "SpawnData": {
+    "entity": { "id": "minecraft:zombie" }
+  },
+  "SpawnPotentials": [
+    { "weight": 1, "data": { "entity": { "id": "minecraft:skeleton" } } }
+  ]
+}
+```
+
+**Statistics available via:**
+- `SpawnerEntityExtractor.getStats()` - spawners found, entities extracted, structures affected
+- `StructureTemplateParser.getStats()` - includes spawner statistics
+
+### Loot Table Content Analysis
+
+Loot tables are analyzed for "signature items" - unique items that strongly indicate which structure the loot table belongs to.
+
+**How it works:**
+- `LootTableContentAnalyzer` parses loot table JSON and extracts all item IDs
+- Items are matched against a registry of signature items with confidence scores
+- Matching items create `StructureLootLink` with `CONTENT_ANALYSIS` source
+- Confidence is mapped to LOW (30) / MEDIUM (50) / HIGH (70) based on the signature item's score
+
+**Signature Item Examples:**
+| Item | Structure | Confidence | Reason |
+|------|-----------|------------|--------|
+| `heart_of_the_sea` | `buried_treasure` | 95% | Exclusive to buried treasure |
+| `echo_shard` | `ancient_city` | 90% | Exclusive to ancient cities |
+| `disc_fragment_5` | `ancient_city` | 95% | Exclusive to ancient cities |
+| `trial_key` | `trial_chambers` | 95% | Exclusive to trial chambers |
+| `elytra` | `end_city` | 95% | Exclusive to end city ships |
+| `netherite_upgrade_smithing_template` | `bastion_remnant` | 90% | Found in bastions |
+| `music_disc_pigstep` | `bastion_remnant` | 90% | Exclusive to bastions |
+
+**Multi-Item Boosting:**
+When multiple signature items for the same structure are found in a single loot table, confidence is boosted:
+- 2 items: +5% confidence
+- 3+ items: +5% per additional item (capped at 99%)
+
+**When this helps:**
+- Modded loot tables without naming conventions
+- Custom structures using vanilla loot patterns
+- Orphan loot tables that heuristics couldn't match
+
+**Statistics available via:**
+- `LootTableContentAnalyzer.getStats()` - tables analyzed, tables with hints, signature item count
+
+### Future Linking Improvements (TODO)
+
+Potential additions to further improve linking accuracy:
+
+**High Value / Low Effort:**
+| Suggestion | Description | Files to Create/Modify |
+|------------|-------------|------------------------|
+| ~~Template Pool JSON Parsing~~ | ✅ DONE - Parse `worldgen/template_pool/*.json` for jigsaw loot refs | `TemplatePoolParser.java` |
+| ~~Processor List Parsing~~ | ✅ DONE - Parse `worldgen/processor_list/*.json` for processor loot mods | `ProcessorListParser.java` |
+| ~~Structure Feature Registry~~ | ✅ DONE - Parse `worldgen/structure/*.json` for structure definitions | `StructureConfigParser.java` |
+
+**Medium Value / Medium Effort:**
+| Suggestion | Description | Files to Create/Modify |
+|------------|-------------|------------------------|
+| ~~Mod Integration API~~ | ✅ DONE - Mods declare links via isotope_links.json or API | `ModLinkRegistry.java`, `ModLinkScanner.java` |
+| ~~NBT Spawner Entity Analysis~~ | ✅ DONE - Extract entity types from spawners → link to mob loot | `SpawnerEntityExtractor.java` |
+| ~~Loot Table Content Analysis~~ | ✅ DONE - Analyze loot JSON for signature items → infer structure | `LootTableContentAnalyzer.java` |
+
+**High Value / Higher Effort:**
+| Suggestion | Description | Files to Create/Modify |
+|------------|-------------|------------------------|
+| ~~Confidence Decay~~ | ✅ DONE - Learned links older than 2+ MC versions get demoted | `LearnedLinksManager.java` |
+| ~~User Correction Feedback~~ | ✅ DONE - Learn from manual user corrections | `UserCorrectionManager.java` |
+| ~~Datapack Loot Metadata~~ | ✅ DONE - Support `loot_metadata.json` in datapacks | `DatapackLootMetadataScanner.java` |
+
+**Priority order for implementation:**
+1. ~~Template Pool JSON Parsing~~ ✅ DONE
+2. ~~Mod Integration API~~ ✅ DONE (100% accuracy for adopting mods)
+3. ~~Datapack Loot Metadata~~ ✅ DONE (explicit is better than inferred)
+4. ~~Confidence Decay~~ ✅ DONE (accuracy maintenance over time)
 
 ### UI Indicators for Loot Sources
 

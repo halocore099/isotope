@@ -3,6 +3,7 @@ package dev.isotope.analysis;
 import com.google.gson.*;
 import dev.isotope.Isotope;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
+import dev.isotope.data.StructureLootLink;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
@@ -12,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Content-based loot table category analyzer.
@@ -103,6 +105,215 @@ public final class LootTableContentAnalyzer {
         "minecraft:guster_pottery_sherd",
         "minecraft:scrape_pottery_sherd"
     );
+
+    // ===== STRUCTURE LINKING: Signature items that hint at specific structures =====
+
+    /**
+     * Signature items: items that strongly indicate a specific structure origin.
+     * Maps item ID -> list of possible structure IDs with confidence scores.
+     *
+     * These are items that are unique to or highly characteristic of specific structures.
+     */
+    private static final Map<String, List<StructureHint>> SIGNATURE_ITEMS = buildSignatureItems();
+
+    /**
+     * A hint about which structure a loot table might belong to.
+     */
+    public record StructureHint(
+        ResourceLocation structureId,
+        int confidence,      // 0-100, how confident we are this item indicates this structure
+        String reason        // Human-readable reason for the hint
+    ) {}
+
+    /**
+     * Result of structure hint analysis.
+     */
+    public record StructureHintResult(
+        ResourceLocation lootTableId,
+        List<StructureHint> hints,
+        Set<String> signatureItemsFound
+    ) {
+        public boolean hasHints() {
+            return !hints.isEmpty();
+        }
+
+        public Optional<StructureHint> getBestHint() {
+            return hints.stream().max(Comparator.comparingInt(StructureHint::confidence));
+        }
+    }
+
+    private static Map<String, List<StructureHint>> buildSignatureItems() {
+        Map<String, List<StructureHint>> items = new HashMap<>();
+
+        // === Buried Treasure ===
+        addSignatureItem(items, "minecraft:heart_of_the_sea", "minecraft:buried_treasure", 95,
+            "Heart of the Sea is exclusive to buried treasure");
+
+        // === Ancient City ===
+        addSignatureItem(items, "minecraft:echo_shard", "minecraft:ancient_city", 90,
+            "Echo Shards are exclusive to ancient cities");
+        addSignatureItem(items, "minecraft:disc_fragment_5", "minecraft:ancient_city", 95,
+            "Disc Fragment 5 is exclusive to ancient cities");
+        addSignatureItem(items, "minecraft:ward_armor_trim_smithing_template", "minecraft:ancient_city", 85,
+            "Ward trim template found in ancient cities");
+        addSignatureItem(items, "minecraft:silence_armor_trim_smithing_template", "minecraft:ancient_city", 85,
+            "Silence trim template found in ancient cities");
+        addSignatureItem(items, "minecraft:swift_sneak", "minecraft:ancient_city", 80,
+            "Swift Sneak enchanted books found in ancient cities");
+
+        // === Woodland Mansion ===
+        addSignatureItem(items, "minecraft:totem_of_undying", "minecraft:woodland_mansion", 75,
+            "Totem of Undying is associated with Evokers in mansions");
+        addSignatureItem(items, "minecraft:vex_armor_trim_smithing_template", "minecraft:woodland_mansion", 90,
+            "Vex trim template is exclusive to woodland mansions");
+
+        // === Bastion Remnant ===
+        addSignatureItem(items, "minecraft:netherite_upgrade_smithing_template", "minecraft:bastion_remnant", 90,
+            "Netherite upgrade template found in bastions");
+        addSignatureItem(items, "minecraft:snout_armor_trim_smithing_template", "minecraft:bastion_remnant", 90,
+            "Snout trim template found in bastions");
+        addSignatureItem(items, "minecraft:piglin_banner_pattern", "minecraft:bastion_remnant", 85,
+            "Piglin banner pattern found in bastions");
+        addSignatureItem(items, "minecraft:music_disc_pigstep", "minecraft:bastion_remnant", 90,
+            "Music Disc Pigstep is exclusive to bastions");
+        addSignatureItem(items, "minecraft:ancient_debris", "minecraft:bastion_remnant", 60,
+            "Ancient debris can be found in bastion loot");
+        addSignatureItem(items, "minecraft:netherite_scrap", "minecraft:bastion_remnant", 65,
+            "Netherite scrap found in bastion loot");
+
+        // === End City ===
+        addSignatureItem(items, "minecraft:elytra", "minecraft:end_city", 95,
+            "Elytra are exclusive to end city ships");
+        addSignatureItem(items, "minecraft:dragon_head", "minecraft:end_city", 95,
+            "Dragon heads are exclusive to end city ships");
+        addSignatureItem(items, "minecraft:spire_armor_trim_smithing_template", "minecraft:end_city", 90,
+            "Spire trim template found in end cities");
+        addSignatureItem(items, "minecraft:shulker_shell", "minecraft:end_city", 70,
+            "Shulker shells associated with end cities");
+
+        // === Trial Chambers ===
+        addSignatureItem(items, "minecraft:trial_key", "minecraft:trial_chambers", 95,
+            "Trial keys are exclusive to trial chambers");
+        addSignatureItem(items, "minecraft:ominous_trial_key", "minecraft:trial_chambers", 95,
+            "Ominous trial keys are exclusive to trial chambers");
+        addSignatureItem(items, "minecraft:breeze_rod", "minecraft:trial_chambers", 85,
+            "Breeze rods are associated with trial chambers");
+        addSignatureItem(items, "minecraft:wind_charge", "minecraft:trial_chambers", 70,
+            "Wind charges found in trial chambers");
+        addSignatureItem(items, "minecraft:flow_armor_trim_smithing_template", "minecraft:trial_chambers", 90,
+            "Flow trim template found in trial chambers");
+        addSignatureItem(items, "minecraft:bolt_armor_trim_smithing_template", "minecraft:trial_chambers", 90,
+            "Bolt trim template found in trial chambers");
+        addSignatureItem(items, "minecraft:heavy_core", "minecraft:trial_chambers", 85,
+            "Heavy core found in trial chambers");
+        addSignatureItem(items, "minecraft:ominous_bottle", "minecraft:trial_chambers", 80,
+            "Ominous bottles found in trial chambers");
+
+        // === Stronghold ===
+        addSignatureItem(items, "minecraft:ender_pearl", "minecraft:stronghold", 40,
+            "Ender pearls found in stronghold loot");
+        addSignatureItem(items, "minecraft:eye_armor_trim_smithing_template", "minecraft:stronghold", 90,
+            "Eye trim template found in strongholds");
+
+        // === Desert Pyramid ===
+        addSignatureItem(items, "minecraft:dune_armor_trim_smithing_template", "minecraft:desert_pyramid", 90,
+            "Dune trim template found in desert pyramids");
+
+        // === Jungle Temple ===
+        addSignatureItem(items, "minecraft:wild_armor_trim_smithing_template", "minecraft:jungle_pyramid", 90,
+            "Wild trim template found in jungle temples");
+
+        // === Ocean Monument ===
+        addSignatureItem(items, "minecraft:sponge", "minecraft:monument", 85,
+            "Sponges are associated with ocean monuments");
+        addSignatureItem(items, "minecraft:tide_armor_trim_smithing_template", "minecraft:monument", 90,
+            "Tide trim template found in ocean monuments");
+        addSignatureItem(items, "minecraft:prismarine_shard", "minecraft:monument", 60,
+            "Prismarine shards associated with ocean monuments");
+        addSignatureItem(items, "minecraft:prismarine_crystals", "minecraft:monument", 60,
+            "Prismarine crystals associated with ocean monuments");
+
+        // === Shipwreck ===
+        addSignatureItem(items, "minecraft:coast_armor_trim_smithing_template", "minecraft:shipwreck", 90,
+            "Coast trim template found in shipwrecks");
+        addSignatureItem(items, "minecraft:buried_treasure_map", "minecraft:shipwreck", 80,
+            "Buried treasure maps found in shipwrecks");
+
+        // === Ocean Ruins ===
+        addSignatureItem(items, "minecraft:treasure_map", "minecraft:ocean_ruin_cold", 50,
+            "Treasure maps can be found in ocean ruins");
+        addSignatureItem(items, "minecraft:treasure_map", "minecraft:ocean_ruin_warm", 50,
+            "Treasure maps can be found in ocean ruins");
+
+        // === Nether Fortress ===
+        addSignatureItem(items, "minecraft:blaze_rod", "minecraft:fortress", 50,
+            "Blaze rods associated with nether fortress");
+        addSignatureItem(items, "minecraft:wither_skeleton_skull", "minecraft:fortress", 60,
+            "Wither skeleton skulls associated with nether fortress");
+        addSignatureItem(items, "minecraft:rib_armor_trim_smithing_template", "minecraft:fortress", 90,
+            "Rib trim template found in nether fortresses");
+
+        // === Ruined Portal ===
+        addSignatureItem(items, "minecraft:gold_block", "minecraft:ruined_portal", 40,
+            "Gold blocks found in ruined portal loot");
+        addSignatureItem(items, "minecraft:obsidian", "minecraft:ruined_portal", 50,
+            "Obsidian found in ruined portal loot");
+        addSignatureItem(items, "minecraft:crying_obsidian", "minecraft:ruined_portal", 70,
+            "Crying obsidian found in ruined portal loot");
+        addSignatureItem(items, "minecraft:enchanted_golden_apple", "minecraft:ruined_portal", 50,
+            "Enchanted golden apples found in ruined portals");
+
+        // === Pillager Outpost ===
+        addSignatureItem(items, "minecraft:sentry_armor_trim_smithing_template", "minecraft:pillager_outpost", 90,
+            "Sentry trim template found in pillager outposts");
+        addSignatureItem(items, "minecraft:crossbow", "minecraft:pillager_outpost", 50,
+            "Crossbows associated with pillager outposts");
+        addSignatureItem(items, "minecraft:goat_horn", "minecraft:pillager_outpost", 60,
+            "Goat horns found in pillager outposts");
+
+        // === Mineshaft ===
+        addSignatureItem(items, "minecraft:rail", "minecraft:mineshaft", 40,
+            "Rails associated with mineshafts");
+        addSignatureItem(items, "minecraft:powered_rail", "minecraft:mineshaft", 50,
+            "Powered rails associated with mineshafts");
+        addSignatureItem(items, "minecraft:name_tag", "minecraft:mineshaft", 40,
+            "Name tags found in mineshaft chests");
+        addSignatureItem(items, "minecraft:golden_apple", "minecraft:mineshaft", 30,
+            "Golden apples can be found in mineshafts");
+
+        // === Dungeon / Monster Room (feature) ===
+        addSignatureItem(items, "minecraft:music_disc_13", "minecraft:monster_room", 60,
+            "Music disc 13 found in dungeon chests");
+        addSignatureItem(items, "minecraft:music_disc_cat", "minecraft:monster_room", 60,
+            "Music disc cat found in dungeon chests");
+        addSignatureItem(items, "minecraft:saddle", "minecraft:monster_room", 30,
+            "Saddles can be found in dungeon chests");
+
+        // === Village ===
+        addSignatureItem(items, "minecraft:emerald", "minecraft:village_plains", 25,
+            "Emeralds associated with village trading/loot");
+        // Note: villages have low confidence because items are generic
+
+        // === Igloo ===
+        addSignatureItem(items, "minecraft:golden_apple", "minecraft:igloo", 40,
+            "Golden apples found in igloo chests");
+        addSignatureItem(items, "minecraft:splash_potion", "minecraft:igloo", 50,
+            "Splash potions found in igloo basements");
+
+        return items;
+    }
+
+    private static void addSignatureItem(Map<String, List<StructureHint>> items,
+                                          String itemId, String structureId,
+                                          int confidence, String reason) {
+        items.computeIfAbsent(itemId, k -> new ArrayList<>())
+            .add(new StructureHint(ResourceLocation.parse(structureId), confidence, reason));
+    }
+
+    // ===== Analysis statistics =====
+    private static int tablesAnalyzed = 0;
+    private static int structureHintsFound = 0;
+    private static final Map<ResourceLocation, StructureHintResult> cachedHints = new LinkedHashMap<>();
 
     private LootTableContentAnalyzer() {}
 
@@ -393,6 +604,278 @@ public final class LootTableContentAnalyzer {
 
             // Default to OTHER for ambiguous tables
             return LootTableCategory.OTHER;
+        }
+    }
+
+    // ===== STRUCTURE HINT ANALYSIS =====
+
+    /**
+     * Analyze a loot table for structure hints based on signature items.
+     *
+     * @param server The Minecraft server (for resource access)
+     * @param tableId The loot table ID
+     * @return Structure hint result, or null if unable to analyze
+     */
+    public static StructureHintResult analyzeForStructureHints(MinecraftServer server, ResourceLocation tableId) {
+        // Check cache first
+        if (cachedHints.containsKey(tableId)) {
+            return cachedHints.get(tableId);
+        }
+
+        ResourceManager resourceManager = server.getResourceManager();
+
+        // Try to load the loot table JSON
+        ResourceLocation jsonPath = ResourceLocation.fromNamespaceAndPath(
+            tableId.getNamespace(),
+            "loot_table/" + tableId.getPath() + ".json"
+        );
+
+        Optional<Resource> resource = resourceManager.getResource(jsonPath);
+        if (resource.isEmpty()) {
+            // Try plural form
+            jsonPath = ResourceLocation.fromNamespaceAndPath(
+                tableId.getNamespace(),
+                "loot_tables/" + tableId.getPath() + ".json"
+            );
+            resource = resourceManager.getResource(jsonPath);
+        }
+
+        if (resource.isEmpty()) {
+            return null;
+        }
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(resource.get().open(), StandardCharsets.UTF_8))) {
+
+            JsonObject json = GSON.fromJson(reader, JsonObject.class);
+            StructureHintResult result = analyzeJsonForStructureHints(tableId, json);
+
+            // Cache the result
+            cachedHints.put(tableId, result);
+            tablesAnalyzed++;
+            if (result.hasHints()) {
+                structureHintsFound++;
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("Failed to analyze loot table for structure hints {}: {}", tableId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Analyze a loot table JSON for structure hints based on signature items.
+     */
+    public static StructureHintResult analyzeJsonForStructureHints(ResourceLocation tableId, JsonObject json) {
+        Set<String> allItems = new LinkedHashSet<>();
+        Set<String> signatureItemsFound = new LinkedHashSet<>();
+        Map<ResourceLocation, List<StructureHint>> hintsByStructure = new LinkedHashMap<>();
+
+        // Extract all items from the loot table
+        extractItemsFromJson(json, allItems);
+
+        // Check each item against signature items
+        for (String itemId : allItems) {
+            List<StructureHint> hints = SIGNATURE_ITEMS.get(itemId);
+            if (hints != null) {
+                signatureItemsFound.add(itemId);
+                for (StructureHint hint : hints) {
+                    hintsByStructure.computeIfAbsent(hint.structureId(), k -> new ArrayList<>()).add(hint);
+                }
+            }
+        }
+
+        // Aggregate hints by structure (multiple signature items for same structure = higher confidence)
+        List<StructureHint> aggregatedHints = new ArrayList<>();
+        for (Map.Entry<ResourceLocation, List<StructureHint>> entry : hintsByStructure.entrySet()) {
+            List<StructureHint> structureHints = entry.getValue();
+            if (structureHints.size() == 1) {
+                aggregatedHints.add(structureHints.get(0));
+            } else {
+                // Multiple signature items for same structure - aggregate confidence
+                int maxConfidence = structureHints.stream()
+                    .mapToInt(StructureHint::confidence)
+                    .max().orElse(0);
+                // Boost confidence slightly for multiple matches (cap at 99)
+                int boostedConfidence = Math.min(99, maxConfidence + (structureHints.size() - 1) * 5);
+                String reasons = structureHints.stream()
+                    .map(StructureHint::reason)
+                    .collect(Collectors.joining("; "));
+                aggregatedHints.add(new StructureHint(entry.getKey(), boostedConfidence, reasons));
+            }
+        }
+
+        // Sort by confidence (highest first)
+        aggregatedHints.sort(Comparator.comparingInt(StructureHint::confidence).reversed());
+
+        if (!aggregatedHints.isEmpty()) {
+            Isotope.LOGGER.debug("Structure hints for {}: {} hints from {} signature items",
+                tableId, aggregatedHints.size(), signatureItemsFound.size());
+        }
+
+        return new StructureHintResult(tableId, aggregatedHints, signatureItemsFound);
+    }
+
+    /**
+     * Extract all item IDs from a loot table JSON.
+     */
+    private static void extractItemsFromJson(JsonObject json, Set<String> items) {
+        // Check pools
+        if (json.has("pools") && json.get("pools").isJsonArray()) {
+            for (JsonElement poolElement : json.getAsJsonArray("pools")) {
+                if (poolElement.isJsonObject()) {
+                    extractItemsFromPool(poolElement.getAsJsonObject(), items);
+                }
+            }
+        }
+    }
+
+    /**
+     * Extract item IDs from a pool.
+     */
+    private static void extractItemsFromPool(JsonObject pool, Set<String> items) {
+        if (pool.has("entries") && pool.get("entries").isJsonArray()) {
+            for (JsonElement entryElement : pool.getAsJsonArray("entries")) {
+                if (entryElement.isJsonObject()) {
+                    extractItemsFromEntry(entryElement.getAsJsonObject(), items);
+                }
+            }
+        }
+    }
+
+    /**
+     * Extract item IDs from an entry (recursively for alternatives/groups).
+     */
+    private static void extractItemsFromEntry(JsonObject entry, Set<String> items) {
+        String type = entry.has("type") ? entry.get("type").getAsString() : "";
+
+        // Item entry
+        if ((type.equals("minecraft:item") || type.equals("item")) && entry.has("name")) {
+            items.add(entry.get("name").getAsString());
+        }
+
+        // Recurse into children (alternatives, groups, sequences)
+        if (entry.has("children") && entry.get("children").isJsonArray()) {
+            for (JsonElement childElement : entry.getAsJsonArray("children")) {
+                if (childElement.isJsonObject()) {
+                    extractItemsFromEntry(childElement.getAsJsonObject(), items);
+                }
+            }
+        }
+
+        // Check for nested loot table reference
+        if ((type.equals("minecraft:loot_table") || type.equals("loot_table")) && entry.has("value")) {
+            // Could recursively analyze referenced table, but that's expensive
+            // For now, just note it exists
+        }
+    }
+
+    /**
+     * Create StructureLootLinks from structure hints.
+     * Only creates links for hints above the confidence threshold.
+     */
+    public static List<StructureLootLink> createLinksFromHints(
+            StructureHintResult result, int minConfidence) {
+
+        List<StructureLootLink> links = new ArrayList<>();
+
+        for (StructureHint hint : result.hints()) {
+            if (hint.confidence() >= minConfidence) {
+                links.add(StructureLootLink.contentAnalysis(
+                    hint.structureId(),
+                    result.lootTableId(),
+                    hint.confidence()
+                ));
+            }
+        }
+
+        return links;
+    }
+
+    /**
+     * Analyze all loot tables in a registry and return structure hints.
+     */
+    public static Map<ResourceLocation, StructureHintResult> analyzeAllForStructureHints(
+            MinecraftServer server,
+            Collection<ResourceLocation> tableIds) {
+
+        Map<ResourceLocation, StructureHintResult> results = new LinkedHashMap<>();
+
+        for (ResourceLocation tableId : tableIds) {
+            StructureHintResult result = analyzeForStructureHints(server, tableId);
+            if (result != null && result.hasHints()) {
+                results.put(tableId, result);
+            }
+        }
+
+        Isotope.LOGGER.info("[ContentAnalyzer] Structure hint analysis: {} tables analyzed, {} with hints",
+            tablesAnalyzed, structureHintsFound);
+
+        return results;
+    }
+
+    /**
+     * Get structure hints for orphan loot tables (tables without existing links).
+     * This is useful for discovering links for tables that aren't matched by other methods.
+     */
+    public static Map<ResourceLocation, StructureHintResult> analyzeOrphansForStructureHints(
+            MinecraftServer server,
+            Collection<ResourceLocation> orphanTableIds,
+            int minConfidence) {
+
+        Map<ResourceLocation, StructureHintResult> results = new LinkedHashMap<>();
+
+        for (ResourceLocation tableId : orphanTableIds) {
+            StructureHintResult result = analyzeForStructureHints(server, tableId);
+            if (result != null && result.hasHints()) {
+                // Filter to only include hints above threshold
+                Optional<StructureHint> bestHint = result.getBestHint();
+                if (bestHint.isPresent() && bestHint.get().confidence() >= minConfidence) {
+                    results.put(tableId, result);
+                }
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Get cached hints (for UI display).
+     */
+    public static Map<ResourceLocation, StructureHintResult> getCachedHints() {
+        return Collections.unmodifiableMap(cachedHints);
+    }
+
+    /**
+     * Get analysis statistics.
+     */
+    public static Stats getStats() {
+        return new Stats(tablesAnalyzed, structureHintsFound, SIGNATURE_ITEMS.size(), cachedHints.size());
+    }
+
+    /**
+     * Clear cached analysis data.
+     */
+    public static void clearCache() {
+        cachedHints.clear();
+        tablesAnalyzed = 0;
+        structureHintsFound = 0;
+    }
+
+    /**
+     * Statistics record.
+     */
+    public record Stats(
+        int tablesAnalyzed,
+        int tablesWithHints,
+        int signatureItemCount,
+        int cachedResults
+    ) {
+        public String summary() {
+            return String.format("%d analyzed, %d with hints, %d signature items",
+                tablesAnalyzed, tablesWithHints, signatureItemCount);
         }
     }
 }

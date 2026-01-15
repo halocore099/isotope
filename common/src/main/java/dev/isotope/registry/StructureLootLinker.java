@@ -1,12 +1,20 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.analysis.LootTableContentAnalyzer;
+import dev.isotope.api.ModLinkRegistry;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.StructureInfo;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.data.StructureLootLink.Confidence;
+import dev.isotope.linking.ConfirmationScorer;
+import dev.isotope.linking.LearnedLinksManager;
+import dev.isotope.linking.NamespaceValidator;
+import dev.isotope.linking.UserCorrectionManager;
+import dev.isotope.observation.LootObserver;
 import dev.isotope.observation.ObservationCorrelator;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,16 +56,25 @@ public final class StructureLootLinker {
         return INSTANCE;
     }
 
+    // Server reference for content analysis (set during link())
+    private MinecraftServer currentServer;
+
     /**
      * Run multi-layer linking between structures and loot tables.
      *
      * Layer order (lowest to highest confidence):
      * 1. Heuristics (path matching, namespace matching)
+     * 1.5. Content analysis (signature items hinting at structure)
      * 2. Template parsing (deterministic .nbt analysis)
-     * 3. Runtime observation (ground truth from gameplay)
-     * 4. Author overrides (final authority)
+     * 2.3. Learned links (pre-populated from past sessions)
+     * 2.5. Runtime assignment capture (setLootTable() hook with caller context)
+     * 3. Runtime observation (ground truth from spatial correlation)
+     * 3.5. Confirmation scoring (multi-source corroboration)
+     * 4. Namespace validation (cross-namespace checks)
+     * 5. Author overrides (final authority)
      */
-    public void link() {
+    public void link(MinecraftServer server) {
+        this.currentServer = server;
         linksByStructure.clear();
         linksByLootTable.clear();
 
@@ -71,7 +88,49 @@ public final class StructureLootLinker {
 
         int linkCount = 0;
         int templatePromotions = 0;
+        int spawnerEntityPromotions = 0;
+        int contentAnalysisPromotions = 0;
+        int poolPromotions = 0;
+        int processorPromotions = 0;
+        int structureConfigPromotions = 0;
+        int modDeclaredPromotions = 0;
+        int learnedPromotions = 0;
+        int assignmentPromotions = 0;
         int runtimePromotions = 0;
+        int confirmationPromotions = 0;
+
+        // Pre-compute all source maps for confirmation scoring
+        Map<ResourceLocation, Set<ResourceLocation>> assignmentLinks =
+            LootObserver.getInstance().buildAssignmentLinks();
+        Map<ResourceLocation, Set<ResourceLocation>> learnedLinks =
+            LearnedLinksManager.getInstance().buildLearnedLinksMap();
+        Map<ResourceLocation, Set<ResourceLocation>> modDeclaredLinks =
+            ModLinkRegistry.getInstance().buildDeclaredLinksMap();
+        Map<ResourceLocation, Set<ResourceLocation>> templateLinkMap = new HashMap<>();
+        Map<ResourceLocation, Set<ResourceLocation>> observationLinkMap = new HashMap<>();
+        Map<ResourceLocation, Set<ResourceLocation>> worldgenLinks =
+            WorldgenFeatureParser.getInstance().buildFeatureLootMap();
+        Map<ResourceLocation, Set<ResourceLocation>> contentAnalysisLinks = new HashMap<>();
+
+        // Pre-compute content analysis hints (signature items hinting at structures)
+        // This analyzes loot tables for unique items that indicate specific structures
+        if (server != null) {
+            Set<ResourceLocation> allTables = lootTables.getAll().stream()
+                .map(t -> t.id())
+                .collect(Collectors.toSet());
+            Map<ResourceLocation, LootTableContentAnalyzer.StructureHintResult> hints =
+                LootTableContentAnalyzer.analyzeAllForStructureHints(server, allTables);
+
+            // Build structure -> loot tables map from hints
+            for (Map.Entry<ResourceLocation, LootTableContentAnalyzer.StructureHintResult> entry : hints.entrySet()) {
+                ResourceLocation tableId = entry.getKey();
+                for (LootTableContentAnalyzer.StructureHint hint : entry.getValue().hints()) {
+                    if (hint.confidence() >= 50) { // Only include hints with at least MEDIUM confidence
+                        contentAnalysisLinks.computeIfAbsent(hint.structureId(), k -> new HashSet<>()).add(tableId);
+                    }
+                }
+            }
+        }
 
         for (StructureInfo structure : structures.getAll()) {
             // Start with a map for efficient deduplication during building
@@ -95,21 +154,156 @@ public final class StructureLootLinker {
                 addOrPromoteLink(linkMap, link);
             }
 
+            // Layer 1.5: Content analysis (signature items hinting at structure)
+            // Uses unique items in loot tables to infer structure origin
+            Set<ResourceLocation> contentHintTables = contentAnalysisLinks.get(structure.id());
+            if (contentHintTables != null) {
+                for (ResourceLocation tableId : contentHintTables) {
+                    // Find the hint confidence for this specific structure-table pair
+                    LootTableContentAnalyzer.StructureHintResult hintResult =
+                        LootTableContentAnalyzer.getCachedHints().get(tableId);
+                    if (hintResult != null) {
+                        for (LootTableContentAnalyzer.StructureHint hint : hintResult.hints()) {
+                            if (hint.structureId().equals(structure.id())) {
+                                StructureLootLink contentLink = StructureLootLink.contentAnalysis(
+                                    structure.id(), tableId, hint.confidence());
+                                if (addOrPromoteLink(linkMap, contentLink)) {
+                                    contentAnalysisPromotions++;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             // Layer 2: Template parsing (deterministic)
             StructureTemplateParser templateParser = StructureTemplateParser.getInstance();
             if (templateParser.isParsed()) {
                 Set<ResourceLocation> templateLootTables = templateParser.getLootTablesForStructure(structure.id());
+                // Store for confirmation scoring
+                if (!templateLootTables.isEmpty()) {
+                    templateLinkMap.put(structure.id(), new HashSet<>(templateLootTables));
+                }
                 for (ResourceLocation tableId : templateLootTables) {
                     StructureLootLink templateLink = StructureLootLink.fromTemplate(structure.id(), tableId);
                     if (addOrPromoteLink(linkMap, templateLink)) {
                         templatePromotions++;
                     }
                 }
+
+                // Layer 2.1: Spawner entity loot tables (from spawner blocks in templates)
+                // When a structure contains a spawner, the spawned entity's loot table is linked
+                Set<ResourceLocation> spawnerLootTables = templateParser.getSpawnerLootTablesForStructure(structure.id());
+                for (ResourceLocation tableId : spawnerLootTables) {
+                    StructureLootLink spawnerLink = StructureLootLink.spawnerEntity(structure.id(), tableId);
+                    if (addOrPromoteLink(linkMap, spawnerLink)) {
+                        spawnerEntityPromotions++;
+                    }
+                }
+                // Add spawner loot to template link map for confirmation scoring
+                if (!spawnerLootTables.isEmpty()) {
+                    templateLinkMap.computeIfAbsent(structure.id(), k -> new HashSet<>()).addAll(spawnerLootTables);
+                }
             }
 
-            // Layer 3: Runtime observation (ground truth)
+            // Layer 2.2: Template pool parsing (jigsaw structure loot from JSON)
+            // Try to find template pools that match this structure's name pattern
+            TemplatePoolParser poolParser = TemplatePoolParser.getInstance();
+            Set<ResourceLocation> matchingPools = new HashSet<>();
+            if (poolParser.isParsed()) {
+                Set<ResourceLocation> poolLootTables = findPoolLootForStructure(structure, poolParser, matchingPools);
+                // Add pool loot to template link map for confirmation scoring
+                if (!poolLootTables.isEmpty()) {
+                    templateLinkMap.computeIfAbsent(structure.id(), k -> new HashSet<>()).addAll(poolLootTables);
+                }
+                for (ResourceLocation tableId : poolLootTables) {
+                    // Pool-derived links get TEMPLATE confidence (same as NBT parsing)
+                    StructureLootLink poolLink = StructureLootLink.fromTemplate(structure.id(), tableId);
+                    if (addOrPromoteLink(linkMap, poolLink)) {
+                        poolPromotions++;
+                    }
+                }
+            }
+
+            // Layer 2.25: Processor list parsing (loot tables set by processors)
+            // Check processors used by the pools that matched this structure
+            ProcessorListParser processorParser = ProcessorListParser.getInstance();
+            if (processorParser.isParsed() && !matchingPools.isEmpty()) {
+                Set<ResourceLocation> processorLootTables = findProcessorLootForPools(matchingPools, poolParser, processorParser);
+                // Add processor loot to template link map for confirmation scoring
+                if (!processorLootTables.isEmpty()) {
+                    templateLinkMap.computeIfAbsent(structure.id(), k -> new HashSet<>()).addAll(processorLootTables);
+                }
+                for (ResourceLocation tableId : processorLootTables) {
+                    // Processor-derived links get TEMPLATE confidence
+                    StructureLootLink processorLink = StructureLootLink.fromTemplate(structure.id(), tableId);
+                    if (addOrPromoteLink(linkMap, processorLink)) {
+                        processorPromotions++;
+                    }
+                }
+            }
+
+            // Layer 2.27: Structure config parsing (structure type definitions and start_pool refs)
+            // This provides high-confidence links from structure JSON definitions
+            StructureConfigParser configParser = StructureConfigParser.getInstance();
+            if (configParser.isParsed()) {
+                Set<ResourceLocation> configLootTables = configParser.getLootTablesForStructure(structure.id());
+                // Add config loot to template link map for confirmation scoring
+                if (!configLootTables.isEmpty()) {
+                    templateLinkMap.computeIfAbsent(structure.id(), k -> new HashSet<>()).addAll(configLootTables);
+                }
+                for (ResourceLocation tableId : configLootTables) {
+                    // Structure config links get TEMPLATE confidence (deterministic from JSON)
+                    StructureLootLink configLink = StructureLootLink.fromTemplate(structure.id(), tableId);
+                    if (addOrPromoteLink(linkMap, configLink)) {
+                        structureConfigPromotions++;
+                    }
+                }
+            }
+
+            // Layer 2.28: Mod-declared links (from ModLinkRegistry API or isotope_links.json)
+            // These have very high confidence (95) since mod authors explicitly declared them
+            Set<ResourceLocation> modDeclaredTables = modDeclaredLinks.get(structure.id());
+            if (modDeclaredTables != null) {
+                for (ResourceLocation tableId : modDeclaredTables) {
+                    StructureLootLink modLink = StructureLootLink.modDeclared(structure.id(), tableId);
+                    if (addOrPromoteLink(linkMap, modLink)) {
+                        modDeclaredPromotions++;
+                    }
+                }
+            }
+
+            // Layer 2.3: Learned links (pre-populated from past sessions)
+            Set<ResourceLocation> learnedTables = learnedLinks.get(structure.id());
+            if (learnedTables != null) {
+                for (ResourceLocation tableId : learnedTables) {
+                    StructureLootLink learnedLink = StructureLootLink.learned(structure.id(), tableId);
+                    if (addOrPromoteLink(linkMap, learnedLink)) {
+                        learnedPromotions++;
+                    }
+                }
+            }
+
+            // Layer 2.5: Runtime assignment capture (setLootTable() hook)
+            // This captures direct causation from the call stack
+            Set<ResourceLocation> assignedTables = assignmentLinks.get(structure.id());
+            if (assignedTables != null) {
+                for (ResourceLocation tableId : assignedTables) {
+                    StructureLootLink assignedLink = StructureLootLink.runtimeAssigned(structure.id(), tableId);
+                    if (addOrPromoteLink(linkMap, assignedLink)) {
+                        assignmentPromotions++;
+                    }
+                }
+            }
+
+            // Layer 3: Runtime observation (ground truth from spatial correlation)
             ObservationCorrelator correlator = ObservationCorrelator.getInstance();
             Set<ResourceLocation> observedTables = correlator.getLootTablesFor(structure.id());
+            // Store for confirmation scoring
+            if (!observedTables.isEmpty()) {
+                observationLinkMap.put(structure.id(), new HashSet<>(observedTables));
+            }
             for (ResourceLocation tableId : observedTables) {
                 StructureLootLink verifiedLink = StructureLootLink.verified(structure.id(), tableId);
                 if (addOrPromoteLink(linkMap, verifiedLink)) {
@@ -117,8 +311,18 @@ public final class StructureLootLinker {
                 }
             }
 
-            // Layer 4: Author overrides (final authority)
+            // Layer 3.5: Confirmation scoring (multi-source corroboration)
             List<StructureLootLink> links = new ArrayList<>(linkMap.values());
+            int beforeConfirm = links.size();
+            links = ConfirmationScorer.getInstance().applyScoring(
+                links, templateLinkMap, worldgenLinks, assignmentLinks, observationLinkMap, learnedLinks
+            );
+            confirmationPromotions += countConfirmedLinks(links);
+
+            // Layer 4: Namespace validation (cross-namespace checks)
+            links = NamespaceValidator.getInstance().filterAndWarn(links);
+
+            // Layer 5: Author overrides (final authority)
             links = applyAuthorOverrides(structure.id(), links);
 
             // Final deduplication (should be minimal at this point)
@@ -130,6 +334,27 @@ public final class StructureLootLinker {
                     linksByLootTable.computeIfAbsent(link.lootTableId(), k -> new ArrayList<>()).add(link);
                 }
                 linkCount += links.size();
+            }
+        }
+
+        // Also check assignment links for structures we don't know about yet
+        // This helps discover modded structures that aren't in the structure registry
+        for (Map.Entry<ResourceLocation, Set<ResourceLocation>> entry : assignmentLinks.entrySet()) {
+            ResourceLocation structureId = entry.getKey();
+            if (!linksByStructure.containsKey(structureId)) {
+                // This is a new structure discovered via assignment capture
+                List<StructureLootLink> newLinks = new ArrayList<>();
+                for (ResourceLocation tableId : entry.getValue()) {
+                    newLinks.add(StructureLootLink.runtimeAssigned(structureId, tableId));
+                }
+                if (!newLinks.isEmpty()) {
+                    linksByStructure.put(structureId, newLinks);
+                    for (StructureLootLink link : newLinks) {
+                        linksByLootTable.computeIfAbsent(link.lootTableId(), k -> new ArrayList<>()).add(link);
+                    }
+                    linkCount += newLinks.size();
+                    assignmentPromotions += newLinks.size();
+                }
             }
         }
 
@@ -158,8 +383,47 @@ public final class StructureLootLinker {
         }
 
         Isotope.LOGGER.info("StructureLootLinker: created {} links for {} structures, {} feature links " +
-            "(template promotions: {}, runtime promotions: {})",
-            linkCount, linksByStructure.size(), featureLinks, templatePromotions, runtimePromotions);
+            "(template: {}, spawner: {}, content: {}, pool: {}, processor: {}, config: {}, mod: {}, learned: {}, assignment: {}, runtime: {}, confirmed: {})",
+            linkCount, linksByStructure.size(), featureLinks,
+            templatePromotions, spawnerEntityPromotions, contentAnalysisPromotions, poolPromotions, processorPromotions, structureConfigPromotions,
+            modDeclaredPromotions, learnedPromotions, assignmentPromotions, runtimePromotions, confirmationPromotions);
+
+        // Record verified links to LearnedLinksManager for future sessions
+        recordVerifiedLinksToLearned();
+    }
+
+    /**
+     * Count links with CONFIRMED confidence.
+     */
+    private int countConfirmedLinks(List<StructureLootLink> links) {
+        int count = 0;
+        for (StructureLootLink link : links) {
+            if (link.isConfirmed()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Record all verified links to LearnedLinksManager for future sessions.
+     */
+    private void recordVerifiedLinksToLearned() {
+        List<StructureLootLink> verifiedLinks = new ArrayList<>();
+
+        for (List<StructureLootLink> links : linksByStructure.values()) {
+            for (StructureLootLink link : links) {
+                if (link.isVerified() || link.isConfirmed()) {
+                    verifiedLinks.add(link);
+                }
+            }
+        }
+
+        if (!verifiedLinks.isEmpty()) {
+            LearnedLinksManager.getInstance().recordVerifiedLinks(verifiedLinks);
+            Isotope.LOGGER.debug("[StructureLootLinker] Recorded {} verified links to learned history",
+                verifiedLinks.size());
+        }
     }
 
     /**
@@ -333,6 +597,92 @@ public final class StructureLootLinker {
     }
 
     /**
+     * Find loot tables from template pools that match a structure's naming pattern.
+     * This works for jigsaw structures like villages, bastions, trial chambers.
+     * Also populates the matchingPools set for use by processor linking.
+     */
+    private Set<ResourceLocation> findPoolLootForStructure(StructureInfo structure, TemplatePoolParser poolParser,
+                                                            Set<ResourceLocation> matchingPools) {
+        Set<ResourceLocation> result = new HashSet<>();
+        String structurePath = structure.path().toLowerCase();
+        String namespace = structure.namespace();
+
+        // Get all pools and check for matching names
+        Map<ResourceLocation, Set<ResourceLocation>> poolLootMap = poolParser.buildPoolLootMap();
+
+        for (Map.Entry<ResourceLocation, Set<ResourceLocation>> entry : poolLootMap.entrySet()) {
+            ResourceLocation poolId = entry.getKey();
+
+            // Only match same namespace
+            if (!poolId.getNamespace().equals(namespace)) {
+                continue;
+            }
+
+            String poolPath = poolId.getPath().toLowerCase();
+
+            // Check if pool path contains structure name or vice versa
+            // e.g., structure "trial_chambers" matches pool "trial_chambers/corridor"
+            // e.g., structure "village_plains" matches pool "village/plains/houses"
+            boolean matches = false;
+
+            // Exact prefix match
+            if (poolPath.startsWith(structurePath + "/") || poolPath.equals(structurePath)) {
+                matches = true;
+            }
+
+            // Handle village variants: village_plains -> village/plains
+            if (!matches && structurePath.startsWith("village_")) {
+                String villageType = structurePath.substring("village_".length());
+                if (poolPath.startsWith("village/" + villageType) || poolPath.startsWith("village/common")) {
+                    matches = true;
+                }
+            }
+
+            // Handle bastion: bastion_remnant -> bastion/*
+            if (!matches && structurePath.equals("bastion_remnant") && poolPath.startsWith("bastion")) {
+                matches = true;
+            }
+
+            // Handle generic containment (structure name is prefix of pool path)
+            if (!matches) {
+                String baseName = extractBaseName(structurePath);
+                if (poolPath.startsWith(baseName + "/") || poolPath.startsWith(baseName + "_")) {
+                    matches = true;
+                }
+            }
+
+            if (matches) {
+                matchingPools.add(poolId);
+                result.addAll(entry.getValue());
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Find loot tables from processors used by the given template pools.
+     */
+    private Set<ResourceLocation> findProcessorLootForPools(Set<ResourceLocation> poolIds,
+                                                             TemplatePoolParser poolParser,
+                                                             ProcessorListParser processorParser) {
+        Set<ResourceLocation> result = new HashSet<>();
+
+        // Collect all processors used by the matching pools
+        Set<ResourceLocation> processors = new HashSet<>();
+        for (ResourceLocation poolId : poolIds) {
+            processors.addAll(poolParser.getProcessorsForPool(poolId));
+        }
+
+        // Get loot tables from each processor
+        for (ResourceLocation processorId : processors) {
+            result.addAll(processorParser.getLootTablesForProcessor(processorId));
+        }
+
+        return result;
+    }
+
+    /**
      * Find links based on namespace matching (weak heuristic for modded content).
      */
     private List<StructureLootLink> findNamespaceMatches(StructureInfo structure, LootTableRegistry lootTables) {
@@ -350,26 +700,51 @@ public final class StructureLootLinker {
 
     /**
      * Apply author overrides (additions and removals).
+     * Combines in-memory overrides with persistent user corrections.
      */
     private List<StructureLootLink> applyAuthorOverrides(ResourceLocation structureId, List<StructureLootLink> links) {
         List<StructureLootLink> result = new ArrayList<>();
+        UserCorrectionManager corrections = UserCorrectionManager.getInstance();
 
-        // Filter out author-removed links
+        // Collect all removed links (in-memory + persistent)
         Set<ResourceLocation> removed = authorRemovedLinks.stream()
             .filter(r -> r.structureId.equals(structureId))
             .map(r -> r.lootTableId)
             .collect(Collectors.toSet());
 
+        // Add persistent user-removed links
+        for (UserCorrectionManager.CorrectionKey key : corrections.getUserRemovedLinks()) {
+            if (key.structure().equals(structureId.toString())) {
+                ResourceLocation tableId = ResourceLocation.tryParse(key.lootTable());
+                if (tableId != null) {
+                    removed.add(tableId);
+                }
+            }
+        }
+
+        // Filter out removed links
         for (StructureLootLink link : links) {
             if (!removed.contains(link.lootTableId())) {
                 result.add(link);
             }
         }
 
-        // Add author-added links
+        // Add in-memory author-added links
         for (StructureLootLink added : authorAddedLinks) {
             if (added.structureId().equals(structureId)) {
                 result.add(added);
+            }
+        }
+
+        // Add persistent user-added links
+        for (StructureLootLink added : corrections.getUserAddedLinks()) {
+            if (added.structureId().equals(structureId)) {
+                // Only add if not already in result
+                boolean alreadyPresent = result.stream()
+                    .anyMatch(l -> l.lootTableId().equals(added.lootTableId()));
+                if (!alreadyPresent) {
+                    result.add(added);
+                }
             }
         }
 
@@ -411,35 +786,83 @@ public final class StructureLootLinker {
 
     /**
      * Add a manual link (author override).
+     * Records the correction for future sessions.
      */
     public void addManualLink(ResourceLocation structureId, ResourceLocation lootTableId) {
+        // Get existing link info for correction tracking
+        List<StructureLootLink> existingLinks = linksByStructure.get(structureId);
+        String originalSource = null;
+        String originalConfidence = null;
+        if (existingLinks != null) {
+            for (StructureLootLink link : existingLinks) {
+                if (link.lootTableId().equals(lootTableId)) {
+                    originalSource = link.source().name();
+                    originalConfidence = link.confidence().name();
+                    break;
+                }
+            }
+        }
+
+        // Add in-memory override
         authorAddedLinks.add(StructureLootLink.manual(structureId, lootTableId));
+
+        // Record correction for persistence (learns from user feedback)
+        UserCorrectionManager.getInstance().recordAddedLink(
+            structureId, lootTableId, originalSource, originalConfidence);
+
         // Re-run linking to apply
-        link();
+        link(currentServer);
         Isotope.LOGGER.info("Author added link: {} -> {}", structureId, lootTableId);
     }
 
     /**
      * Remove a link (author override).
+     * Records the correction for future sessions.
      */
     public void removeLink(ResourceLocation structureId, ResourceLocation lootTableId) {
+        // Get existing link info for correction tracking
+        List<StructureLootLink> existingLinks = linksByStructure.get(structureId);
+        String originalSource = null;
+        String originalConfidence = null;
+        if (existingLinks != null) {
+            for (StructureLootLink link : existingLinks) {
+                if (link.lootTableId().equals(lootTableId)) {
+                    originalSource = link.source().name();
+                    originalConfidence = link.confidence().name();
+                    break;
+                }
+            }
+        }
+
         // Remove from added if it was manually added
         authorAddedLinks.removeIf(l ->
             l.structureId().equals(structureId) && l.lootTableId().equals(lootTableId));
-        // Mark as removed
+
+        // Mark as removed (in-memory)
         authorRemovedLinks.add(new AuthorRemoval(structureId, lootTableId));
+
+        // Record correction for persistence (learns that this was a false positive)
+        UserCorrectionManager.getInstance().recordRemovedLink(
+            structureId, lootTableId, originalSource, originalConfidence);
+
         // Re-run linking to apply
-        link();
-        Isotope.LOGGER.info("Author removed link: {} -> {}", structureId, lootTableId);
+        link(currentServer);
+        Isotope.LOGGER.info("Author removed link: {} -> {} (was: {})", structureId, lootTableId, originalSource);
     }
 
     /**
      * Restore a previously removed link.
+     * Records the restoration for future sessions.
      */
     public void restoreLink(ResourceLocation structureId, ResourceLocation lootTableId) {
+        // Remove from in-memory removals
         authorRemovedLinks.removeIf(r ->
             r.structureId.equals(structureId) && r.lootTableId.equals(lootTableId));
-        link();
+
+        // Record restoration (user changed their mind)
+        UserCorrectionManager.getInstance().recordRestoredLink(structureId, lootTableId);
+
+        link(currentServer);
         Isotope.LOGGER.info("Author restored link: {} -> {}", structureId, lootTableId);
     }
 

@@ -43,9 +43,13 @@ public final class StructureTemplateParser {
     // Template -> loot tables mapping (for detailed view)
     private final Map<ResourceLocation, Set<ResourceLocation>> templateToLootTables = new LinkedHashMap<>();
 
+    // Structure -> spawner entity loot tables (from SpawnerEntityExtractor)
+    private final Map<ResourceLocation, Set<ResourceLocation>> structureToSpawnerLoot = new LinkedHashMap<>();
+
     // Parsing stats
     private int templatesScanned = 0;
     private int lootReferencesFound = 0;
+    private int spawnerEntitiesFound = 0;
     private boolean parsed = false;
 
     private StructureTemplateParser() {}
@@ -59,12 +63,13 @@ public final class StructureTemplateParser {
      */
     public void parse(MinecraftServer server) {
         clear();
+        SpawnerEntityExtractor.getInstance().clear();
 
         StructureTemplateManager templateManager = server.getStructureManager();
         Registry<Structure> structureRegistry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         Registry<StructureTemplatePool> poolRegistry = server.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL);
 
-        Isotope.LOGGER.info("[TemplateParser] Starting structure template parsing...");
+        Isotope.LOGGER.info("[TemplateParser] Starting structure template parsing (including spawner analysis)...");
 
         // Process each registered structure
         for (var entry : structureRegistry.entrySet()) {
@@ -76,7 +81,7 @@ public final class StructureTemplateParser {
             try {
                 // Check if this is a jigsaw structure (has template pools)
                 if (structure instanceof JigsawStructure jigsawStructure) {
-                    lootTables.addAll(parseJigsawStructure(jigsawStructure, templateManager, poolRegistry));
+                    lootTables.addAll(parseJigsawStructure(structureId, jigsawStructure, templateManager, poolRegistry));
                 } else {
                     // Try to find templates by naming convention
                     lootTables.addAll(parseByNamingConvention(structureId, templateManager));
@@ -94,6 +99,14 @@ public final class StructureTemplateParser {
 
                     lootReferencesFound += lootTables.size();
                 }
+
+                // Get spawner entity loot tables for this structure
+                Set<ResourceLocation> spawnerLootTables =
+                    SpawnerEntityExtractor.getInstance().getSpawnerLootTablesForStructure(structureId);
+                if (!spawnerLootTables.isEmpty()) {
+                    structureToSpawnerLoot.put(structureId, spawnerLootTables);
+                    spawnerEntitiesFound += spawnerLootTables.size();
+                }
             } catch (Exception e) {
                 Isotope.LOGGER.debug("[TemplateParser] Error parsing structure {}: {}",
                     structureId, e.getMessage());
@@ -101,14 +114,19 @@ public final class StructureTemplateParser {
         }
 
         parsed = true;
-        Isotope.LOGGER.info("[TemplateParser] Parsed {} templates, found {} loot references across {} structures",
-            templatesScanned, lootReferencesFound, structureToLootTables.size());
+        SpawnerEntityExtractor.Stats spawnerStats = SpawnerEntityExtractor.getInstance().getStats();
+        Isotope.LOGGER.info("[TemplateParser] Parsed {} templates, found {} loot refs, {} spawner entity loot tables across {} structures",
+            templatesScanned, lootReferencesFound, spawnerEntitiesFound, structureToLootTables.size());
+        if (spawnerStats.spawnersFound() > 0) {
+            Isotope.LOGGER.info("[TemplateParser] Spawner analysis: {}", spawnerStats.summary());
+        }
     }
 
     /**
      * Parse a jigsaw structure by traversing its template pools.
      */
     private Set<ResourceLocation> parseJigsawStructure(
+            ResourceLocation structureId,
             JigsawStructure structure,
             StructureTemplateManager templateManager,
             Registry<StructureTemplatePool> poolRegistry) {
@@ -137,7 +155,7 @@ public final class StructureTemplateParser {
 
                 if (poolId != null) {
                     lootTables.addAll(parseTemplatePoolRecursive(
-                        poolId, templateManager, poolRegistry, visitedPools));
+                        structureId, poolId, templateManager, poolRegistry, visitedPools));
                 }
             }
         } catch (Exception e) {
@@ -151,6 +169,7 @@ public final class StructureTemplateParser {
      * Recursively parse a template pool and all pools it references.
      */
     private Set<ResourceLocation> parseTemplatePoolRecursive(
+            ResourceLocation structureId,
             ResourceLocation poolId,
             StructureTemplateManager templateManager,
             Registry<StructureTemplatePool> poolRegistry,
@@ -182,7 +201,7 @@ public final class StructureTemplateParser {
                         Set<ResourceLocation> templateLocations = extractTemplateLocations(element);
 
                         for (ResourceLocation templateLoc : templateLocations) {
-                            lootTables.addAll(parseTemplate(templateLoc, templateManager));
+                            lootTables.addAll(parseTemplate(structureId, templateLoc, templateManager));
                         }
                     } catch (Exception e) {
                         // Skip elements that can't be parsed
@@ -200,7 +219,7 @@ public final class StructureTemplateParser {
 
                 if (fallbackId != null && !fallbackId.equals(poolId)) {
                     lootTables.addAll(parseTemplatePoolRecursive(
-                        fallbackId, templateManager, poolRegistry, visitedPools));
+                        structureId, fallbackId, templateManager, poolRegistry, visitedPools));
                 }
             }
 
@@ -280,6 +299,7 @@ public final class StructureTemplateParser {
      * Parse a single structure template to extract loot table references.
      */
     private Set<ResourceLocation> parseTemplate(
+            ResourceLocation structureId,
             ResourceLocation templateLocation,
             StructureTemplateManager templateManager) {
 
@@ -296,7 +316,7 @@ public final class StructureTemplateParser {
 
             // Get block entities from the template
             // StructureTemplate stores block entity NBT in palettes
-            lootTables.addAll(extractLootTablesFromTemplate(template));
+            lootTables.addAll(extractLootTablesFromTemplate(structureId, template));
 
             if (!lootTables.isEmpty()) {
                 templateToLootTables.put(templateLocation, lootTables);
@@ -313,8 +333,9 @@ public final class StructureTemplateParser {
     /**
      * Extract loot table references from a structure template.
      * Uses NBT serialization (public API) to access template data.
+     * Also analyzes spawner blocks for entity loot tables.
      */
-    private Set<ResourceLocation> extractLootTablesFromTemplate(StructureTemplate template) {
+    private Set<ResourceLocation> extractLootTablesFromTemplate(ResourceLocation structureId, StructureTemplate template) {
         Set<ResourceLocation> lootTables = new HashSet<>();
 
         try {
@@ -324,6 +345,9 @@ public final class StructureTemplateParser {
             // Extract loot tables from the serialized NBT
             // Structure: { blocks: [...], entities: [...], palettes: [...] }
             extractLootTablesFromNbt(templateNbt, lootTables);
+
+            // Also analyze spawner blocks for entity types
+            SpawnerEntityExtractor.getInstance().extractFromTemplate(structureId, templateNbt);
 
         } catch (Exception e) {
             Isotope.LOGGER.debug("[TemplateParser] Error extracting loot tables: {}", e.getMessage());
@@ -395,7 +419,7 @@ public final class StructureTemplateParser {
             ResourceLocation templateLoc = ResourceLocation.fromNamespaceAndPath(
                 structureId.getNamespace(), pattern);
 
-            lootTables.addAll(parseTemplate(templateLoc, templateManager));
+            lootTables.addAll(parseTemplate(structureId, templateLoc, templateManager));
         }
 
         return lootTables;
@@ -432,6 +456,28 @@ public final class StructureTemplateParser {
     }
 
     /**
+     * Get spawner entity loot tables for a structure.
+     * These are entity loot tables linked to entities found in spawner blocks.
+     */
+    public Set<ResourceLocation> getSpawnerLootTablesForStructure(ResourceLocation structureId) {
+        return structureToSpawnerLoot.getOrDefault(structureId, Set.of());
+    }
+
+    /**
+     * Get all structures with spawner entity loot.
+     */
+    public Set<ResourceLocation> getStructuresWithSpawnerLoot() {
+        return Collections.unmodifiableSet(structureToSpawnerLoot.keySet());
+    }
+
+    /**
+     * Get the SpawnerEntityExtractor for direct access to spawner data.
+     */
+    public SpawnerEntityExtractor getSpawnerExtractor() {
+        return SpawnerEntityExtractor.getInstance();
+    }
+
+    /**
      * Create StructureLootLink objects from parsed data.
      */
     public List<StructureLootLink> createLinks() {
@@ -458,11 +504,15 @@ public final class StructureTemplateParser {
      * Get parsing statistics.
      */
     public ParseStats getStats() {
+        SpawnerEntityExtractor.Stats spawnerStats = SpawnerEntityExtractor.getInstance().getStats();
         return new ParseStats(
             templatesScanned,
             lootReferencesFound,
             structureToLootTables.size(),
-            lootTableToStructures.size()
+            lootTableToStructures.size(),
+            spawnerStats.spawnersFound(),
+            spawnerStats.entitiesExtracted(),
+            structureToSpawnerLoot.size()
         );
     }
 
@@ -473,8 +523,10 @@ public final class StructureTemplateParser {
         structureToLootTables.clear();
         lootTableToStructures.clear();
         templateToLootTables.clear();
+        structureToSpawnerLoot.clear();
         templatesScanned = 0;
         lootReferencesFound = 0;
+        spawnerEntitiesFound = 0;
         parsed = false;
     }
 
@@ -485,6 +537,9 @@ public final class StructureTemplateParser {
         int templatesScanned,
         int lootReferencesFound,
         int structuresWithLinks,
-        int lootTablesReferenced
+        int lootTablesReferenced,
+        int spawnersFound,
+        int spawnerEntitiesFound,
+        int structuresWithSpawners
     ) {}
 }

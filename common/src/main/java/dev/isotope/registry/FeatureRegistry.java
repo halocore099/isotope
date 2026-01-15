@@ -161,6 +161,67 @@ public final class FeatureRegistry {
     }
 
     /**
+     * Add features discovered from worldgen JSON parsing.
+     * This augments the hardcoded features with dynamically discovered ones.
+     *
+     * @param parser The WorldgenFeatureParser with discovered features
+     */
+    public void addFromWorldgen(WorldgenFeatureParser parser) {
+        int added = 0;
+
+        for (WorldgenFeatureParser.FeatureDiscovery discovery : parser.getAllDiscoveries()) {
+            ResourceLocation id = discovery.featureId();
+
+            // Skip if already registered (hardcoded takes priority)
+            if (features.containsKey(id)) {
+                continue;
+            }
+
+            // Create feature definition from discovery
+            String displayName = formatDisplayName(id);
+            String description = "Discovered from worldgen JSON: " + discovery.featureType();
+            List<ResourceLocation> lootTables = new ArrayList<>(discovery.lootTables());
+
+            features.put(id, new FeatureDefinition(id, displayName, description, lootTables));
+            added++;
+        }
+
+        if (added > 0) {
+            Isotope.LOGGER.info("[FeatureRegistry] Added {} features from worldgen parsing (total: {})",
+                added, features.size());
+        }
+    }
+
+    /**
+     * Format a feature ID into a display name.
+     */
+    private String formatDisplayName(ResourceLocation id) {
+        String path = id.getPath();
+
+        // Handle nested paths (e.g., "ore/iron_ore" -> "Iron Ore")
+        if (path.contains("/")) {
+            path = path.substring(path.lastIndexOf('/') + 1);
+        }
+
+        // Convert snake_case to Title Case
+        StringBuilder result = new StringBuilder();
+        boolean capitalizeNext = true;
+        for (char c : path.toCharArray()) {
+            if (c == '_') {
+                result.append(' ');
+                capitalizeNext = true;
+            } else if (capitalizeNext) {
+                result.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+            } else {
+                result.append(c);
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
      * Feature definition with associated loot tables.
      */
     public record FeatureDefinition(

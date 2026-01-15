@@ -20,8 +20,12 @@ public record StructureLootLink(
      * Confidence level for the link.
      *
      * MANUAL - Author explicitly created this link (highest authority)
+     * MOD_DECLARED - Mod explicitly declared this link via API (very high confidence)
      * VERIFIED - Observed at runtime (ground truth)
+     * CONFIRMED - Multiple independent sources agree on this link
+     * RUNTIME_ASSIGNED - Captured via setLootTable() hook with caller context
      * TEMPLATE - Found in structure template .nbt file (deterministic)
+     * LEARNED - Previously verified in past sessions (persistent memory)
      * HIGH - Strong heuristic match (exact path match)
      * MEDIUM - Moderate heuristic match (partial path match)
      * LOW - Weak heuristic match (namespace only)
@@ -30,8 +34,12 @@ public record StructureLootLink(
      */
     public enum Confidence {
         MANUAL(100, "Manual", 0xFF00FF00),      // Green - author defined
+        MOD_DECLARED(95, "Mod", 0xFF88FF00),    // Yellow-green - mod declared via API
         VERIFIED(90, "Verified", 0xFF00FFFF),   // Cyan - runtime confirmed
+        CONFIRMED(88, "Confirmed", 0xFF00DDAA), // Teal-cyan - multiple sources agree
+        RUNTIME_ASSIGNED(85, "Assigned", 0xFF55DDAA), // Teal - captured from setLootTable() call
         TEMPLATE(80, "Template", 0xFF44DDFF),   // Light blue - parsed from .nbt
+        LEARNED(75, "Learned", 0xFF66AAFF),     // Blue - from past sessions
         HIGH(70, "High", 0xFF88FF88),           // Light green
         MEDIUM(50, "Medium", 0xFFFFFF00),       // Yellow
         LOW(30, "Low", 0xFFFF8800);             // Orange
@@ -58,10 +66,17 @@ public record StructureLootLink(
         HEURISTIC_PATH,      // Path matching (chests/village_* -> village structure)
         HEURISTIC_NAMESPACE, // Same mod namespace
         TEMPLATE_PARSE,      // Extracted from structure template .nbt file
-        OBSERVATION,         // Runtime observation
+        OBSERVATION,         // Runtime observation (spatial correlation)
+        RUNTIME_ASSIGNED,    // Captured from setLootTable() call with caller context
         AUTHOR_ADDED,        // Author manually added
         AUTHOR_REMOVED,      // Author manually removed (negative link)
-        FEATURE_MAPPING      // From known feature-to-loot mappings (dungeons, etc.)
+        FEATURE_MAPPING,     // From known feature-to-loot mappings (dungeons, etc.)
+        WORLDGEN_JSON,       // Parsed from worldgen JSON files (configured_feature)
+        LEARNED,             // Loaded from persistent learned links file
+        MULTI_SOURCE,        // Confirmed by multiple independent sources
+        MOD_DECLARED,        // Declared by mod via ModLinkRegistry API or isotope_links.json
+        SPAWNER_ENTITY,      // Entity loot table from spawner block in structure template
+        CONTENT_ANALYSIS     // Inferred from signature items in loot table content
     }
 
     /**
@@ -100,6 +115,109 @@ public record StructureLootLink(
      */
     public static StructureLootLink feature(ResourceLocation featureId, ResourceLocation lootTableId) {
         return new StructureLootLink(featureId, lootTableId, Confidence.HIGH, LinkSource.FEATURE_MAPPING);
+    }
+
+    /**
+     * Create a runtime-assigned link from setLootTable() capture.
+     * This captures the exact moment a loot table is assigned to a container during generation.
+     */
+    public static StructureLootLink runtimeAssigned(ResourceLocation structureId, ResourceLocation lootTableId) {
+        return new StructureLootLink(structureId, lootTableId, Confidence.RUNTIME_ASSIGNED, LinkSource.RUNTIME_ASSIGNED);
+    }
+
+    /**
+     * Create a link from worldgen JSON parsing (configured_feature files).
+     */
+    public static StructureLootLink fromWorldgen(ResourceLocation featureId, ResourceLocation lootTableId) {
+        return new StructureLootLink(featureId, lootTableId, Confidence.HIGH, LinkSource.WORLDGEN_JSON);
+    }
+
+    /**
+     * Create a link from persistent learned history.
+     * Previously verified links are pre-loaded with LEARNED confidence.
+     */
+    public static StructureLootLink learned(ResourceLocation structureId, ResourceLocation lootTableId) {
+        return new StructureLootLink(structureId, lootTableId, Confidence.LEARNED, LinkSource.LEARNED);
+    }
+
+    /**
+     * Create a link from persistent learned history with confidence decay.
+     * Version age determines confidence level:
+     *   0-1 versions: LEARNED (75)
+     *   2 versions: MEDIUM (50)
+     *   3+ versions: LOW (30)
+     *
+     * @param versionAge Number of MC minor versions since link was learned
+     */
+    public static StructureLootLink learned(ResourceLocation structureId, ResourceLocation lootTableId, int versionAge) {
+        Confidence confidence;
+        if (versionAge <= 1) {
+            confidence = Confidence.LEARNED;
+        } else if (versionAge == 2) {
+            confidence = Confidence.MEDIUM;
+        } else {
+            confidence = Confidence.LOW;
+        }
+        return new StructureLootLink(structureId, lootTableId, confidence, LinkSource.LEARNED);
+    }
+
+    /**
+     * Create a confirmed link when multiple independent sources agree.
+     */
+    public static StructureLootLink confirmed(ResourceLocation structureId, ResourceLocation lootTableId) {
+        return new StructureLootLink(structureId, lootTableId, Confidence.CONFIRMED, LinkSource.MULTI_SOURCE);
+    }
+
+    /**
+     * Create a mod-declared link from ModLinkRegistry API or isotope_links.json.
+     * These links have very high confidence (95) since the mod author explicitly declared them.
+     */
+    public static StructureLootLink modDeclared(ResourceLocation structureId, ResourceLocation lootTableId) {
+        return new StructureLootLink(structureId, lootTableId, Confidence.MOD_DECLARED, LinkSource.MOD_DECLARED);
+    }
+
+    /**
+     * Create a link from spawner entity analysis.
+     * When a structure contains a spawner block, the spawned entity's loot table
+     * is linked to the structure with TEMPLATE confidence (deterministic from NBT).
+     *
+     * Example: A dungeon with a zombie spawner links to minecraft:entities/zombie
+     */
+    public static StructureLootLink spawnerEntity(ResourceLocation structureId, ResourceLocation entityLootTableId) {
+        return new StructureLootLink(structureId, entityLootTableId, Confidence.TEMPLATE, LinkSource.SPAWNER_ENTITY);
+    }
+
+    /**
+     * Check if this link is from spawner entity analysis.
+     */
+    public boolean isFromSpawner() {
+        return source == LinkSource.SPAWNER_ENTITY;
+    }
+
+    /**
+     * Create a link from content analysis (signature items in loot table).
+     * Confidence is derived from the signature item's confidence score.
+     *
+     * @param hintConfidence 0-100 confidence from signature item analysis
+     */
+    public static StructureLootLink contentAnalysis(ResourceLocation structureId, ResourceLocation lootTableId, int hintConfidence) {
+        // Map hint confidence to our confidence levels
+        Confidence confidence;
+        if (hintConfidence >= 85) {
+            confidence = Confidence.HIGH;
+        } else if (hintConfidence >= 60) {
+            confidence = Confidence.MEDIUM;
+        } else {
+            confidence = Confidence.LOW;
+        }
+        return new StructureLootLink(structureId, lootTableId, confidence, LinkSource.CONTENT_ANALYSIS);
+    }
+
+    /**
+     * Check if this link is from content analysis.
+     */
+    public boolean isFromContentAnalysis() {
+        return source == LinkSource.CONTENT_ANALYSIS;
     }
 
     /**
@@ -162,5 +280,47 @@ public record StructureLootLink(
      */
     public boolean isFeatureMapping() {
         return source == LinkSource.FEATURE_MAPPING;
+    }
+
+    /**
+     * Check if this link was loaded from persistent learned history.
+     */
+    public boolean isLearned() {
+        return confidence == Confidence.LEARNED || source == LinkSource.LEARNED;
+    }
+
+    /**
+     * Check if this link is confirmed by multiple independent sources.
+     */
+    public boolean isConfirmed() {
+        return confidence == Confidence.CONFIRMED || source == LinkSource.MULTI_SOURCE;
+    }
+
+    /**
+     * Check if this link was declared by a mod via the ModLinkRegistry API.
+     */
+    public boolean isModDeclared() {
+        return confidence == Confidence.MOD_DECLARED || source == LinkSource.MOD_DECLARED;
+    }
+
+    /**
+     * Check if this link was discovered from worldgen JSON files.
+     */
+    public boolean isFromWorldgen() {
+        return source == LinkSource.WORLDGEN_JSON;
+    }
+
+    /**
+     * Upgrade to confirmed status when multiple sources agree.
+     */
+    public StructureLootLink withConfirmation() {
+        return promoteConfidence(Confidence.CONFIRMED, LinkSource.MULTI_SOURCE);
+    }
+
+    /**
+     * Upgrade with learned evidence from past sessions.
+     */
+    public StructureLootLink withLearnedEvidence() {
+        return promoteConfidence(Confidence.LEARNED, LinkSource.LEARNED);
     }
 }
