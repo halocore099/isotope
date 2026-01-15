@@ -563,7 +563,22 @@ public class LootTableEditPanel extends AbstractWidget {
 
             // Rolls
             String rollsText = "Rolls: " + formatNumberProvider(pool.rolls());
-            graphics.drawString(font, rollsText, getX() + PADDING + 60, y + 6, IsotopeColors.TEXT_SECONDARY, false);
+            int rollsX = getX() + PADDING + 60;
+            graphics.drawString(font, rollsText, rollsX, y + 6, IsotopeColors.TEXT_SECONDARY, false);
+
+            // Bonus rolls (luck-based) - show if > 0
+            int bonusX = rollsX + font.width(rollsText) + 10;
+            if (pool.bonusRolls() != null && pool.bonusRolls().getMax() > 0) {
+                String bonusText = "Luck: +" + formatNumberProvider(pool.bonusRolls());
+                graphics.drawString(font, bonusText, bonusX, y + 6, 0xFF55FF55, false); // Green for luck
+            } else {
+                // Show clickable "Add Luck" text
+                String addLuckText = "[+Luck]";
+                boolean addLuckHovered = mouseX >= bonusX && mouseX < bonusX + font.width(addLuckText) &&
+                    mouseY >= y + 2 && mouseY < y + 18;
+                graphics.drawString(font, addLuckText, bonusX, y + 6,
+                    addLuckHovered ? 0xFF55FF55 : IsotopeColors.TEXT_MUTED, false);
+            }
 
             // Remove pool button (X)
             int removeX = getX() + width - PADDING - 16;

@@ -516,6 +516,18 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }));
     }
 
+    private void openSetBonusRollsDialog(int poolIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        // Simple dialog with preset bonus roll values
+        minecraft.setScreen(new BonusRollsDialog(this, poolIdx, bonusRolls -> {
+            LootEditOperation op = new LootEditOperation.ModifyBonusRolls(poolIdx, bonusRolls);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
     private ContextMenu createPoolContextMenu(int x, int y, int poolIdx) {
         return new ContextMenu(x, y)
             .addItem("+", "Add Item...", "", () -> editPanel.openAddItem(poolIdx))
@@ -523,6 +535,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addSeparator()
             .addItem("\u2726", "Add Pool Function...", "", () -> openAddPoolFunctionDialog(poolIdx))
             .addItem("?", "Add Pool Condition...", "", () -> openAddPoolConditionDialog(poolIdx))
+            .addItem("\u2618", "Set Bonus Rolls...", "", () -> openSetBonusRollsDialog(poolIdx))
             .addSeparator()
             .addItem("\u2750", "Duplicate Pool", "", () -> editPanel.duplicatePool(poolIdx))
             .addItem("\u2717", "Clear Pool", "", () -> editPanel.clearPool(poolIdx))

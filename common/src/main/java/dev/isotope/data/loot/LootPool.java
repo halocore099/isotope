@@ -97,6 +97,13 @@ public record LootPool(
     }
 
     /**
+     * Create a copy with new bonus rolls.
+     */
+    public LootPool withBonusRolls(NumberProvider newBonusRolls) {
+        return new LootPool(name, rolls, newBonusRolls, entries, conditions, functions);
+    }
+
+    /**
      * Create a copy with new entries.
      */
     public LootPool withEntries(List<LootEntry> newEntries) {

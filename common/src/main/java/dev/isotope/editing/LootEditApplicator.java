@@ -26,6 +26,7 @@ public final class LootEditApplicator {
             case LootEditOperation.AddPool p -> applyAddPool(structure, p);
             case LootEditOperation.RemovePool p -> applyRemovePool(structure, p);
             case LootEditOperation.ModifyPoolRolls p -> applyModifyPoolRolls(structure, p);
+            case LootEditOperation.ModifyBonusRolls p -> applyModifyBonusRolls(structure, p);
             case LootEditOperation.AddEntry p -> applyAddEntry(structure, p);
             case LootEditOperation.RemoveEntry p -> applyRemoveEntry(structure, p);
             case LootEditOperation.ModifyEntryWeight p -> applyModifyEntryWeight(structure, p);
@@ -73,6 +74,15 @@ public final class LootEditApplicator {
         }
         LootPool pool = structure.pools().get(op.poolIndex());
         LootPool newPool = pool.withRolls(op.newRolls());
+        return structure.withPoolReplaced(op.poolIndex(), newPool);
+    }
+
+    private static LootTableStructure applyModifyBonusRolls(LootTableStructure structure, LootEditOperation.ModifyBonusRolls op) {
+        if (op.poolIndex() < 0 || op.poolIndex() >= structure.pools().size()) {
+            return structure;
+        }
+        LootPool pool = structure.pools().get(op.poolIndex());
+        LootPool newPool = pool.withBonusRolls(op.newBonusRolls());
         return structure.withPoolReplaced(op.poolIndex(), newPool);
     }
 

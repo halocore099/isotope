@@ -59,6 +59,7 @@ public final class HistoryLog {
                 case LootEditOperation.AddPool ignored -> "ADD_POOL";
                 case LootEditOperation.RemovePool ignored -> "REMOVE_POOL";
                 case LootEditOperation.ModifyPoolRolls ignored -> "MODIFY_ROLLS";
+                case LootEditOperation.ModifyBonusRolls ignored -> "MODIFY_BONUS_ROLLS";
                 case LootEditOperation.AddEntry ignored -> "ADD_ENTRY";
                 case LootEditOperation.RemoveEntry ignored -> "REMOVE_ENTRY";
                 case LootEditOperation.ModifyEntryWeight ignored -> "MODIFY_WEIGHT";

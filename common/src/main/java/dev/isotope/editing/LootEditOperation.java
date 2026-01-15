@@ -14,6 +14,7 @@ public sealed interface LootEditOperation permits
         LootEditOperation.AddPool,
         LootEditOperation.RemovePool,
         LootEditOperation.ModifyPoolRolls,
+        LootEditOperation.ModifyBonusRolls,
         LootEditOperation.AddEntry,
         LootEditOperation.RemoveEntry,
         LootEditOperation.ModifyEntryWeight,
@@ -62,6 +63,16 @@ public sealed interface LootEditOperation permits
         @Override
         public String getDescription() {
             return "Set pool #" + (poolIndex + 1) + " rolls to " + newRolls;
+        }
+    }
+
+    /**
+     * Modify the bonus rolls of a pool (luck-based extra rolls).
+     */
+    record ModifyBonusRolls(int poolIndex, NumberProvider newBonusRolls) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return "Set pool #" + (poolIndex + 1) + " bonus rolls to " + newBonusRolls;
         }
     }
 
