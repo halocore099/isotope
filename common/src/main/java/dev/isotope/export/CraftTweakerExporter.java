@@ -322,9 +322,97 @@ public class CraftTweakerExporter {
         } else if (funcName.contains("copy_name")) {
             sb.append("        entryBuilder.apply(CopyName.lootFunction());\n");
         } else if (funcName.contains("copy_nbt")) {
-            sb.append("        // TODO: copy_nbt function\n");
+            // copy_nbt copies NBT data from a source
+            String source = "block_entity";
+            if (function.parameters().has("source")) {
+                var sourceEl = function.parameters().get("source");
+                if (sourceEl.isJsonPrimitive()) {
+                    source = sourceEl.getAsString();
+                } else if (sourceEl.isJsonObject() && sourceEl.getAsJsonObject().has("type")) {
+                    source = sourceEl.getAsJsonObject().get("type").getAsString();
+                }
+            }
+            sb.append("        entryBuilder.apply(CopyNbt.lootFunction().withSource(NbtProvider.")
+              .append(source.toUpperCase().replace(":", "_")).append("));\n");
         } else if (funcName.contains("set_nbt")) {
-            sb.append("        // TODO: set_nbt function\n");
+            // set_nbt applies NBT data to item
+            if (function.parameters().has("tag")) {
+                String tag = function.parameters().get("tag").getAsString();
+                sb.append("        entryBuilder.apply(SetNbt.lootFunction().withTag(")
+                  .append(escapeString(tag)).append(".asNBT()));\n");
+            }
+        } else if (funcName.contains("apply_bonus")) {
+            // apply_bonus for fortune/looting
+            String enchantment = "minecraft:fortune";
+            if (function.parameters().has("enchantment")) {
+                enchantment = function.parameters().get("enchantment").getAsString();
+            }
+
+            String formula = "";
+            if (function.parameters().has("formula")) {
+                formula = function.parameters().get("formula").getAsString();
+            }
+
+            if (formula.contains("ore_drops")) {
+                sb.append("        entryBuilder.apply(ApplyBonus.lootFunction().addOreDrops(<enchantment:")
+                  .append(enchantment).append(">));\n");
+            } else if (formula.contains("uniform_bonus_count")) {
+                int bonusMultiplier = 1;
+                if (function.parameters().has("parameters") && function.parameters().get("parameters").isJsonObject()) {
+                    var params = function.parameters().getAsJsonObject("parameters");
+                    if (params.has("bonusMultiplier")) {
+                        bonusMultiplier = params.get("bonusMultiplier").getAsInt();
+                    }
+                }
+                sb.append("        entryBuilder.apply(ApplyBonus.lootFunction().addUniformBonusCount(<enchantment:")
+                  .append(enchantment).append(">, ").append(bonusMultiplier).append("));\n");
+            } else if (formula.contains("binomial_with_bonus_count")) {
+                int extra = 0;
+                float probability = 0.5f;
+                if (function.parameters().has("parameters") && function.parameters().get("parameters").isJsonObject()) {
+                    var params = function.parameters().getAsJsonObject("parameters");
+                    if (params.has("extra")) {
+                        extra = params.get("extra").getAsInt();
+                    }
+                    if (params.has("probability")) {
+                        probability = params.get("probability").getAsFloat();
+                    }
+                }
+                sb.append("        entryBuilder.apply(ApplyBonus.lootFunction().addBinomialBonusCount(<enchantment:")
+                  .append(enchantment).append(">, ").append(probability).append(", ").append(extra).append("));\n");
+            } else {
+                sb.append("        entryBuilder.apply(ApplyBonus.lootFunction().addOreDrops(<enchantment:")
+                  .append(enchantment).append(">));\n");
+            }
+        } else if (funcName.contains("set_contents")) {
+            // set_contents for shulker boxes, bundles
+            String type = "minecraft:shulker_box";
+            if (function.parameters().has("type")) {
+                type = function.parameters().get("type").getAsString();
+            }
+            sb.append("        entryBuilder.apply(SetContents.lootFunction().withType(<resource:")
+              .append(type).append(">));\n");
+        } else if (funcName.contains("set_banner_pattern")) {
+            // set_banner_pattern for banners
+            sb.append("        entryBuilder.apply(SetBannerPattern.lootFunction()");
+            if (function.parameters().has("append")) {
+                sb.append(".append(").append(function.parameters().get("append").getAsBoolean()).append(")");
+            }
+            sb.append(");\n");
+        } else if (funcName.contains("set_lore")) {
+            // set_lore adds lore lines
+            if (function.parameters().has("lore")) {
+                var loreArr = function.parameters().getAsJsonArray("lore");
+                if (loreArr != null && !loreArr.isEmpty()) {
+                    sb.append("        entryBuilder.apply(SetLore.lootFunction()");
+                    for (int i = 0; i < loreArr.size(); i++) {
+                        String line = loreArr.get(i).isJsonPrimitive() ?
+                            loreArr.get(i).getAsString() : loreArr.get(i).toString();
+                        sb.append(".addLine(Component.literal(").append(escapeString(line)).append("))");
+                    }
+                    sb.append(");\n");
+                }
+            }
         } else if (funcName.contains("set_name")) {
             if (function.parameters().has("name")) {
                 var nameEl = function.parameters().get("name");
@@ -382,6 +470,59 @@ public class CraftTweakerExporter {
             sb.append("    ").append(target).append(".addCondition(KilledByPlayer.lootCondition());\n");
         } else if (condType.contains("survives_explosion")) {
             sb.append("    ").append(target).append(".addCondition(SurvivesExplosion.lootCondition());\n");
+        } else if (condType.contains("entity_properties")) {
+            String entity = "this";
+            if (condition.parameters().has("entity")) {
+                entity = condition.parameters().get("entity").getAsString();
+            }
+            sb.append("    ").append(target).append(".addCondition(EntityProperties.lootCondition(EntityTarget.")
+              .append(entity.toUpperCase()).append("));\n");
+        } else if (condType.contains("match_tool")) {
+            sb.append("    ").append(target).append(".addCondition(MatchTool.lootCondition());\n");
+        } else if (condType.contains("table_bonus")) {
+            String enchantment = "minecraft:fortune";
+            if (condition.parameters().has("enchantment")) {
+                enchantment = condition.parameters().get("enchantment").getAsString();
+            }
+            sb.append("    ").append(target).append(".addCondition(TableBonus.lootCondition(<enchantment:")
+              .append(enchantment).append(">));\n");
+        } else if (condType.contains("inverted")) {
+            sb.append("    // Condition: inverted (wrap inner condition with .invert())\n");
+        } else if (condType.contains("alternative") || condType.contains("any_of")) {
+            sb.append("    // Condition: ").append(condType).append(" (use Alternative.lootCondition())\n");
+        } else if (condType.contains("weather_check")) {
+            boolean raining = false;
+            boolean thundering = false;
+            if (condition.parameters().has("raining")) {
+                raining = condition.parameters().get("raining").getAsBoolean();
+            }
+            if (condition.parameters().has("thundering")) {
+                thundering = condition.parameters().get("thundering").getAsBoolean();
+            }
+            sb.append("    ").append(target).append(".addCondition(WeatherCheck.lootCondition()");
+            if (raining) sb.append(".setRaining(true)");
+            if (thundering) sb.append(".setThundering(true)");
+            sb.append(");\n");
+        } else if (condType.contains("time_check")) {
+            long min = 0;
+            long max = 24000;
+            if (condition.parameters().has("value")) {
+                var value = condition.parameters().get("value");
+                if (value.isJsonObject()) {
+                    var obj = value.getAsJsonObject();
+                    if (obj.has("min")) min = obj.get("min").getAsLong();
+                    if (obj.has("max")) max = obj.get("max").getAsLong();
+                }
+            }
+            sb.append("    ").append(target).append(".addCondition(TimeCheck.lootCondition().setRange(")
+              .append(min).append(", ").append(max).append("));\n");
+        } else if (condType.contains("reference")) {
+            String name = "";
+            if (condition.parameters().has("name")) {
+                name = condition.parameters().get("name").getAsString();
+            }
+            sb.append("    ").append(target).append(".addCondition(Reference.lootCondition(<resource:")
+              .append(name).append(">));\n");
         } else {
             // Unknown condition - add as comment
             sb.append("    // Condition: ").append(condType).append("\n");
@@ -424,6 +565,119 @@ public class CraftTweakerExporter {
                     } else if (count instanceof NumberProvider.Uniform u) {
                         sb.append("    ").append(target).append(".apply(SetCount.lootFunction().setCount(")
                           .append((int) u.min()).append(", ").append((int) u.max()).append("));\n");
+                    }
+                }
+            }
+        } else if (funcName.contains("looting_enchant")) {
+            int countMin = 0;
+            int countMax = 1;
+            if (function.parameters().has("count")) {
+                NumberProvider count = parseNumberProvider(function.parameters().get("count"));
+                if (count != null) {
+                    countMin = (int) count.getMin();
+                    countMax = (int) count.getMax();
+                }
+            }
+            sb.append("    ").append(target).append(".apply(LootingEnchant.lootFunction().setCount(")
+              .append(countMin).append(", ").append(countMax).append("));\n");
+        } else if (funcName.contains("furnace_smelt")) {
+            sb.append("    ").append(target).append(".apply(FurnaceSmelt.lootFunction());\n");
+        } else if (funcName.contains("copy_nbt")) {
+            String source = "block_entity";
+            if (function.parameters().has("source")) {
+                var sourceEl = function.parameters().get("source");
+                if (sourceEl.isJsonPrimitive()) {
+                    source = sourceEl.getAsString();
+                } else if (sourceEl.isJsonObject() && sourceEl.getAsJsonObject().has("type")) {
+                    source = sourceEl.getAsJsonObject().get("type").getAsString();
+                }
+            }
+            sb.append("    ").append(target).append(".apply(CopyNbt.lootFunction().withSource(NbtProvider.")
+              .append(source.toUpperCase().replace(":", "_")).append("));\n");
+        } else if (funcName.contains("set_nbt")) {
+            if (function.parameters().has("tag")) {
+                String tag = function.parameters().get("tag").getAsString();
+                sb.append("    ").append(target).append(".apply(SetNbt.lootFunction().withTag(")
+                  .append(escapeString(tag)).append(".asNBT()));\n");
+            }
+        } else if (funcName.contains("apply_bonus")) {
+            String enchantment = "minecraft:fortune";
+            if (function.parameters().has("enchantment")) {
+                enchantment = function.parameters().get("enchantment").getAsString();
+            }
+            String formula = "";
+            if (function.parameters().has("formula")) {
+                formula = function.parameters().get("formula").getAsString();
+            }
+            if (formula.contains("ore_drops")) {
+                sb.append("    ").append(target).append(".apply(ApplyBonus.lootFunction().addOreDrops(<enchantment:")
+                  .append(enchantment).append(">));\n");
+            } else if (formula.contains("uniform_bonus_count")) {
+                int bonusMultiplier = 1;
+                if (function.parameters().has("parameters") && function.parameters().get("parameters").isJsonObject()) {
+                    var params = function.parameters().getAsJsonObject("parameters");
+                    if (params.has("bonusMultiplier")) {
+                        bonusMultiplier = params.get("bonusMultiplier").getAsInt();
+                    }
+                }
+                sb.append("    ").append(target).append(".apply(ApplyBonus.lootFunction().addUniformBonusCount(<enchantment:")
+                  .append(enchantment).append(">, ").append(bonusMultiplier).append("));\n");
+            } else if (formula.contains("binomial_with_bonus_count")) {
+                int extra = 0;
+                float probability = 0.5f;
+                if (function.parameters().has("parameters") && function.parameters().get("parameters").isJsonObject()) {
+                    var params = function.parameters().getAsJsonObject("parameters");
+                    if (params.has("extra")) {
+                        extra = params.get("extra").getAsInt();
+                    }
+                    if (params.has("probability")) {
+                        probability = params.get("probability").getAsFloat();
+                    }
+                }
+                sb.append("    ").append(target).append(".apply(ApplyBonus.lootFunction().addBinomialBonusCount(<enchantment:")
+                  .append(enchantment).append(">, ").append(probability).append(", ").append(extra).append("));\n");
+            } else {
+                sb.append("    ").append(target).append(".apply(ApplyBonus.lootFunction().addOreDrops(<enchantment:")
+                  .append(enchantment).append(">));\n");
+            }
+        } else if (funcName.contains("set_contents")) {
+            String type = "minecraft:shulker_box";
+            if (function.parameters().has("type")) {
+                type = function.parameters().get("type").getAsString();
+            }
+            sb.append("    ").append(target).append(".apply(SetContents.lootFunction().withType(<resource:")
+              .append(type).append(">));\n");
+        } else if (funcName.contains("set_banner_pattern")) {
+            sb.append("    ").append(target).append(".apply(SetBannerPattern.lootFunction()");
+            if (function.parameters().has("append")) {
+                sb.append(".append(").append(function.parameters().get("append").getAsBoolean()).append(")");
+            }
+            sb.append(");\n");
+        } else if (funcName.contains("limit_count")) {
+            int min = 0;
+            int max = 64;
+            if (function.parameters().has("limit")) {
+                var limit = function.parameters().get("limit");
+                if (limit.isJsonObject()) {
+                    var obj = limit.getAsJsonObject();
+                    if (obj.has("min")) min = obj.get("min").getAsInt();
+                    if (obj.has("max")) max = obj.get("max").getAsInt();
+                } else if (limit.isJsonPrimitive()) {
+                    max = limit.getAsInt();
+                }
+            }
+            sb.append("    ").append(target).append(".apply(LimitCount.lootFunction().setLimit(")
+              .append(min).append(", ").append(max).append("));\n");
+        } else if (funcName.contains("set_damage")) {
+            if (function.parameters().has("damage")) {
+                NumberProvider damage = parseNumberProvider(function.parameters().get("damage"));
+                if (damage != null) {
+                    if (damage instanceof NumberProvider.Constant c) {
+                        sb.append("    ").append(target).append(".apply(SetDamage.lootFunction().setDamage(")
+                          .append(c.value()).append("));\n");
+                    } else if (damage instanceof NumberProvider.Uniform u) {
+                        sb.append("    ").append(target).append(".apply(SetDamage.lootFunction().setDamage(")
+                          .append(u.min()).append(", ").append(u.max()).append("));\n");
                     }
                 }
             }
