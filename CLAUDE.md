@@ -268,6 +268,33 @@ Pools have bonus rolls that add extra rolls based on the player's luck attribute
 - `BonusRollsDialog` - Preset-based bonus rolls selection
 - `ModifyBonusRolls` operation - Changes pool bonus rolls
 
+### Entry Quality Editing
+
+Quality is a luck-based weight modifier that affects drop chances based on the player's luck attribute.
+
+**How Quality Works**:
+- Positive quality: Item becomes more likely with higher luck
+- Negative quality: Item becomes less likely with higher luck
+- Zero: Luck has no effect on this entry (default)
+
+**Editing Quality**: Right-click an entry → "Set Quality..." opens a dialog with presets:
+
+| Preset | Effect |
+|--------|--------|
+| 0 | No luck effect (default) |
+| +1 | Slightly favored with luck |
+| +2 | Favored with luck |
+| +5 | Rare, strongly favored |
+| +10 | Very rare, heavily favored |
+| -1 | Slightly disfavored with luck |
+| -2 | Disfavored with luck |
+
+**Display**: Quality is shown in the entry detail panel when non-zero.
+
+**Key Classes**:
+- `QualityDialog` - Preset-based quality selection UI
+- `LootEditOperation.ModifyEntryQuality` - Operation for changing quality
+
 ## Test Mode
 
 Test mode creates a temporary creative world to test edited loot tables in-game.
