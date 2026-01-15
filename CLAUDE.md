@@ -688,6 +688,50 @@ public interface ShortcutContext {
 
 **Key Class:** `KeyboardShortcuts` - Static `handle(keyCode, modifiers, context)` dispatcher
 
+## Drag-and-Drop Reordering
+
+Entries and pools can be reordered by dragging within the edit panel.
+
+### Entry Drag-and-Drop
+
+Click and drag an entry row to reorder it within the same pool or move it to a different pool.
+
+| Visual | Description |
+|--------|-------------|
+| Green line | Drop indicator showing where entry will be inserted |
+| Green arrow | Points to insertion position |
+| Ghost preview | Semi-transparent entry with icon and name follows cursor |
+
+**Behavior:**
+- 5px drag threshold prevents accidental drags
+- Can drop before any entry or after the last entry in a pool
+- Can move entries between different pools
+- Uses `RemoveEntry` + `AddEntry` operations (supports undo/redo)
+
+### Pool Drag-and-Drop
+
+Click and drag a pool header to reorder pools within the loot table.
+
+| Visual | Description |
+|--------|-------------|
+| Cyan line | Drop indicator showing where pool will be inserted |
+| Cyan arrows | Arrows on both sides of the line |
+| Ghost preview | Shows "Pool N" and entry count |
+
+**Behavior:**
+- Click anywhere on pool header (except remove button) to start drag
+- Can drop before any pool or after the last pool
+- Uses `RemovePool` + `AddPool` operations (supports undo/redo)
+
+### Visual Distinction
+
+| Drag Type | Indicator Color | Ghost Color |
+|-----------|-----------------|-------------|
+| Entry | Green (0xFF55FF55) | Green tint |
+| Pool | Cyan (0xFF55FFFF) | Cyan tint |
+
+**Key Implementation:** `LootTableEditPanel.java` - `mouseDragged()`, `mouseReleased()`, `renderEntryDragVisualization()`, `renderPoolDragVisualization()`
+
 ## Bookmark Manager
 
 Persistent bookmarking system for quick access to frequently-used loot tables.
