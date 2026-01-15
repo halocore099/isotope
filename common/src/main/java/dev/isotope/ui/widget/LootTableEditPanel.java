@@ -104,6 +104,17 @@ public class LootTableEditPanel extends AbstractWidget {
     private int editCursorPos = 0;
     private int editFieldX, editFieldY, editFieldWidth;  // For rendering
 
+    // Drag-and-drop state
+    private boolean isDragging = false;
+    private int dragPoolIdx = -1;
+    private int dragEntryIdx = -1;
+    private double dragMouseX, dragMouseY;
+    private int dropTargetPoolIdx = -1;
+    private int dropTargetEntryIdx = -1;  // -1 = before first, entries().size() = after last
+    private static final int DRAG_THRESHOLD = 5;  // Pixels before drag starts
+    private double dragStartX, dragStartY;
+    private boolean dragThresholdMet = false;
+
     /**
      * Key for identifying a specific entry (pool index, entry index).
      */
@@ -387,6 +398,87 @@ public class LootTableEditPanel extends AbstractWidget {
                 }
             }
         }
+
+        // Drag-and-drop visualization (render last so it's on top of everything)
+        if (isDragging) {
+            renderDragVisualization(graphics, font, display);
+        }
+    }
+
+    private void renderDragVisualization(GuiGraphics graphics, Font font, LootTableStructure display) {
+        // Draw drop indicator line
+        if (dropTargetPoolIdx >= 0 && dropTargetEntryIdx >= 0) {
+            int dropY = calculateDropIndicatorY(display);
+            if (dropY >= getY() && dropY <= getY() + height) {
+                // Draw a bright line where the entry will be dropped
+                int lineX1 = getX() + PADDING + 10;
+                int lineX2 = getX() + width - PADDING - 10;
+                graphics.fill(lineX1, dropY - 1, lineX2, dropY + 1, 0xFF55FF55);
+
+                // Arrow indicator
+                graphics.fill(lineX1 - 4, dropY - 4, lineX1, dropY + 4, 0xFF55FF55);
+            }
+        }
+
+        // Draw ghost of dragged entry
+        if (dragPoolIdx >= 0 && dragEntryIdx >= 0 && dragPoolIdx < display.pools().size()) {
+            LootPool pool = display.pools().get(dragPoolIdx);
+            if (dragEntryIdx < pool.entries().size()) {
+                LootEntry entry = pool.entries().get(dragEntryIdx);
+
+                int ghostX = (int) dragMouseX - 60;
+                int ghostY = (int) dragMouseY - ENTRY_HEIGHT / 2;
+                int ghostWidth = 140;
+
+                // Semi-transparent background
+                graphics.fill(ghostX, ghostY, ghostX + ghostWidth, ghostY + ENTRY_HEIGHT, 0xAA2a3a2a);
+                graphics.renderOutline(ghostX, ghostY, ghostWidth, ENTRY_HEIGHT, 0xAA55FF55);
+
+                // Item icon
+                if (entry.isItem() && entry.name().isPresent()) {
+                    var item = BuiltInRegistries.ITEM.get(entry.name().get());
+                    if (item != Items.AIR) {
+                        graphics.renderItem(new ItemStack(item), ghostX + 2, ghostY + 4);
+                    }
+                }
+
+                // Entry name (truncated)
+                String name = entry.getDisplayName();
+                if (font.width(name) > ghostWidth - 24) {
+                    while (font.width(name + "...") > ghostWidth - 24 && name.length() > 3) {
+                        name = name.substring(0, name.length() - 1);
+                    }
+                    name += "...";
+                }
+                graphics.drawString(font, name, ghostX + 22, ghostY + 8, 0xFFAAFFAA, false);
+            }
+        }
+    }
+
+    private int calculateDropIndicatorY(LootTableStructure display) {
+        int y = getY() - scrollOffset + HEADER_HEIGHT;
+
+        // Account for batch bar
+        if (multiSelection.size() > 1) {
+            y += BATCH_BAR_HEIGHT;
+        }
+
+        for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
+            LootPool pool = display.pools().get(poolIdx);
+
+            y += POOL_HEADER_HEIGHT;
+            y += getPoolFuncCondHeight(pool);
+
+            if (poolIdx == dropTargetPoolIdx) {
+                // Found the target pool - calculate the exact Y position
+                return y + dropTargetEntryIdx * ENTRY_HEIGHT;
+            }
+
+            y += pool.entries().size() * ENTRY_HEIGHT;
+            y += 24; // Add item button
+        }
+
+        return y;
     }
 
     private void renderHeader(GuiGraphics graphics, Font font, int y, int mouseX, int mouseY) {
@@ -1260,6 +1352,13 @@ public class LootTableEditPanel extends AbstractWidget {
                         selectedPoolIdx = poolIdx;
                         selectedEntryIdx = entryIdx;
                         lastClickedEntry = clickedKey;
+
+                        // Record potential drag start
+                        dragPoolIdx = poolIdx;
+                        dragEntryIdx = entryIdx;
+                        dragStartX = mouseX;
+                        dragStartY = mouseY;
+                        dragThresholdMet = false;
                     }
                     return true;
                 }
@@ -1301,6 +1400,159 @@ public class LootTableEditPanel extends AbstractWidget {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button != 0 || dragPoolIdx < 0 || dragEntryIdx < 0) {
+            return false;
+        }
+
+        // Check if we've met the drag threshold
+        if (!dragThresholdMet) {
+            double dx = mouseX - dragStartX;
+            double dy = mouseY - dragStartY;
+            if (Math.sqrt(dx * dx + dy * dy) >= DRAG_THRESHOLD) {
+                dragThresholdMet = true;
+                isDragging = true;
+            }
+        }
+
+        if (!isDragging) {
+            return false;
+        }
+
+        // Update mouse position for rendering
+        dragMouseX = mouseX;
+        dragMouseY = mouseY;
+
+        // Calculate drop target
+        updateDropTarget(mouseY);
+
+        return true;
+    }
+
+    private void updateDropTarget(double mouseY) {
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null) {
+            dropTargetPoolIdx = -1;
+            dropTargetEntryIdx = -1;
+            return;
+        }
+
+        int y = getY() - scrollOffset + HEADER_HEIGHT;
+
+        // Account for batch bar
+        if (multiSelection.size() > 1) {
+            y += BATCH_BAR_HEIGHT;
+        }
+
+        for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
+            LootPool pool = display.pools().get(poolIdx);
+
+            y += POOL_HEADER_HEIGHT;
+            y += getPoolFuncCondHeight(pool);
+
+            // Check if mouse is before first entry in this pool
+            if (mouseY < y && mouseY >= y - ENTRY_HEIGHT / 2) {
+                dropTargetPoolIdx = poolIdx;
+                dropTargetEntryIdx = 0;
+                return;
+            }
+
+            for (int entryIdx = 0; entryIdx < pool.entries().size(); entryIdx++) {
+                int entryMidY = y + ENTRY_HEIGHT / 2;
+
+                if (mouseY >= y && mouseY < y + ENTRY_HEIGHT) {
+                    dropTargetPoolIdx = poolIdx;
+                    // Drop before or after this entry based on mouse position
+                    if (mouseY < entryMidY) {
+                        dropTargetEntryIdx = entryIdx;
+                    } else {
+                        dropTargetEntryIdx = entryIdx + 1;
+                    }
+                    return;
+                }
+
+                y += ENTRY_HEIGHT;
+            }
+
+            // Check if mouse is in the add button area (after entries)
+            if (mouseY >= y && mouseY < y + 24) {
+                dropTargetPoolIdx = poolIdx;
+                dropTargetEntryIdx = pool.entries().size();
+                return;
+            }
+
+            y += 24; // Add item button
+        }
+
+        // No valid drop target
+        dropTargetPoolIdx = -1;
+        dropTargetEntryIdx = -1;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button != 0) {
+            return false;
+        }
+
+        if (isDragging && dropTargetPoolIdx >= 0 && dropTargetEntryIdx >= 0) {
+            // Complete the drop
+            completeDrop();
+        }
+
+        // Reset drag state
+        isDragging = false;
+        dragPoolIdx = -1;
+        dragEntryIdx = -1;
+        dragThresholdMet = false;
+        dropTargetPoolIdx = -1;
+        dropTargetEntryIdx = -1;
+
+        return isDragging;
+    }
+
+    private void completeDrop() {
+        if (tableId == null) return;
+
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null) return;
+
+        // Don't drop on self
+        if (dragPoolIdx == dropTargetPoolIdx) {
+            // Same pool - check if actually moving
+            if (dropTargetEntryIdx == dragEntryIdx || dropTargetEntryIdx == dragEntryIdx + 1) {
+                return; // No change needed
+            }
+        }
+
+        // Get the entry being dragged
+        if (dragPoolIdx >= display.pools().size()) return;
+        LootPool srcPool = display.pools().get(dragPoolIdx);
+        if (dragEntryIdx >= srcPool.entries().size()) return;
+        LootEntry entry = srcPool.entries().get(dragEntryIdx);
+
+        // Calculate the actual target index after removal
+        int targetEntryIdx = dropTargetEntryIdx;
+        if (dragPoolIdx == dropTargetPoolIdx && dragEntryIdx < dropTargetEntryIdx) {
+            // If removing from before the target in the same pool, adjust target
+            targetEntryIdx--;
+        }
+
+        // Apply the move as remove + add operations
+        LootEditOperation removeOp = new LootEditOperation.RemoveEntry(dragPoolIdx, dragEntryIdx);
+        LootEditManager.getInstance().applyOperation(tableId, removeOp);
+
+        LootEditOperation addOp = new LootEditOperation.AddEntry(dropTargetPoolIdx, targetEntryIdx, entry);
+        LootEditManager.getInstance().applyOperation(tableId, addOp);
+
+        // Update selection to the new position
+        selectedPoolIdx = dropTargetPoolIdx;
+        selectedEntryIdx = targetEntryIdx;
+
+        refreshFromEdits();
     }
 
     private void openWeightEditor(int poolIdx, int entryIdx, int currentWeight) {
