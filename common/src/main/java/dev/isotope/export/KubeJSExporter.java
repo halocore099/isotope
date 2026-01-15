@@ -237,6 +237,74 @@ public class KubeJSExporter {
                             }
                         }
                         sb.append(".limitCount(").append(min).append(", ").append(max).append(")");
+                    } else if (funcName.contains("set_nbt")) {
+                        // set_nbt applies NBT tag to item
+                        if (func.parameters().has("tag")) {
+                            String tag = func.parameters().get("tag").toString();
+                            sb.append(".nbt(").append(tag).append(")");
+                        }
+                    } else if (funcName.contains("set_name")) {
+                        // set_name sets custom item name
+                        if (func.parameters().has("name")) {
+                            var nameEl = func.parameters().get("name");
+                            String name = nameEl.isJsonPrimitive() ? nameEl.getAsString() : nameEl.toString();
+                            sb.append(".customName(Component.literal(").append(escapeString(name)).append("))");
+                        }
+                    } else if (funcName.contains("set_lore")) {
+                        // set_lore adds lore lines - KubeJS uses .lore()
+                        if (func.parameters().has("lore")) {
+                            var loreArr = func.parameters().getAsJsonArray("lore");
+                            if (loreArr != null && !loreArr.isEmpty()) {
+                                sb.append(".lore([");
+                                for (int i = 0; i < loreArr.size(); i++) {
+                                    if (i > 0) sb.append(", ");
+                                    String line = loreArr.get(i).isJsonPrimitive() ?
+                                        loreArr.get(i).getAsString() : loreArr.get(i).toString();
+                                    sb.append("Component.literal(").append(escapeString(line)).append(")");
+                                }
+                                sb.append("])");
+                            }
+                        }
+                    } else if (funcName.contains("set_potion")) {
+                        // set_potion sets potion type
+                        if (func.parameters().has("id")) {
+                            String potionId = func.parameters().get("id").getAsString();
+                            sb.append(".potion('").append(potionId).append("')");
+                        }
+                    } else if (funcName.contains("exploration_map")) {
+                        // exploration_map creates treasure maps
+                        String destination = "buried_treasure";
+                        if (func.parameters().has("destination")) {
+                            destination = func.parameters().get("destination").getAsString();
+                        }
+                        sb.append(".explorationMap('").append(destination).append("')");
+                    } else if (funcName.contains("apply_bonus")) {
+                        // apply_bonus for fortune/looting - add as comment since it's complex
+                        String formula = "unknown";
+                        if (func.parameters().has("formula")) {
+                            formula = func.parameters().get("formula").getAsString();
+                        }
+                        // End the chain and add a comment
+                        sb.append(";\n");
+                        sb.append("            // apply_bonus (formula: ").append(formula).append(")\n");
+                        continue; // Skip adding to unhandled
+                    } else if (funcName.contains("copy_nbt")) {
+                        // copy_nbt copies NBT from source
+                        String source = "block_entity";
+                        if (func.parameters().has("source")) {
+                            source = func.parameters().get("source").getAsString();
+                        }
+                        sb.append(".copyNBT('").append(source).append("')");
+                    } else if (funcName.contains("set_contents")) {
+                        // set_contents for shulker boxes, bundles - add as comment
+                        sb.append(";\n");
+                        sb.append("            // set_contents (container contents)\n");
+                        continue;
+                    } else if (funcName.contains("set_banner_pattern")) {
+                        // set_banner_pattern - add as comment
+                        sb.append(";\n");
+                        sb.append("            // set_banner_pattern\n");
+                        continue;
                     } else {
                         // Track unhandled functions
                         unhandledFunctions.add(funcName);
@@ -426,6 +494,50 @@ public class KubeJSExporter {
                       .append(numberProviderToJS(count)).append(");\n");
                 }
             }
+        } else if (funcName.contains("set_nbt")) {
+            // set_nbt applies NBT tag
+            if (function.parameters().has("tag")) {
+                String tag = function.parameters().get("tag").toString();
+                sb.append("            ").append(target).append(".nbt(").append(tag).append(");\n");
+            }
+        } else if (funcName.contains("set_name")) {
+            // set_name sets custom item name
+            if (function.parameters().has("name")) {
+                var nameEl = function.parameters().get("name");
+                String name = nameEl.isJsonPrimitive() ? nameEl.getAsString() : nameEl.toString();
+                sb.append("            ").append(target).append(".customName(Component.literal(")
+                  .append(escapeString(name)).append("));\n");
+            }
+        } else if (funcName.contains("set_potion")) {
+            // set_potion sets potion type
+            if (function.parameters().has("id")) {
+                String potionId = function.parameters().get("id").getAsString();
+                sb.append("            ").append(target).append(".potion('").append(potionId).append("');\n");
+            }
+        } else if (funcName.contains("exploration_map")) {
+            // exploration_map creates treasure maps
+            String destination = "buried_treasure";
+            if (function.parameters().has("destination")) {
+                destination = function.parameters().get("destination").getAsString();
+            }
+            sb.append("            ").append(target).append(".explorationMap('").append(destination).append("');\n");
+        } else if (funcName.contains("copy_nbt")) {
+            // copy_nbt copies NBT from source
+            String source = "block_entity";
+            if (function.parameters().has("source")) {
+                source = function.parameters().get("source").getAsString();
+            }
+            sb.append("            ").append(target).append(".copyNBT('").append(source).append("');\n");
+        } else if (funcName.contains("apply_bonus")) {
+            // apply_bonus for fortune/looting - add as comment
+            String formula = "unknown";
+            if (function.parameters().has("formula")) {
+                formula = function.parameters().get("formula").getAsString();
+            }
+            sb.append("            // apply_bonus (formula: ").append(formula).append(")\n");
+        } else if (funcName.contains("set_contents") || funcName.contains("set_banner_pattern")) {
+            // Complex functions - add as comment
+            sb.append("            // Function: ").append(funcName).append(" (complex, not supported)\n");
         } else {
             // Add comment for unhandled functions
             sb.append("            // Function: ").append(funcName).append("\n");
@@ -480,5 +592,13 @@ public class KubeJSExporter {
             }
         }
         return null;
+    }
+
+    /**
+     * Escape a string for use in JavaScript.
+     */
+    private String escapeString(String str) {
+        if (str == null) return "''";
+        return "'" + str.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n") + "'";
     }
 }
