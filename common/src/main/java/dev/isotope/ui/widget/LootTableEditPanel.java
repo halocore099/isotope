@@ -474,9 +474,9 @@ public class LootTableEditPanel extends AbstractWidget {
 
                 // Item icon
                 if (entry.isItem() && entry.name().isPresent()) {
-                    var item = BuiltInRegistries.ITEM.get(entry.name().get());
-                    if (item != Items.AIR) {
-                        graphics.renderItem(new ItemStack(item), ghostX + 2, ghostY + 4);
+                    var itemOpt = BuiltInRegistries.ITEM.get(entry.name().get());
+                    if (itemOpt.isPresent()) {
+                        graphics.renderItem(new ItemStack(itemOpt.get().value()), ghostX + 2, ghostY + 4);
                     }
                 }
 

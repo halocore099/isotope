@@ -527,9 +527,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         if (tableId == null || minecraft == null) return;
 
         // Get current entry type
-        var structure = LootEditManager.getInstance().getEditedStructure(tableId);
-        if (structure == null || poolIdx >= structure.pools().size()) return;
-        var pool = structure.pools().get(poolIdx);
+        var structureOpt = LootEditManager.getInstance().getEditedStructure(tableId);
+        if (structureOpt.isEmpty() || poolIdx >= structureOpt.get().pools().size()) return;
+        var pool = structureOpt.get().pools().get(poolIdx);
         if (entryIdx >= pool.entries().size()) return;
         var entry = pool.entries().get(entryIdx);
         String currentType = entry.type();
@@ -546,9 +546,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         if (tableId == null || minecraft == null) return;
 
         // Get current entry quality
-        var structure = LootEditManager.getInstance().getEditedStructure(tableId);
-        if (structure == null || poolIdx >= structure.pools().size()) return;
-        var pool = structure.pools().get(poolIdx);
+        var structureOpt = LootEditManager.getInstance().getEditedStructure(tableId);
+        if (structureOpt.isEmpty() || poolIdx >= structureOpt.get().pools().size()) return;
+        var pool = structureOpt.get().pools().get(poolIdx);
         if (entryIdx >= pool.entries().size()) return;
         var entry = pool.entries().get(entryIdx);
         int currentQuality = entry.quality();
@@ -760,7 +760,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             var editManager = LootEditManager.getInstance();
             var existing = editManager.getCachedOriginalStructure(tableId);
             if (existing.isEmpty()) {
-                editManager.cacheOriginalStructure(tableId, structure);
+                editManager.cacheOriginalStructure(structure);
             }
 
             // Apply the structure by adding operations for each pool
