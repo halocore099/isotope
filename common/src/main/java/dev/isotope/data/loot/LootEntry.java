@@ -195,6 +195,13 @@ public record LootEntry(
     }
 
     /**
+     * Create a copy with modified quality (luck modifier).
+     */
+    public LootEntry withQuality(int newQuality) {
+        return new LootEntry(type, name, weight, newQuality, conditions, functions, children);
+    }
+
+    /**
      * Create a copy with modified functions.
      */
     public LootEntry withFunctions(List<LootFunction> newFunctions) {

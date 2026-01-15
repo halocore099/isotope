@@ -20,6 +20,7 @@ public sealed interface LootEditOperation permits
         LootEditOperation.AddEntry,
         LootEditOperation.RemoveEntry,
         LootEditOperation.ModifyEntryWeight,
+        LootEditOperation.ModifyEntryQuality,
         LootEditOperation.ModifyEntryItem,
         LootEditOperation.ModifyEntryType,
         LootEditOperation.SetItemCount,
@@ -109,6 +110,16 @@ public sealed interface LootEditOperation permits
         @Override
         public String getDescription() {
             return "Set weight of entry #" + (entryIndex + 1) + " in pool #" + (poolIndex + 1) + " to " + newWeight;
+        }
+    }
+
+    /**
+     * Modify the quality of an entry (luck-based weight modifier).
+     */
+    record ModifyEntryQuality(int poolIndex, int entryIndex, int newQuality) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return "Set quality of entry #" + (entryIndex + 1) + " in pool #" + (poolIndex + 1) + " to " + newQuality;
         }
     }
 

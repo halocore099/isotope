@@ -466,6 +466,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addItem("✦", "Add Function...", "", () -> openAddFunctionDialog(poolIdx, entryIdx))
             .addItem("?", "Add Condition...", "", () -> openAddConditionDialog(poolIdx, entryIdx))
             .addItem("⇄", "Change Type...", "", () -> openChangeTypeDialog(poolIdx, entryIdx))
+            .addItem("★", "Set Quality...", "", () -> openSetQualityDialog(poolIdx, entryIdx))
             .addSeparator()
             .addItem("\u2750", "Duplicate", "Ctrl+D", () -> editPanel.duplicateSelected())
             .addItem("\u2715", "Delete", "Del", () -> editPanel.deleteSelected())
@@ -509,6 +510,25 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         minecraft.setScreen(new EntryTypeDialog(this, poolIdx, entryIdx, currentType, (newType, newName) -> {
             LootEditOperation op = new LootEditOperation.ModifyEntryType(poolIdx, entryIdx, newType, newName);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    private void openSetQualityDialog(int poolIdx, int entryIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        // Get current entry quality
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId);
+        if (structure == null || poolIdx >= structure.pools().size()) return;
+        var pool = structure.pools().get(poolIdx);
+        if (entryIdx >= pool.entries().size()) return;
+        var entry = pool.entries().get(entryIdx);
+        int currentQuality = entry.quality();
+
+        minecraft.setScreen(new QualityDialog(this, poolIdx, entryIdx, currentQuality, newQuality -> {
+            LootEditOperation op = new LootEditOperation.ModifyEntryQuality(poolIdx, entryIdx, newQuality);
             LootEditManager.getInstance().applyOperation(tableId, op);
             editPanel.refresh();
         }));
