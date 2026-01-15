@@ -2036,7 +2036,8 @@ public class LootTableEditPanel extends AbstractWidget {
             selectedEntryIdx = -1;
         }
 
-        // TODO: Could scroll to make selection visible if needed
+        // Scroll to make selection visible
+        ensureSelectionVisible();
     }
 
     /**
@@ -2096,6 +2097,7 @@ public class LootTableEditPanel extends AbstractWidget {
 
         selectedEntryIdx = entryIdx - 1;
         refreshFromEdits();
+        ensureSelectionVisible();
     }
 
     /**
@@ -2119,6 +2121,7 @@ public class LootTableEditPanel extends AbstractWidget {
 
         selectedEntryIdx = entryIdx + 1;
         refreshFromEdits();
+        ensureSelectionVisible();
     }
 
     /**
