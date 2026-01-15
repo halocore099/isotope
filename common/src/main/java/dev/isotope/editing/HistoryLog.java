@@ -64,6 +64,7 @@ public final class HistoryLog {
                 case LootEditOperation.RemoveEntry ignored -> "REMOVE_ENTRY";
                 case LootEditOperation.ModifyEntryWeight ignored -> "MODIFY_WEIGHT";
                 case LootEditOperation.ModifyEntryItem ignored -> "MODIFY_ITEM";
+                case LootEditOperation.ModifyEntryType ignored -> "MODIFY_TYPE";
                 case LootEditOperation.SetItemCount ignored -> "SET_COUNT";
                 case LootEditOperation.AddFunction ignored -> "ADD_FUNCTION";
                 case LootEditOperation.RemoveFunction ignored -> "REMOVE_FUNCTION";

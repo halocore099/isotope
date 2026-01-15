@@ -3,6 +3,8 @@ package dev.isotope.editing;
 import dev.isotope.data.loot.*;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Optional;
+
 /**
  * Sealed interface representing all possible loot table edit operations.
  *
@@ -19,6 +21,7 @@ public sealed interface LootEditOperation permits
         LootEditOperation.RemoveEntry,
         LootEditOperation.ModifyEntryWeight,
         LootEditOperation.ModifyEntryItem,
+        LootEditOperation.ModifyEntryType,
         LootEditOperation.SetItemCount,
         LootEditOperation.AddFunction,
         LootEditOperation.RemoveFunction,
@@ -116,6 +119,20 @@ public sealed interface LootEditOperation permits
         @Override
         public String getDescription() {
             return "Change item in pool #" + (poolIndex + 1) + " entry #" + (entryIndex + 1) + " to " + newItem.getPath();
+        }
+    }
+
+    /**
+     * Change the type of an entry (item, empty, loot_table, tag, etc.).
+     */
+    record ModifyEntryType(int poolIndex, int entryIndex, String newType, Optional<ResourceLocation> newName) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            String typeName = newType.replace("minecraft:", "");
+            if (newName.isPresent()) {
+                return "Convert entry #" + (entryIndex + 1) + " to " + typeName + " (" + newName.get().getPath() + ")";
+            }
+            return "Convert entry #" + (entryIndex + 1) + " to " + typeName;
         }
     }
 

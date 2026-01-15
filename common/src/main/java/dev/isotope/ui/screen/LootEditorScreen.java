@@ -465,6 +465,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .addSeparator()
             .addItem("✦", "Add Function...", "", () -> openAddFunctionDialog(poolIdx, entryIdx))
             .addItem("?", "Add Condition...", "", () -> openAddConditionDialog(poolIdx, entryIdx))
+            .addItem("⇄", "Change Type...", "", () -> openChangeTypeDialog(poolIdx, entryIdx))
             .addSeparator()
             .addItem("\u2750", "Duplicate", "Ctrl+D", () -> editPanel.duplicateSelected())
             .addItem("\u2715", "Delete", "Del", () -> editPanel.deleteSelected())
@@ -489,6 +490,25 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         minecraft.setScreen(new AddConditionDialog(this, condition -> {
             LootEditOperation op = new LootEditOperation.AddCondition(poolIdx, entryIdx, condition);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    private void openChangeTypeDialog(int poolIdx, int entryIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        // Get current entry type
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId);
+        if (structure == null || poolIdx >= structure.pools().size()) return;
+        var pool = structure.pools().get(poolIdx);
+        if (entryIdx >= pool.entries().size()) return;
+        var entry = pool.entries().get(entryIdx);
+        String currentType = entry.type();
+
+        minecraft.setScreen(new EntryTypeDialog(this, poolIdx, entryIdx, currentType, (newType, newName) -> {
+            LootEditOperation op = new LootEditOperation.ModifyEntryType(poolIdx, entryIdx, newType, newName);
             LootEditManager.getInstance().applyOperation(tableId, op);
             editPanel.refresh();
         }));

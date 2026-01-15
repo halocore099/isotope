@@ -214,4 +214,26 @@ public record LootEntry(
     public LootEntry withItem(ResourceLocation newItem) {
         return new LootEntry(TYPE_ITEM, Optional.of(newItem), weight, quality, conditions, functions, children);
     }
+
+    /**
+     * Create a copy with a different type.
+     * Preserves weight, quality, conditions, and functions where applicable.
+     *
+     * @param newType The new entry type
+     * @param newName The name/ID for the new type (item ID, table ID, tag ID) - use Optional.empty() for empty type
+     */
+    public LootEntry withType(String newType, Optional<ResourceLocation> newName) {
+        // For empty entries, clear name and functions (they don't apply)
+        if (TYPE_EMPTY.equals(newType)) {
+            return new LootEntry(newType, Optional.empty(), weight, quality, conditions, List.of(), List.of());
+        }
+
+        // For composite types, clear name but keep children if converting from another composite
+        if (TYPE_ALTERNATIVES.equals(newType) || TYPE_GROUP.equals(newType) || TYPE_SEQUENCE.equals(newType)) {
+            return new LootEntry(newType, Optional.empty(), weight, quality, conditions, functions, children);
+        }
+
+        // For item, loot_table, tag - require a name, preserve functions
+        return new LootEntry(newType, newName, weight, quality, conditions, functions, List.of());
+    }
 }

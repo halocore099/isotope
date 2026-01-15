@@ -31,6 +31,7 @@ public final class LootEditApplicator {
             case LootEditOperation.RemoveEntry p -> applyRemoveEntry(structure, p);
             case LootEditOperation.ModifyEntryWeight p -> applyModifyEntryWeight(structure, p);
             case LootEditOperation.ModifyEntryItem p -> applyModifyEntryItem(structure, p);
+            case LootEditOperation.ModifyEntryType p -> applyModifyEntryType(structure, p);
             case LootEditOperation.SetItemCount p -> applySetItemCount(structure, p);
             case LootEditOperation.AddFunction p -> applyAddFunction(structure, p);
             case LootEditOperation.RemoveFunction p -> applyRemoveFunction(structure, p);
@@ -115,6 +116,12 @@ public final class LootEditApplicator {
     private static LootTableStructure applyModifyEntryItem(LootTableStructure structure, LootEditOperation.ModifyEntryItem op) {
         return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry ->
             entry.withItem(op.newItem())
+        );
+    }
+
+    private static LootTableStructure applyModifyEntryType(LootTableStructure structure, LootEditOperation.ModifyEntryType op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry ->
+            entry.withType(op.newType(), op.newName())
         );
     }
 
