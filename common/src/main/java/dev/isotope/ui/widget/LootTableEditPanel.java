@@ -1371,7 +1371,7 @@ public class LootTableEditPanel extends AbstractWidget {
 
             // Clear selection button (X)
             int clearX = getX() + width - PADDING - 20;
-            if (mouseX >= clearX && mouseX < clearX + 18 && mouseY >= btnY && mouseY < btnY + btnHeight) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, clearX, btnY, 18, btnHeight)) {
                 multiSelection.clear();
                 lastClickedEntry = null;
                 return true;
@@ -1379,14 +1379,14 @@ public class LootTableEditPanel extends AbstractWidget {
 
             // Delete All button
             int deleteX = clearX - 70;
-            if (mouseX >= deleteX && mouseX < deleteX + 65 && mouseY >= btnY && mouseY < btnY + btnHeight) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, deleteX, btnY, 65, btnHeight)) {
                 batchDelete();
                 return true;
             }
 
             // Set Weight button
             int weightX = deleteX - 75;
-            if (mouseX >= weightX && mouseX < weightX + 70 && mouseY >= btnY && mouseY < btnY + btnHeight) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, weightX, btnY, 70, btnHeight)) {
                 openBatchWeightDialog();
                 return true;
             }
@@ -1407,7 +1407,7 @@ public class LootTableEditPanel extends AbstractWidget {
             int btnY = addTableFunctionBtn[1];
             int btnW = addTableFunctionBtn[2];
             int btnH = addTableFunctionBtn[3];
-            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
                 if (onAddTableFunctionCallback != null) {
                     onAddTableFunctionCallback.run();
                 }
@@ -1421,7 +1421,7 @@ public class LootTableEditPanel extends AbstractWidget {
             int btnY = randomSequenceEditBtn[1];
             int btnW = randomSequenceEditBtn[2];
             int btnH = randomSequenceEditBtn[3];
-            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
                 if (onEditRandomSequenceCallback != null) {
                     onEditRandomSequenceCallback.run();
                 }
@@ -1436,7 +1436,7 @@ public class LootTableEditPanel extends AbstractWidget {
             int btnY = btn[2];
             int btnW = btn[3];
             int btnH = btn[4];
-            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
                 LootEditOperation op = new LootEditOperation.RemoveTableFunction(funcIdx);
                 LootEditManager.getInstance().applyOperation(tableId, op);
                 refreshFromEdits();
@@ -1452,7 +1452,7 @@ public class LootTableEditPanel extends AbstractWidget {
             int btnY = btn[3];
             int btnW = btn[4];
             int btnH = btn[5];
-            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
                 LootEditOperation op = new LootEditOperation.RemovePoolFunction(poolIdx, funcIdx);
                 LootEditManager.getInstance().applyOperation(tableId, op);
                 refreshFromEdits();
@@ -1468,7 +1468,7 @@ public class LootTableEditPanel extends AbstractWidget {
             int btnY = btn[3];
             int btnW = btn[4];
             int btnH = btn[5];
-            if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
                 LootEditOperation op = new LootEditOperation.RemovePoolCondition(poolIdx, condIdx);
                 LootEditManager.getInstance().applyOperation(tableId, op);
                 refreshFromEdits();
@@ -1653,7 +1653,7 @@ public class LootTableEditPanel extends AbstractWidget {
         // Add pool button
         int btnX = getX() + PADDING;
         int btnWidth = width - PADDING * 2;
-        if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y + 2 && mouseY < y + 22) {
+        if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, y + 2, btnWidth, 20)) {
             addNewPool();
             return true;
         }

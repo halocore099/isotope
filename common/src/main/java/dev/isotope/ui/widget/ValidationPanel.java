@@ -9,6 +9,7 @@ import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootEditOperation;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.validation.LootTableValidator;
 import dev.isotope.validation.LootTableValidator.IssueType;
 import dev.isotope.validation.LootTableValidator.ValidationIssue;
@@ -275,7 +276,7 @@ public class ValidationPanel extends AbstractWidget {
 
     private void renderIssue(GuiGraphics graphics, Minecraft mc, ValidationIssue issue, int index,
                              int x, int y, int width, int mouseX, int mouseY) {
-        boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + ROW_HEIGHT;
+        boolean hovered = ScreenUtils.isMouseOver(mouseX, mouseY, x, y, width, ROW_HEIGHT);
         boolean selected = index == selectedIndex;
         boolean canFix = canAutoFix(issue);
 

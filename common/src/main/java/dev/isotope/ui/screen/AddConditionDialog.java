@@ -329,7 +329,7 @@ public class AddConditionDialog extends Screen {
 
             if (preset.param1Label != null) {
                 int inputX = paramX + font.width(preset.param1Label) + 5;
-                if (mouseX >= inputX && mouseX < inputX + 60 && mouseY >= paramY + 7 && mouseY < paramY + 23) {
+                if (ScreenUtils.isMouseOver(mouseX, mouseY, inputX, paramY + 7, 60, 16)) {
                     activeParamField = 1;
                     return true;
                 }
@@ -338,7 +338,7 @@ public class AddConditionDialog extends Screen {
 
             if (preset.param2Label != null) {
                 int inputX = paramX + font.width(preset.param2Label) + 5;
-                if (mouseX >= inputX && mouseX < inputX + 60 && mouseY >= paramY + 7 && mouseY < paramY + 23) {
+                if (ScreenUtils.isMouseOver(mouseX, mouseY, inputX, paramY + 7, 60, 16)) {
                     activeParamField = 2;
                     return true;
                 }

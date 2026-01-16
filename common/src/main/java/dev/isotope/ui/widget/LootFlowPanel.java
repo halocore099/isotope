@@ -4,6 +4,7 @@ import dev.isotope.data.LootSourceType;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.LootSourceRegistry;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.visualization.*;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -212,7 +213,7 @@ public class LootFlowPanel extends AbstractWidget {
         int selectorY = headerY + 5;
 
         // Prev button
-        boolean hoverPrev = mouseX >= selectorX && mouseX < selectorX + 12 && mouseY >= selectorY && mouseY < selectorY + 16;
+        boolean hoverPrev = ScreenUtils.isMouseOver(mouseX, mouseY, selectorX, selectorY, 12, 16);
         graphics.drawString(font, "<", selectorX + 2, selectorY + 4, hoverPrev ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_SECONDARY, false);
 
         // Namespace name
@@ -224,7 +225,7 @@ public class LootFlowPanel extends AbstractWidget {
         graphics.drawString(font, nsName, selectorX + 60 - nsWidth / 2, selectorY + 4, IsotopeColors.TEXT_PRIMARY, false);
 
         // Next button
-        boolean hoverNext = mouseX >= selectorX + 108 && mouseX < selectorX + 120 && mouseY >= selectorY && mouseY < selectorY + 16;
+        boolean hoverNext = ScreenUtils.isMouseOver(mouseX, mouseY, selectorX + 108, selectorY, 12, 16);
         graphics.drawString(font, ">", selectorX + 110, selectorY + 4, hoverNext ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_SECONDARY, false);
 
         // Zoom indicator (left of namespace)
@@ -462,13 +463,13 @@ public class LootFlowPanel extends AbstractWidget {
             int selectorY = getY() + 5;
 
             // Prev button
-            if (mouseX >= selectorX && mouseX < selectorX + 15 && mouseY >= selectorY && mouseY < selectorY + 16) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, selectorX, selectorY, 15, 16)) {
                 prevNamespace();
                 return true;
             }
 
             // Next button
-            if (mouseX >= selectorX + 105 && mouseX < selectorX + 120 && mouseY >= selectorY && mouseY < selectorY + 16) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, selectorX + 105, selectorY, 15, 16)) {
                 nextNamespace();
                 return true;
             }

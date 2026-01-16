@@ -2,6 +2,7 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -81,7 +82,7 @@ public class CompositeChildrenDialog extends DialogScreen {
         // Add child button
         int addBtnX = dialogX + DIALOG_WIDTH - 110;
         int addBtnY = dialogY + 36;
-        boolean addHovered = mouseX >= addBtnX && mouseX < addBtnX + 100 && mouseY >= addBtnY && mouseY < addBtnY + 18;
+        boolean addHovered = ScreenUtils.isMouseOver(mouseX, mouseY, addBtnX, addBtnY, 100, 18);
         graphics.fill(addBtnX, addBtnY, addBtnX + 100, addBtnY + 18, addHovered ? IsotopeColors.SUCCESS_BACKGROUND : IsotopeColors.SUCCESS_TINT);
         graphics.drawCenteredString(font, "+ Add Child", addBtnX + 50, addBtnY + 5, addHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.SUCCESS_LIGHT);
 
@@ -164,7 +165,7 @@ public class CompositeChildrenDialog extends DialogScreen {
         // Close button
         int closeBtnX = dialogX + (DIALOG_WIDTH - 80) / 2;
         int closeBtnY = dialogY + DIALOG_HEIGHT - BUTTON_HEIGHT;
-        boolean closeHovered = mouseX >= closeBtnX && mouseX < closeBtnX + 80 && mouseY >= closeBtnY && mouseY < closeBtnY + 20;
+        boolean closeHovered = ScreenUtils.isMouseOver(mouseX, mouseY, closeBtnX, closeBtnY, 80, 20);
         graphics.fill(closeBtnX, closeBtnY, closeBtnX + 80, closeBtnY + 20, closeHovered ? IsotopeColors.TEXT_DISABLED : IsotopeColors.ENTRY_BACKGROUND);
         graphics.drawCenteredString(font, "Close", closeBtnX + 40, closeBtnY + 6, closeHovered ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_MUTED);
     }
@@ -179,7 +180,7 @@ public class CompositeChildrenDialog extends DialogScreen {
         // Add child button
         int addBtnX = dialogX + DIALOG_WIDTH - 110;
         int addBtnY = dialogY + 36;
-        if (mouseX >= addBtnX && mouseX < addBtnX + 100 && mouseY >= addBtnY && mouseY < addBtnY + 18) {
+        if (ScreenUtils.isMouseOver(mouseX, mouseY, addBtnX, addBtnY, 100, 18)) {
             openAddChildDialog();
             return true;
         }
@@ -187,7 +188,7 @@ public class CompositeChildrenDialog extends DialogScreen {
         // Close button
         int closeBtnX = dialogX + (DIALOG_WIDTH - 80) / 2;
         int closeBtnY = dialogY + DIALOG_HEIGHT - BUTTON_HEIGHT;
-        if (mouseX >= closeBtnX && mouseX < closeBtnX + 80 && mouseY >= closeBtnY && mouseY < closeBtnY + 20) {
+        if (ScreenUtils.isMouseOver(mouseX, mouseY, closeBtnX, closeBtnY, 80, 20)) {
             onClose();
             return true;
         }

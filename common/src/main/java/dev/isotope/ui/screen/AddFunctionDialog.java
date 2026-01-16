@@ -366,7 +366,7 @@ public class AddFunctionDialog extends Screen {
 
             if (preset.param1Label != null) {
                 int inputX = paramX + font.width(preset.param1Label) + 5;
-                if (mouseX >= inputX && mouseX < inputX + 40 && mouseY >= paramY + 5 && mouseY < paramY + 19) {
+                if (ScreenUtils.isMouseOver(mouseX, mouseY, inputX, paramY + 5, 40, 14)) {
                     // Edit param1 - for simplicity, cycle through common values
                     param1 = cycleNumber(param1, preset.param1Default);
                     return true;
@@ -376,7 +376,7 @@ public class AddFunctionDialog extends Screen {
 
             if (preset.param2Label != null) {
                 int inputX = paramX + font.width(preset.param2Label) + 5;
-                if (mouseX >= inputX && mouseX < inputX + 40 && mouseY >= paramY + 5 && mouseY < paramY + 19) {
+                if (ScreenUtils.isMouseOver(mouseX, mouseY, inputX, paramY + 5, 40, 14)) {
                     param2 = cycleNumber(param2, preset.param2Default);
                     return true;
                 }
@@ -385,7 +385,7 @@ public class AddFunctionDialog extends Screen {
 
             if (preset.param3Label != null) {
                 int inputX = paramX + font.width(preset.param3Label) + 5;
-                if (mouseX >= inputX && mouseX < inputX + 40 && mouseY >= paramY + 5 && mouseY < paramY + 19) {
+                if (ScreenUtils.isMouseOver(mouseX, mouseY, inputX, paramY + 5, 40, 14)) {
                     // Toggle boolean or cycle text
                     if (param3.equals("true") || param3.equals("false")) {
                         param3 = param3.equals("true") ? "false" : "true";

@@ -294,7 +294,7 @@ public class TemplateEditorScreen extends Screen {
 
             // Clear button
             int clearX = itemBtnX + itemBtnWidth - 18;
-            boolean clearHovered = mouseX >= clearX && mouseX < clearX + 16 && mouseY >= y && mouseY < y + 16;
+            boolean clearHovered = ScreenUtils.isMouseOver(mouseX, mouseY, clearX, y, 16, 16);
             graphics.fill(clearX, y, clearX + 16, y + 16, clearHovered ? IsotopeColors.DESTRUCTIVE_BACKGROUND : IsotopeColors.DESTRUCTIVE_BACKGROUND);
             graphics.drawCenteredString(font, "X", clearX + 8, y + 4, clearHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.DESTRUCTIVE_TEXT);
         } else {
@@ -317,7 +317,7 @@ public class TemplateEditorScreen extends Screen {
 
         // Toggle button for Range/Constant
         int toggleBtnX = panelX + PANEL_WIDTH - 80;
-        boolean toggleHovered = mouseX >= toggleBtnX && mouseX < toggleBtnX + 66 && mouseY >= y - 2 && mouseY < y + 14;
+        boolean toggleHovered = ScreenUtils.isMouseOver(mouseX, mouseY, toggleBtnX, y - 2, 66, 16);
         int toggleBg = useRange ? IsotopeColors.SUCCESS_TINT : IsotopeColors.TOGGLE_OFF_BG;
         graphics.fill(toggleBtnX, y - 2, toggleBtnX + 66, y + 14, toggleHovered ? IsotopeColors.BORDER_DEFAULT : toggleBg);
         graphics.renderOutline(toggleBtnX, y - 2, 66, 16, toggleHovered ? IsotopeColors.BORDER_HIGHLIGHT : IsotopeColors.INPUT_BORDER);
@@ -433,11 +433,11 @@ public class TemplateEditorScreen extends Screen {
         int itemBtnWidth = PANEL_WIDTH - 96;
         int itemY = y;
 
-        if (mouseX >= itemBtnX && mouseX < itemBtnX + itemBtnWidth && mouseY >= itemY - 2 && mouseY < itemY + 18) {
+        if (ScreenUtils.isMouseOver(mouseX, mouseY, itemBtnX, itemY - 2, itemBtnWidth, 20)) {
             // Check clear button first
             if (selectedItem != null) {
                 int clearX = itemBtnX + itemBtnWidth - 18;
-                if (mouseX >= clearX && mouseX < clearX + 16 && mouseY >= itemY && mouseY < itemY + 16) {
+                if (ScreenUtils.isMouseOver(mouseX, mouseY, clearX, itemY, 16, 16)) {
                     selectedItem = null;
                     return true;
                 }
@@ -455,7 +455,7 @@ public class TemplateEditorScreen extends Screen {
 
         // Count toggle click
         int toggleBtnX = panelX + PANEL_WIDTH - 80;
-        if (mouseX >= toggleBtnX && mouseX < toggleBtnX + 66 && mouseY >= y - 2 && mouseY < y + 14) {
+        if (ScreenUtils.isMouseOver(mouseX, mouseY, toggleBtnX, y - 2, 66, 16)) {
             useRange = !useRange;
             if (!useRange) {
                 // Copy min to max for constant
@@ -469,7 +469,7 @@ public class TemplateEditorScreen extends Screen {
 
         // Add function button
         int addFuncBtnX = panelX + PANEL_WIDTH - 100;
-        if (mouseX >= addFuncBtnX && mouseX < addFuncBtnX + 86 && mouseY >= y - 4 && mouseY < y + 12) {
+        if (ScreenUtils.isMouseOver(mouseX, mouseY, addFuncBtnX, y - 4, 86, 16)) {
             minecraft.setScreen(new FunctionPickerScreen(this, func -> {
                 functions.add(func);
             }));

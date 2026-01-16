@@ -335,7 +335,7 @@ public class BulkOperationScreen extends Screen {
 
     private void renderTypeButton(GuiGraphics graphics, Type type, int x, int y, int width, int mouseX, int mouseY) {
         boolean selected = type == selectedType;
-        boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= y - 2 && mouseY < y + 12;
+        boolean hovered = ScreenUtils.isMouseOver(mouseX, mouseY, x, y - 2, width, 14);
 
         if (selected) {
             graphics.fill(x, y - 2, x + width, y + 12, IsotopeColors.ACCENT_GOLD);
@@ -358,7 +358,7 @@ public class BulkOperationScreen extends Screen {
         int btnX = dialogX + 80;
         int btnWidth = 85;
         for (Type type : new Type[]{Type.REMOVE_ITEM, Type.REPLACE_ITEM}) {
-            if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y - 2 && mouseY < y + 12) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, y - 2, btnWidth, 14)) {
                 if (selectedType != type) {
                     selectedType = type;
                     updateInputVisibility();
@@ -374,7 +374,7 @@ public class BulkOperationScreen extends Screen {
         y = dialogY + 52;
         btnX = dialogX + 80;
         for (Type type : new Type[]{Type.SCALE_WEIGHTS, Type.SCALE_COUNTS}) {
-            if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y - 2 && mouseY < y + 12) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, y - 2, btnWidth, 14)) {
                 if (selectedType != type) {
                     selectedType = type;
                     updateInputVisibility();
@@ -390,7 +390,7 @@ public class BulkOperationScreen extends Screen {
         y = dialogY + 69;
         btnX = dialogX + 80;
         for (Type type : new Type[]{Type.REMOVE_EMPTY_POOLS, Type.NORMALIZE_WEIGHTS}) {
-            if (mouseX >= btnX && mouseX < btnX + btnWidth && mouseY >= y - 2 && mouseY < y + 12) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, y - 2, btnWidth, 14)) {
                 if (selectedType != type) {
                     selectedType = type;
                     updateInputVisibility();

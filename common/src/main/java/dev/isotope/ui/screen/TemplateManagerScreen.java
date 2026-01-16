@@ -5,6 +5,7 @@ import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -270,7 +271,7 @@ public class TemplateManagerScreen extends Screen {
             int cancelX = dialogX + dialogWidth / 2 + 5;
             int btnY = dialogY + dialogHeight - 30;
 
-            if (mouseX >= confirmX && mouseX < confirmX + 70 && mouseY >= btnY && mouseY < btnY + 20) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, confirmX, btnY, 70, 20)) {
                 // Confirm delete
                 if (deleteTargetIdx >= 0 && deleteTargetIdx < templates.size()) {
                     EntryTemplate target = templates.get(deleteTargetIdx);
@@ -283,7 +284,7 @@ public class TemplateManagerScreen extends Screen {
                 return true;
             }
 
-            if (mouseX >= cancelX && mouseX < cancelX + 70 && mouseY >= btnY && mouseY < btnY + 20) {
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, cancelX, btnY, 70, 20)) {
                 confirmingDelete = false;
                 deleteTargetIdx = -1;
                 return true;
@@ -308,13 +309,13 @@ public class TemplateManagerScreen extends Screen {
                         int deleteX = editX + 22;
 
                         // Edit button
-                        if (mouseX >= editX && mouseX < editX + 18 && mouseY >= btnY && mouseY < btnY + 14) {
+                        if (ScreenUtils.isMouseOver(mouseX, mouseY, editX, btnY, 18, 14)) {
                             openEditTemplate(i);
                             return true;
                         }
 
                         // Delete button
-                        if (mouseX >= deleteX && mouseX < deleteX + 18 && mouseY >= btnY && mouseY < btnY + 14) {
+                        if (ScreenUtils.isMouseOver(mouseX, mouseY, deleteX, btnY, 18, 14)) {
                             confirmingDelete = true;
                             deleteTargetIdx = i;
                             return true;
