@@ -2,6 +2,8 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.data.loot.LootCondition;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -73,7 +75,7 @@ public class AddConditionDialog extends Screen {
             "⚀", IsotopeColors.ACCENT_AQUA,
             "Chance %:", "25",
             null, null,
-            (p1, p2) -> LootCondition.randomChance(parsePercentSafe(p1, 25) / 100f)
+            (p1, p2) -> LootCondition.randomChance(ScreenUtils.parsePercentSafe(p1, 25) / 100f)
         ));
 
         // Random Chance with Looting
@@ -84,8 +86,8 @@ public class AddConditionDialog extends Screen {
             "Base %:", "10",
             "Per Level %:", "2",
             (p1, p2) -> LootCondition.randomChanceWithLooting(
-                parsePercentSafe(p1, 10) / 100f,
-                parsePercentSafe(p2, 2) / 100f
+                ScreenUtils.parsePercentSafe(p1, 10) / 100f,
+                ScreenUtils.parsePercentSafe(p2, 2) / 100f
             )
         ));
 
@@ -137,8 +139,8 @@ public class AddConditionDialog extends Screen {
             "Min (0-24000):", "13000",
             "Max (0-24000):", "23000",
             (p1, p2) -> LootCondition.timeCheck(
-                parseIntSafe(p1, 13000),
-                parseIntSafe(p2, 23000)
+                ScreenUtils.parseIntSafe(p1, 13000),
+                ScreenUtils.parseIntSafe(p2, 23000)
             )
         ));
 
@@ -151,23 +153,6 @@ public class AddConditionDialog extends Screen {
             null, null,
             (p1, p2) -> LootCondition.inverted(LootCondition.killedByPlayer())
         ));
-    }
-
-    private static int parseIntSafe(String s, int defaultVal) {
-        try {
-            return Integer.parseInt(s.trim());
-        } catch (NumberFormatException e) {
-            return defaultVal;
-        }
-    }
-
-    private static float parsePercentSafe(String s, float defaultVal) {
-        try {
-            float val = Float.parseFloat(s.trim());
-            return Math.max(0, Math.min(100, val));
-        } catch (NumberFormatException e) {
-            return defaultVal;
-        }
     }
 
     @Override
@@ -369,7 +354,7 @@ public class AddConditionDialog extends Screen {
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // Tab to switch between fields
-        if (keyCode == 258 && selectedPreset >= 0) { // Tab key
+        if (keyCode == UIConstants.KEY_TAB && selectedPreset >= 0) {
             ConditionPreset preset = presets.get(selectedPreset);
             if (preset.param1Label != null && preset.param2Label != null) {
                 activeParamField = activeParamField == 1 ? 2 : 1;
@@ -378,7 +363,7 @@ public class AddConditionDialog extends Screen {
         }
 
         // Enter to add condition
-        if (keyCode == 257 || keyCode == 335) { // Enter or numpad enter
+        if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
             if (selectedPreset >= 0) {
                 addSelectedCondition();
                 return true;
@@ -386,13 +371,13 @@ public class AddConditionDialog extends Screen {
         }
 
         // Escape to close
-        if (keyCode == 256) {
+        if (keyCode == UIConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }
 
         // Backspace to delete character
-        if (keyCode == 259) {
+        if (keyCode == UIConstants.KEY_BACKSPACE) {
             if (activeParamField == 1 && !param1.isEmpty()) {
                 param1 = param1.substring(0, param1.length() - 1);
                 return true;
@@ -403,12 +388,12 @@ public class AddConditionDialog extends Screen {
         }
 
         // Arrow keys to navigate presets
-        if (keyCode == 264 && selectedPreset < presets.size() - 1) { // Down
+        if (keyCode == UIConstants.KEY_DOWN && selectedPreset < presets.size() - 1) {
             selectedPreset++;
             resetParams();
             return true;
         }
-        if (keyCode == 265 && selectedPreset > 0) { // Up
+        if (keyCode == UIConstants.KEY_UP && selectedPreset > 0) {
             selectedPreset--;
             resetParams();
             return true;

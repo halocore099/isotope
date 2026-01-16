@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -163,7 +164,7 @@ public abstract class DialogScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // Escape
+        if (keyCode == UIConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }

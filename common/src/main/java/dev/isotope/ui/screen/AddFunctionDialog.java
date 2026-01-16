@@ -2,6 +2,7 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -75,8 +76,8 @@ public class AddFunctionDialog extends Screen {
             "Max Level:", "15",
             "Include treasure:", "false",
             (p1, p2, p3) -> LootFunction.enchantWithLevels(
-                parseIntSafe(p1, 5),
-                parseIntSafe(p2, 15),
+                ScreenUtils.parseIntSafe(p1, 5),
+                ScreenUtils.parseIntSafe(p2, 15),
                 Boolean.parseBoolean(p3)
             )
         ));
@@ -101,8 +102,8 @@ public class AddFunctionDialog extends Screen {
             "Max:", "3",
             null, null,
             (p1, p2, p3) -> {
-                int min = parseIntSafe(p1, 1);
-                int max = parseIntSafe(p2, 1);
+                int min = ScreenUtils.parseIntSafe(p1, 1);
+                int max = ScreenUtils.parseIntSafe(p2, 1);
                 return min == max ? LootFunction.setCount(min) : LootFunction.setCount(min, max);
             }
         ));
@@ -116,8 +117,8 @@ public class AddFunctionDialog extends Screen {
             "Max %:", "50",
             null, null,
             (p1, p2, p3) -> LootFunction.setDamage(
-                parseIntSafe(p1, 10) / 100f,
-                parseIntSafe(p2, 50) / 100f
+                ScreenUtils.parseIntSafe(p1, 10) / 100f,
+                ScreenUtils.parseIntSafe(p2, 50) / 100f
             )
         ));
 
@@ -129,7 +130,7 @@ public class AddFunctionDialog extends Screen {
             "Min/level:", "0",
             "Max/level:", "1",
             null, null,
-            (p1, p2, p3) -> createLootingEnchant(parseIntSafe(p1, 0), parseIntSafe(p2, 1))
+            (p1, p2, p3) -> createLootingEnchant(ScreenUtils.parseIntSafe(p1, 0), ScreenUtils.parseIntSafe(p2, 1))
         ));
 
         // Furnace smelt
@@ -164,14 +165,6 @@ public class AddFunctionDialog extends Screen {
             null, null,
             (p1, p2, p3) -> createSetPotion(p1)
         ));
-    }
-
-    private static int parseIntSafe(String s, int defaultVal) {
-        try {
-            return Integer.parseInt(s.trim());
-        } catch (NumberFormatException e) {
-            return defaultVal;
-        }
     }
 
     private static LootFunction createLootingEnchant(int min, int max) {

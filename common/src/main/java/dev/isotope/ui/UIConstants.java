@@ -122,4 +122,26 @@ public final class UIConstants {
 
     /** Status bar height (20 pixels). */
     public static final int STATUS_BAR_HEIGHT = 20;
+
+    // === Keyboard Key Codes ===
+    /** Escape key code (GLFW_KEY_ESCAPE). */
+    public static final int KEY_ESCAPE = 256;
+
+    /** Enter key code (GLFW_KEY_ENTER). */
+    public static final int KEY_ENTER = 257;
+
+    /** Tab key code (GLFW_KEY_TAB). */
+    public static final int KEY_TAB = 258;
+
+    /** Backspace key code (GLFW_KEY_BACKSPACE). */
+    public static final int KEY_BACKSPACE = 259;
+
+    /** Up arrow key code (GLFW_KEY_UP). */
+    public static final int KEY_UP = 265;
+
+    /** Down arrow key code (GLFW_KEY_DOWN). */
+    public static final int KEY_DOWN = 264;
+
+    /** Numpad Enter key code (GLFW_KEY_KP_ENTER). */
+    public static final int KEY_NUMPAD_ENTER = 335;
 }
