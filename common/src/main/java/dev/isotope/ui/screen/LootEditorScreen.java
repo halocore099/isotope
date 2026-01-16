@@ -180,23 +180,28 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         int contentWidth = width - ActivityBar.WIDTH;
         int contentHeight = height - HEADER_HEIGHT - STATUS_BAR_HEIGHT;
 
-        // Tab bar
-        int tabBarX = contentX + LEFT_PANEL_WIDTH + PADDING;
-        int tabBarWidth = contentWidth - LEFT_PANEL_WIDTH - PADDING * 2;
-        tabBar = new EditorTabBar(tabBarX, contentY, tabBarWidth, tabManager);
-        addRenderableWidget(tabBar);
+        // Flow panel uses full content area - skip tab bar and edit panel when active
+        boolean isFlowPanelActive = PANEL_FLOW.equals(activePanel);
 
-        // Edit panel (always visible on right, fills available space)
-        int editX = contentX + LEFT_PANEL_WIDTH + PADDING;
-        int editY = contentY + TAB_BAR_HEIGHT + PADDING;
-        int editWidth = contentWidth - LEFT_PANEL_WIDTH - PADDING * 2;
-        int editHeight = contentHeight - TAB_BAR_HEIGHT - PADDING * 2;
+        if (!isFlowPanelActive) {
+            // Tab bar
+            int tabBarX = contentX + LEFT_PANEL_WIDTH + PADDING;
+            int tabBarWidth = contentWidth - LEFT_PANEL_WIDTH - PADDING * 2;
+            tabBar = new EditorTabBar(tabBarX, contentY, tabBarWidth, tabManager);
+            addRenderableWidget(tabBar);
 
-        editPanel = new LootTableEditPanel(editX, editY, editWidth, editHeight);
-        editPanel.setContextMenuListener(this::onContextMenuRequested);
-        editPanel.setOnAddTableFunction(this::openAddTableFunctionDialog);
-        editPanel.setOnEditRandomSequence(this::openEditRandomSequenceDialog);
-        addRenderableWidget(editPanel);
+            // Edit panel (always visible on right, fills available space)
+            int editX = contentX + LEFT_PANEL_WIDTH + PADDING;
+            int editY = contentY + TAB_BAR_HEIGHT + PADDING;
+            int editWidth = contentWidth - LEFT_PANEL_WIDTH - PADDING * 2;
+            int editHeight = contentHeight - TAB_BAR_HEIGHT - PADDING * 2;
+
+            editPanel = new LootTableEditPanel(editX, editY, editWidth, editHeight);
+            editPanel.setContextMenuListener(this::onContextMenuRequested);
+            editPanel.setOnAddTableFunction(this::openAddTableFunctionDialog);
+            editPanel.setOnEditRandomSequence(this::openEditRandomSequenceDialog);
+            addRenderableWidget(editPanel);
+        }
 
         // === Left Panel (varies by activity bar selection) ===
         int leftPanelX = contentX;
@@ -311,10 +316,12 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
                 break;
 
             case PANEL_FLOW:
-                flowPanel = new LootFlowPanel(leftPanelX, leftPanelY, LEFT_PANEL_WIDTH, leftPanelHeight);
+                // Flow panel gets full content area for better visualization
+                flowPanel = new LootFlowPanel(contentX, contentY, contentWidth, contentHeight);
                 flowPanel.setOnTableSelected(this::onTableSelected);
                 addRenderableWidget(flowPanel);
                 flowPanel.initialize();
+                flowPanel.fitToView();
                 break;
         }
 

@@ -35,11 +35,11 @@ public abstract class RandomizableContainerMixin {
      * and may have different names in different mapping sets.
      */
     @Inject(
-        method = "setLootTable(Lnet/minecraft/resources/ResourceKey;J)V",
+        method = "setLootTable(Lnet/minecraft/resources/ResourceKey;)V",
         at = @At("HEAD"),
         remap = false
     )
-    private void isotope$onSetLootTable(ResourceKey<LootTable> lootTableKey, long seed, CallbackInfo ci) {
+    private void isotope$onSetLootTable(ResourceKey<LootTable> lootTableKey, CallbackInfo ci) {
         if (!LootObserver.getInstance().isRecording()) {
             return;
         }
