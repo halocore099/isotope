@@ -245,11 +245,11 @@ public class BulkOperationScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF000000);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title bar
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 24, 0xFF252525);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 24, IsotopeColors.POOL_HEADER_BACKGROUND);
         graphics.drawString(font, "Bulk Operations", dialogX + 10, dialogY + 8, IsotopeColors.ACCENT_GOLD, false);
 
         // Operation type selector - Row 1
@@ -301,7 +301,7 @@ public class BulkOperationScreen extends Screen {
         // Preview results
         if (previewResult != null) {
             int previewY = dialogY + 150;
-            graphics.fill(dialogX + 5, previewY, dialogX + DIALOG_WIDTH - 5, dialogY + DIALOG_HEIGHT - 40, 0xFF252525);
+            graphics.fill(dialogX + 5, previewY, dialogX + DIALOG_WIDTH - 5, dialogY + DIALOG_HEIGHT - 40, IsotopeColors.POOL_HEADER_BACKGROUND);
 
             String summary = String.format("%d changes across %d tables",
                 previewResult.totalChanges(), previewResult.tablesAffected());
@@ -344,12 +344,12 @@ public class BulkOperationScreen extends Screen {
         if (selected) {
             graphics.fill(x, y - 2, x + width, y + 12, IsotopeColors.ACCENT_GOLD);
         } else if (hovered) {
-            graphics.fill(x, y - 2, x + width, y + 12, 0xFF404040);
+            graphics.fill(x, y - 2, x + width, y + 12, IsotopeColors.BORDER_DEFAULT);
         } else {
-            graphics.fill(x, y - 2, x + width, y + 12, 0xFF2a2a2a);
+            graphics.fill(x, y - 2, x + width, y + 12, IsotopeColors.ENTRY_BACKGROUND);
         }
 
-        graphics.drawString(font, type.name, x + 4, y, selected ? 0xFF000000 : IsotopeColors.TEXT_PRIMARY, false);
+        graphics.drawString(font, type.name, x + 4, y, selected ? IsotopeColors.BORDER_OUTER_DARK : IsotopeColors.TEXT_PRIMARY, false);
     }
 
     @Override

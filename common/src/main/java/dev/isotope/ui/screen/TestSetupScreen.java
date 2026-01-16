@@ -238,17 +238,17 @@ public class TestSetupScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DARK);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF000000);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title bar
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 28, 0xFF252525);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 28, IsotopeColors.POOL_HEADER_BACKGROUND);
         graphics.drawString(font, "Test Your Changes", dialogX + 12, dialogY + 10, IsotopeColors.ACCENT_GOLD, false);
 
         // Edited tables section
@@ -263,7 +263,7 @@ public class TestSetupScreen extends Screen {
         } else {
             // List area
             int listHeight = 120;
-            graphics.fill(dialogX + 10, listY + 14, dialogX + DIALOG_WIDTH - 10, listY + 14 + listHeight, 0xFF252525);
+            graphics.fill(dialogX + 10, listY + 14, dialogX + DIALOG_WIDTH - 10, listY + 14 + listHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
 
             // Scissor for scrolling
             graphics.enableScissor(dialogX + 10, listY + 14, dialogX + DIALOG_WIDTH - 10, listY + 14 + listHeight);
@@ -278,7 +278,7 @@ public class TestSetupScreen extends Screen {
 
                         // Mob badge
                         int badgeX = dialogX + DIALOG_WIDTH - 100;
-                        graphics.fill(badgeX, entryY - 1, badgeX + 80, entryY + 10, 0xFF3a2a4a);
+                        graphics.fill(badgeX, entryY - 1, badgeX + 80, entryY + 10, IsotopeColors.MOB_BADGE_BG);
                         graphics.drawString(font, "Mob Loot", badgeX + 4, entryY, IsotopeColors.SOURCE_MOB, false);
                     } else {
                         // Structure loot entry
@@ -292,8 +292,8 @@ public class TestSetupScreen extends Screen {
                         if (!info.structures.isEmpty()) {
                             String structText = info.structures.size() + " structure" + (info.structures.size() != 1 ? "s" : "");
                             int badgeX = dialogX + DIALOG_WIDTH - 100;
-                            graphics.fill(badgeX, entryY - 1, badgeX + 80, entryY + 10, 0xFF3a5a3a);
-                            graphics.drawString(font, structText, badgeX + 4, entryY, 0xFF88cc88, false);
+                            graphics.fill(badgeX, entryY - 1, badgeX + 80, entryY + 10, IsotopeColors.SUCCESS_BACKGROUND);
+                            graphics.drawString(font, structText, badgeX + 4, entryY, IsotopeColors.SUCCESS_MUTED, false);
                         }
                     }
                 }

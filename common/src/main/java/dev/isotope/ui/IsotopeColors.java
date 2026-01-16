@@ -177,6 +177,80 @@ public final class IsotopeColors {
     public static final int TOOLTIP_ENTITY_BG = 0xFF2A1A3E;
     public static final int TOOLTIP_ENTITY_INNER = 0xFF352540;
 
+    // === Additional UI colors ===
+    public static final int BACKGROUND_DARKER = 0xFF222222;
+    public static final int BACKGROUND_DARKEST = 0xFF2D2D2D;
+    public static final int ERROR_BRIGHT = 0xFFF14C4C;
+    public static final int ACCENT_BLUE = 0xFF55AAFF;
+    public static final int SYNTAX_CYAN = 0xFF4EC9B0;
+    public static final int SYNTAX_BLUE = 0xFF5A8AB8;
+    public static final int SYNTAX_BLUE_DARK = 0xFF3D5C7A;
+    public static final int SUCCESS_LIGHT = 0xFF88FF88;
+    public static final int SUCCESS_MUTED = 0xFF88CC88;
+    public static final int SUCCESS_TINT = 0xFF2A4A2A;
+
+    // === Dialog overlay ===
+    public static final int OVERLAY_DIM = 0x90000000;
+    public static final int OVERLAY_DARK = 0x80000000;
+    public static final int OVERLAY_DARKER = 0xC0000000;
+
+    // === Toggle button colors ===
+    public static final int TOGGLE_OFF_BG = 0xFF3A3A2A;
+    public static final int TOGGLE_ON_TEXT = 0xFF66AA66;
+    public static final int TOGGLE_OFF_TEXT = 0xFFAAAA66;
+
+    // === Function/template editor colors ===
+    public static final int FUNC_ADD_HOVER = 0xFF3A6A4A;
+    public static final int FUNC_ADD_BORDER = 0xFF5A9A6A;
+    public static final int FUNC_ADD_BORDER_DEFAULT = 0xFF4A7A5A;
+    public static final int FUNC_ICON_BG = 0xFF3A5A4A;
+
+    // === Compare/diff highlight colors ===
+    public static final int DIFF_HIGHLIGHT = 0xFF3A2A1A;
+
+    // === Test mode colors ===
+    public static final int TEST_INDICATOR = 0xFF44AA44;
+    public static final int MOB_LOOT_BG = 0xFF2A1A3A;
+    public static final int MOB_LOOT_BORDER = 0xFF4A3A5A;
+    public static final int STRUCTURE_INFO = 0xFF88AA88;
+
+    // === Loading screen colors ===
+    public static final int LOADING_BG = 0xFF0A0A0A;
+
+    // === Template picker colors ===
+    public static final int CATEGORY_CUSTOM = 0xFFC9A656;
+    public static final int CATEGORY_BUILTIN = 0xFF8899AA;
+    public static final int CUSTOM_TEMPLATE_BG = 0xFF2E2A24;
+    public static final int CUSTOM_TEMPLATE_BORDER = 0xFF3D3A30;
+    public static final int CUSTOM_BADGE_BG = 0xFF4A3D20;
+    public static final int CUSTOM_BADGE_BORDER = 0xFF6A5A30;
+    public static final int WEIGHT_BADGE_OUTLINE = 0xFF484848;
+
+    // === Mob badge colors ===
+    public static final int MOB_BADGE_BG = 0xFF3A2A4A;
+
+    // === Template manager colors ===
+    public static final int SELECTED_BORDER = 0xFF5A7A9A;
+    public static final int EDIT_BUTTON_HOVER = 0xFF4A5A6A;
+    public static final int DELETE_BUTTON = 0xFF5A3A3A;
+    public static final int DELETE_BUTTON_HOVER = 0xFF6A4A4A;
+    public static final int CONFIRM_DELETE_HOVER = 0xFF8A4A4A;
+    public static final int CONFIRM_DELETE = 0xFF6A3A3A;
+
+    // === Validation panel colors ===
+    public static final int ORPHAN_HOVER = 0xFF4A4030;
+    public static final int FIX_BUTTON_BG = 0xFF2D5A3D;
+
+    // === Loot flow panel colors ===
+    public static final int EDITED_TABLE_BG = 0xFF2A3A2A;
+
+    // === Toast colors ===
+    public static final int TOAST_INFO = 0xFF3794FF;
+    public static final int TOAST_BACKGROUND = 0xFF1E1E1E;
+    public static final int TOAST_BORDER = 0xFF454545;
+    public static final int TOAST_TITLE = 0xFFE0E0E0;
+    public static final int TOAST_MESSAGE = 0xFF969696;
+
     private IsotopeColors() {}
 
     /**

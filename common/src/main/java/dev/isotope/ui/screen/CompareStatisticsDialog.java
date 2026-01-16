@@ -202,11 +202,11 @@ public class CompareStatisticsDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF000000);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Header
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 50, 0xFF252525);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 50, IsotopeColors.POOL_HEADER_BACKGROUND);
 
         // Title
         graphics.drawString(font, "Compare: Original vs Edited", dialogX + 12, dialogY + 8, IsotopeColors.ACCENT_GOLD, false);
@@ -234,7 +234,7 @@ public class CompareStatisticsDialog extends Screen {
 
         // Column headers
         int headerY = dialogY + 55;
-        graphics.fill(dialogX, headerY, dialogX + DIALOG_WIDTH, headerY + 18, 0xFF2a2a2a);
+        graphics.fill(dialogX, headerY, dialogX + DIALOG_WIDTH, headerY + 18, IsotopeColors.ENTRY_BACKGROUND);
 
         graphics.drawString(font, "Item", dialogX + 30, headerY + 5, IsotopeColors.TEXT_MUTED, false);
         graphics.drawString(font, "Original", dialogX + 180, headerY + 5, IsotopeColors.TEXT_MUTED, false);
@@ -342,8 +342,8 @@ public class CompareStatisticsDialog extends Screen {
             int thumbHeight = Math.max(20, (int) ((float) contentHeight / (contentHeight + maxScroll) * scrollbarHeight));
             int thumbY = contentY + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, contentY, scrollbarX + 4, contentY + scrollbarHeight, 0xFF333333);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF666666);
+            graphics.fill(scrollbarX, contentY, scrollbarX + 4, contentY + scrollbarHeight, IsotopeColors.BORDER_DEFAULT);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.STAR_MUTED);
         }
 
         // Legend

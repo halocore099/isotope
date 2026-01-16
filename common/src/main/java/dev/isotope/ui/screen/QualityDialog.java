@@ -69,8 +69,8 @@ public class QualityDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, 0xFF404040);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawCenteredString(font, "Set Quality", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
@@ -98,18 +98,18 @@ public class QualityDialog extends Screen {
 
             if (hovered) {
                 hoveredPreset = i;
-                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, 0xFF3a4a3a);
+                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, IsotopeColors.ENTRY_BACKGROUND_EDITED_HOVER);
             } else if (isCurrent) {
-                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, 0xFF2a3a4a);
+                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, IsotopeColors.SINGLE_SELECT_BACKGROUND);
             } else {
-                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, 0xFF2a2a2a);
+                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, IsotopeColors.ENTRY_BACKGROUND);
             }
 
             int textColor;
             if (hovered) {
-                textColor = 0xFF55FF55;
+                textColor = IsotopeColors.ACCENT_GREEN;
             } else if (isCurrent) {
-                textColor = 0xFF55AAFF;
+                textColor = IsotopeColors.ACCENT_BLUE;
             } else {
                 textColor = IsotopeColors.TEXT_PRIMARY;
             }
@@ -117,7 +117,7 @@ public class QualityDialog extends Screen {
 
             // Current indicator
             if (isCurrent) {
-                graphics.drawString(font, "◄", btnX + btnWidth - 12, btnY + 4, 0xFF55AAFF);
+                graphics.drawString(font, "◄", btnX + btnWidth - 12, btnY + 4, IsotopeColors.ACCENT_BLUE);
             }
 
             btnY += 18;
@@ -128,9 +128,9 @@ public class QualityDialog extends Screen {
         int cancelX = dialogX + DIALOG_WIDTH / 2 - 30;
         boolean cancelHovered = mouseX >= cancelX && mouseX < cancelX + 60 &&
             mouseY >= cancelY && mouseY < cancelY + 18;
-        graphics.fill(cancelX, cancelY, cancelX + 60, cancelY + 18, cancelHovered ? 0xFF4a3a3a : 0xFF2a2a2a);
+        graphics.fill(cancelX, cancelY, cancelX + 60, cancelY + 18, cancelHovered ? IsotopeColors.BATCH_BUTTON_HOVER : IsotopeColors.ENTRY_BACKGROUND);
         graphics.drawCenteredString(font, "Cancel", cancelX + 30, cancelY + 5,
-            cancelHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED);
+            cancelHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED);
     }
 
     @Override

@@ -146,8 +146,8 @@ public class ValidationPanel extends AbstractWidget {
                 String errorText = String.valueOf(validationResult.errorCount());
                 int errorWidth = mc.font.width(errorText) + 8;
                 badgeX -= errorWidth;
-                graphics.fill(badgeX, getY() + 5, badgeX + errorWidth, getY() + 17, 0xFFf14c4c);
-                graphics.drawString(mc.font, errorText, badgeX + 4, getY() + 7, 0xFFFFFFFF, false);
+                graphics.fill(badgeX, getY() + 5, badgeX + errorWidth, getY() + 17, IsotopeColors.ERROR_BRIGHT);
+                graphics.drawString(mc.font, errorText, badgeX + 4, getY() + 7, IsotopeColors.TEXT_PRIMARY, false);
                 badgeX -= 4;
             }
 
@@ -155,8 +155,8 @@ public class ValidationPanel extends AbstractWidget {
                 String warnText = String.valueOf(validationResult.warningCount());
                 int warnWidth = mc.font.width(warnText) + 8;
                 badgeX -= warnWidth;
-                graphics.fill(badgeX, getY() + 5, badgeX + warnWidth, getY() + 17, 0xFFf0a020);
-                graphics.drawString(mc.font, warnText, badgeX + 4, getY() + 7, 0xFF000000, false);
+                graphics.fill(badgeX, getY() + 5, badgeX + warnWidth, getY() + 17, IsotopeColors.CONFIDENCE_LOW);
+                graphics.drawString(mc.font, warnText, badgeX + 4, getY() + 7, IsotopeColors.BORDER_OUTER_DARK, false);
             }
         }
 
@@ -172,7 +172,7 @@ public class ValidationPanel extends AbstractWidget {
 
         if (displayedIssues.isEmpty() && !isOrphan) {
             // No issues - show success
-            graphics.drawString(mc.font, "\u2714 No issues found", getX() + 8, contentY + 10, 0xFF4ade80, false);
+            graphics.drawString(mc.font, "\u2714 No issues found", getX() + 8, contentY + 10, IsotopeColors.ACCENT_GREEN, false);
             return;
         }
 
@@ -190,7 +190,7 @@ public class ValidationPanel extends AbstractWidget {
                 mouseY >= orphanY && mouseY < orphanY + ROW_HEIGHT;
 
             // Highlight on hover
-            int bgColor = orphanRowHovered ? 0xFF4a4030 : 0xFF3a3020;
+            int bgColor = orphanRowHovered ? IsotopeColors.ORPHAN_HOVER : IsotopeColors.ITEM_BOOKMARKS_HOVER;
             graphics.fill(orphanRowX, orphanY, getX() + width - 4, orphanY + ROW_HEIGHT, bgColor);
             graphics.fill(orphanRowX, orphanY + 2, getX() + 7, orphanY + ROW_HEIGHT - 2, IsotopeColors.STATUS_WARNING);
             graphics.drawString(mc.font, "\u26A0", getX() + 12, orphanY + 4, IsotopeColors.STATUS_WARNING, false);
@@ -230,7 +230,7 @@ public class ValidationPanel extends AbstractWidget {
             int maxScroll = Math.max(0, displayedIssues.size() * ROW_HEIGHT - contentHeight);
             int scrollbarY = contentY + (maxScroll > 0 ? (scrollOffset * (contentHeight - scrollbarHeight) / maxScroll) : 0);
 
-            graphics.fill(getX() + width - 6, contentY, getX() + width - 2, getY() + height, 0xFF1a1a1a);
+            graphics.fill(getX() + width - 6, contentY, getX() + width - 2, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
             graphics.fill(getX() + width - 5, scrollbarY, getX() + width - 3, scrollbarY + scrollbarHeight, IsotopeColors.TEXT_MUTED);
         }
 
@@ -258,9 +258,9 @@ public class ValidationPanel extends AbstractWidget {
                 int tooltipY = orphanTooltipY;
 
                 // Draw tooltip background
-                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
-                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF1a1a2e);
-                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF252540);
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.BORDER_OUTER_DARK);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.TOOLTIP_BACKGROUND);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, IsotopeColors.TOOLTIP_BACKGROUND_WARNING);
 
                 // Draw lines
                 int lineY = tooltipY + 4;
@@ -281,9 +281,9 @@ public class ValidationPanel extends AbstractWidget {
 
         // Background
         if (selected) {
-            graphics.fill(x, y, x + width, y + ROW_HEIGHT, 0xFF3a5a8a);
+            graphics.fill(x, y, x + width, y + ROW_HEIGHT, IsotopeColors.ITEM_ENTITY_SELECTED);
         } else if (hovered) {
-            graphics.fill(x, y, x + width, y + ROW_HEIGHT, 0xFF2a2a2a);
+            graphics.fill(x, y, x + width, y + ROW_HEIGHT, IsotopeColors.ENTRY_BACKGROUND);
         }
 
         // Severity indicator
@@ -300,7 +300,7 @@ public class ValidationPanel extends AbstractWidget {
 
         // Issue type
         graphics.drawString(mc.font, issue.type().name, x + 22, y + 4,
-            selected ? 0xFFFFFFFF : IsotopeColors.TEXT_PRIMARY, false);
+            selected ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_PRIMARY, false);
 
         // Fix button (if issue can be auto-fixed)
         if (canFix) {
@@ -312,11 +312,11 @@ public class ValidationPanel extends AbstractWidget {
 
             if (fixHovered) {
                 hoveredFixButton = index;
-                graphics.fill(btnX, btnY, btnX + FIX_BUTTON_WIDTH, btnY + btnH, 0xFF4ade80);
+                graphics.fill(btnX, btnY, btnX + FIX_BUTTON_WIDTH, btnY + btnH, IsotopeColors.ACCENT_GREEN);
             } else {
-                graphics.fill(btnX, btnY, btnX + FIX_BUTTON_WIDTH, btnY + btnH, 0xFF2d5a3d);
+                graphics.fill(btnX, btnY, btnX + FIX_BUTTON_WIDTH, btnY + btnH, IsotopeColors.FIX_BUTTON_BG);
             }
-            graphics.drawString(mc.font, "Fix", btnX + 8, y + 8, fixHovered ? 0xFF000000 : 0xFFFFFFFF, false);
+            graphics.drawString(mc.font, "Fix", btnX + 8, y + 8, fixHovered ? IsotopeColors.BORDER_OUTER_DARK : IsotopeColors.TEXT_PRIMARY, false);
         }
 
         // Message (truncated if needed)

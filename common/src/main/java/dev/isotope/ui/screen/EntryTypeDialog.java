@@ -71,8 +71,8 @@ public class EntryTypeDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, 0xFF404040);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawCenteredString(font, "Change Entry Type", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
@@ -103,24 +103,24 @@ public class EntryTypeDialog extends Screen {
             // Background
             int bgColor;
             if (isSelected) {
-                bgColor = 0xFF3a5a3a;
+                bgColor = IsotopeColors.SUCCESS_BACKGROUND;
             } else if (hovered) {
-                bgColor = 0xFF3a4a3a;
+                bgColor = IsotopeColors.ENTRY_BACKGROUND_EDITED_HOVER;
             } else if (isCurrent) {
-                bgColor = 0xFF2a3a4a;
+                bgColor = IsotopeColors.SINGLE_SELECT_BACKGROUND;
             } else {
-                bgColor = 0xFF2a2a2a;
+                bgColor = IsotopeColors.ENTRY_BACKGROUND;
             }
             graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, bgColor);
 
             // Text
             int textColor;
             if (isSelected) {
-                textColor = 0xFF55FF55;
+                textColor = IsotopeColors.ACCENT_GREEN;
             } else if (hovered) {
-                textColor = 0xFFAAFFAA;
+                textColor = IsotopeColors.CONFIDENCE_HIGH;
             } else if (isCurrent) {
-                textColor = 0xFF55AAFF;
+                textColor = IsotopeColors.ACCENT_BLUE;
             } else {
                 textColor = IsotopeColors.TEXT_PRIMARY;
             }
@@ -132,7 +132,7 @@ public class EntryTypeDialog extends Screen {
 
             // Current indicator
             if (isCurrent) {
-                graphics.drawString(font, "◄", btnX + btnWidth - descWidth - 14, btnY + 5, 0xFF55AAFF);
+                graphics.drawString(font, "◄", btnX + btnWidth - descWidth - 14, btnY + 5, IsotopeColors.ACCENT_BLUE);
             }
 
             btnY += 20;
@@ -148,8 +148,8 @@ public class EntryTypeDialog extends Screen {
             int inputX = dialogX + 10;
             int inputWidth = DIALOG_WIDTH - 20;
             int inputHeight = 16;
-            int inputBgColor = inputFocused ? 0xFF3a3a3a : 0xFF2a2a2a;
-            int inputBorderColor = inputFocused ? 0xFF55FF55 : 0xFF404040;
+            int inputBgColor = inputFocused ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND;
+            int inputBorderColor = inputFocused ? IsotopeColors.ACCENT_GREEN : IsotopeColors.BORDER_DEFAULT;
             graphics.fill(inputX, btnY, inputX + inputWidth, btnY + inputHeight, inputBgColor);
             graphics.renderOutline(inputX, btnY, inputWidth, inputHeight, inputBorderColor);
 
@@ -187,18 +187,18 @@ public class EntryTypeDialog extends Screen {
 
         boolean applyHovered = mouseX >= startX && mouseX < startX + buttonWidth &&
             mouseY >= buttonY && mouseY < buttonY + 18;
-        int applyBg = canApply ? (applyHovered ? 0xFF3a5a3a : 0xFF2a4a2a) : 0xFF2a2a2a;
+        int applyBg = canApply ? (applyHovered ? IsotopeColors.SUCCESS_BACKGROUND : IsotopeColors.SUCCESS_TINT) : IsotopeColors.ENTRY_BACKGROUND;
         graphics.fill(startX, buttonY, startX + buttonWidth, buttonY + 18, applyBg);
-        int applyColor = canApply ? (applyHovered ? 0xFF55FF55 : 0xFF88FF88) : IsotopeColors.TEXT_MUTED;
+        int applyColor = canApply ? (applyHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.SUCCESS_LIGHT) : IsotopeColors.TEXT_MUTED;
         graphics.drawCenteredString(font, "Apply", startX + buttonWidth / 2, buttonY + 5, applyColor);
 
         // Cancel button
         int cancelX = startX + buttonWidth + gap;
         boolean cancelHovered = mouseX >= cancelX && mouseX < cancelX + buttonWidth &&
             mouseY >= buttonY && mouseY < buttonY + 18;
-        graphics.fill(cancelX, buttonY, cancelX + buttonWidth, buttonY + 18, cancelHovered ? 0xFF4a3a3a : 0xFF2a2a2a);
+        graphics.fill(cancelX, buttonY, cancelX + buttonWidth, buttonY + 18, cancelHovered ? IsotopeColors.BATCH_BUTTON_HOVER : IsotopeColors.ENTRY_BACKGROUND);
         graphics.drawCenteredString(font, "Cancel", cancelX + buttonWidth / 2, buttonY + 5,
-            cancelHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED);
+            cancelHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED);
     }
 
     private int getTypeIndex(String type) {

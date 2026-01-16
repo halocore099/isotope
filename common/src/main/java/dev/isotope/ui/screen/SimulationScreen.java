@@ -149,11 +149,11 @@ public class SimulationScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF000000);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title bar
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 24, 0xFF252525);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 24, IsotopeColors.POOL_HEADER_BACKGROUND);
         graphics.drawString(font, "🎲 Drop Simulation", dialogX + 10, dialogY + 8, IsotopeColors.ACCENT_GOLD, false);
 
         // Table name
@@ -172,13 +172,13 @@ public class SimulationScreen extends Screen {
             int barX = dialogX + 20;
             int barY = contentY + 50;
 
-            graphics.fill(barX, barY, barX + barWidth, barY + 20, 0xFF333333);
+            graphics.fill(barX, barY, barX + barWidth, barY + 20, IsotopeColors.BORDER_DEFAULT);
             int fillWidth = (int) (barWidth * progress / 100f);
             graphics.fill(barX, barY, barX + fillWidth, barY + 20, IsotopeColors.ACCENT_GOLD);
-            graphics.renderOutline(barX, barY, barWidth, 20, 0xFF555555);
+            graphics.renderOutline(barX, barY, barWidth, 20, IsotopeColors.BUTTON_BACKGROUND);
 
             String progressText = "Simulating... " + progress + "%";
-            graphics.drawCenteredString(font, progressText, width / 2, barY + 6, 0xFFFFFFFF);
+            graphics.drawCenteredString(font, progressText, width / 2, barY + 6, IsotopeColors.TEXT_PRIMARY);
 
         } else if (result != null) {
             // Stats header
@@ -189,7 +189,7 @@ public class SimulationScreen extends Screen {
             contentY += 16;
 
             // Column headers
-            graphics.fill(dialogX + 5, contentY, dialogX + DIALOG_WIDTH - 5, contentY + ROW_HEIGHT, 0xFF252525);
+            graphics.fill(dialogX + 5, contentY, dialogX + DIALOG_WIDTH - 5, contentY + ROW_HEIGHT, IsotopeColors.POOL_HEADER_BACKGROUND);
             graphics.drawString(font, "Item", dialogX + 10, contentY + 4, IsotopeColors.TEXT_MUTED, false);
             graphics.drawString(font, "Simulated", dialogX + 180, contentY + 4, IsotopeColors.TEXT_MUTED, false);
             graphics.drawString(font, "Expected", dialogX + 260, contentY + 4, IsotopeColors.TEXT_MUTED, false);
@@ -220,18 +220,18 @@ public class SimulationScreen extends Screen {
                 int thumbHeight = Math.max(20, listHeight * listHeight / (listHeight + maxScroll));
                 int thumbY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - thumbHeight));
 
-                graphics.fill(scrollbarX, listY, scrollbarX + 4, listY + listHeight, 0xFF2a2a2a);
-                graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+                graphics.fill(scrollbarX, listY, scrollbarX + 4, listY + listHeight, IsotopeColors.ENTRY_BACKGROUND);
+                graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
             }
 
         } else {
             // Empty state
             int centerY = dialogY + DIALOG_HEIGHT / 2 - 20;
-            graphics.drawString(font, "🎲", width / 2 - 6, centerY - 20, 0xFF3a3a3a, false);
+            graphics.drawString(font, "🎲", width / 2 - 6, centerY - 20, IsotopeColors.ENTRY_BACKGROUND_HOVER, false);
             String msg = "Click 'Run Simulation' to start";
             graphics.drawCenteredString(font, msg, width / 2, centerY, IsotopeColors.TEXT_MUTED);
             String hint = "Simulates " + simulationCount + " loot rolls";
-            graphics.drawCenteredString(font, hint, width / 2, centerY + 14, 0xFF555555);
+            graphics.drawCenteredString(font, hint, width / 2, centerY + 14, IsotopeColors.BUTTON_BACKGROUND);
         }
 
         // Re-render buttons on top
@@ -247,7 +247,7 @@ public class SimulationScreen extends Screen {
             mouseY >= y && mouseY < y + ROW_HEIGHT;
 
         if (hovered) {
-            graphics.fill(dialogX + 5, y, dialogX + DIALOG_WIDTH - 10, y + ROW_HEIGHT, 0xFF2a2a2a);
+            graphics.fill(dialogX + 5, y, dialogX + DIALOG_WIDTH - 10, y + ROW_HEIGHT, IsotopeColors.ENTRY_BACKGROUND);
         }
 
         // Item name
@@ -262,7 +262,7 @@ public class SimulationScreen extends Screen {
 
         // Simulated rate
         String simRate = String.format("%.1f%%", item.dropRate() * 100);
-        graphics.drawString(font, simRate, dialogX + 180, y + 4, 0xFFFFFFFF, false);
+        graphics.drawString(font, simRate, dialogX + 180, y + 4, IsotopeColors.TEXT_PRIMARY, false);
 
         // Expected rate
         String expRate = String.format("%.1f%%", item.theoreticalRate() * 100);
@@ -275,20 +275,20 @@ public class SimulationScreen extends Screen {
         int varColor;
 
         if (variance < 0.02f) {
-            varColor = 0xFF4ec9b0; // Good (green)
+            varColor = IsotopeColors.SYNTAX_CYAN; // Good (green)
         } else if (variance < 0.05f) {
-            varColor = 0xFFcca700; // Okay (yellow)
+            varColor = IsotopeColors.ACCENT_GOLD; // Okay (yellow)
         } else {
-            varColor = 0xFFf14c4c; // High variance (red)
+            varColor = IsotopeColors.ERROR_BRIGHT; // High variance (red)
         }
 
         // Draw mini bar showing sim vs expected
         float simPct = Math.min(1f, item.dropRate());
         float expPct = Math.min(1f, item.theoreticalRate());
 
-        graphics.fill(barX, y + 3, barX + barWidth, y + 3 + BAR_HEIGHT, 0xFF333333);
+        graphics.fill(barX, y + 3, barX + barWidth, y + 3 + BAR_HEIGHT, IsotopeColors.BORDER_DEFAULT);
         graphics.fill(barX, y + 3, barX + (int)(barWidth * simPct), y + 3 + BAR_HEIGHT / 2, varColor);
-        graphics.fill(barX, y + 3 + BAR_HEIGHT / 2, barX + (int)(barWidth * expPct), y + 3 + BAR_HEIGHT, 0xFF666666);
+        graphics.fill(barX, y + 3 + BAR_HEIGHT / 2, barX + (int)(barWidth * expPct), y + 3 + BAR_HEIGHT, IsotopeColors.STAR_MUTED);
     }
 
     @Override

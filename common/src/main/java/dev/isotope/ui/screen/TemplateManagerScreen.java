@@ -88,11 +88,11 @@ public class TemplateManagerScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DARK);
 
         // Panel background
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, 0xFF404040);
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, IsotopeColors.BORDER_DEFAULT);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title
         graphics.drawCenteredString(font, title, panelX + PANEL_WIDTH / 2, panelY + 10, IsotopeColors.ACCENT_GOLD);
@@ -102,8 +102,8 @@ public class TemplateManagerScreen extends Screen {
         graphics.drawString(font, countText, panelX + 10, panelY + 24, IsotopeColors.TEXT_MUTED, false);
 
         // List background
-        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, 0xFF252525);
-        graphics.renderOutline(listX, listY, listWidth, listHeight, 0xFF3a3a3a);
+        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
+        graphics.renderOutline(listX, listY, listWidth, listHeight, IsotopeColors.ENTRY_BACKGROUND_HOVER);
 
         // Template list
         graphics.enableScissor(listX, listY, listX + listWidth, listY + listHeight);
@@ -131,10 +131,10 @@ public class TemplateManagerScreen extends Screen {
                     }
 
                     // Background
-                    int bgColor = selected ? 0xFF3a4a5a : (hovered ? 0xFF3a3a3a : 0xFF2a2a2a);
+                    int bgColor = selected ? IsotopeColors.SINGLE_SELECT_BACKGROUND : (hovered ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND);
                     graphics.fill(listX + 2, y, listX + listWidth - 10, y + TEMPLATE_HEIGHT - 4, bgColor);
                     graphics.renderOutline(listX + 2, y, listWidth - 12, TEMPLATE_HEIGHT - 4,
-                        selected ? 0xFF5a7a9a : 0xFF404040);
+                        selected ? IsotopeColors.SELECTED_BORDER : IsotopeColors.BORDER_DEFAULT);
 
                     // Item icon (if has default item)
                     int iconX = listX + 8;
@@ -169,7 +169,7 @@ public class TemplateManagerScreen extends Screen {
                     String category = template.category();
                     int catWidth = font.width(category) + 8;
                     int catX = listX + listWidth - 12 - catWidth - 50;
-                    graphics.fill(catX, y + 6, catX + catWidth, y + 18, 0xFF3a3a3a);
+                    graphics.fill(catX, y + 6, catX + catWidth, y + 18, IsotopeColors.ENTRY_BACKGROUND_HOVER);
                     graphics.drawString(font, category, catX + 4, y + 8, IsotopeColors.TEXT_SECONDARY, false);
 
                     // Action buttons
@@ -182,18 +182,18 @@ public class TemplateManagerScreen extends Screen {
                         mouseY >= btnY && mouseY < btnY + 14 &&
                         mouseY >= listY && mouseY < listY + listHeight;
                     graphics.fill(editX, btnY, editX + 18, btnY + 14,
-                        editHovered ? 0xFF4a5a6a : 0xFF3a4a5a);
+                        editHovered ? IsotopeColors.EDIT_BUTTON_HOVER : IsotopeColors.SINGLE_SELECT_BACKGROUND);
                     graphics.drawCenteredString(font, "E", editX + 9, btnY + 3,
-                        editHovered ? 0xFFFFFFFF : IsotopeColors.TEXT_PRIMARY);
+                        editHovered ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_PRIMARY);
 
                     // Delete button
                     boolean deleteHovered = mouseX >= deleteX && mouseX < deleteX + 18 &&
                         mouseY >= btnY && mouseY < btnY + 14 &&
                         mouseY >= listY && mouseY < listY + listHeight;
                     graphics.fill(deleteX, btnY, deleteX + 18, btnY + 14,
-                        deleteHovered ? 0xFF6a4a4a : 0xFF5a3a3a);
+                        deleteHovered ? IsotopeColors.DELETE_BUTTON_HOVER : IsotopeColors.DELETE_BUTTON);
                     graphics.drawCenteredString(font, "X", deleteX + 9, btnY + 3,
-                        deleteHovered ? 0xFFFF6666 : IsotopeColors.TEXT_PRIMARY);
+                        deleteHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_PRIMARY);
                 }
 
                 y += TEMPLATE_HEIGHT;
@@ -211,8 +211,8 @@ public class TemplateManagerScreen extends Screen {
                 int maxScroll = contentHeight - listHeight;
                 int thumbY = listY + (int)((float)scrollOffset / maxScroll * (listHeight - thumbHeight));
 
-                graphics.fill(scrollbarX, listY, scrollbarX + 4, listY + listHeight, 0xFF2a2a2a);
-                graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+                graphics.fill(scrollbarX, listY, scrollbarX + 4, listY + listHeight, IsotopeColors.ENTRY_BACKGROUND);
+                graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
             }
         }
 
@@ -228,11 +228,11 @@ public class TemplateManagerScreen extends Screen {
             int dialogX = (width - dialogWidth) / 2;
             int dialogY = (height - dialogHeight) / 2;
 
-            graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, 0xFF606060);
-            graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, 0xFF2a2a2a);
+            graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, IsotopeColors.BORDER_HIGHLIGHT);
+            graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             EntryTemplate target = templates.get(deleteTargetIdx);
-            graphics.drawCenteredString(font, "Delete Template?", dialogX + dialogWidth / 2, dialogY + 15, 0xFFFF6666);
+            graphics.drawCenteredString(font, "Delete Template?", dialogX + dialogWidth / 2, dialogY + 15, IsotopeColors.DESTRUCTIVE_TEXT);
             graphics.drawCenteredString(font, "\"" + target.name() + "\"", dialogX + dialogWidth / 2, dialogY + 35, IsotopeColors.TEXT_PRIMARY);
             graphics.drawCenteredString(font, "This cannot be undone.", dialogX + dialogWidth / 2, dialogY + 50, IsotopeColors.TEXT_MUTED);
 
@@ -247,11 +247,11 @@ public class TemplateManagerScreen extends Screen {
                 mouseY >= btnY && mouseY < btnY + 20;
 
             graphics.fill(confirmX, btnY, confirmX + 70, btnY + 20,
-                confirmHovered ? 0xFF8a4a4a : 0xFF6a3a3a);
-            graphics.drawCenteredString(font, "Delete", confirmX + 35, btnY + 6, 0xFFFF8888);
+                confirmHovered ? IsotopeColors.CONFIRM_DELETE_HOVER : IsotopeColors.CONFIRM_DELETE);
+            graphics.drawCenteredString(font, "Delete", confirmX + 35, btnY + 6, IsotopeColors.DESTRUCTIVE_TEXT);
 
             graphics.fill(cancelX, btnY, cancelX + 70, btnY + 20,
-                cancelHovered ? 0xFF4a4a4a : 0xFF3a3a3a);
+                cancelHovered ? IsotopeColors.TEXT_DISABLED : IsotopeColors.ENTRY_BACKGROUND_HOVER);
             graphics.drawCenteredString(font, "Cancel", cancelX + 35, btnY + 6, IsotopeColors.TEXT_PRIMARY);
         }
     }

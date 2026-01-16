@@ -63,8 +63,8 @@ public class CompositeChildrenDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, 0xFF404040);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         String typeLabel = compositeType.replace("minecraft:", "");
@@ -87,8 +87,8 @@ public class CompositeChildrenDialog extends Screen {
         int addBtnX = dialogX + DIALOG_WIDTH - 110;
         int addBtnY = dialogY + 36;
         boolean addHovered = mouseX >= addBtnX && mouseX < addBtnX + 100 && mouseY >= addBtnY && mouseY < addBtnY + 18;
-        graphics.fill(addBtnX, addBtnY, addBtnX + 100, addBtnY + 18, addHovered ? 0xFF3a5a3a : 0xFF2a4a2a);
-        graphics.drawCenteredString(font, "+ Add Child", addBtnX + 50, addBtnY + 5, addHovered ? 0xFF55FF55 : 0xFF88FF88);
+        graphics.fill(addBtnX, addBtnY, addBtnX + 100, addBtnY + 18, addHovered ? IsotopeColors.SUCCESS_BACKGROUND : IsotopeColors.SUCCESS_TINT);
+        graphics.drawCenteredString(font, "+ Add Child", addBtnX + 50, addBtnY + 5, addHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.SUCCESS_LIGHT);
 
         // Children list area
         int listX = dialogX + 10;
@@ -96,8 +96,8 @@ public class CompositeChildrenDialog extends Screen {
         int listWidth = DIALOG_WIDTH - 20;
         int listHeight = DIALOG_HEIGHT - HEADER_HEIGHT - BUTTON_HEIGHT - 16;
 
-        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, 0xFF252525);
-        graphics.renderOutline(listX, listY, listWidth, listHeight, 0xFF404040);
+        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
+        graphics.renderOutline(listX, listY, listWidth, listHeight, IsotopeColors.BORDER_DEFAULT);
 
         // Render visible children
         int maxVisible = listHeight / CHILD_HEIGHT;
@@ -115,7 +115,7 @@ public class CompositeChildrenDialog extends Screen {
 
             if (isHovered) {
                 hoveredChildIdx = childIdx;
-                graphics.fill(listX + 1, childY, listX + listWidth - 1, childY + CHILD_HEIGHT, 0xFF353535);
+                graphics.fill(listX + 1, childY, listX + listWidth - 1, childY + CHILD_HEIGHT, IsotopeColors.POOL_HEADER_HOVER);
             }
 
             // Index number
@@ -147,9 +147,9 @@ public class CompositeChildrenDialog extends Screen {
             boolean removeHovered = mouseX >= removeBtnX && mouseX < removeBtnX + 20 &&
                 mouseY >= childY + 4 && mouseY < childY + 20;
             if (removeHovered) {
-                graphics.fill(removeBtnX, childY + 4, removeBtnX + 20, childY + 20, 0xFF4a2a2a);
+                graphics.fill(removeBtnX, childY + 4, removeBtnX + 20, childY + 20, IsotopeColors.DESTRUCTIVE_BACKGROUND);
             }
-            graphics.drawString(font, "×", removeBtnX + 7, childY + 7, removeHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED);
+            graphics.drawString(font, "×", removeBtnX + 7, childY + 7, removeHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED);
         }
 
         // Scroll indicators
@@ -170,8 +170,8 @@ public class CompositeChildrenDialog extends Screen {
         int closeBtnX = dialogX + (DIALOG_WIDTH - 80) / 2;
         int closeBtnY = dialogY + DIALOG_HEIGHT - BUTTON_HEIGHT;
         boolean closeHovered = mouseX >= closeBtnX && mouseX < closeBtnX + 80 && mouseY >= closeBtnY && mouseY < closeBtnY + 20;
-        graphics.fill(closeBtnX, closeBtnY, closeBtnX + 80, closeBtnY + 20, closeHovered ? 0xFF4a4a4a : 0xFF2a2a2a);
-        graphics.drawCenteredString(font, "Close", closeBtnX + 40, closeBtnY + 6, closeHovered ? 0xFFffffff : IsotopeColors.TEXT_MUTED);
+        graphics.fill(closeBtnX, closeBtnY, closeBtnX + 80, closeBtnY + 20, closeHovered ? IsotopeColors.TEXT_DISABLED : IsotopeColors.ENTRY_BACKGROUND);
+        graphics.drawCenteredString(font, "Close", closeBtnX + 40, closeBtnY + 6, closeHovered ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_MUTED);
     }
 
     @Override

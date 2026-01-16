@@ -47,8 +47,8 @@ public class RandomSequenceDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, 0xFF404040);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawCenteredString(font, "Edit Random Sequence", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
@@ -64,8 +64,8 @@ public class RandomSequenceDialog extends Screen {
         int inputY = dialogY + 54;
         int inputWidth = DIALOG_WIDTH - 20;
         int inputHeight = 18;
-        int inputBgColor = inputFocused ? 0xFF3a3a3a : 0xFF2a2a2a;
-        int inputBorderColor = inputFocused ? 0xFF55FF55 : 0xFF404040;
+        int inputBgColor = inputFocused ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND;
+        int inputBorderColor = inputFocused ? IsotopeColors.ACCENT_GREEN : IsotopeColors.BORDER_DEFAULT;
         graphics.fill(inputX, inputY, inputX + inputWidth, inputY + inputHeight, inputBgColor);
         graphics.renderOutline(inputX, inputY, inputWidth, inputHeight, inputBorderColor);
 
@@ -91,18 +91,18 @@ public class RandomSequenceDialog extends Screen {
         boolean applyHovered = mouseX >= startX && mouseX < startX + buttonWidth &&
             mouseY >= buttonY && mouseY < buttonY + 20;
         graphics.fill(startX, buttonY, startX + buttonWidth, buttonY + 20,
-            applyHovered ? 0xFF3a5a3a : 0xFF2a4a2a);
+            applyHovered ? IsotopeColors.SUCCESS_BACKGROUND : IsotopeColors.SUCCESS_TINT);
         graphics.drawCenteredString(font, "Apply", startX + buttonWidth / 2, buttonY + 6,
-            applyHovered ? 0xFF55FF55 : 0xFF88FF88);
+            applyHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.SUCCESS_LIGHT);
 
         // Cancel button
         int cancelX = startX + buttonWidth + gap;
         boolean cancelHovered = mouseX >= cancelX && mouseX < cancelX + buttonWidth &&
             mouseY >= buttonY && mouseY < buttonY + 20;
         graphics.fill(cancelX, buttonY, cancelX + buttonWidth, buttonY + 20,
-            cancelHovered ? 0xFF4a3a3a : 0xFF2a2a2a);
+            cancelHovered ? IsotopeColors.BATCH_BUTTON_HOVER : IsotopeColors.ENTRY_BACKGROUND);
         graphics.drawCenteredString(font, "Cancel", cancelX + buttonWidth / 2, buttonY + 6,
-            cancelHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED);
+            cancelHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED);
     }
 
     @Override

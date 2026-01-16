@@ -175,9 +175,9 @@ public class ActivityBar extends AbstractWidget {
                 int badgeY = itemY + 2;
 
                 // Badge background (red for errors)
-                graphics.fill(badgeX, badgeY, badgeX + badgeWidth, badgeY + 10, 0xFFf14c4c);
+                graphics.fill(badgeX, badgeY, badgeX + badgeWidth, badgeY + 10, IsotopeColors.ERROR_BRIGHT);
                 // Badge text
-                graphics.drawString(font, badgeText, badgeX + 2, badgeY + 1, 0xFFFFFFFF, false);
+                graphics.drawString(font, badgeText, badgeX + 2, badgeY + 1, IsotopeColors.TEXT_PRIMARY, false);
             }
 
             itemY += itemHeight;

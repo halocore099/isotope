@@ -163,7 +163,7 @@ public class LootFlowPanel extends AbstractWidget {
             graphics.drawString(font, "No loot flow data", centerX - font.width("No loot flow data") / 2, centerY - 10, IsotopeColors.TEXT_MUTED, false);
 
             String hint = availableNamespaces.isEmpty() ? "Registry not compiled" : "Select a namespace above";
-            graphics.drawString(font, hint, centerX - font.width(hint) / 2, centerY + 5, 0xFF555555, false);
+            graphics.drawString(font, hint, centerX - font.width(hint) / 2, centerY + 5, IsotopeColors.BUTTON_BACKGROUND, false);
             return;
         }
 
@@ -255,9 +255,9 @@ public class LootFlowPanel extends AbstractWidget {
         // Node background - highlight edited tables
         int bgColor;
         if (hasEdits) {
-            bgColor = hovered ? 0xFF3a4a3a : 0xFF2a3a2a; // Green tint for edited
+            bgColor = hovered ? IsotopeColors.ENTRY_BACKGROUND_EDITED_HOVER : IsotopeColors.EDITED_TABLE_BG; // Green tint for edited
         } else {
-            bgColor = hovered ? 0xFF3a3a3a : 0xFF2a2a2a;
+            bgColor = hovered ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND;
         }
         graphics.fill(x, y, x + w, y + h, bgColor);
 
@@ -275,7 +275,7 @@ public class LootFlowPanel extends AbstractWidget {
         // Border - use green for edited tables
         int borderColor;
         if (hasEdits) {
-            borderColor = hovered ? IsotopeColors.SUCCESS : 0xFF55AA55; // Green border
+            borderColor = hovered ? IsotopeColors.SUCCESS : IsotopeColors.BADGE_HAS_LOOT; // Green border
         } else {
             borderColor = hovered ? IsotopeColors.BORDER_SELECTED : IsotopeColors.BORDER_DEFAULT;
         }
@@ -399,8 +399,8 @@ public class LootFlowPanel extends AbstractWidget {
         }
 
         // Draw tooltip background
-        graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
-        graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF1a1a1a);
+        graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Draw tooltip text
         int lineY = tooltipY + 3;
@@ -444,7 +444,7 @@ public class LootFlowPanel extends AbstractWidget {
 
     private int getEdgeColor(FlowEdge edge) {
         return switch (edge.type()) {
-            case SOURCE_TO_TABLE -> 0xFFAAAAAA;
+            case SOURCE_TO_TABLE -> IsotopeColors.TEXT_SECONDARY;
             case TABLE_TO_NESTED -> COLOR_NESTED_TABLE;
         };
     }

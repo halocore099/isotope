@@ -230,46 +230,46 @@ public class TemplateEditorScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         // Dim background
-        graphics.fill(0, 0, width, height, 0x90000000);
+        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DIM);
 
         // Panel background with vanilla-style border
-        graphics.fill(panelX - 3, panelY - 3, panelX + PANEL_WIDTH + 3, panelY + PANEL_HEIGHT + 3, 0xFF000000);
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, 0xFF555555);
-        graphics.fill(panelX - 1, panelY - 1, panelX + PANEL_WIDTH + 1, panelY + PANEL_HEIGHT + 1, 0xFF2d2d2d);
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(panelX - 3, panelY - 3, panelX + PANEL_WIDTH + 3, panelY + PANEL_HEIGHT + 3, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, IsotopeColors.BUTTON_BACKGROUND);
+        graphics.fill(panelX - 1, panelY - 1, panelX + PANEL_WIDTH + 1, panelY + PANEL_HEIGHT + 1, IsotopeColors.BACKGROUND_DARKEST);
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title
         graphics.drawCenteredString(font, title, panelX + PANEL_WIDTH / 2, panelY + 10, IsotopeColors.ACCENT_GOLD);
 
         // Subtitle hint
-        graphics.drawCenteredString(font, "Create a reusable entry preset", panelX + PANEL_WIDTH / 2, panelY + 22, 0xFF707070);
+        graphics.drawCenteredString(font, "Create a reusable entry preset", panelX + PANEL_WIDTH / 2, panelY + 22, IsotopeColors.TEXT_MUTED);
 
         int y = panelY + 40;
 
         // Section: Basic Info
-        graphics.fill(panelX + 8, y - 4, panelX + PANEL_WIDTH - 8, y + 68, 0xFF222222);
-        graphics.renderOutline(panelX + 8, y - 4, PANEL_WIDTH - 16, 72, 0xFF333333);
+        graphics.fill(panelX + 8, y - 4, panelX + PANEL_WIDTH - 8, y + 68, IsotopeColors.BACKGROUND_DARKER);
+        graphics.renderOutline(panelX + 8, y - 4, PANEL_WIDTH - 16, 72, IsotopeColors.BORDER_DEFAULT);
 
         // Name field
-        graphics.drawString(font, "Name", panelX + 14, y + 2, 0xFFFFFFFF, false);
+        graphics.drawString(font, "Name", panelX + 14, y + 2, IsotopeColors.TEXT_PRIMARY, false);
         y += 24;
 
         // Description field
-        graphics.drawString(font, "Description", panelX + 14, y + 2, 0xFFFFFFFF, false);
+        graphics.drawString(font, "Description", panelX + 14, y + 2, IsotopeColors.TEXT_PRIMARY, false);
         y += 24;
 
         // Category field
-        graphics.drawString(font, "Category", panelX + 14, y + 2, 0xFFFFFFFF, false);
+        graphics.drawString(font, "Category", panelX + 14, y + 2, IsotopeColors.TEXT_PRIMARY, false);
         y += 28;
 
         // Section: Item & Values
-        graphics.fill(panelX + 8, y, panelX + PANEL_WIDTH - 8, y + 92, 0xFF222222);
-        graphics.renderOutline(panelX + 8, y, PANEL_WIDTH - 16, 92, 0xFF333333);
+        graphics.fill(panelX + 8, y, panelX + PANEL_WIDTH - 8, y + 92, IsotopeColors.BACKGROUND_DARKER);
+        graphics.renderOutline(panelX + 8, y, PANEL_WIDTH - 16, 92, IsotopeColors.BORDER_DEFAULT);
 
         y += 6;
 
         // Item selector
-        graphics.drawString(font, "Item", panelX + 14, y + 2, 0xFFFFFFFF, false);
+        graphics.drawString(font, "Item", panelX + 14, y + 2, IsotopeColors.TEXT_PRIMARY, false);
 
         int itemBtnX = panelX + 80;
         int itemBtnWidth = PANEL_WIDTH - 96;
@@ -277,8 +277,8 @@ public class TemplateEditorScreen extends Screen {
             mouseY >= y - 2 && mouseY < y + 18;
 
         graphics.fill(itemBtnX, y - 2, itemBtnX + itemBtnWidth, y + 18,
-            itemHovered ? 0xFF3d5c7a : 0xFF2a2a2a);
-        graphics.renderOutline(itemBtnX, y - 2, itemBtnWidth, 20, itemHovered ? 0xFF5a8ab8 : 0xFF404040);
+            itemHovered ? IsotopeColors.SYNTAX_BLUE_DARK : IsotopeColors.ENTRY_BACKGROUND);
+        graphics.renderOutline(itemBtnX, y - 2, itemBtnWidth, 20, itemHovered ? IsotopeColors.SYNTAX_BLUE : IsotopeColors.BORDER_DEFAULT);
 
         if (selectedItem != null) {
             // Render item icon
@@ -288,60 +288,60 @@ public class TemplateEditorScreen extends Screen {
             }
             String itemName = selectedItem.getPath();
             if (itemName.length() > 18) itemName = itemName.substring(0, 15) + "...";
-            graphics.drawString(font, itemName, itemBtnX + 22, y + 4, 0xFFFFFFFF, false);
+            graphics.drawString(font, itemName, itemBtnX + 22, y + 4, IsotopeColors.TEXT_PRIMARY, false);
 
             // Clear button
             int clearX = itemBtnX + itemBtnWidth - 18;
             boolean clearHovered = mouseX >= clearX && mouseX < clearX + 16 && mouseY >= y && mouseY < y + 16;
-            graphics.fill(clearX, y, clearX + 16, y + 16, clearHovered ? 0xFF5a3030 : 0xFF3a2828);
-            graphics.drawCenteredString(font, "X", clearX + 8, y + 4, clearHovered ? 0xFFff6666 : 0xFFaa6666);
+            graphics.fill(clearX, y, clearX + 16, y + 16, clearHovered ? IsotopeColors.DESTRUCTIVE_BACKGROUND : IsotopeColors.DESTRUCTIVE_BACKGROUND);
+            graphics.drawCenteredString(font, "X", clearX + 8, y + 4, clearHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.DESTRUCTIVE_TEXT);
         } else {
-            graphics.drawString(font, "Click to select...", itemBtnX + 4, y + 4, 0xFF808080, false);
+            graphics.drawString(font, "Click to select...", itemBtnX + 4, y + 4, IsotopeColors.SCROLLBAR_THUMB, false);
         }
 
         y += 26;
 
         // Weight
-        graphics.drawString(font, "Weight", panelX + 14, y + 2, 0xFFFFFFFF, false);
+        graphics.drawString(font, "Weight", panelX + 14, y + 2, IsotopeColors.TEXT_PRIMARY, false);
         y += 26;
 
         // Count
-        graphics.drawString(font, "Count", panelX + 14, y + 2, 0xFFFFFFFF, false);
+        graphics.drawString(font, "Count", panelX + 14, y + 2, IsotopeColors.TEXT_PRIMARY, false);
 
         // "to" label between min and max
         if (useRange) {
-            graphics.drawString(font, "to", panelX + 80 + 55, y + 2, 0xFF808080, false);
+            graphics.drawString(font, "to", panelX + 80 + 55, y + 2, IsotopeColors.SCROLLBAR_THUMB, false);
         }
 
         // Toggle button for Range/Constant
         int toggleBtnX = panelX + PANEL_WIDTH - 80;
         boolean toggleHovered = mouseX >= toggleBtnX && mouseX < toggleBtnX + 66 && mouseY >= y - 2 && mouseY < y + 14;
-        int toggleBg = useRange ? 0xFF2a4a3a : 0xFF3a3a2a;
-        graphics.fill(toggleBtnX, y - 2, toggleBtnX + 66, y + 14, toggleHovered ? 0xFF404040 : toggleBg);
-        graphics.renderOutline(toggleBtnX, y - 2, 66, 16, toggleHovered ? 0xFF606060 : 0xFF505050);
+        int toggleBg = useRange ? IsotopeColors.SUCCESS_TINT : IsotopeColors.TOGGLE_OFF_BG;
+        graphics.fill(toggleBtnX, y - 2, toggleBtnX + 66, y + 14, toggleHovered ? IsotopeColors.BORDER_DEFAULT : toggleBg);
+        graphics.renderOutline(toggleBtnX, y - 2, 66, 16, toggleHovered ? IsotopeColors.BORDER_HIGHLIGHT : IsotopeColors.INPUT_BORDER);
         graphics.drawCenteredString(font, useRange ? "Range" : "Fixed", toggleBtnX + 33, y + 1,
-            useRange ? 0xFF66aa66 : 0xFFaaaa66);
+            useRange ? IsotopeColors.TOGGLE_ON_TEXT : IsotopeColors.TOGGLE_OFF_TEXT);
 
         countMaxBox.visible = useRange;
 
         y += 28;
 
         // Section: Functions
-        graphics.fill(panelX + 8, y, panelX + PANEL_WIDTH - 8, y + functionsHeight + 24, 0xFF222222);
-        graphics.renderOutline(panelX + 8, y, PANEL_WIDTH - 16, functionsHeight + 24, 0xFF333333);
+        graphics.fill(panelX + 8, y, panelX + PANEL_WIDTH - 8, y + functionsHeight + 24, IsotopeColors.BACKGROUND_DARKER);
+        graphics.renderOutline(panelX + 8, y, PANEL_WIDTH - 16, functionsHeight + 24, IsotopeColors.BORDER_DEFAULT);
 
         y += 6;
 
-        graphics.drawString(font, "Functions", panelX + 14, y, 0xFFFFFFFF, false);
+        graphics.drawString(font, "Functions", panelX + 14, y, IsotopeColors.TEXT_PRIMARY, false);
 
         // Add function button
         int addFuncBtnX = panelX + PANEL_WIDTH - 100;
         boolean addFuncHovered = mouseX >= addFuncBtnX && mouseX < addFuncBtnX + 86 &&
             mouseY >= y - 4 && mouseY < y + 12;
         graphics.fill(addFuncBtnX, y - 4, addFuncBtnX + 86, y + 12,
-            addFuncHovered ? 0xFF3a6a4a : 0xFF2a4a3a);
-        graphics.renderOutline(addFuncBtnX, y - 4, 86, 16, addFuncHovered ? 0xFF5a9a6a : 0xFF4a7a5a);
-        graphics.drawCenteredString(font, "+ Add Function", addFuncBtnX + 43, y - 1, addFuncHovered ? 0xFFFFFFFF : 0xFF88cc88);
+            addFuncHovered ? IsotopeColors.FUNC_ADD_HOVER : IsotopeColors.SUCCESS_TINT);
+        graphics.renderOutline(addFuncBtnX, y - 4, 86, 16, addFuncHovered ? IsotopeColors.FUNC_ADD_BORDER : IsotopeColors.FUNC_ADD_BORDER_DEFAULT);
+        graphics.drawCenteredString(font, "+ Add Function", addFuncBtnX + 43, y - 1, addFuncHovered ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.SUCCESS_MUTED);
 
         y += 16;
 
@@ -351,8 +351,8 @@ public class TemplateEditorScreen extends Screen {
         int listY = y;
         int listHeight = functionsHeight - 4;
 
-        graphics.fill(listX - 1, listY - 1, listX + listWidth + 1, listY + listHeight + 1, 0xFF000000);
-        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, 0xFF1a1a1a);
+        graphics.fill(listX - 1, listY - 1, listX + listWidth + 1, listY + listHeight + 1, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, IsotopeColors.BACKGROUND_MEDIUM);
 
         graphics.enableScissor(listX, listY, listX + listWidth, listY + listHeight);
 
@@ -368,26 +368,26 @@ public class TemplateEditorScreen extends Screen {
 
                 if (funcHovered) {
                     hoveredFunctionIdx = i;
-                    graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 22, 0xFF3d5c7a);
-                    graphics.renderOutline(listX + 2, funcY, listWidth - 4, 22, 0xFF5a8ab8);
+                    graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 22, IsotopeColors.SYNTAX_BLUE_DARK);
+                    graphics.renderOutline(listX + 2, funcY, listWidth - 4, 22, IsotopeColors.SYNTAX_BLUE);
                 } else {
-                    graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 22, 0xFF2a2a2a);
-                    graphics.renderOutline(listX + 2, funcY, listWidth - 4, 22, 0xFF353535);
+                    graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 22, IsotopeColors.ENTRY_BACKGROUND);
+                    graphics.renderOutline(listX + 2, funcY, listWidth - 4, 22, IsotopeColors.POOL_HEADER_HOVER);
                 }
 
                 // Function icon placeholder
-                graphics.fill(listX + 6, funcY + 4, listX + 18, funcY + 18, 0xFF3a5a4a);
-                graphics.drawCenteredString(font, "f", listX + 12, funcY + 7, 0xFF88cc88);
+                graphics.fill(listX + 6, funcY + 4, listX + 18, funcY + 18, IsotopeColors.FUNC_ICON_BG);
+                graphics.drawCenteredString(font, "f", listX + 12, funcY + 7, IsotopeColors.SUCCESS_MUTED);
 
                 // Function name
                 String display = func.getDisplayName();
-                graphics.drawString(font, display, listX + 24, funcY + 4, 0xFFFFFFFF, false);
+                graphics.drawString(font, display, listX + 24, funcY + 4, IsotopeColors.TEXT_PRIMARY, false);
 
                 // Parameters
                 String params = func.getParameterSummary();
                 if (!params.isEmpty()) {
                     if (params.length() > 30) params = params.substring(0, 27) + "...";
-                    graphics.drawString(font, params, listX + 24, funcY + 13, 0xFF888888, false);
+                    graphics.drawString(font, params, listX + 24, funcY + 13, IsotopeColors.SCROLLBAR_THUMB, false);
                 }
 
                 // Remove button
@@ -395,16 +395,16 @@ public class TemplateEditorScreen extends Screen {
                 boolean removeHovered = mouseX >= removeX && mouseX < removeX + 18 &&
                     mouseY >= funcY + 2 && mouseY < funcY + 20 &&
                     mouseY >= listY && mouseY < listY + listHeight;
-                graphics.fill(removeX, funcY + 3, removeX + 18, funcY + 19, removeHovered ? 0xFF5a3030 : 0xFF3a2828);
-                graphics.drawCenteredString(font, "X", removeX + 9, funcY + 7, removeHovered ? 0xFFff6666 : 0xFFaa6666);
+                graphics.fill(removeX, funcY + 3, removeX + 18, funcY + 19, removeHovered ? IsotopeColors.DESTRUCTIVE_BACKGROUND : IsotopeColors.DESTRUCTIVE_BACKGROUND);
+                graphics.drawCenteredString(font, "X", removeX + 9, funcY + 7, removeHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.DESTRUCTIVE_TEXT);
             }
 
             funcY += 26;
         }
 
         if (functions.isEmpty()) {
-            graphics.drawCenteredString(font, "No functions added", listX + listWidth / 2, listY + listHeight / 2 - 4, 0xFF606060);
-            graphics.drawCenteredString(font, "Click '+ Add Function' above", listX + listWidth / 2, listY + listHeight / 2 + 8, 0xFF505050);
+            graphics.drawCenteredString(font, "No functions added", listX + listWidth / 2, listY + listHeight / 2 - 4, IsotopeColors.BORDER_HIGHLIGHT);
+            graphics.drawCenteredString(font, "Click '+ Add Function' above", listX + listWidth / 2, listY + listHeight / 2 + 8, IsotopeColors.INPUT_BORDER);
         }
 
         graphics.disableScissor();

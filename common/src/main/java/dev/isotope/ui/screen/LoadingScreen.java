@@ -72,7 +72,7 @@ public class LoadingScreen extends IsotopeScreen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dark background
-        graphics.fill(0, 0, width, height, 0xFF0A0A0A);
+        graphics.fill(0, 0, width, height, IsotopeColors.LOADING_BG);
 
         // Title
         String title = "ISOTOPE";

@@ -97,11 +97,11 @@ public class QuickFixScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF000000);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title bar
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 24, 0xFF252525);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 24, IsotopeColors.POOL_HEADER_BACKGROUND);
         graphics.drawString(font, "⚡ Quick Fix Wizards", dialogX + 10, dialogY + 8, IsotopeColors.ACCENT_GOLD, false);
 
         // Table name
@@ -114,7 +114,7 @@ public class QuickFixScreen extends Screen {
 
         if (structure == null) {
             graphics.drawCenteredString(font, "Failed to load loot table", width / 2, dialogY + 100,
-                0xFFf14c4c);
+                IsotopeColors.ERROR_BRIGHT);
             return;
         }
 
@@ -124,7 +124,7 @@ public class QuickFixScreen extends Screen {
 
         // Left side: Fix options
         int leftWidth = 200;
-        graphics.fill(dialogX + 5, listY, dialogX + leftWidth, listY + listHeight, 0xFF252525);
+        graphics.fill(dialogX + 5, listY, dialogX + leftWidth, listY + listHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
 
         int y = listY + 5;
         for (FixType fix : FixType.values()) {
@@ -133,13 +133,13 @@ public class QuickFixScreen extends Screen {
                 mouseY >= y && mouseY < y + ROW_HEIGHT;
 
             if (isSelected) {
-                graphics.fill(dialogX + 5, y, dialogX + leftWidth, y + ROW_HEIGHT, 0xFF3a5a8a);
+                graphics.fill(dialogX + 5, y, dialogX + leftWidth, y + ROW_HEIGHT, IsotopeColors.ITEM_ENTITY_SELECTED);
             } else if (isHovered) {
-                graphics.fill(dialogX + 5, y, dialogX + leftWidth, y + ROW_HEIGHT, 0xFF353535);
+                graphics.fill(dialogX + 5, y, dialogX + leftWidth, y + ROW_HEIGHT, IsotopeColors.POOL_HEADER_HOVER);
             }
 
             graphics.drawString(font, fix.name, dialogX + 12, y + 5,
-                isSelected ? 0xFFFFFFFF : IsotopeColors.TEXT_PRIMARY, false);
+                isSelected ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_PRIMARY, false);
 
             // Truncate description if needed
             String desc = fix.description;
@@ -154,7 +154,7 @@ public class QuickFixScreen extends Screen {
         // Right side: Preview
         int rightX = dialogX + leftWidth + 10;
         int rightWidth = DIALOG_WIDTH - leftWidth - 20;
-        graphics.fill(rightX, listY, rightX + rightWidth, listY + listHeight, 0xFF202020);
+        graphics.fill(rightX, listY, rightX + rightWidth, listY + listHeight, IsotopeColors.BACKGROUND_SOLID);
 
         graphics.drawString(font, "Preview", rightX + 10, listY + 8, IsotopeColors.TEXT_SECONDARY, false);
 

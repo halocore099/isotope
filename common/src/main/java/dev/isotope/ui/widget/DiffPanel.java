@@ -97,8 +97,8 @@ public class DiffPanel extends AbstractWidget {
         Font font = Minecraft.getInstance().font;
 
         // Background
-        graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1a1a1a);
-        graphics.renderOutline(getX(), getY(), width, height, 0xFF333333);
+        graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(getX(), getY(), width, height, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawString(font, "Changes", getX() + PADDING, getY() + 7, IsotopeColors.ACCENT_GOLD, false);
@@ -106,17 +106,17 @@ public class DiffPanel extends AbstractWidget {
         if (diffResult == null || !diffResult.hasChanges()) {
             int centerX = getX() + width / 2;
             if (tableId == null) {
-                graphics.drawString(font, "±", centerX - 4, getY() + 35, 0xFF3a3a3a, false);
+                graphics.drawString(font, "±", centerX - 4, getY() + 35, IsotopeColors.ENTRY_BACKGROUND_HOVER, false);
                 String msg = "Select a loot table";
                 graphics.drawString(font, msg, centerX - font.width(msg) / 2, getY() + 55, IsotopeColors.TEXT_MUTED, false);
                 String hint = "to track changes";
-                graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, 0xFF555555, false);
+                graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, IsotopeColors.BUTTON_BACKGROUND, false);
             } else {
-                graphics.drawString(font, "✓", centerX - 4, getY() + 35, 0xFF4ec9b0, false);
+                graphics.drawString(font, "✓", centerX - 4, getY() + 35, IsotopeColors.SYNTAX_CYAN, false);
                 String msg = "No changes";
                 graphics.drawString(font, msg, centerX - font.width(msg) / 2, getY() + 55, IsotopeColors.TEXT_MUTED, false);
                 String hint = "Table is unmodified";
-                graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, 0xFF555555, false);
+                graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, IsotopeColors.BUTTON_BACKGROUND, false);
             }
             return;
         }
@@ -157,8 +157,8 @@ public class DiffPanel extends AbstractWidget {
             int thumbHeight = Math.max(20, (int) ((float) (height - HEADER_HEIGHT) / (height - HEADER_HEIGHT + maxScroll) * scrollbarHeight));
             int thumbY = getY() + HEADER_HEIGHT + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 4, getY() + height, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 4, getY() + height, IsotopeColors.ENTRY_BACKGROUND);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
         }
     }
 

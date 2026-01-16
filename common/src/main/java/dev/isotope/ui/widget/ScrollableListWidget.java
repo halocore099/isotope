@@ -162,10 +162,10 @@ public class ScrollableListWidget<T> extends AbstractWidget {
 
     private void renderSelectionBorder(GuiGraphics graphics, int x, int y, int width, int height) {
         // White border around selected item
-        graphics.fill(x, y, x + width, y + 1, 0xFFFFFFFF);
-        graphics.fill(x, y + height - 1, x + width, y + height, 0xFFFFFFFF);
-        graphics.fill(x, y, x + 1, y + height, 0xFFFFFFFF);
-        graphics.fill(x + width - 1, y, x + width, y + height, 0xFFFFFFFF);
+        graphics.fill(x, y, x + width, y + 1, IsotopeColors.TEXT_PRIMARY);
+        graphics.fill(x, y + height - 1, x + width, y + height, IsotopeColors.TEXT_PRIMARY);
+        graphics.fill(x, y, x + 1, y + height, IsotopeColors.TEXT_PRIMARY);
+        graphics.fill(x + width - 1, y, x + width, y + height, IsotopeColors.TEXT_PRIMARY);
     }
 
     private boolean hasScrollbar() {
@@ -195,10 +195,10 @@ public class ScrollableListWidget<T> extends AbstractWidget {
         graphics.fill(scrollbarX, thumbY, scrollbarX + SCROLLBAR_WIDTH, thumbY + thumbHeight, thumbColor);
 
         // Thumb border
-        graphics.fill(scrollbarX, thumbY, scrollbarX + SCROLLBAR_WIDTH, thumbY + 1, 0xFFC6C6C6);
-        graphics.fill(scrollbarX, thumbY, scrollbarX + 1, thumbY + thumbHeight, 0xFFC6C6C6);
-        graphics.fill(scrollbarX, thumbY + thumbHeight - 1, scrollbarX + SCROLLBAR_WIDTH, thumbY + thumbHeight, 0xFF555555);
-        graphics.fill(scrollbarX + SCROLLBAR_WIDTH - 1, thumbY, scrollbarX + SCROLLBAR_WIDTH, thumbY + thumbHeight, 0xFF555555);
+        graphics.fill(scrollbarX, thumbY, scrollbarX + SCROLLBAR_WIDTH, thumbY + 1, IsotopeColors.BUTTON_BORDER_LIGHT);
+        graphics.fill(scrollbarX, thumbY, scrollbarX + 1, thumbY + thumbHeight, IsotopeColors.BUTTON_BORDER_LIGHT);
+        graphics.fill(scrollbarX, thumbY + thumbHeight - 1, scrollbarX + SCROLLBAR_WIDTH, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
+        graphics.fill(scrollbarX + SCROLLBAR_WIDTH - 1, thumbY, scrollbarX + SCROLLBAR_WIDTH, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
     }
 
     @Override

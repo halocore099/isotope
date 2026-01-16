@@ -128,11 +128,11 @@ public class ConfirmDialog extends Screen {
 
         // Dialog background with border
         graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2,
-            destructive ? 0xFF663333 : 0xFF333333);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+            destructive ? IsotopeColors.DESTRUCTIVE_BORDER_LIGHT : IsotopeColors.BORDER_DEFAULT);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title
-        int titleColor = destructive ? 0xFFFF6666 : IsotopeColors.ACCENT_GOLD;
+        int titleColor = destructive ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.ACCENT_GOLD;
         graphics.drawCenteredString(font, title, width / 2, dialogY + 12, titleColor);
 
         // Message (supports newlines)

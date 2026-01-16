@@ -59,8 +59,8 @@ public class BonusRollsDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, 0xFF404040);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawCenteredString(font, "Set Bonus Rolls", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
@@ -82,12 +82,12 @@ public class BonusRollsDialog extends Screen {
 
             if (hovered) {
                 hoveredPreset = i;
-                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, 0xFF3a4a3a);
+                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, IsotopeColors.ENTRY_BACKGROUND_EDITED_HOVER);
             } else {
-                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, 0xFF2a2a2a);
+                graphics.fill(btnX, btnY, btnX + btnWidth, btnY + btnHeight, IsotopeColors.ENTRY_BACKGROUND);
             }
 
-            int textColor = hovered ? 0xFF55FF55 : IsotopeColors.TEXT_PRIMARY;
+            int textColor = hovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.TEXT_PRIMARY;
             graphics.drawCenteredString(font, PRESET_LABELS[i], dialogX + DIALOG_WIDTH / 2, btnY + 4, textColor);
 
             btnY += 18;
@@ -98,9 +98,9 @@ public class BonusRollsDialog extends Screen {
         int cancelX = dialogX + DIALOG_WIDTH / 2 - 30;
         boolean cancelHovered = mouseX >= cancelX && mouseX < cancelX + 60 &&
             mouseY >= cancelY && mouseY < cancelY + 18;
-        graphics.fill(cancelX, cancelY, cancelX + 60, cancelY + 18, cancelHovered ? 0xFF4a3a3a : 0xFF2a2a2a);
+        graphics.fill(cancelX, cancelY, cancelX + 60, cancelY + 18, cancelHovered ? IsotopeColors.BATCH_BUTTON_HOVER : IsotopeColors.ENTRY_BACKGROUND);
         graphics.drawCenteredString(font, "Cancel", cancelX + 30, cancelY + 5,
-            cancelHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED);
+            cancelHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED);
     }
 
     @Override

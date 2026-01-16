@@ -92,10 +92,10 @@ public class ShortcutsScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background with vanilla-style border
-        graphics.fill(dialogX - 3, dialogY - 3, dialogX + DIALOG_WIDTH + 3, dialogY + DIALOG_HEIGHT + 3, 0xFF000000);
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF555555);
-        graphics.fill(dialogX - 1, dialogY - 1, dialogX + DIALOG_WIDTH + 1, dialogY + DIALOG_HEIGHT + 1, 0xFF2d2d2d);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 3, dialogY - 3, dialogX + DIALOG_WIDTH + 3, dialogY + DIALOG_HEIGHT + 3, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BUTTON_BACKGROUND);
+        graphics.fill(dialogX - 1, dialogY - 1, dialogX + DIALOG_WIDTH + 1, dialogY + DIALOG_HEIGHT + 1, IsotopeColors.BACKGROUND_DARKEST);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title
         graphics.drawCenteredString(font, "Keyboard Shortcuts", width / 2, dialogY + 10, IsotopeColors.ACCENT_GOLD);
@@ -143,9 +143,9 @@ public class ShortcutsScreen extends Screen {
     private void renderShortcut(GuiGraphics graphics, int x, int y, String key, String description) {
         // Key badge
         int keyWidth = font.width(key) + 8;
-        graphics.fill(x, y - 1, x + keyWidth, y + 10, 0xFF2a2a2a);
-        graphics.renderOutline(x, y - 1, keyWidth, 11, 0xFF444444);
-        graphics.drawString(font, key, x + 4, y + 1, 0xFFCCCCCC, false);
+        graphics.fill(x, y - 1, x + keyWidth, y + 10, IsotopeColors.ENTRY_BACKGROUND);
+        graphics.renderOutline(x, y - 1, keyWidth, 11, IsotopeColors.BUTTON_PRESSED);
+        graphics.drawString(font, key, x + 4, y + 1, IsotopeColors.TEXT_SECONDARY, false);
 
         // Description
         graphics.drawString(font, description, x + keyWidth + 10, y + 1, IsotopeColors.TEXT_PRIMARY, false);

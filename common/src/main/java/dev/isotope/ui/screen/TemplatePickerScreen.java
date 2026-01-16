@@ -94,17 +94,17 @@ public class TemplatePickerScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         // Render background dim
-        graphics.fill(0, 0, width, height, 0x90000000);
+        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DIM);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background with vanilla-style border
         // Outer highlight (top-left light)
-        graphics.fill(dialogX - 3, dialogY - 3, dialogX + DIALOG_WIDTH + 3, dialogY + DIALOG_HEIGHT + 3, 0xFF000000);
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF555555);
-        graphics.fill(dialogX - 1, dialogY - 1, dialogX + DIALOG_WIDTH + 1, dialogY + DIALOG_HEIGHT + 1, 0xFF2d2d2d);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 3, dialogY - 3, dialogX + DIALOG_WIDTH + 3, dialogY + DIALOG_HEIGHT + 3, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BUTTON_BACKGROUND);
+        graphics.fill(dialogX - 1, dialogY - 1, dialogX + DIALOG_WIDTH + 1, dialogY + DIALOG_HEIGHT + 1, IsotopeColors.BACKGROUND_DARKEST);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title
         graphics.drawCenteredString(font, "Select Entry Template", width / 2, dialogY + 10, IsotopeColors.ACCENT_GOLD);
@@ -115,8 +115,8 @@ public class TemplatePickerScreen extends Screen {
         int listWidth = DIALOG_WIDTH - PADDING * 2;
 
         // Draw list background with inset border
-        graphics.fill(dialogX + PADDING - 1, listY - 1, dialogX + PADDING + listWidth + 1, listY + listHeight + 1, 0xFF000000);
-        graphics.fill(dialogX + PADDING, listY, dialogX + PADDING + listWidth, listY + listHeight, 0xFF202020);
+        graphics.fill(dialogX + PADDING - 1, listY - 1, dialogX + PADDING + listWidth + 1, listY + listHeight + 1, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX + PADDING, listY, dialogX + PADDING + listWidth, listY + listHeight, IsotopeColors.BACKGROUND_SOLID);
 
         // Scissor for scrolling
         graphics.enableScissor(dialogX + PADDING, listY, dialogX + PADDING + listWidth, listY + listHeight);
@@ -137,10 +137,10 @@ public class TemplatePickerScreen extends Screen {
                 if (y > listY - 20 && y < listY + listHeight) {
                     // Category separator line
                     if (y > listY + 4) {
-                        graphics.fill(dialogX + PADDING + 8, y - 2, dialogX + PADDING + listWidth - 8, y - 1, 0xFF333333);
+                        graphics.fill(dialogX + PADDING + 8, y - 2, dialogX + PADDING + listWidth - 8, y - 1, IsotopeColors.BORDER_DEFAULT);
                     }
                     // Category label
-                    int catColor = isCustom ? 0xFFc9a656 : 0xFF8899aa;
+                    int catColor = isCustom ? IsotopeColors.CATEGORY_CUSTOM : IsotopeColors.CATEGORY_BUILTIN;
                     graphics.drawString(font, "- " + currentCategory + " -", dialogX + PADDING + 8, y + 2, catColor, false);
                 }
                 y += 18;
@@ -159,13 +159,13 @@ public class TemplatePickerScreen extends Screen {
                 if (hovered) {
                     hoveredTemplate = i;
                     // Highlighted background
-                    graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, 0xFF3d5c7a);
-                    graphics.renderOutline(entryX, y, entryWidth, entryHeight, 0xFF5a8ab8);
+                    graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, IsotopeColors.SYNTAX_BLUE_DARK);
+                    graphics.renderOutline(entryX, y, entryWidth, entryHeight, IsotopeColors.SYNTAX_BLUE);
                 } else {
                     // Normal background
-                    int bgColor = isCustom ? 0xFF2e2a24 : 0xFF2a2a2a;
+                    int bgColor = isCustom ? IsotopeColors.CUSTOM_TEMPLATE_BG : IsotopeColors.ENTRY_BACKGROUND;
                     graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, bgColor);
-                    int outlineColor = isCustom ? 0xFF3d3a30 : 0xFF353535;
+                    int outlineColor = isCustom ? IsotopeColors.CUSTOM_TEMPLATE_BORDER : IsotopeColors.POOL_HEADER_HOVER;
                     graphics.renderOutline(entryX, y, entryWidth, entryHeight, outlineColor);
                 }
 
@@ -181,14 +181,14 @@ public class TemplatePickerScreen extends Screen {
                 }
 
                 // Template name (white for better readability)
-                graphics.drawString(font, template.name(), textX, y + 4, 0xFFFFFFFF, false);
+                graphics.drawString(font, template.name(), textX, y + 4, IsotopeColors.TEXT_PRIMARY, false);
 
                 // Custom badge
                 if (isCustom) {
                     int badgeX = textX + font.width(template.name()) + 6;
-                    graphics.fill(badgeX, y + 3, badgeX + 44, y + 14, 0xFF4a3d20);
-                    graphics.renderOutline(badgeX, y + 3, 44, 11, 0xFF6a5a30);
-                    graphics.drawString(font, "CUSTOM", badgeX + 4, y + 5, 0xFFdaa520, false);
+                    graphics.fill(badgeX, y + 3, badgeX + 44, y + 14, IsotopeColors.CUSTOM_BADGE_BG);
+                    graphics.renderOutline(badgeX, y + 3, 44, 11, IsotopeColors.CUSTOM_BADGE_BORDER);
+                    graphics.drawString(font, "CUSTOM", badgeX + 4, y + 5, IsotopeColors.ACCENT_GOLD, false);
                 }
 
                 // Template description
@@ -196,19 +196,19 @@ public class TemplatePickerScreen extends Screen {
                 if (desc.length() > 50) {
                     desc = desc.substring(0, 47) + "...";
                 }
-                graphics.drawString(font, desc, textX, y + 16, 0xFFaaaaaa, false);
+                graphics.drawString(font, desc, textX, y + 16, IsotopeColors.TEXT_SECONDARY, false);
 
                 // Count info
                 String countText = "Count: " + template.defaultCount().toString();
-                graphics.drawString(font, countText, textX, y + 28, 0xFF888888, false);
+                graphics.drawString(font, countText, textX, y + 28, IsotopeColors.SCROLLBAR_THUMB, false);
 
                 // Weight badge (right side)
                 String weightText = "Weight: " + template.defaultWeight();
                 int weightWidth = font.width(weightText) + 10;
                 int wBadgeX = entryX + entryWidth - weightWidth - 6;
-                graphics.fill(wBadgeX, y + 4, wBadgeX + weightWidth, y + 16, 0xFF383838);
-                graphics.renderOutline(wBadgeX, y + 4, weightWidth, 12, 0xFF484848);
-                graphics.drawString(font, weightText, wBadgeX + 5, y + 6, 0xFFcccccc, false);
+                graphics.fill(wBadgeX, y + 4, wBadgeX + weightWidth, y + 16, IsotopeColors.BORDER_INNER);
+                graphics.renderOutline(wBadgeX, y + 4, weightWidth, 12, IsotopeColors.WEIGHT_BADGE_OUTLINE);
+                graphics.drawString(font, weightText, wBadgeX + 5, y + 6, IsotopeColors.TEXT_SECONDARY, false);
             }
 
             y += TEMPLATE_HEIGHT;
@@ -226,14 +226,14 @@ public class TemplatePickerScreen extends Screen {
             int thumbY = listY + (int)((float)scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
 
             // Scrollbar track
-            graphics.fill(scrollbarX, listY, scrollbarX + 6, listY + listHeight, 0xFF1a1a1a);
+            graphics.fill(scrollbarX, listY, scrollbarX + 6, listY + listHeight, IsotopeColors.BACKGROUND_MEDIUM);
             // Scrollbar thumb
-            graphics.fill(scrollbarX + 1, thumbY + 1, scrollbarX + 5, thumbY + thumbHeight - 1, 0xFF606060);
+            graphics.fill(scrollbarX + 1, thumbY + 1, scrollbarX + 5, thumbY + thumbHeight - 1, IsotopeColors.BORDER_HIGHLIGHT);
         }
 
         // Help text (centered)
         String helpText = "Click a template to add it to the current pool";
-        graphics.drawCenteredString(font, helpText, width / 2, dialogY + DIALOG_HEIGHT - 44, 0xFF707070);
+        graphics.drawCenteredString(font, helpText, width / 2, dialogY + DIALOG_HEIGHT - 44, IsotopeColors.TEXT_MUTED);
 
         // Re-render buttons on top (super.render() rendered them first, but we drew over them)
         for (var widget : this.children()) {

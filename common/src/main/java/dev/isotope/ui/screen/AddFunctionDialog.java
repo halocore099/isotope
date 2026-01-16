@@ -245,11 +245,11 @@ public class AddFunctionDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF000000);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Header
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 30, 0xFF252525);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 30, IsotopeColors.POOL_HEADER_BACKGROUND);
         graphics.drawString(font, "Add Function", dialogX + 12, dialogY + 10, IsotopeColors.ACCENT_GOLD, false);
 
         // Preset list
@@ -269,10 +269,10 @@ public class AddFunctionDialog extends Screen {
                 mouseY >= itemY && mouseY < itemY + itemHeight;
 
             if (selected) {
-                graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, 0xFF2a3a4a);
+                graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, IsotopeColors.SINGLE_SELECT_BACKGROUND);
                 graphics.renderOutline(dialogX + 10, itemY, DIALOG_WIDTH - 20, itemHeight, IsotopeColors.ACCENT_GOLD);
             } else if (hovered) {
-                graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, 0xFF303030);
+                graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, IsotopeColors.INPUT_BACKGROUND);
             }
 
             // Icon
@@ -290,7 +290,7 @@ public class AddFunctionDialog extends Screen {
             FunctionPreset preset = presets.get(selectedPreset);
             int paramY = dialogY + DIALOG_HEIGHT - 80;
 
-            graphics.fill(dialogX, paramY, dialogX + DIALOG_WIDTH, paramY + 45, 0xFF252525);
+            graphics.fill(dialogX, paramY, dialogX + DIALOG_WIDTH, paramY + 45, IsotopeColors.POOL_HEADER_BACKGROUND);
 
             int paramX = dialogX + 15;
 
@@ -298,8 +298,8 @@ public class AddFunctionDialog extends Screen {
                 graphics.drawString(font, preset.param1Label, paramX, paramY + 8, IsotopeColors.TEXT_MUTED, false);
                 // Input box
                 int inputX = paramX + font.width(preset.param1Label) + 5;
-                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, 0xFF303030);
-                graphics.renderOutline(inputX, paramY + 5, 40, 14, 0xFF505050);
+                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, IsotopeColors.INPUT_BACKGROUND);
+                graphics.renderOutline(inputX, paramY + 5, 40, 14, IsotopeColors.INPUT_BORDER);
                 graphics.drawString(font, param1.isEmpty() ? preset.param1Default : param1, inputX + 3, paramY + 8,
                     param1.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY, false);
                 paramX = inputX + 50;
@@ -308,8 +308,8 @@ public class AddFunctionDialog extends Screen {
             if (preset.param2Label != null) {
                 graphics.drawString(font, preset.param2Label, paramX, paramY + 8, IsotopeColors.TEXT_MUTED, false);
                 int inputX = paramX + font.width(preset.param2Label) + 5;
-                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, 0xFF303030);
-                graphics.renderOutline(inputX, paramY + 5, 40, 14, 0xFF505050);
+                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, IsotopeColors.INPUT_BACKGROUND);
+                graphics.renderOutline(inputX, paramY + 5, 40, 14, IsotopeColors.INPUT_BORDER);
                 graphics.drawString(font, param2.isEmpty() ? preset.param2Default : param2, inputX + 3, paramY + 8,
                     param2.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY, false);
                 paramX = inputX + 50;
@@ -318,8 +318,8 @@ public class AddFunctionDialog extends Screen {
             if (preset.param3Label != null) {
                 graphics.drawString(font, preset.param3Label, paramX, paramY + 8, IsotopeColors.TEXT_MUTED, false);
                 int inputX = paramX + font.width(preset.param3Label) + 5;
-                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, 0xFF303030);
-                graphics.renderOutline(inputX, paramY + 5, 40, 14, 0xFF505050);
+                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, IsotopeColors.INPUT_BACKGROUND);
+                graphics.renderOutline(inputX, paramY + 5, 40, 14, IsotopeColors.INPUT_BORDER);
                 graphics.drawString(font, param3.isEmpty() ? preset.param3Default : param3, inputX + 3, paramY + 8,
                     param3.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY, false);
             }

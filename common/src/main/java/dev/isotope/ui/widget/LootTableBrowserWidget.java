@@ -293,12 +293,12 @@ public class LootTableBrowserWidget extends AbstractWidget {
         hoveredFeatureTable = null;
 
         // Background
-        graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1e1e1e);
+        graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_PANEL);
 
         int y = getY();
 
         // Search box area
-        graphics.fill(getX(), y, getX() + width, y + SEARCH_HEIGHT + 4, 0xFF252525);
+        graphics.fill(getX(), y, getX() + width, y + SEARCH_HEIGHT + 4, IsotopeColors.POOL_HEADER_BACKGROUND);
         if (searchBox == null) {
             searchBox = new EditBox(font, getX() + 4, y + 2, width - 8, SEARCH_HEIGHT, Component.literal("Search"));
             searchBox.setHint(Component.literal("Search..."));
@@ -311,7 +311,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         y += SEARCH_HEIGHT + 4;
 
         // Mod filter
-        graphics.fill(getX(), y, getX() + width, y + MOD_FILTER_HEIGHT + 4, 0xFF252525);
+        graphics.fill(getX(), y, getX() + width, y + MOD_FILTER_HEIGHT + 4, IsotopeColors.POOL_HEADER_BACKGROUND);
         graphics.drawString(font, "Mod:", getX() + 4, y + 6, IsotopeColors.TEXT_MUTED, false);
 
         // Mod dropdown button
@@ -321,8 +321,8 @@ public class LootTableBrowserWidget extends AbstractWidget {
             mouseY >= y + 2 && mouseY < y + MOD_FILTER_HEIGHT + 2;
 
         graphics.fill(dropdownX, y + 2, dropdownX + dropdownWidth, y + MOD_FILTER_HEIGHT + 2,
-            dropdownHovered ? 0xFF404040 : 0xFF303030);
-        graphics.renderOutline(dropdownX, y + 2, dropdownWidth, MOD_FILTER_HEIGHT, 0xFF505050);
+            dropdownHovered ? IsotopeColors.BORDER_DEFAULT : IsotopeColors.INPUT_BACKGROUND);
+        graphics.renderOutline(dropdownX, y + 2, dropdownWidth, MOD_FILTER_HEIGHT, IsotopeColors.INPUT_BORDER);
 
         String modDisplay = selectedMod.length() > 18 ? selectedMod.substring(0, 16) + "..." : selectedMod;
         graphics.drawString(font, modDisplay, dropdownX + 4, y + 6, IsotopeColors.TEXT_PRIMARY, false);
@@ -348,9 +348,9 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Bookmarks header
             if (renderY + CATEGORY_HEIGHT > listY && renderY < getY() + height) {
-                graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, 0xFF2a2520);
+                graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, IsotopeColors.CATEGORY_BOOKMARKS);
                 if (catHovered) {
-                    graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, 0xFF3a3530);
+                    graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, IsotopeColors.CATEGORY_BOOKMARKS_HOVER);
                 }
 
                 String arrow = bookmarksSectionExpanded ? "▼" : "▶";
@@ -372,9 +372,9 @@ public class LootTableBrowserWidget extends AbstractWidget {
                             renderY >= listY && renderY < getY() + height;
 
                         if (isSelected) {
-                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, 0xFF5a4a2a);
+                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, IsotopeColors.ITEM_BOOKMARKS_SELECTED);
                         } else if (itemHovered) {
-                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, 0xFF3a3020);
+                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, IsotopeColors.ITEM_BOOKMARKS_HOVER);
                         }
 
                         // Star icon
@@ -385,7 +385,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
                             path = font.plainSubstrByWidth(path, width - INDENT - 24) + "...";
                         }
                         graphics.drawString(font, path, getX() + INDENT + 4, renderY + 4,
-                            isSelected ? 0xFFFFFFFF : IsotopeColors.TEXT_SECONDARY, false);
+                            isSelected ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_SECONDARY, false);
                     }
                     renderY += ITEM_HEIGHT;
                 }
@@ -401,9 +401,9 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Recent header
             if (renderY + CATEGORY_HEIGHT > listY && renderY < getY() + height) {
-                graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, 0xFF202530);
+                graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, IsotopeColors.CATEGORY_RECENT);
                 if (catHovered) {
-                    graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, 0xFF303540);
+                    graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, IsotopeColors.CATEGORY_RECENT_HOVER);
                 }
 
                 String arrow = recentSectionExpanded ? "▼" : "▶";
@@ -425,9 +425,9 @@ public class LootTableBrowserWidget extends AbstractWidget {
                             renderY >= listY && renderY < getY() + height;
 
                         if (isSelected) {
-                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, 0xFF2a4a5a);
+                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, IsotopeColors.ITEM_RECENT_SELECTED);
                         } else if (itemHovered) {
-                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, 0xFF253035);
+                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, IsotopeColors.ITEM_RECENT_HOVER);
                         }
 
                         // Clock icon
@@ -438,7 +438,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
                             path = font.plainSubstrByWidth(path, width - INDENT - 24) + "...";
                         }
                         graphics.drawString(font, path, getX() + INDENT + 4, renderY + 4,
-                            isSelected ? 0xFFFFFFFF : IsotopeColors.TEXT_SECONDARY, false);
+                            isSelected ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_SECONDARY, false);
                     }
                     renderY += ITEM_HEIGHT;
                 }
@@ -506,7 +506,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
             // Category header
             if (renderY + CATEGORY_HEIGHT > listY && renderY < getY() + height) {
                 if (catHovered) {
-                    graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, 0xFF303030);
+                    graphics.fill(getX(), renderY, getX() + width, renderY + CATEGORY_HEIGHT, IsotopeColors.INPUT_BACKGROUND);
                 }
 
                 String arrow = expanded ? "▼" : "▶";
@@ -535,15 +535,15 @@ public class LootTableBrowserWidget extends AbstractWidget {
                             renderY >= listY && renderY < getY() + height;
 
                         if (isSelected) {
-                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, 0xFF3a5a8a);
+                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, IsotopeColors.ITEM_ENTITY_SELECTED);
                         } else if (itemHovered || starHovered) {
-                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, 0xFF353535);
+                            graphics.fill(getX(), renderY, getX() + width, renderY + ITEM_HEIGHT, IsotopeColors.POOL_HEADER_HOVER);
                         }
 
                         // Bookmark star (click target)
                         String star = isBookmarked ? "★" : (starHovered ? "☆" : "");
                         if (!star.isEmpty()) {
-                            int starColor = isBookmarked ? IsotopeColors.ACCENT_GOLD : 0xFF666666;
+                            int starColor = isBookmarked ? IsotopeColors.ACCENT_GOLD : IsotopeColors.STAR_MUTED;
                             graphics.drawString(font, star, getX() + 3, renderY + 4, starColor, false);
                         }
 
@@ -611,7 +611,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
                             path = font.plainSubstrByWidth(path, width - INDENT - textRightPadding - 8) + "...";
                         }
                         graphics.drawString(font, path, getX() + INDENT + 4, renderY + 4,
-                            isSelected ? 0xFFFFFFFF : IsotopeColors.TEXT_SECONDARY, false);
+                            isSelected ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_SECONDARY, false);
                     }
                     renderY += ITEM_HEIGHT;
                 }
@@ -627,8 +627,8 @@ public class LootTableBrowserWidget extends AbstractWidget {
             int thumbHeight = Math.max(20, (int) ((float) listHeight / (listHeight + maxScroll) * scrollbarHeight));
             int thumbY = listY + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, listY, scrollbarX + 3, listY + scrollbarHeight, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, 0xFF555555);
+            graphics.fill(scrollbarX, listY, scrollbarX + 3, listY + scrollbarHeight, IsotopeColors.ENTRY_BACKGROUND);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
         }
 
         // Mod dropdown overlay (render last so it's on top)
@@ -636,8 +636,8 @@ public class LootTableBrowserWidget extends AbstractWidget {
             int dropY = getY() + SEARCH_HEIGHT + MOD_FILTER_HEIGHT + 6;
             int dropHeight = Math.min(availableMods.size() * 16 + 4, 200);
 
-            graphics.fill(dropdownX - 1, dropY - 1, dropdownX + dropdownWidth + 1, dropY + dropHeight + 1, 0xFF606060);
-            graphics.fill(dropdownX, dropY, dropdownX + dropdownWidth, dropY + dropHeight, 0xFF2a2a2a);
+            graphics.fill(dropdownX - 1, dropY - 1, dropdownX + dropdownWidth + 1, dropY + dropHeight + 1, IsotopeColors.BORDER_HIGHLIGHT);
+            graphics.fill(dropdownX, dropY, dropdownX + dropdownWidth, dropY + dropHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             int itemY = dropY + 2;
             for (String mod : availableMods) {
@@ -647,7 +647,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
                     mouseY >= itemY && mouseY < itemY + 14;
 
                 if (itemHovered) {
-                    graphics.fill(dropdownX, itemY, dropdownX + dropdownWidth, itemY + 14, 0xFF404040);
+                    graphics.fill(dropdownX, itemY, dropdownX + dropdownWidth, itemY + 14, IsotopeColors.BORDER_DEFAULT);
                 }
 
                 String display = mod.length() > 20 ? mod.substring(0, 18) + "..." : mod;
@@ -684,15 +684,15 @@ public class LootTableBrowserWidget extends AbstractWidget {
                 int tooltipY = hoveredOrphanY;
 
                 // Draw tooltip background
-                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
-                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF1a1a2e);
-                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF252540);
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.BORDER_OUTER_DARK);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.TOOLTIP_BACKGROUND);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, IsotopeColors.TOOLTIP_BACKGROUND_WARNING);
 
                 // Draw lines
                 int lineY = tooltipY + 4;
                 for (String line : lines) {
                     // Handle simple formatting codes
-                    int color = 0xFFFFFFFF;
+                    int color = IsotopeColors.TEXT_PRIMARY;
                     String text = line;
                     if (line.startsWith("§e")) {
                         color = IsotopeColors.STATUS_WARNING;
@@ -737,14 +737,14 @@ public class LootTableBrowserWidget extends AbstractWidget {
                 int tooltipY = hoveredMobY;
 
                 // Draw tooltip background (purple tint for mobs)
-                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
-                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF2a1a3e);
-                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF352540);
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.BORDER_OUTER_DARK);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.TOOLTIP_ENTITY_BG);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, IsotopeColors.TOOLTIP_ENTITY_INNER);
 
                 // Draw lines
                 int lineY = tooltipY + 4;
                 for (String line : lines) {
-                    int color = 0xFFFFFFFF;
+                    int color = IsotopeColors.TEXT_PRIMARY;
                     String text = line;
                     if (line.startsWith("§p")) {
                         color = IsotopeColors.SOURCE_MOB;
@@ -794,14 +794,14 @@ public class LootTableBrowserWidget extends AbstractWidget {
                 int tooltipY = hoveredFeatureY;
 
                 // Draw tooltip background (orange tint for features)
-                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
-                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF3e2a1a);
-                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF402520);
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.BORDER_OUTER_DARK);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.TOOLTIP_FEATURE_BG);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, IsotopeColors.TOOLTIP_FEATURE_INNER);
 
                 // Draw lines
                 int lineY = tooltipY + 4;
                 for (String line : lines) {
-                    int color = 0xFFFFFFFF;
+                    int color = IsotopeColors.TEXT_PRIMARY;
                     String text = line;
                     if (line.startsWith("§f")) {
                         color = IsotopeColors.SOURCE_FEATURE;

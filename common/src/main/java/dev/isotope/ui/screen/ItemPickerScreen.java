@@ -155,8 +155,8 @@ public class ItemPickerScreen extends Screen {
         graphics.fill(0, 0, width, height, 0x80000000);
 
         // Panel background
-        graphics.fill(panelX - 2, panelY - 2, panelX + panelWidth + 2, panelY + panelHeight + 2, 0xFF404040);
-        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xFF1a1a1a);
+        graphics.fill(panelX - 2, panelY - 2, panelX + panelWidth + 2, panelY + panelHeight + 2, IsotopeColors.BORDER_DEFAULT);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title
         graphics.drawCenteredString(font, title, panelX + panelWidth / 2, panelY + 10, IsotopeColors.TEXT_PRIMARY);
@@ -169,8 +169,8 @@ public class ItemPickerScreen extends Screen {
             mouseY >= modDropdownY && mouseY < modDropdownY + 18 && !modDropdownOpen;
 
         graphics.fill(modDropdownX, modDropdownY, modDropdownX + modDropdownWidth, modDropdownY + 18,
-            dropdownHovered ? 0xFF404040 : 0xFF303030);
-        graphics.renderOutline(modDropdownX, modDropdownY, modDropdownWidth, 18, 0xFF505050);
+            dropdownHovered ? IsotopeColors.BORDER_DEFAULT : IsotopeColors.INPUT_BACKGROUND);
+        graphics.renderOutline(modDropdownX, modDropdownY, modDropdownWidth, 18, IsotopeColors.INPUT_BORDER);
 
         String modDisplay = selectedMod;
         if (font.width(modDisplay) > modDropdownWidth - 20) {
@@ -180,7 +180,7 @@ public class ItemPickerScreen extends Screen {
         graphics.drawString(font, "▼", modDropdownX + modDropdownWidth - 12, modDropdownY + 5, IsotopeColors.TEXT_MUTED, false);
 
         // Grid background
-        graphics.fill(gridX, gridY, gridX + gridWidth, gridY + gridHeight, 0xFF252525);
+        graphics.fill(gridX, gridY, gridX + gridWidth, gridY + gridHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
 
         // Item count
         String countText = filteredItems.size() + " items" + (filteredItems.size() >= 1000 ? "+" : "");
@@ -209,7 +209,7 @@ public class ItemPickerScreen extends Screen {
                              mouseY >= gridY && mouseY < gridY + gridHeight;
 
             if (hovered) {
-                graphics.fill(itemX - 1, itemY - 1, itemX + ITEM_SIZE + 1, itemY + ITEM_SIZE + 1, 0xFF3a5a8a);
+                graphics.fill(itemX - 1, itemY - 1, itemX + ITEM_SIZE + 1, itemY + ITEM_SIZE + 1, IsotopeColors.ITEM_ENTITY_SELECTED);
             }
 
             // Render item
@@ -224,8 +224,8 @@ public class ItemPickerScreen extends Screen {
             int thumbHeight = Math.max(20, (int) ((float) gridHeight / (gridHeight + maxScroll) * gridHeight));
             int thumbY = gridY + (int) ((float) scrollOffset / maxScroll * (gridHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, gridY, scrollbarX + 3, gridY + gridHeight, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, 0xFF555555);
+            graphics.fill(scrollbarX, gridY, scrollbarX + 3, gridY + gridHeight, IsotopeColors.ENTRY_BACKGROUND);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
         }
 
         // Mod dropdown overlay (render on top)
@@ -233,8 +233,8 @@ public class ItemPickerScreen extends Screen {
             int maxVisible = 12;
             int dropHeight = Math.min(availableMods.size(), maxVisible) * 14 + 4;
 
-            graphics.fill(modDropdownX - 1, modDropdownY + 18, modDropdownX + modDropdownWidth + 1, modDropdownY + 18 + dropHeight + 1, 0xFF606060);
-            graphics.fill(modDropdownX, modDropdownY + 18, modDropdownX + modDropdownWidth, modDropdownY + 18 + dropHeight, 0xFF2a2a2a);
+            graphics.fill(modDropdownX - 1, modDropdownY + 18, modDropdownX + modDropdownWidth + 1, modDropdownY + 18 + dropHeight + 1, IsotopeColors.BORDER_HIGHLIGHT);
+            graphics.fill(modDropdownX, modDropdownY + 18, modDropdownX + modDropdownWidth, modDropdownY + 18 + dropHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             graphics.enableScissor(modDropdownX, modDropdownY + 18, modDropdownX + modDropdownWidth, modDropdownY + 18 + dropHeight);
 
@@ -245,7 +245,7 @@ public class ItemPickerScreen extends Screen {
                         mouseY >= itemY && mouseY < itemY + 14;
 
                     if (itemHovered) {
-                        graphics.fill(modDropdownX, itemY, modDropdownX + modDropdownWidth, itemY + 14, 0xFF404040);
+                        graphics.fill(modDropdownX, itemY, modDropdownX + modDropdownWidth, itemY + 14, IsotopeColors.BORDER_DEFAULT);
                     }
 
                     String display = mod;

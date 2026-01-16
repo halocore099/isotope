@@ -236,14 +236,14 @@ public class CompareScreen extends Screen {
         int halfWidth = width / 2;
 
         // Header background
-        graphics.fill(0, 0, width, HEADER_HEIGHT, 0xFF1a1a1a);
-        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, 0xFF333333);
+        graphics.fill(0, 0, width, HEADER_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawCenteredString(font, "Compare Loot Tables", width / 2, 8, IsotopeColors.ACCENT_GOLD);
 
         // Divider line
-        graphics.fill(halfWidth - 1, HEADER_HEIGHT, halfWidth + 1, height, 0xFF333333);
+        graphics.fill(halfWidth - 1, HEADER_HEIGHT, halfWidth + 1, height, IsotopeColors.BORDER_DEFAULT);
 
         // Left panel header
         if (leftTableId != null) {
@@ -293,8 +293,8 @@ public class CompareScreen extends Screen {
             int thumbHeight = Math.max(20, (int) ((float) viewHeight / (viewHeight + maxScroll) * viewHeight));
             int thumbY = HEADER_HEIGHT + (int) ((float) scrollOffset / maxScroll * (viewHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, HEADER_HEIGHT, scrollbarX + 4, height, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+            graphics.fill(scrollbarX, HEADER_HEIGHT, scrollbarX + 4, height, IsotopeColors.ENTRY_BACKGROUND);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
         }
 
         // Render widgets
@@ -320,7 +320,7 @@ public class CompareScreen extends Screen {
 
             // Pool header
             if (currentY + POOL_HEADER_HEIGHT > HEADER_HEIGHT && currentY < height) {
-                graphics.fill(x, currentY, x + panelWidth, currentY + POOL_HEADER_HEIGHT - 2, 0xFF252525);
+                graphics.fill(x, currentY, x + panelWidth, currentY + POOL_HEADER_HEIGHT - 2, IsotopeColors.POOL_HEADER_BACKGROUND);
 
                 String poolLabel = "Pool " + (poolIdx + 1) + " (" + pool.entries().size() + " entries)";
                 graphics.drawString(font, poolLabel, x + 4, currentY + 5, IsotopeColors.TEXT_PRIMARY, false);
@@ -343,7 +343,7 @@ public class CompareScreen extends Screen {
 
                     // Background for difference highlighting
                     if (differs) {
-                        graphics.fill(x, currentY, x + panelWidth, currentY + ENTRY_HEIGHT, 0xFF3a2a1a);
+                        graphics.fill(x, currentY, x + panelWidth, currentY + ENTRY_HEIGHT, IsotopeColors.DIFF_HIGHLIGHT);
                     }
 
                     // Item icon
@@ -361,7 +361,7 @@ public class CompareScreen extends Screen {
                     if (font.width(entryName) > panelWidth - 100) {
                         entryName = font.plainSubstrByWidth(entryName, panelWidth - 110) + "...";
                     }
-                    int nameColor = differs ? 0xFFFFAA00 : IsotopeColors.TEXT_SECONDARY;
+                    int nameColor = differs ? IsotopeColors.SOURCE_FEATURE : IsotopeColors.TEXT_SECONDARY;
                     graphics.drawString(font, entryName, x + 20, currentY + 5, nameColor, false);
 
                     // Weight
@@ -411,8 +411,8 @@ public class CompareScreen extends Screen {
             int dropY = 50;
             int dropHeight = Math.min(filteredTablesLeft.size() * 14 + 4, 150);
 
-            graphics.fill(PADDING - 1, dropY - 1, halfWidth - PADDING + 1, dropY + dropHeight + 1, 0xFF606060);
-            graphics.fill(PADDING, dropY, halfWidth - PADDING, dropY + dropHeight, 0xFF2a2a2a);
+            graphics.fill(PADDING - 1, dropY - 1, halfWidth - PADDING + 1, dropY + dropHeight + 1, IsotopeColors.BORDER_HIGHLIGHT);
+            graphics.fill(PADDING, dropY, halfWidth - PADDING, dropY + dropHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             int itemY = dropY + 2;
             for (ResourceLocation id : filteredTablesLeft) {
@@ -420,7 +420,7 @@ public class CompareScreen extends Screen {
                     mouseY >= itemY && mouseY < itemY + 14;
 
                 if (hovered) {
-                    graphics.fill(PADDING, itemY, halfWidth - PADDING, itemY + 14, 0xFF404040);
+                    graphics.fill(PADDING, itemY, halfWidth - PADDING, itemY + 14, IsotopeColors.BORDER_DEFAULT);
                 }
 
                 String display = id.toString();
@@ -437,8 +437,8 @@ public class CompareScreen extends Screen {
             int dropY = 50;
             int dropHeight = Math.min(filteredTablesRight.size() * 14 + 4, 150);
 
-            graphics.fill(halfWidth + PADDING - 1, dropY - 1, width - PADDING + 1, dropY + dropHeight + 1, 0xFF606060);
-            graphics.fill(halfWidth + PADDING, dropY, width - PADDING, dropY + dropHeight, 0xFF2a2a2a);
+            graphics.fill(halfWidth + PADDING - 1, dropY - 1, width - PADDING + 1, dropY + dropHeight + 1, IsotopeColors.BORDER_HIGHLIGHT);
+            graphics.fill(halfWidth + PADDING, dropY, width - PADDING, dropY + dropHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             int itemY = dropY + 2;
             for (ResourceLocation id : filteredTablesRight) {
@@ -446,7 +446,7 @@ public class CompareScreen extends Screen {
                     mouseY >= itemY && mouseY < itemY + 14;
 
                 if (hovered) {
-                    graphics.fill(halfWidth + PADDING, itemY, width - PADDING, itemY + 14, 0xFF404040);
+                    graphics.fill(halfWidth + PADDING, itemY, width - PADDING, itemY + 14, IsotopeColors.BORDER_DEFAULT);
                 }
 
                 String display = id.toString();

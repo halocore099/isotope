@@ -25,10 +25,10 @@ public class IsotopeToast implements Toast {
     private static final int FADE_TIME_MS = 200;
 
     public enum Type {
-        SUCCESS(0xFF4ec9b0, "✓"),  // Teal/green - VS Code success
-        ERROR(0xFFf14c4c, "✕"),    // Red - VS Code error
-        INFO(0xFF3794ff, "ℹ"),     // Blue - VS Code info
-        WARNING(0xFFcca700, "⚠");  // Yellow - VS Code warning
+        SUCCESS(IsotopeColors.SYNTAX_CYAN, "✓"),  // Teal/green - VS Code success
+        ERROR(IsotopeColors.ERROR_BRIGHT, "✕"),    // Red - VS Code error
+        INFO(IsotopeColors.TOAST_INFO, "ℹ"),     // Blue - VS Code info
+        WARNING(IsotopeColors.ACCENT_GOLD, "⚠");  // Yellow - VS Code warning
 
         public final int color;
         public final String icon;
@@ -85,14 +85,14 @@ public class IsotopeToast implements Toast {
 
         // Background with shadow
         graphics.fill(2, 2, width(), height(), (int)(alpha * 0x40) << 24); // Shadow
-        graphics.fill(0, 0, width() - 2, height() - 2, (bgAlpha << 24) | 0x1e1e1e);
+        graphics.fill(0, 0, width() - 2, height() - 2, (bgAlpha << 24) | (IsotopeColors.TOAST_BACKGROUND & 0x00FFFFFF));
 
         // Colored accent bar (left edge)
         int accentColor = (textAlpha << 24) | (type.color & 0x00FFFFFF);
         graphics.fill(0, 0, 3, height() - 2, accentColor);
 
         // Border
-        int borderColor = (int)(alpha * 0x50) << 24 | 0x454545;
+        int borderColor = (int)(alpha * 0x50) << 24 | (IsotopeColors.TOAST_BORDER & 0x00FFFFFF);
         graphics.renderOutline(0, 0, width() - 2, height() - 2, borderColor);
 
         // Icon
@@ -100,11 +100,11 @@ public class IsotopeToast implements Toast {
         graphics.drawString(font, type.icon, 8, 7, iconColor, false);
 
         // Title
-        int titleColor = (textAlpha << 24) | 0xE0E0E0;
+        int titleColor = (textAlpha << 24) | (IsotopeColors.TOAST_TITLE & 0x00FFFFFF);
         graphics.drawString(font, title, 22, 7, titleColor, false);
 
         // Message (dimmer)
-        int messageColor = (textAlpha << 24) | 0x969696;
+        int messageColor = (textAlpha << 24) | (IsotopeColors.TOAST_MESSAGE & 0x00FFFFFF);
         graphics.drawString(font, message, 22, 19, messageColor, false);
 
         // ISOTOPE badge (subtle)

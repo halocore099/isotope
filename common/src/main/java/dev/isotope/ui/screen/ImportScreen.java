@@ -138,15 +138,15 @@ public class ImportScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF333333);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_DEFAULT);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Title
         graphics.drawCenteredString(font, "Import Datapack", width / 2, dialogY + 10, IsotopeColors.ACCENT_GOLD);
 
         // Separator
         int separatorY = dialogY + 55;
-        graphics.fill(dialogX + PADDING, separatorY, dialogX + DIALOG_WIDTH - PADDING, separatorY + 1, 0xFF333333);
+        graphics.fill(dialogX + PADDING, separatorY, dialogX + DIALOG_WIDTH - PADDING, separatorY + 1, IsotopeColors.BORDER_DEFAULT);
 
         // Section header
         graphics.drawString(font, "Available Datapacks:", dialogX + PADDING, dialogY + 60, IsotopeColors.TEXT_PRIMARY, false);
@@ -158,7 +158,7 @@ public class ImportScreen extends Screen {
         int listHeight = DIALOG_HEIGHT - 170;
 
         // List background
-        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, 0xFF252525);
+        graphics.fill(listX, listY, listX + listWidth, listY + listHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
 
         if (datapacks.isEmpty() && !importing) {
             graphics.drawCenteredString(font, "No datapacks found with loot tables",
@@ -178,13 +178,13 @@ public class ImportScreen extends Screen {
 
                     // Background
                     if (isSelected) {
-                        graphics.fill(listX, renderY, listX + listWidth, renderY + LIST_ITEM_HEIGHT, 0xFF3a5a8a);
+                        graphics.fill(listX, renderY, listX + listWidth, renderY + LIST_ITEM_HEIGHT, IsotopeColors.ITEM_ENTITY_SELECTED);
                     } else if (isHovered) {
-                        graphics.fill(listX, renderY, listX + listWidth, renderY + LIST_ITEM_HEIGHT, 0xFF353535);
+                        graphics.fill(listX, renderY, listX + listWidth, renderY + LIST_ITEM_HEIGHT, IsotopeColors.POOL_HEADER_HOVER);
                     }
 
                     // Datapack name
-                    int textColor = isSelected ? 0xFFFFFFFF : IsotopeColors.TEXT_PRIMARY;
+                    int textColor = isSelected ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_PRIMARY;
                     graphics.drawString(font, info.name(), listX + 4, renderY + 4, textColor, false);
 
                     // Loot table count
@@ -217,8 +217,8 @@ public class ImportScreen extends Screen {
                 int thumbHeight = Math.max(20, (int) ((float) listHeight / (listHeight + maxScroll) * listHeight));
                 int thumbY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - thumbHeight));
 
-                graphics.fill(scrollbarX, listY, scrollbarX + 3, listY + listHeight, 0xFF2a2a2a);
-                graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, 0xFF555555);
+                graphics.fill(scrollbarX, listY, scrollbarX + 3, listY + listHeight, IsotopeColors.ENTRY_BACKGROUND);
+                graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
             }
         }
 
@@ -226,7 +226,7 @@ public class ImportScreen extends Screen {
         if (!importLog.isEmpty()) {
             int logY = listY + listHeight + 5;
             int logHeight = 40;
-            graphics.fill(listX, logY, listX + listWidth, logY + logHeight, 0xFF1e1e1e);
+            graphics.fill(listX, logY, listX + listWidth, logY + logHeight, IsotopeColors.BACKGROUND_PANEL);
 
             int lineY = logY + 2;
             int linesToShow = Math.min(3, importLog.size());

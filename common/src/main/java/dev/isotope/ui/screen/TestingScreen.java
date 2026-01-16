@@ -713,12 +713,12 @@ public class TestingScreen extends Screen {
         int panelY = (height - PANEL_HEIGHT) / 2;
 
         // Panel background
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, 0xFF000000);
+        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Header
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 40, IsotopeColors.BACKGROUND_SOLID);
-        graphics.fill(panelX + 8, panelY + 10, panelX + 12, panelY + 30, 0xFF44aa44); // Green indicator
+        graphics.fill(panelX + 8, panelY + 10, panelX + 12, panelY + 30, IsotopeColors.TEST_INDICATOR); // Green indicator
         graphics.drawString(font, "ISOTOPE TEST MODE", panelX + 18, panelY + 14, IsotopeColors.ACCENT_GOLD, false);
 
         // World type
@@ -806,8 +806,8 @@ public class TestingScreen extends Screen {
 
     private void renderEntry(GuiGraphics graphics, int x, int y, int entryWidth, TableEntry entry) {
         // Entry background - purple tint for mob loot
-        int bgColor = entry.isMobLoot() ? 0xFF2a1a3a : IsotopeColors.BACKGROUND_DARK;
-        int borderColor = entry.isMobLoot() ? 0xFF4a3a5a : 0xFF383838;
+        int bgColor = entry.isMobLoot() ? IsotopeColors.MOB_LOOT_BG : IsotopeColors.BACKGROUND_DARK;
+        int borderColor = entry.isMobLoot() ? IsotopeColors.MOB_LOOT_BORDER : IsotopeColors.BORDER_INNER;
         graphics.fill(x, y, x + entryWidth, y + 60, bgColor);
         graphics.renderOutline(x, y, entryWidth, 60, borderColor);
 
@@ -836,7 +836,7 @@ public class TestingScreen extends Screen {
                 graphics.drawString(font, "No linked structures", x + 8, y + 20, IsotopeColors.TEXT_MUTED, false);
             } else {
                 String info = entry.structures.size() + " structure" + (entry.structures.size() != 1 ? "s" : "");
-                graphics.drawString(font, info, x + 8, y + 20, 0xFF88aa88, false);
+                graphics.drawString(font, info, x + 8, y + 20, IsotopeColors.STRUCTURE_INFO, false);
             }
         }
     }
@@ -868,6 +868,6 @@ public class TestingScreen extends Screen {
     @Override
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Don't call super - just fill with solid color to prevent blur
-        graphics.fill(0, 0, this.width, this.height, 0xFF1a1a1a);
+        graphics.fill(0, 0, this.width, this.height, IsotopeColors.BACKGROUND_MEDIUM);
     }
 }

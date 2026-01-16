@@ -88,11 +88,11 @@ public class HistoryLogPanel extends AbstractWidget {
         int renderHeight = getActualHeight();
 
         // Background
-        graphics.fill(getX(), getY(), getX() + width, getY() + renderHeight, 0xFF1a1a1a);
-        graphics.renderOutline(getX(), getY(), width, renderHeight, 0xFF333333);
+        graphics.fill(getX(), getY(), getX() + width, getY() + renderHeight, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(getX(), getY(), width, renderHeight, IsotopeColors.BORDER_DEFAULT);
 
         // Header
-        graphics.fill(getX(), getY(), getX() + width, getY() + HEADER_HEIGHT, 0xFF252525);
+        graphics.fill(getX(), getY(), getX() + width, getY() + HEADER_HEIGHT, IsotopeColors.POOL_HEADER_BACKGROUND);
 
         // Collapse arrow
         String arrow = collapsed ? "▶" : "▼";
@@ -116,11 +116,11 @@ public class HistoryLogPanel extends AbstractWidget {
         if (entries == null || entries.isEmpty()) {
             int centerX = getX() + width / 2;
             int centerY = getY() + HEADER_HEIGHT + 50;
-            graphics.drawString(font, "📝", centerX - 6, centerY - 20, 0xFF3a3a3a, false);
+            graphics.drawString(font, "📝", centerX - 6, centerY - 20, IsotopeColors.ENTRY_BACKGROUND_HOVER, false);
             String msg = "No changes yet";
             graphics.drawString(font, msg, centerX - font.width(msg) / 2, centerY, IsotopeColors.TEXT_MUTED, false);
             String hint = "Edit a loot table to see history";
-            graphics.drawString(font, hint, centerX - font.width(hint) / 2, centerY + 14, 0xFF555555, false);
+            graphics.drawString(font, hint, centerX - font.width(hint) / 2, centerY + 14, IsotopeColors.BUTTON_BACKGROUND, false);
             return;
         }
 
@@ -170,22 +170,22 @@ public class HistoryLogPanel extends AbstractWidget {
             int thumbHeight = Math.max(10, (int) ((float) viewHeight / (viewHeight + maxScroll) * viewHeight));
             int thumbY = getY() + HEADER_HEIGHT + (int) ((float) scrollOffset / maxScroll * (viewHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 3, getY() + expandedHeight, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, 0xFF555555);
+            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 3, getY() + expandedHeight, IsotopeColors.ENTRY_BACKGROUND);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
         }
     }
 
     private int getOperationColor(String operationType) {
         return switch (operationType) {
             case "ADD_POOL", "ADD_ENTRY", "ADD_FUNCTION", "ADD_CONDITION",
-                 "ADD_POOL_FUNC", "ADD_POOL_COND", "ADD_TABLE_FUNC", "ADD_CHILD" -> 0xFF55FF55;  // Green
+                 "ADD_POOL_FUNC", "ADD_POOL_COND", "ADD_TABLE_FUNC", "ADD_CHILD" -> IsotopeColors.ACCENT_GREEN;  // Green
             case "REMOVE_POOL", "REMOVE_ENTRY", "REMOVE_FUNCTION", "REMOVE_CONDITION",
-                 "REMOVE_POOL_FUNC", "REMOVE_POOL_COND", "REMOVE_TABLE_FUNC", "REMOVE_CHILD" -> 0xFFFF5555;  // Red
-            case "UNDO" -> 0xFF888888;  // Gray
-            case "REDO" -> 0xFFAAAAFF;  // Light blue
-            case "SET_RANDOM_SEQ" -> 0xFF55FFFF;  // Cyan
-            case "MODIFY_CHILD" -> 0xFFFF9955;  // Orange
-            default -> 0xFFFFFF55;  // Yellow for modifications
+                 "REMOVE_POOL_FUNC", "REMOVE_POOL_COND", "REMOVE_TABLE_FUNC", "REMOVE_CHILD" -> IsotopeColors.STATUS_ERROR;  // Red
+            case "UNDO" -> IsotopeColors.SCROLLBAR_THUMB;  // Gray
+            case "REDO" -> IsotopeColors.ACCENT_BLUE;  // Light blue
+            case "SET_RANDOM_SEQ" -> IsotopeColors.ACCENT_AQUA;  // Cyan
+            case "MODIFY_CHILD" -> IsotopeColors.SOURCE_FEATURE;  // Orange
+            default -> IsotopeColors.STATUS_WARNING;  // Yellow for modifications
         };
     }
 

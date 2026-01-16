@@ -208,11 +208,11 @@ public class AddConditionDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, 0xFF000000);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xFF1a1a1a);
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
         // Header
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 30, 0xFF252525);
+        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 30, IsotopeColors.POOL_HEADER_BACKGROUND);
         graphics.drawString(font, "Add Condition", dialogX + 12, dialogY + 10, IsotopeColors.ACCENT_GOLD, false);
 
         // Preset list
@@ -232,10 +232,10 @@ public class AddConditionDialog extends Screen {
                 mouseY >= itemY && mouseY < itemY + itemHeight;
 
             if (selected) {
-                graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, 0xFF2a3a4a);
+                graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, IsotopeColors.SINGLE_SELECT_BACKGROUND);
                 graphics.renderOutline(dialogX + 10, itemY, DIALOG_WIDTH - 20, itemHeight, IsotopeColors.ACCENT_GOLD);
             } else if (hovered) {
-                graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, 0xFF303030);
+                graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, IsotopeColors.INPUT_BACKGROUND);
             }
 
             // Icon
@@ -253,7 +253,7 @@ public class AddConditionDialog extends Screen {
             ConditionPreset preset = presets.get(selectedPreset);
             int paramY = dialogY + DIALOG_HEIGHT - 95;
 
-            graphics.fill(dialogX, paramY, dialogX + DIALOG_WIDTH, paramY + 60, 0xFF252525);
+            graphics.fill(dialogX, paramY, dialogX + DIALOG_WIDTH, paramY + 60, IsotopeColors.POOL_HEADER_BACKGROUND);
 
             int paramX = dialogX + 15;
 
@@ -263,8 +263,8 @@ public class AddConditionDialog extends Screen {
                 int inputX = paramX + font.width(preset.param1Label) + 5;
                 int inputWidth = 60;
                 boolean field1Selected = activeParamField == 1;
-                graphics.fill(inputX, paramY + 7, inputX + inputWidth, paramY + 23, field1Selected ? 0xFF404050 : 0xFF303030);
-                graphics.renderOutline(inputX, paramY + 7, inputWidth, 16, field1Selected ? IsotopeColors.ACCENT_GOLD : 0xFF505050);
+                graphics.fill(inputX, paramY + 7, inputX + inputWidth, paramY + 23, field1Selected ? IsotopeColors.FUNC_COND_BACKGROUND : IsotopeColors.INPUT_BACKGROUND);
+                graphics.renderOutline(inputX, paramY + 7, inputWidth, 16, field1Selected ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER);
                 String displayText = param1.isEmpty() ? preset.param1Default : param1;
                 int textColor = param1.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY;
                 graphics.drawString(font, displayText, inputX + 4, paramY + 11, textColor, false);
@@ -283,8 +283,8 @@ public class AddConditionDialog extends Screen {
                 int inputX = paramX + font.width(preset.param2Label) + 5;
                 int inputWidth = 60;
                 boolean field2Selected = activeParamField == 2;
-                graphics.fill(inputX, paramY + 7, inputX + inputWidth, paramY + 23, field2Selected ? 0xFF404050 : 0xFF303030);
-                graphics.renderOutline(inputX, paramY + 7, inputWidth, 16, field2Selected ? IsotopeColors.ACCENT_GOLD : 0xFF505050);
+                graphics.fill(inputX, paramY + 7, inputX + inputWidth, paramY + 23, field2Selected ? IsotopeColors.FUNC_COND_BACKGROUND : IsotopeColors.INPUT_BACKGROUND);
+                graphics.renderOutline(inputX, paramY + 7, inputWidth, 16, field2Selected ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER);
                 String displayText = param2.isEmpty() ? preset.param2Default : param2;
                 int textColor = param2.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY;
                 graphics.drawString(font, displayText, inputX + 4, paramY + 11, textColor, false);
