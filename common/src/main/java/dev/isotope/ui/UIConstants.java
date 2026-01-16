@@ -144,4 +144,22 @@ public final class UIConstants {
 
     /** Numpad Enter key code (GLFW_KEY_KP_ENTER). */
     public static final int KEY_NUMPAD_ENTER = 335;
+
+    /** Delete key code (GLFW_KEY_DELETE). */
+    public static final int KEY_DELETE = 261;
+
+    /** Left arrow key code (GLFW_KEY_LEFT). */
+    public static final int KEY_LEFT = 263;
+
+    /** Right arrow key code (GLFW_KEY_RIGHT). */
+    public static final int KEY_RIGHT = 262;
+
+    /** Home key code (GLFW_KEY_HOME). */
+    public static final int KEY_HOME = 268;
+
+    /** End key code (GLFW_KEY_END). */
+    public static final int KEY_END = 269;
+
+    /** F1 key code (GLFW_KEY_F1). */
+    public static final int KEY_F1 = 290;
 }

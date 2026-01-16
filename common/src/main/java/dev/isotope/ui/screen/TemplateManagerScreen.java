@@ -5,6 +5,7 @@ import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -348,7 +349,7 @@ public class TemplateManagerScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // Escape
+        if (keyCode == UIConstants.KEY_ESCAPE) {
             if (confirmingDelete) {
                 confirmingDelete = false;
                 deleteTargetIdx = -1;
@@ -359,14 +360,14 @@ public class TemplateManagerScreen extends Screen {
         }
 
         // Delete key
-        if (keyCode == 261 && selectedTemplateIdx >= 0) { // Delete key
+        if (keyCode == UIConstants.KEY_DELETE && selectedTemplateIdx >= 0) {
             confirmingDelete = true;
             deleteTargetIdx = selectedTemplateIdx;
             return true;
         }
 
         // Enter to edit
-        if (keyCode == 257 && selectedTemplateIdx >= 0) { // Enter
+        if (keyCode == UIConstants.KEY_ENTER && selectedTemplateIdx >= 0) {
             openEditTemplate(selectedTemplateIdx);
             return true;
         }

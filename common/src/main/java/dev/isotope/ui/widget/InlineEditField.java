@@ -1,6 +1,7 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -135,50 +136,50 @@ public class InlineEditField extends AbstractWidget {
         if (!editing) return false;
 
         // Enter - commit
-        if (keyCode == 257 || keyCode == 335) { // Enter or numpad enter
+        if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
             stopEditing(true);
             return true;
         }
 
         // Escape - cancel
-        if (keyCode == 256) {
+        if (keyCode == UIConstants.KEY_ESCAPE) {
             stopEditing(false);
             return true;
         }
 
         // Backspace
-        if (keyCode == 259 && cursorPos > 0) {
+        if (keyCode == UIConstants.KEY_BACKSPACE && cursorPos > 0) {
             editText = editText.substring(0, cursorPos - 1) + editText.substring(cursorPos);
             cursorPos--;
             return true;
         }
 
         // Delete
-        if (keyCode == 261 && cursorPos < editText.length()) {
+        if (keyCode == UIConstants.KEY_DELETE && cursorPos < editText.length()) {
             editText = editText.substring(0, cursorPos) + editText.substring(cursorPos + 1);
             return true;
         }
 
         // Left arrow
-        if (keyCode == 263 && cursorPos > 0) {
+        if (keyCode == UIConstants.KEY_LEFT && cursorPos > 0) {
             cursorPos--;
             return true;
         }
 
         // Right arrow
-        if (keyCode == 262 && cursorPos < editText.length()) {
+        if (keyCode == UIConstants.KEY_RIGHT && cursorPos < editText.length()) {
             cursorPos++;
             return true;
         }
 
         // Home
-        if (keyCode == 268) {
+        if (keyCode == UIConstants.KEY_HOME) {
             cursorPos = 0;
             return true;
         }
 
         // End
-        if (keyCode == 269) {
+        if (keyCode == UIConstants.KEY_END) {
             cursorPos = editText.length();
             return true;
         }

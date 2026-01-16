@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -112,11 +113,11 @@ public class BatchWeightScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // Escape
+        if (keyCode == UIConstants.KEY_ESCAPE) {
             minecraft.setScreen(parent);
             return true;
         }
-        if (keyCode == 257 || keyCode == 335) { // Enter or Numpad Enter
+        if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
             confirmButton.onPress();
             return true;
         }

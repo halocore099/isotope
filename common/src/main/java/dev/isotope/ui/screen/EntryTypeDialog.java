@@ -2,6 +2,7 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -264,12 +265,12 @@ public class EntryTypeDialog extends DialogScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // Escape
+        if (keyCode == UIConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }
 
-        if (keyCode == 257 || keyCode == 335) { // Enter or Numpad Enter
+        if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
             if (selectedOption >= 0 && selectedOption != getTypeIndex(currentType)) {
                 if (!TYPE_OPTIONS[selectedOption].needsName || !nameInput.isEmpty()) {
                     applySelection();
@@ -279,7 +280,7 @@ public class EntryTypeDialog extends DialogScreen {
         }
 
         if (inputFocused) {
-            if (keyCode == 259) { // Backspace
+            if (keyCode == UIConstants.KEY_BACKSPACE) {
                 if (!nameInput.isEmpty()) {
                     nameInput = nameInput.substring(0, nameInput.length() - 1);
                 }

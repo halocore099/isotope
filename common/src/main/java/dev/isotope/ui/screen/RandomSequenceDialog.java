@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -142,18 +143,18 @@ public class RandomSequenceDialog extends DialogScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // Escape
+        if (keyCode == UIConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }
 
-        if (keyCode == 257 || keyCode == 335) { // Enter
+        if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
             applySelection();
             return true;
         }
 
         if (inputFocused) {
-            if (keyCode == 259) { // Backspace
+            if (keyCode == UIConstants.KEY_BACKSPACE) {
                 if (!inputText.isEmpty()) {
                     inputText = inputText.substring(0, inputText.length() - 1);
                 }

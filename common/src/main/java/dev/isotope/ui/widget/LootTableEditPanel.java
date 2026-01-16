@@ -17,6 +17,7 @@ import dev.isotope.registry.FeatureRegistry;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -2203,50 +2204,50 @@ public class LootTableEditPanel extends AbstractWidget {
         // Inline editing mode - handle text input keys
         if (editingField != EditingField.NONE) {
             // Enter - commit
-            if (keyCode == 257 || keyCode == 335) { // Enter or numpad enter
+            if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
                 commitEdit();
                 return true;
             }
 
             // Escape - cancel
-            if (keyCode == 256) {
+            if (keyCode == UIConstants.KEY_ESCAPE) {
                 cancelEdit();
                 return true;
             }
 
             // Backspace
-            if (keyCode == 259 && editCursorPos > 0) {
+            if (keyCode == UIConstants.KEY_BACKSPACE && editCursorPos > 0) {
                 editText = editText.substring(0, editCursorPos - 1) + editText.substring(editCursorPos);
                 editCursorPos--;
                 return true;
             }
 
             // Delete
-            if (keyCode == 261 && editCursorPos < editText.length()) {
+            if (keyCode == UIConstants.KEY_DELETE && editCursorPos < editText.length()) {
                 editText = editText.substring(0, editCursorPos) + editText.substring(editCursorPos + 1);
                 return true;
             }
 
             // Left arrow
-            if (keyCode == 263 && editCursorPos > 0) {
+            if (keyCode == UIConstants.KEY_LEFT && editCursorPos > 0) {
                 editCursorPos--;
                 return true;
             }
 
             // Right arrow
-            if (keyCode == 262 && editCursorPos < editText.length()) {
+            if (keyCode == UIConstants.KEY_RIGHT && editCursorPos < editText.length()) {
                 editCursorPos++;
                 return true;
             }
 
             // Home
-            if (keyCode == 268) {
+            if (keyCode == UIConstants.KEY_HOME) {
                 editCursorPos = 0;
                 return true;
             }
 
             // End
-            if (keyCode == 269) {
+            if (keyCode == UIConstants.KEY_END) {
                 editCursorPos = editText.length();
                 return true;
             }
@@ -2264,19 +2265,19 @@ public class LootTableEditPanel extends AbstractWidget {
         if (allEntries.isEmpty()) return false;
 
         // Arrow Down - next entry
-        if (keyCode == 264) { // Down
+        if (keyCode == UIConstants.KEY_DOWN) {
             navigateEntries(allEntries, 1);
             return true;
         }
 
         // Arrow Up - previous entry
-        if (keyCode == 265) { // Up
+        if (keyCode == UIConstants.KEY_UP) {
             navigateEntries(allEntries, -1);
             return true;
         }
 
         // Home - first entry
-        if (keyCode == 268) {
+        if (keyCode == UIConstants.KEY_HOME) {
             if (!allEntries.isEmpty()) {
                 EntryKey first = allEntries.get(0);
                 selectedPoolIdx = first.poolIdx();
@@ -2287,7 +2288,7 @@ public class LootTableEditPanel extends AbstractWidget {
         }
 
         // End - last entry
-        if (keyCode == 269) {
+        if (keyCode == UIConstants.KEY_END) {
             if (!allEntries.isEmpty()) {
                 EntryKey last = allEntries.get(allEntries.size() - 1);
                 selectedPoolIdx = last.poolIdx();
@@ -2298,7 +2299,7 @@ public class LootTableEditPanel extends AbstractWidget {
         }
 
         // Enter - start editing weight of selected entry
-        if (keyCode == 257 || keyCode == 335) {
+        if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
             if (selectedPoolIdx >= 0 && selectedEntryIdx >= 0) {
                 LootPool pool = display.pools().get(selectedPoolIdx);
                 if (selectedEntryIdx < pool.entries().size()) {
