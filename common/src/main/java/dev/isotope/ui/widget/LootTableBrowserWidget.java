@@ -661,49 +661,12 @@ public class LootTableBrowserWidget extends AbstractWidget {
         if (hoveredOrphanTable != null) {
             var orphanInfo = OrphanDetector.getInstance().getLootTableOrphanInfo(hoveredOrphanTable);
             if (!orphanInfo.reasons().isEmpty()) {
-                // Build tooltip lines
                 List<String> lines = new ArrayList<>();
                 lines.add("§eOrphan Reasons:");
                 for (var reason : orphanInfo.reasons()) {
                     lines.add("§7• " + reason.getDescription());
                 }
-
-                // Calculate tooltip dimensions
-                int tooltipWidth = 0;
-                for (String line : lines) {
-                    tooltipWidth = Math.max(tooltipWidth, font.width(line.replace("§e", "").replace("§7", "")));
-                }
-                tooltipWidth += 12;
-                int tooltipHeight = lines.size() * 10 + 6;
-
-                // Position tooltip (prefer right side, fall back to left)
-                int tooltipX = hoveredOrphanX + 8;
-                if (tooltipX + tooltipWidth > getX() + width + 100) {
-                    tooltipX = hoveredOrphanX - tooltipWidth - 8;
-                }
-                int tooltipY = hoveredOrphanY;
-
-                // Draw tooltip background
-                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.BORDER_OUTER_DARK);
-                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.TOOLTIP_BACKGROUND);
-                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, IsotopeColors.TOOLTIP_BACKGROUND_WARNING);
-
-                // Draw lines
-                int lineY = tooltipY + 4;
-                for (String line : lines) {
-                    // Handle simple formatting codes
-                    int color = IsotopeColors.TEXT_PRIMARY;
-                    String text = line;
-                    if (line.startsWith("§e")) {
-                        color = IsotopeColors.STATUS_WARNING;
-                        text = line.substring(2);
-                    } else if (line.startsWith("§7")) {
-                        color = IsotopeColors.TEXT_MUTED;
-                        text = line.substring(2);
-                    }
-                    graphics.drawString(font, text, tooltipX + 4, lineY, color, false);
-                    lineY += 10;
-                }
+                renderTooltip(graphics, lines, hoveredOrphanX, hoveredOrphanY, TOOLTIP_ORPHAN);
             }
         }
 
@@ -712,50 +675,13 @@ public class LootTableBrowserWidget extends AbstractWidget {
             var entityInfo = EntityLootRegistry.getInstance().getByLootTable(hoveredMobTable);
             if (entityInfo.isPresent()) {
                 var entity = entityInfo.get();
-
-                // Build tooltip lines
                 List<String> lines = new ArrayList<>();
                 lines.add("§p" + entity.displayName());
                 if (entity.requiresPlayerKill()) {
                     lines.add("§7⚔ Player kill required");
                     lines.add("§7for rare drops");
                 }
-
-                // Calculate tooltip dimensions
-                int tooltipWidth = 0;
-                for (String line : lines) {
-                    tooltipWidth = Math.max(tooltipWidth, font.width(line.replace("§p", "").replace("§7", "")));
-                }
-                tooltipWidth += 12;
-                int tooltipHeight = lines.size() * 10 + 6;
-
-                // Position tooltip (prefer right side, fall back to left)
-                int tooltipX = hoveredMobX + 8;
-                if (tooltipX + tooltipWidth > getX() + width + 100) {
-                    tooltipX = hoveredMobX - tooltipWidth - 8;
-                }
-                int tooltipY = hoveredMobY;
-
-                // Draw tooltip background (purple tint for mobs)
-                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.BORDER_OUTER_DARK);
-                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.TOOLTIP_ENTITY_BG);
-                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, IsotopeColors.TOOLTIP_ENTITY_INNER);
-
-                // Draw lines
-                int lineY = tooltipY + 4;
-                for (String line : lines) {
-                    int color = IsotopeColors.TEXT_PRIMARY;
-                    String text = line;
-                    if (line.startsWith("§p")) {
-                        color = IsotopeColors.SOURCE_MOB;
-                        text = line.substring(2);
-                    } else if (line.startsWith("§7")) {
-                        color = IsotopeColors.TEXT_MUTED;
-                        text = line.substring(2);
-                    }
-                    graphics.drawString(font, text, tooltipX + 4, lineY, color, false);
-                    lineY += 10;
-                }
+                renderTooltip(graphics, lines, hoveredMobX, hoveredMobY, TOOLTIP_MOB);
             }
         }
 
@@ -767,8 +693,6 @@ public class LootTableBrowserWidget extends AbstractWidget {
             if (!featureLinks.isEmpty()) {
                 var link = featureLinks.get(0);
                 var featureDef = FeatureRegistry.getInstance().get(link.structureId());
-
-                // Build tooltip lines
                 List<String> lines = new ArrayList<>();
                 if (featureDef.isPresent()) {
                     lines.add("§f" + featureDef.get().displayName());
@@ -777,42 +701,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
                     lines.add("§fFeature: " + link.structureId().getPath());
                 }
                 lines.add("§7⚙ Not a tracked structure");
-
-                // Calculate tooltip dimensions
-                int tooltipWidth = 0;
-                for (String line : lines) {
-                    tooltipWidth = Math.max(tooltipWidth, font.width(line.replace("§f", "").replace("§7", "")));
-                }
-                tooltipWidth += 12;
-                int tooltipHeight = lines.size() * 10 + 6;
-
-                // Position tooltip (prefer right side, fall back to left)
-                int tooltipX = hoveredFeatureX + 8;
-                if (tooltipX + tooltipWidth > getX() + width + 100) {
-                    tooltipX = hoveredFeatureX - tooltipWidth - 8;
-                }
-                int tooltipY = hoveredFeatureY;
-
-                // Draw tooltip background (orange tint for features)
-                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.BORDER_OUTER_DARK);
-                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.TOOLTIP_FEATURE_BG);
-                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, IsotopeColors.TOOLTIP_FEATURE_INNER);
-
-                // Draw lines
-                int lineY = tooltipY + 4;
-                for (String line : lines) {
-                    int color = IsotopeColors.TEXT_PRIMARY;
-                    String text = line;
-                    if (line.startsWith("§f")) {
-                        color = IsotopeColors.SOURCE_FEATURE;
-                        text = line.substring(2);
-                    } else if (line.startsWith("§7")) {
-                        color = IsotopeColors.TEXT_MUTED;
-                        text = line.substring(2);
-                    }
-                    graphics.drawString(font, text, tooltipX + 4, lineY, color, false);
-                    lineY += 10;
-                }
+                renderTooltip(graphics, lines, hoveredFeatureX, hoveredFeatureY, TOOLTIP_FEATURE);
             }
         }
     }
@@ -996,5 +885,67 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
     @Override
     protected void updateWidgetNarration(NarrationElementOutput output) {
+    }
+
+    /**
+     * Tooltip color scheme for different tooltip types.
+     */
+    private record TooltipColors(int outer, int middle, int inner, String primaryCode, int primaryColor) {}
+
+    private static final TooltipColors TOOLTIP_ORPHAN = new TooltipColors(
+        IsotopeColors.BORDER_OUTER_DARK, IsotopeColors.TOOLTIP_BACKGROUND, IsotopeColors.TOOLTIP_BACKGROUND_WARNING,
+        "§e", IsotopeColors.STATUS_WARNING
+    );
+    private static final TooltipColors TOOLTIP_MOB = new TooltipColors(
+        IsotopeColors.BORDER_OUTER_DARK, IsotopeColors.TOOLTIP_ENTITY_BG, IsotopeColors.TOOLTIP_ENTITY_INNER,
+        "§p", IsotopeColors.SOURCE_MOB
+    );
+    private static final TooltipColors TOOLTIP_FEATURE = new TooltipColors(
+        IsotopeColors.BORDER_OUTER_DARK, IsotopeColors.TOOLTIP_FEATURE_BG, IsotopeColors.TOOLTIP_FEATURE_INNER,
+        "§f", IsotopeColors.SOURCE_FEATURE
+    );
+
+    /**
+     * Render a styled tooltip with the given lines and colors.
+     */
+    private void renderTooltip(GuiGraphics graphics, List<String> lines, int anchorX, int anchorY, TooltipColors colors) {
+        var font = Minecraft.getInstance().font;
+
+        // Calculate tooltip dimensions
+        int tooltipWidth = 0;
+        for (String line : lines) {
+            String stripped = line.replace(colors.primaryCode, "").replace("§7", "");
+            tooltipWidth = Math.max(tooltipWidth, font.width(stripped));
+        }
+        tooltipWidth += 12;
+        int tooltipHeight = lines.size() * 10 + 6;
+
+        // Position tooltip (prefer right side, fall back to left if overflow)
+        int tooltipX = anchorX + 8;
+        if (tooltipX + tooltipWidth > getX() + width + 100) {
+            tooltipX = anchorX - tooltipWidth - 8;
+        }
+        int tooltipY = anchorY;
+
+        // Draw tooltip background (3-layer effect)
+        graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, colors.outer);
+        graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, colors.middle);
+        graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, colors.inner);
+
+        // Draw lines with color code parsing
+        int lineY = tooltipY + 4;
+        for (String line : lines) {
+            int color = IsotopeColors.TEXT_PRIMARY;
+            String text = line;
+            if (line.startsWith(colors.primaryCode)) {
+                color = colors.primaryColor;
+                text = line.substring(2);
+            } else if (line.startsWith("§7")) {
+                color = IsotopeColors.TEXT_MUTED;
+                text = line.substring(2);
+            }
+            graphics.drawString(font, text, tooltipX + 4, lineY, color, false);
+            lineY += 10;
+        }
     }
 }
