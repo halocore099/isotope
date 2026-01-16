@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 /**
  * Dialog for viewing and editing children of composite entries (alternatives, group, sequence).
  */
-public class CompositeChildrenDialog extends Screen {
+public class CompositeChildrenDialog extends DialogScreen {
 
     private static final int DIALOG_WIDTH = 400;
     private static final int DIALOG_HEIGHT = 320;
@@ -25,8 +25,6 @@ public class CompositeChildrenDialog extends Screen {
     private static final int HEADER_HEIGHT = 50;
     private static final int BUTTON_HEIGHT = 28;
 
-    @Nullable
-    private final Screen parent;
     private final int poolIdx;
     private final int entryIdx;
     private final String compositeType;
@@ -45,8 +43,7 @@ public class CompositeChildrenDialog extends Screen {
     public CompositeChildrenDialog(@Nullable Screen parent, int poolIdx, int entryIdx,
                                     String compositeType, List<LootEntry> children,
                                     Consumer<ChildOperation> onOperation) {
-        super(Component.literal("Edit Composite Entry"));
-        this.parent = parent;
+        super(parent, "Edit Composite Entry");
         this.poolIdx = poolIdx;
         this.entryIdx = entryIdx;
         this.compositeType = compositeType;
@@ -55,28 +52,26 @@ public class CompositeChildrenDialog extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+    protected int getDialogWidth() {
+        return DIALOG_WIDTH;
+    }
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+    @Override
+    protected int getDialogHeight() {
+        return DIALOG_HEIGHT;
+    }
 
-        // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
-
-        // Title
-        String typeLabel = compositeType.replace("minecraft:", "");
-        graphics.drawCenteredString(font, "Edit " + typeLabel + " Entry", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
-
+    @Override
+    protected void renderDialogContent(GuiGraphics graphics, int dialogX, int dialogY, int mouseX, int mouseY, float partialTick) {
         // Subtitle explaining behavior
+        String typeLabel = compositeType.replace("minecraft:", "");
         String subtitle = switch (compositeType) {
             case "minecraft:alternatives" -> "First matching child drops (like OR)";
             case "minecraft:group" -> "All children drop together (like AND)";
             case "minecraft:sequence" -> "Children drop in order until one fails";
             default -> "Composite entry with children";
         };
+        graphics.drawCenteredString(font, "Edit " + typeLabel + " Entry", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
         graphics.drawCenteredString(font, subtitle, dialogX + DIALOG_WIDTH / 2, dialogY + 22, IsotopeColors.TEXT_MUTED);
 
         // Children count
@@ -178,8 +173,8 @@ public class CompositeChildrenDialog extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+        int dialogX = getDialogX();
+        int dialogY = getDialogY();
 
         // Add child button
         int addBtnX = dialogX + DIALOG_WIDTH - 110;
@@ -224,8 +219,8 @@ public class CompositeChildrenDialog extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+        int dialogX = getDialogX();
+        int dialogY = getDialogY();
         int listX = dialogX + 10;
         int listY = dialogY + HEADER_HEIGHT + 8;
         int listWidth = DIALOG_WIDTH - 20;
@@ -274,24 +269,5 @@ public class CompositeChildrenDialog extends Screen {
         }
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // Escape
-            onClose();
-            return true;
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    @Override
-    public void onClose() {
-        if (minecraft != null) {
-            minecraft.setScreen(parent);
-        }
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
+    // keyPressed for escape, onClose, and isPauseScreen are provided by DialogScreen base class
 }

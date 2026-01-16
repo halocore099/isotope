@@ -3,7 +3,6 @@ package dev.isotope.ui.screen;
 import dev.isotope.ui.IsotopeColors;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,13 +15,11 @@ import java.util.function.Consumer;
  * Random sequence is a 1.20+ feature that allows for deterministic loot generation
  * based on world seed and block position.
  */
-public class RandomSequenceDialog extends Screen {
+public class RandomSequenceDialog extends DialogScreen {
 
     private static final int DIALOG_WIDTH = 280;
     private static final int DIALOG_HEIGHT = 140;
 
-    @Nullable
-    private final Screen parent;
     private final Optional<ResourceLocation> currentSequence;
     private final Consumer<Optional<ResourceLocation>> onSequenceSelected;
 
@@ -31,28 +28,24 @@ public class RandomSequenceDialog extends Screen {
 
     public RandomSequenceDialog(@Nullable Screen parent, Optional<ResourceLocation> currentSequence,
                                  Consumer<Optional<ResourceLocation>> onSequenceSelected) {
-        super(Component.literal("Edit Random Sequence"));
-        this.parent = parent;
+        super(parent, "Edit Random Sequence");
         this.currentSequence = currentSequence;
         this.onSequenceSelected = onSequenceSelected;
         this.inputText = currentSequence.map(ResourceLocation::toString).orElse("");
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+    protected int getDialogWidth() {
+        return DIALOG_WIDTH;
+    }
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+    @Override
+    protected int getDialogHeight() {
+        return DIALOG_HEIGHT;
+    }
 
-        // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
-
-        // Title
-        graphics.drawCenteredString(font, "Edit Random Sequence", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
-
+    @Override
+    protected void renderDialogContent(GuiGraphics graphics, int dialogX, int dialogY, int mouseX, int mouseY, float partialTick) {
         // Subtitle
         graphics.drawCenteredString(font, "1.20+ feature for deterministic loot", dialogX + DIALOG_WIDTH / 2, dialogY + 22, IsotopeColors.TEXT_MUTED);
 
@@ -108,8 +101,8 @@ public class RandomSequenceDialog extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            int dialogX = (width - DIALOG_WIDTH) / 2;
-            int dialogY = (height - DIALOG_HEIGHT) / 2;
+            int dialogX = getDialogX();
+            int dialogY = getDialogY();
 
             // Check input box click
             int inputX = dialogX + 10;
@@ -198,15 +191,5 @@ public class RandomSequenceDialog extends Screen {
         onClose();
     }
 
-    @Override
-    public void onClose() {
-        if (minecraft != null) {
-            minecraft.setScreen(parent);
-        }
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
+    // keyPressed for escape, onClose, and isPauseScreen are provided by DialogScreen base class
 }

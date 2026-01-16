@@ -12,13 +12,11 @@ import net.minecraft.network.chat.Component;
  * Simple confirmation dialog for destructive actions.
  */
 @Environment(EnvType.CLIENT)
-public class ConfirmDialog extends Screen {
+public class ConfirmDialog extends DialogScreen {
 
     private static final int DIALOG_WIDTH = 280;
     private static final int DIALOG_HEIGHT = 120;
 
-    private final Screen parent;
-    private final String title;
     private final String message;
     private final String confirmText;
     private final Runnable onConfirm;
@@ -53,9 +51,7 @@ public class ConfirmDialog extends Screen {
      */
     public ConfirmDialog(Screen parent, String title, String message, String confirmText,
                          Runnable onConfirm, boolean destructive, boolean skipCloseAfterConfirm) {
-        super(Component.literal(title));
-        this.parent = parent;
-        this.title = title;
+        super(parent, title);
         this.message = message;
         this.confirmText = confirmText;
         this.onConfirm = onConfirm;
@@ -92,12 +88,27 @@ public class ConfirmDialog extends Screen {
     }
 
     @Override
-    protected void init() {
-        super.init();
+    protected int getDialogWidth() {
+        return DIALOG_WIDTH;
+    }
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+    @Override
+    protected int getDialogHeight() {
+        return DIALOG_HEIGHT;
+    }
 
+    @Override
+    protected int getTitleColor() {
+        return destructive ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.ACCENT_GOLD;
+    }
+
+    @Override
+    protected int getBorderColor() {
+        return destructive ? IsotopeColors.DESTRUCTIVE_BORDER_LIGHT : IsotopeColors.BORDER_DEFAULT;
+    }
+
+    @Override
+    protected void initDialog(int dialogX, int dialogY) {
         int buttonWidth = 80;
         int buttonY = dialogY + DIALOG_HEIGHT - 30;
 
@@ -120,42 +131,41 @@ public class ConfirmDialog extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
-
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
-
-        // Dialog background with border
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2,
-            destructive ? IsotopeColors.DESTRUCTIVE_BORDER_LIGHT : IsotopeColors.BORDER_DEFAULT);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
-
-        // Title
-        int titleColor = destructive ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.ACCENT_GOLD;
-        graphics.drawCenteredString(font, title, width / 2, dialogY + 12, titleColor);
-
+    protected void renderDialogContent(GuiGraphics graphics, int dialogX, int dialogY, int mouseX, int mouseY, float partialTick) {
         // Message (supports newlines)
         String[] lines = message.split("\n");
         int lineY = dialogY + 35;
         for (String line : lines) {
-            graphics.drawCenteredString(font, line, width / 2, lineY, IsotopeColors.TEXT_PRIMARY);
+            graphics.drawCenteredString(font, line, dialogX + DIALOG_WIDTH / 2, lineY, IsotopeColors.TEXT_PRIMARY);
             lineY += 12;
         }
-
-        // Render widgets
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
-    public void onClose() {
-        if (minecraft != null) {
-            minecraft.setScreen(parent);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Use renderBackground for proper vanilla background
+        renderBackground(graphics, mouseX, mouseY, partialTick);
+
+        int dialogX = getDialogX();
+        int dialogY = getDialogY();
+        int dialogWidth = getDialogWidth();
+        int dialogHeight = getDialogHeight();
+
+        // Dialog background with 2px border (thicker than standard for emphasis)
+        graphics.fill(dialogX - 2, dialogY - 2, dialogX + dialogWidth + 2, dialogY + dialogHeight + 2, getBorderColor());
+        graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, getBackgroundColor());
+
+        // Title
+        graphics.drawCenteredString(font, dialogTitle, dialogX + dialogWidth / 2, dialogY + 8, getTitleColor());
+
+        // Render custom content
+        renderDialogContent(graphics, dialogX, dialogY, mouseX, mouseY, partialTick);
+
+        // Render widgets (buttons)
+        for (var widget : this.children()) {
+            if (widget instanceof net.minecraft.client.gui.components.Renderable renderable) {
+                renderable.render(graphics, mouseX, mouseY, partialTick);
+            }
         }
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
     }
 }
