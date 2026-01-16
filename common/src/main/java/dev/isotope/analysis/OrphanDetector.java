@@ -3,7 +3,6 @@ package dev.isotope.analysis;
 import dev.isotope.Isotope;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.StructureInfo;
-import dev.isotope.data.StructureLootLink;
 import dev.isotope.observation.ObservationCorrelator;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.registry.StructureLootLinker;
@@ -12,7 +11,6 @@ import dev.isotope.registry.StructureTemplateParser;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Detects orphaned loot tables and structures.

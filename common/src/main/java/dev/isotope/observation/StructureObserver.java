@@ -3,7 +3,6 @@ package dev.isotope.observation;
 import dev.isotope.Isotope;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

@@ -2,7 +2,6 @@ package dev.isotope.testing;
 
 import dev.isotope.Isotope;
 import dev.isotope.editing.LootEditManager;
-import dev.isotope.registry.EntityLootRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;

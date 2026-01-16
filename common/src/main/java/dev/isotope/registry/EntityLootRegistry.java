@@ -2,7 +2,6 @@ package dev.isotope.registry;
 
 import dev.isotope.Isotope;
 import dev.isotope.data.LootSource;
-import dev.isotope.data.LootSourceType;
 import dev.isotope.data.LootTableInfo;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;

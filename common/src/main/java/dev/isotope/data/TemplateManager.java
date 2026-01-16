@@ -1,7 +1,6 @@
 package dev.isotope.data;
 
 import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
 import dev.isotope.Isotope;
 import dev.isotope.data.loot.LootCondition;
 import dev.isotope.data.loot.LootFunction;
@@ -10,7 +9,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;

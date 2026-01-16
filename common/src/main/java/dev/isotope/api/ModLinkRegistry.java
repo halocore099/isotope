@@ -1,7 +1,6 @@
 package dev.isotope.api;
 
 import dev.isotope.Isotope;
-import dev.isotope.data.StructureLootLink;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.*;
