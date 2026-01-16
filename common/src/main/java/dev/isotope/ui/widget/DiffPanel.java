@@ -6,6 +6,7 @@ import dev.isotope.analysis.StructureDiff.DiffResult;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -151,15 +152,8 @@ public class DiffPanel extends AbstractWidget {
         graphics.disableScissor();
 
         // Scrollbar
-        if (maxScroll > 0) {
-            int scrollbarX = getX() + width - 5;
-            int scrollbarHeight = height - HEADER_HEIGHT;
-            int thumbHeight = Math.max(20, (int) ((float) (height - HEADER_HEIGHT) / (height - HEADER_HEIGHT + maxScroll) * scrollbarHeight));
-            int thumbY = getY() + HEADER_HEIGHT + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
-
-            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 4, getY() + height, IsotopeColors.ENTRY_BACKGROUND);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
-        }
+        ScreenUtils.renderScrollbar(graphics, getX() + width - 5, getY() + HEADER_HEIGHT, 4, height - HEADER_HEIGHT,
+            scrollOffset, maxScroll, IsotopeColors.ENTRY_BACKGROUND, IsotopeColors.BUTTON_BACKGROUND);
     }
 
     @Override

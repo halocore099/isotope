@@ -11,6 +11,7 @@ import dev.isotope.registry.FeatureRegistry;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -621,15 +622,8 @@ public class LootTableBrowserWidget extends AbstractWidget {
         graphics.disableScissor();
 
         // Scrollbar
-        if (maxScroll > 0) {
-            int scrollbarX = getX() + width - 4;
-            int scrollbarHeight = listHeight;
-            int thumbHeight = Math.max(20, (int) ((float) listHeight / (listHeight + maxScroll) * scrollbarHeight));
-            int thumbY = listY + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
-
-            graphics.fill(scrollbarX, listY, scrollbarX + 3, listY + scrollbarHeight, IsotopeColors.ENTRY_BACKGROUND);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
-        }
+        ScreenUtils.renderScrollbar(graphics, getX() + width - 4, listY, 3, listHeight,
+            scrollOffset, maxScroll, IsotopeColors.ENTRY_BACKGROUND, IsotopeColors.BUTTON_BACKGROUND);
 
         // Mod dropdown overlay (render last so it's on top)
         if (modDropdownOpen) {

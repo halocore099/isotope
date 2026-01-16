@@ -8,6 +8,7 @@ import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -288,15 +289,8 @@ public class CompareScreen extends Screen {
         graphics.disableScissor();
 
         // Scrollbar
-        if (maxScroll > 0) {
-            int scrollbarX = width - 5;
-            int viewHeight = height - HEADER_HEIGHT;
-            int thumbHeight = Math.max(20, (int) ((float) viewHeight / (viewHeight + maxScroll) * viewHeight));
-            int thumbY = HEADER_HEIGHT + (int) ((float) scrollOffset / maxScroll * (viewHeight - thumbHeight));
-
-            graphics.fill(scrollbarX, HEADER_HEIGHT, scrollbarX + 4, height, IsotopeColors.ENTRY_BACKGROUND);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
-        }
+        ScreenUtils.renderScrollbar(graphics, width - 5, HEADER_HEIGHT, 4, height - HEADER_HEIGHT,
+            scrollOffset, maxScroll, IsotopeColors.ENTRY_BACKGROUND, IsotopeColors.BUTTON_BACKGROUND);
 
         // Render widgets
         super.render(graphics, mouseX, mouseY, partialTick);

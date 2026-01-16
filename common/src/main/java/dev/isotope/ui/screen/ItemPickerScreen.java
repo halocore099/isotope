@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -220,14 +221,8 @@ public class ItemPickerScreen extends Screen {
         graphics.disableScissor();
 
         // Scrollbar
-        if (maxScroll > 0) {
-            int scrollbarX = gridX + gridWidth - 4;
-            int thumbHeight = Math.max(20, (int) ((float) gridHeight / (gridHeight + maxScroll) * gridHeight));
-            int thumbY = gridY + (int) ((float) scrollOffset / maxScroll * (gridHeight - thumbHeight));
-
-            graphics.fill(scrollbarX, gridY, scrollbarX + 3, gridY + gridHeight, IsotopeColors.ENTRY_BACKGROUND);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
-        }
+        ScreenUtils.renderScrollbar(graphics, gridX + gridWidth - 4, gridY, 3, gridHeight,
+            scrollOffset, maxScroll, IsotopeColors.ENTRY_BACKGROUND, IsotopeColors.BUTTON_BACKGROUND);
 
         // Mod dropdown overlay (render on top)
         if (modDropdownOpen) {

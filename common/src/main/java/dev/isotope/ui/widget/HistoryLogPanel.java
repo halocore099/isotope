@@ -3,6 +3,7 @@ package dev.isotope.ui.widget;
 import dev.isotope.editing.HistoryLog;
 import dev.isotope.editing.HistoryLog.LogEntry;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -164,15 +165,8 @@ public class HistoryLogPanel extends AbstractWidget {
         graphics.disableScissor();
 
         // Scrollbar
-        if (maxScroll > 0) {
-            int scrollbarX = getX() + width - 4;
-            int viewHeight = expandedHeight - HEADER_HEIGHT - PADDING;
-            int thumbHeight = Math.max(10, (int) ((float) viewHeight / (viewHeight + maxScroll) * viewHeight));
-            int thumbY = getY() + HEADER_HEIGHT + (int) ((float) scrollOffset / maxScroll * (viewHeight - thumbHeight));
-
-            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 3, getY() + expandedHeight, IsotopeColors.ENTRY_BACKGROUND);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
-        }
+        ScreenUtils.renderScrollbar(graphics, getX() + width - 4, getY() + HEADER_HEIGHT, 3, expandedHeight - HEADER_HEIGHT,
+            scrollOffset, maxScroll, IsotopeColors.ENTRY_BACKGROUND, IsotopeColors.BUTTON_BACKGROUND);
     }
 
     private int getOperationColor(String operationType) {

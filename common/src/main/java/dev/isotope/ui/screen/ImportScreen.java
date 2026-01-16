@@ -6,6 +6,7 @@ import dev.isotope.importing.DatapackImporter.ImportResult;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import dev.isotope.ui.TabManager;
 import net.fabricmc.api.EnvType;
@@ -213,14 +214,8 @@ public class ImportScreen extends Screen {
             graphics.disableScissor();
 
             // Scrollbar
-            if (maxScroll > 0) {
-                int scrollbarX = listX + listWidth - 4;
-                int thumbHeight = Math.max(20, (int) ((float) listHeight / (listHeight + maxScroll) * listHeight));
-                int thumbY = listY + (int) ((float) scrollOffset / maxScroll * (listHeight - thumbHeight));
-
-                graphics.fill(scrollbarX, listY, scrollbarX + 3, listY + listHeight, IsotopeColors.ENTRY_BACKGROUND);
-                graphics.fill(scrollbarX, thumbY, scrollbarX + 3, thumbY + thumbHeight, IsotopeColors.BUTTON_BACKGROUND);
-            }
+            ScreenUtils.renderScrollbar(graphics, listX + listWidth - 4, listY, 3, listHeight,
+                scrollOffset, maxScroll, IsotopeColors.ENTRY_BACKGROUND, IsotopeColors.BUTTON_BACKGROUND);
         }
 
         // Import log (below list if importing)

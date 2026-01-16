@@ -315,15 +315,8 @@ public class CompareStatisticsDialog extends Screen {
         graphics.disableScissor();
 
         // Scrollbar
-        if (maxScroll > 0) {
-            int scrollbarX = dialogX + DIALOG_WIDTH - 8;
-            int scrollbarHeight = contentHeight;
-            int thumbHeight = Math.max(20, (int) ((float) contentHeight / (contentHeight + maxScroll) * scrollbarHeight));
-            int thumbY = contentY + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
-
-            graphics.fill(scrollbarX, contentY, scrollbarX + 4, contentY + scrollbarHeight, IsotopeColors.BORDER_DEFAULT);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.STAR_MUTED);
-        }
+        ScreenUtils.renderScrollbar(graphics, dialogX + DIALOG_WIDTH - 8, contentY, 4, contentHeight,
+            scrollOffset, maxScroll, IsotopeColors.BORDER_DEFAULT, IsotopeColors.STAR_MUTED);
 
         // Legend
         int legendY = dialogY + DIALOG_HEIGHT - 55;

@@ -6,6 +6,7 @@ import dev.isotope.analysis.DropRateCalculator.PoolStats;
 import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -124,15 +125,8 @@ public class DropRatePanel extends AbstractWidget {
         graphics.disableScissor();
 
         // Scrollbar
-        if (maxScroll > 0) {
-            int scrollbarX = getX() + width - 5;
-            int scrollbarHeight = height - HEADER_HEIGHT;
-            int thumbHeight = Math.max(20, (int) ((float) (height - HEADER_HEIGHT) / (height - HEADER_HEIGHT + maxScroll) * scrollbarHeight));
-            int thumbY = getY() + HEADER_HEIGHT + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
-
-            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 4, getY() + height, IsotopeColors.SCROLLBAR_TRACK);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.SCROLLBAR_THUMB);
-        }
+        ScreenUtils.renderScrollbar(graphics, getX() + width - 5, getY() + HEADER_HEIGHT, 4, height - HEADER_HEIGHT,
+            scrollOffset, maxScroll);
     }
 
     private int renderPoolStats(GuiGraphics graphics, Font font, int y, PoolStats ps, int mouseX, int mouseY) {

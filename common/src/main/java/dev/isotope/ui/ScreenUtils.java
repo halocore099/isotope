@@ -204,4 +204,50 @@ public final class ScreenUtils {
     public static void renderCursor(GuiGraphics graphics, int x, int y, int height) {
         renderCursor(graphics, x, y, height, IsotopeColors.TEXT_PRIMARY);
     }
+
+    /**
+     * Render a vertical scrollbar with track and thumb.
+     * Only renders if maxScroll > 0.
+     *
+     * @param graphics     The GuiGraphics context
+     * @param x            Scrollbar X position (left edge of track)
+     * @param y            Scrollbar Y position (top of track)
+     * @param trackWidth   Width of the scrollbar track
+     * @param trackHeight  Height of the scrollbar track
+     * @param scrollOffset Current scroll offset
+     * @param maxScroll    Maximum scroll value
+     * @param trackColor   Color for the track background
+     * @param thumbColor   Color for the thumb
+     */
+    public static void renderScrollbar(GuiGraphics graphics, int x, int y, int trackWidth, int trackHeight,
+                                        int scrollOffset, int maxScroll, int trackColor, int thumbColor) {
+        if (maxScroll <= 0) return;
+
+        // Draw track
+        graphics.fill(x, y, x + trackWidth, y + trackHeight, trackColor);
+
+        // Calculate thumb size and position
+        int thumbHeight = Math.max(20, (int) ((float) trackHeight / (trackHeight + maxScroll) * trackHeight));
+        int thumbY = y + (int) ((float) scrollOffset / maxScroll * (trackHeight - thumbHeight));
+
+        // Draw thumb
+        graphics.fill(x, thumbY, x + trackWidth, thumbY + thumbHeight, thumbColor);
+    }
+
+    /**
+     * Render a vertical scrollbar with default colors (SCROLLBAR_TRACK and SCROLLBAR_THUMB).
+     *
+     * @param graphics     The GuiGraphics context
+     * @param x            Scrollbar X position (left edge of track)
+     * @param y            Scrollbar Y position (top of track)
+     * @param trackWidth   Width of the scrollbar track
+     * @param trackHeight  Height of the scrollbar track
+     * @param scrollOffset Current scroll offset
+     * @param maxScroll    Maximum scroll value
+     */
+    public static void renderScrollbar(GuiGraphics graphics, int x, int y, int trackWidth, int trackHeight,
+                                        int scrollOffset, int maxScroll) {
+        renderScrollbar(graphics, x, y, trackWidth, trackHeight, scrollOffset, maxScroll,
+            IsotopeColors.SCROLLBAR_TRACK, IsotopeColors.SCROLLBAR_THUMB);
+    }
 }
