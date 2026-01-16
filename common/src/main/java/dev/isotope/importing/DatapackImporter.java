@@ -367,4 +367,120 @@ public final class DatapackImporter {
         }
         Isotope.LOGGER.info("Applied {} imported tables to cache", tables.size());
     }
+
+    /**
+     * Result of a batch import operation.
+     */
+    public record BatchImportResult(
+        int datapacksProcessed,
+        int datapacksSucceeded,
+        int datapacksFailed,
+        int totalTablesFound,
+        int totalTablesImported,
+        List<String> errors,
+        List<ImportedTable> allImportedTables
+    ) {
+        public boolean hasErrors() {
+            return !errors.isEmpty();
+        }
+
+        public String getSummary() {
+            return String.format("%d datapacks (%d failed), %d/%d tables imported",
+                datapacksProcessed, datapacksFailed, totalTablesImported, totalTablesFound);
+        }
+    }
+
+    /**
+     * Import from multiple datapacks at once.
+     *
+     * @param datapacks List of DatapackInfo to import from
+     * @param progressCallback Progress callback for status updates
+     * @return Combined import result
+     */
+    public BatchImportResult importFromMultipleDatapacks(List<DatapackInfo> datapacks, Consumer<String> progressCallback) {
+        List<ImportedTable> allImported = new ArrayList<>();
+        List<String> allErrors = new ArrayList<>();
+        int processed = 0;
+        int succeeded = 0;
+        int failed = 0;
+        int totalFound = 0;
+        int totalImported = 0;
+
+        for (DatapackInfo datapack : datapacks) {
+            processed++;
+            progressCallback.accept(String.format("Importing %d/%d: %s", processed, datapacks.size(), datapack.name()));
+
+            try {
+                ImportResult result = importFromDatapack(datapack.path(), msg -> {
+                    // Forward progress with datapack context
+                    progressCallback.accept("[" + datapack.name() + "] " + msg);
+                });
+
+                totalFound += result.tablesFound();
+                totalImported += result.tablesImported();
+
+                if (result.success()) {
+                    succeeded++;
+                    allImported.addAll(result.importedTables());
+                    if (!result.errors().isEmpty()) {
+                        // Partial success - add errors with context
+                        for (String error : result.errors()) {
+                            allErrors.add("[" + datapack.name() + "] " + error);
+                        }
+                    }
+                } else {
+                    failed++;
+                    allErrors.add("[" + datapack.name() + "] Import failed: " +
+                        (result.errors().isEmpty() ? "Unknown error" : result.errors().get(0)));
+                }
+            } catch (Exception e) {
+                failed++;
+                allErrors.add("[" + datapack.name() + "] Exception: " + e.getMessage());
+                Isotope.LOGGER.error("Failed to import datapack {}", datapack.name(), e);
+            }
+        }
+
+        progressCallback.accept(String.format("Batch import complete: %d/%d datapacks, %d tables",
+            succeeded, processed, totalImported));
+
+        return new BatchImportResult(processed, succeeded, failed, totalFound, totalImported, allErrors, allImported);
+    }
+
+    /**
+     * Import from all available datapacks.
+     *
+     * @param progressCallback Progress callback for status updates
+     * @return Combined import result
+     */
+    public BatchImportResult importFromAllDatapacks(Consumer<String> progressCallback) {
+        progressCallback.accept("Scanning for datapacks...");
+        List<DatapackInfo> datapacks = findAvailableDatapacks();
+
+        if (datapacks.isEmpty()) {
+            progressCallback.accept("No datapacks found with loot tables");
+            return new BatchImportResult(0, 0, 0, 0, 0, List.of("No datapacks found"), List.of());
+        }
+
+        progressCallback.accept("Found " + datapacks.size() + " datapack(s) with loot tables");
+        return importFromMultipleDatapacks(datapacks, progressCallback);
+    }
+
+    /**
+     * Import and apply from multiple datapacks in one operation.
+     * Combines import + apply for convenience.
+     *
+     * @param datapacks List of DatapackInfo to import from
+     * @param progressCallback Progress callback for status updates
+     * @return Combined import result
+     */
+    public BatchImportResult importAndApplyFromMultiple(List<DatapackInfo> datapacks, Consumer<String> progressCallback) {
+        BatchImportResult result = importFromMultipleDatapacks(datapacks, progressCallback);
+
+        if (!result.allImportedTables().isEmpty()) {
+            progressCallback.accept("Applying " + result.allImportedTables().size() + " tables to cache...");
+            applyImportedTables(result.allImportedTables());
+        }
+
+        return result;
+    }
 }

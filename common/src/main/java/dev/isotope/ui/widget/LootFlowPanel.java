@@ -1,6 +1,7 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.data.LootSourceType;
+import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.LootSourceRegistry;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.visualization.*;
@@ -246,22 +247,45 @@ public class LootFlowPanel extends AbstractWidget {
 
         boolean hovered = node.equals(hoveredNode);
 
-        // Node background
-        int bgColor = hovered ? 0xFF3a3a3a : 0xFF2a2a2a;
+        // Check if this loot table has edits
+        boolean hasEdits = (node.type() == FlowNode.NodeType.LOOT_TABLE ||
+                           node.type() == FlowNode.NodeType.NESTED_TABLE) &&
+                          LootEditManager.getInstance().hasEdits(node.id());
+
+        // Node background - highlight edited tables
+        int bgColor;
+        if (hasEdits) {
+            bgColor = hovered ? 0xFF3a4a3a : 0xFF2a3a2a; // Green tint for edited
+        } else {
+            bgColor = hovered ? 0xFF3a3a3a : 0xFF2a2a2a;
+        }
         graphics.fill(x, y, x + w, y + h, bgColor);
 
         // Left edge color indicator
         int indicatorColor = getNodeColor(node);
         graphics.fill(x, y, x + 3, y + h, indicatorColor);
 
-        // Border
-        int borderColor = hovered ? IsotopeColors.BORDER_SELECTED : IsotopeColors.BORDER_DEFAULT;
+        // Edit indicator - small green dot in top-right corner
+        if (hasEdits) {
+            int dotX = x + w - 8;
+            int dotY = y + 4;
+            graphics.fill(dotX, dotY, dotX + 5, dotY + 5, IsotopeColors.SUCCESS); // Green dot
+        }
+
+        // Border - use green for edited tables
+        int borderColor;
+        if (hasEdits) {
+            borderColor = hovered ? IsotopeColors.SUCCESS : 0xFF55AA55; // Green border
+        } else {
+            borderColor = hovered ? IsotopeColors.BORDER_SELECTED : IsotopeColors.BORDER_DEFAULT;
+        }
         graphics.renderOutline(x, y, w, h, borderColor);
 
         // Text label
         String label = node.displayName();
-        if (font.width(label) > w - 10) {
-            label = font.plainSubstrByWidth(label, w - 15) + "...";
+        int maxLabelWidth = hasEdits ? w - 18 : w - 10; // Less space if showing edit dot
+        if (font.width(label) > maxLabelWidth) {
+            label = font.plainSubstrByWidth(label, maxLabelWidth - 5) + "...";
         }
         graphics.drawString(font, label, x + 6, y + (h - 8) / 2, IsotopeColors.TEXT_PRIMARY, false);
     }
@@ -337,12 +361,18 @@ public class LootFlowPanel extends AbstractWidget {
                 if (outEdges > 0) {
                     lines.add("Nested refs: " + outEdges);
                 }
+                if (LootEditManager.getInstance().hasEdits(hoveredNode.id())) {
+                    lines.add("Status: EDITED");
+                }
                 lines.add("");
                 lines.add("Click to open");
             }
             case NESTED_TABLE -> {
                 int inEdges = graph.getEdgesTo(hoveredNode.id()).size();
                 lines.add("Referenced by: " + inEdges + " table(s)");
+                if (LootEditManager.getInstance().hasEdits(hoveredNode.id())) {
+                    lines.add("Status: EDITED");
+                }
                 lines.add("");
                 lines.add("Click to open");
             }

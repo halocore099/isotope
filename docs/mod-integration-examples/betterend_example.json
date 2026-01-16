@@ -1,0 +1,44 @@
+{
+  "modId": "betterend",
+  "version": 1,
+  "description": "Example isotope_links.json for Better End mod. Place at: data/betterend/isotope_links.json",
+  "links": [
+    {
+      "structure": "betterend:mountain_house",
+      "loot_tables": [
+        "betterend:chests/mountain_house"
+      ]
+    },
+    {
+      "structure": "betterend:eternal_portal",
+      "loot_tables": [
+        "betterend:chests/eternal_portal"
+      ]
+    },
+    {
+      "structure": "betterend:painted_mountain",
+      "loot_tables": [
+        "betterend:chests/painted_mountain"
+      ]
+    },
+    {
+      "structure": "betterend:ruined_house",
+      "loot_tables": [
+        "betterend:chests/ruined_house"
+      ]
+    },
+    {
+      "structure": "betterend:umbra_valley_pillar",
+      "loot_tables": [
+        "betterend:chests/umbra_valley"
+      ]
+    },
+    {
+      "structure": "betterend:shadow_forest_village",
+      "loot_tables": [
+        "betterend:chests/shadow_forest_village/common",
+        "betterend:chests/shadow_forest_village/rare"
+      ]
+    }
+  ]
+}

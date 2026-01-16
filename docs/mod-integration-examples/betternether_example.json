@@ -1,0 +1,46 @@
+{
+  "modId": "betternether",
+  "version": 1,
+  "description": "Example isotope_links.json for Better Nether mod. Place at: data/betternether/isotope_links.json",
+  "links": [
+    {
+      "structure": "betternether:city",
+      "loot_tables": [
+        "betternether:chests/city/common",
+        "betternether:chests/city/library",
+        "betternether:chests/city/storage"
+      ]
+    },
+    {
+      "structure": "betternether:ruined_city",
+      "loot_tables": [
+        "betternether:chests/ruined_city"
+      ]
+    },
+    {
+      "structure": "betternether:altar",
+      "loot_tables": [
+        "betternether:chests/altar"
+      ]
+    },
+    {
+      "structure": "betternether:ghast_hive",
+      "loot_tables": [
+        "betternether:chests/ghast_hive"
+      ]
+    },
+    {
+      "structure": "betternether:jungle_temple",
+      "loot_tables": [
+        "betternether:chests/jungle_temple/main",
+        "betternether:chests/jungle_temple/treasure"
+      ]
+    },
+    {
+      "structure": "betternether:wart_cap_house",
+      "loot_tables": [
+        "betternether:chests/wart_cap_house"
+      ]
+    }
+  ]
+}

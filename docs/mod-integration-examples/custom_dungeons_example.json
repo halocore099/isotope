@@ -1,0 +1,77 @@
+{
+  "modId": "mydungeonmod",
+  "version": 1,
+  "description": "Generic example for dungeon/structure mods. Demonstrates all supported patterns.",
+  "links": [
+    {
+      "_comment": "Simple structure with one loot table",
+      "structure": "mydungeonmod:small_dungeon",
+      "loot_tables": [
+        "mydungeonmod:chests/small_dungeon"
+      ]
+    },
+    {
+      "_comment": "Structure with multiple loot table tiers",
+      "structure": "mydungeonmod:large_dungeon",
+      "loot_tables": [
+        "mydungeonmod:chests/large_dungeon/common",
+        "mydungeonmod:chests/large_dungeon/uncommon",
+        "mydungeonmod:chests/large_dungeon/rare",
+        "mydungeonmod:chests/large_dungeon/boss"
+      ]
+    },
+    {
+      "_comment": "Structure with room-specific loot",
+      "structure": "mydungeonmod:castle",
+      "loot_tables": [
+        "mydungeonmod:chests/castle/armory",
+        "mydungeonmod:chests/castle/library",
+        "mydungeonmod:chests/castle/treasury",
+        "mydungeonmod:chests/castle/kitchen",
+        "mydungeonmod:chests/castle/bedroom"
+      ]
+    },
+    {
+      "_comment": "Alternative: single loot_table key (not an array)",
+      "structure": "mydungeonmod:ruins",
+      "loot_table": "mydungeonmod:chests/ruins"
+    },
+    {
+      "_comment": "Underground structures",
+      "structure": "mydungeonmod:underground_lab",
+      "loot_tables": [
+        "mydungeonmod:chests/underground_lab/supplies",
+        "mydungeonmod:chests/underground_lab/research"
+      ]
+    },
+    {
+      "_comment": "Nether structures",
+      "structure": "mydungeonmod:nether_fortress_extension",
+      "loot_tables": [
+        "mydungeonmod:chests/nether/fortress_extension"
+      ]
+    },
+    {
+      "_comment": "End structures",
+      "structure": "mydungeonmod:end_tower",
+      "loot_tables": [
+        "mydungeonmod:chests/end/tower_lower",
+        "mydungeonmod:chests/end/tower_upper",
+        "mydungeonmod:chests/end/tower_peak"
+      ]
+    },
+    {
+      "_comment": "Village-style structure with profession loot",
+      "structure": "mydungeonmod:custom_village",
+      "loot_tables": [
+        "mydungeonmod:chests/village/weaponsmith",
+        "mydungeonmod:chests/village/toolsmith",
+        "mydungeonmod:chests/village/armorer",
+        "mydungeonmod:chests/village/cartographer",
+        "mydungeonmod:chests/village/tannery",
+        "mydungeonmod:chests/village/temple",
+        "mydungeonmod:chests/village/house"
+      ]
+    }
+  ]
+}

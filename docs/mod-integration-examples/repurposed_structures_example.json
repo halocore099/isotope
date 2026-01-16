@@ -1,0 +1,493 @@
+{
+  "modId": "repurposed_structures",
+  "version": 1,
+  "description": "Example isotope_links.json for Repurposed Structures mod. Place at: data/repurposed_structures/isotope_links.json",
+  "links": [
+    {
+      "structure": "repurposed_structures:cities/end_city",
+      "loot_tables": [
+        "repurposed_structures:chests/cities/end_city"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/badlands_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/badlands"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/dark_forest_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/dark_forest"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/deep_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/deep"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/desert_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/desert"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/end_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/end"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/icy_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/icy"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/jungle_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/jungle"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/mushroom_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/mushroom"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/nether_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/nether"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/ocean_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/ocean"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/snow_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/snow"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:dungeons/swamp_dungeon",
+      "loot_tables": [
+        "repurposed_structures:chests/dungeons/swamp"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:fortresses/jungle_fortress",
+      "loot_tables": [
+        "repurposed_structures:chests/fortresses/jungle_fortress_hallway",
+        "repurposed_structures:chests/fortresses/jungle_fortress_crossing"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:igloos/grassy_igloo",
+      "loot_tables": [
+        "repurposed_structures:chests/igloos/grassy"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:igloos/stone_igloo",
+      "loot_tables": [
+        "repurposed_structures:chests/igloos/stone"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mansions/birch_mansion",
+      "loot_tables": [
+        "repurposed_structures:chests/mansions/birch"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mansions/desert_mansion",
+      "loot_tables": [
+        "repurposed_structures:chests/mansions/desert"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mansions/jungle_mansion",
+      "loot_tables": [
+        "repurposed_structures:chests/mansions/jungle"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mansions/oak_mansion",
+      "loot_tables": [
+        "repurposed_structures:chests/mansions/oak"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mansions/savanna_mansion",
+      "loot_tables": [
+        "repurposed_structures:chests/mansions/savanna"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mansions/snowy_mansion",
+      "loot_tables": [
+        "repurposed_structures:chests/mansions/snowy"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mansions/taiga_mansion",
+      "loot_tables": [
+        "repurposed_structures:chests/mansions/taiga"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/birch_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/birch"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/crimson_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/crimson"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/dark_forest_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/dark_forest"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/desert_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/desert"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/end_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/end"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/icy_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/icy"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/jungle_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/jungle"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/nether_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/nether"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/ocean_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/ocean"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/savanna_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/savanna"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/stone_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/stone"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/swamp_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/swamp"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/taiga_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/taiga"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:mineshafts/warped_mineshaft",
+      "loot_tables": [
+        "repurposed_structures:chests/mineshafts/warped"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/badlands_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/badlands"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/birch_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/birch"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/crimson_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/crimson"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/desert_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/desert"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/giant_tree_taiga_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/giant_tree_taiga"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/icy_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/icy"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/jungle_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/jungle"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/nether_brick_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/nether_brick"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/oak_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/oak"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/snowy_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/snowy"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/taiga_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/taiga"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:outposts/warped_outpost",
+      "loot_tables": [
+        "repurposed_structures:chests/outposts/warped"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/badlands_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/badlands"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/dark_forest_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/dark_forest"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/end_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/end"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/flower_forest_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/flower_forest"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/giant_tree_taiga_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/giant_tree_taiga"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/icy_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/icy"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/jungle_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/jungle"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/mushroom_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/mushroom"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/nether_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/nether"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/ocean_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/ocean"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:pyramids/snowy_pyramid",
+      "loot_tables": [
+        "repurposed_structures:chests/pyramids/snowy"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:ruins/land_hot_ruin",
+      "loot_tables": [
+        "repurposed_structures:chests/ruins/land_hot"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:ruins/land_warm_ruin",
+      "loot_tables": [
+        "repurposed_structures:chests/ruins/land_warm"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:ruins/nether_ruin",
+      "loot_tables": [
+        "repurposed_structures:chests/ruins/nether"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:shipwrecks/crimson_shipwreck",
+      "loot_tables": [
+        "repurposed_structures:chests/shipwrecks/crimson/map",
+        "repurposed_structures:chests/shipwrecks/crimson/supply",
+        "repurposed_structures:chests/shipwrecks/crimson/treasure"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:shipwrecks/end_shipwreck",
+      "loot_tables": [
+        "repurposed_structures:chests/shipwrecks/end/map",
+        "repurposed_structures:chests/shipwrecks/end/supply",
+        "repurposed_structures:chests/shipwrecks/end/treasure"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:shipwrecks/nether_bricks_shipwreck",
+      "loot_tables": [
+        "repurposed_structures:chests/shipwrecks/nether_bricks/map",
+        "repurposed_structures:chests/shipwrecks/nether_bricks/supply",
+        "repurposed_structures:chests/shipwrecks/nether_bricks/treasure"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:shipwrecks/warped_shipwreck",
+      "loot_tables": [
+        "repurposed_structures:chests/shipwrecks/warped/map",
+        "repurposed_structures:chests/shipwrecks/warped/supply",
+        "repurposed_structures:chests/shipwrecks/warped/treasure"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:strongholds/nether_stronghold",
+      "loot_tables": [
+        "repurposed_structures:chests/strongholds/nether_corridor",
+        "repurposed_structures:chests/strongholds/nether_crossing",
+        "repurposed_structures:chests/strongholds/nether_library",
+        "repurposed_structures:chests/strongholds/nether_storage"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:temples/nether_basalt_temple",
+      "loot_tables": [
+        "repurposed_structures:chests/temples/nether_basalt"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:temples/nether_crimson_temple",
+      "loot_tables": [
+        "repurposed_structures:chests/temples/nether_crimson"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:temples/nether_soul_temple",
+      "loot_tables": [
+        "repurposed_structures:chests/temples/nether_soul"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:temples/nether_warped_temple",
+      "loot_tables": [
+        "repurposed_structures:chests/temples/nether_warped"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:temples/nether_wasteland_temple",
+      "loot_tables": [
+        "repurposed_structures:chests/temples/nether_wasteland"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:witch_huts/birch_witch_hut",
+      "loot_tables": [
+        "repurposed_structures:chests/witch_huts/birch"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:witch_huts/dark_forest_witch_hut",
+      "loot_tables": [
+        "repurposed_structures:chests/witch_huts/dark_forest"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:witch_huts/giant_tree_taiga_witch_hut",
+      "loot_tables": [
+        "repurposed_structures:chests/witch_huts/giant_tree_taiga"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:witch_huts/mangrove_witch_hut",
+      "loot_tables": [
+        "repurposed_structures:chests/witch_huts/mangrove"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:witch_huts/oak_witch_hut",
+      "loot_tables": [
+        "repurposed_structures:chests/witch_huts/oak"
+      ]
+    },
+    {
+      "structure": "repurposed_structures:witch_huts/taiga_witch_hut",
+      "loot_tables": [
+        "repurposed_structures:chests/witch_huts/taiga"
+      ]
+    }
+  ]
+}
