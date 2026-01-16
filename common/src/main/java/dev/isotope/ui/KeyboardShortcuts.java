@@ -19,6 +19,7 @@ import org.lwjgl.glfw.GLFW;
  * - Alt+Up: Move entry up
  * - Alt+Down: Move entry down
  * - F1: Show keyboard shortcuts help
+ * - Ctrl+P: Open command palette
  */
 public final class KeyboardShortcuts {
 
@@ -95,6 +96,10 @@ public final class KeyboardShortcuts {
                     context.paste();
                     yield true;
                 }
+                case GLFW.GLFW_KEY_P -> {
+                    context.openCommandPalette();
+                    yield true;
+                }
                 default -> false;
             };
         }
@@ -166,5 +171,8 @@ public final class KeyboardShortcuts {
 
         /** Show keyboard shortcuts help (F1) */
         default void showHelp() {}
+
+        /** Open command palette (Ctrl+P) */
+        default void openCommandPalette() {}
     }
 }
