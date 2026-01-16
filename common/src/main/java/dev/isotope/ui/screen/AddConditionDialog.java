@@ -254,9 +254,9 @@ public class AddConditionDialog extends Screen {
                 graphics.drawString(font, displayText, inputX + 4, paramY + 11, textColor, false);
 
                 // Cursor for active field
-                if (field1Selected && (System.currentTimeMillis() / 500) % 2 == 0) {
+                if (field1Selected) {
                     int cursorX = inputX + 4 + font.width(param1);
-                    graphics.fill(cursorX, paramY + 9, cursorX + 1, paramY + 21, IsotopeColors.TEXT_PRIMARY);
+                    ScreenUtils.renderCursor(graphics, cursorX, paramY + 9, 12);
                 }
 
                 paramX = inputX + inputWidth + 20;
@@ -274,9 +274,9 @@ public class AddConditionDialog extends Screen {
                 graphics.drawString(font, displayText, inputX + 4, paramY + 11, textColor, false);
 
                 // Cursor for active field
-                if (field2Selected && (System.currentTimeMillis() / 500) % 2 == 0) {
+                if (field2Selected) {
                     int cursorX = inputX + 4 + font.width(param2);
-                    graphics.fill(cursorX, paramY + 9, cursorX + 1, paramY + 21, IsotopeColors.TEXT_PRIMARY);
+                    ScreenUtils.renderCursor(graphics, cursorX, paramY + 9, 12);
                 }
             }
 

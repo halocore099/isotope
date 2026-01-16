@@ -108,10 +108,7 @@ public class InlineEditField extends AbstractWidget {
             int cursorX = getX() + (width - font.width(editText)) / 2 + font.width(beforeCursor);
 
             // Blink cursor
-            long time = System.currentTimeMillis();
-            if ((time / 500) % 2 == 0) {
-                graphics.fill(cursorX, textY - 1, cursorX + 1, textY + 9, IsotopeColors.TEXT_PRIMARY);
-            }
+            ScreenUtils.renderCursor(graphics, cursorX, textY - 1, 10);
         }
     }
 

@@ -1081,11 +1081,9 @@ public class LootTableEditPanel extends AbstractWidget {
             int textX = x + (weightBoxWidth - font.width(editText)) / 2;
             graphics.drawString(font, editText, textX, y + 7, IsotopeColors.TEXT_PRIMARY, false);
             // Blinking cursor
-            if ((System.currentTimeMillis() / 500) % 2 == 0) {
-                String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
-                int cursorX = textX + font.width(beforeCursor);
-                graphics.fill(cursorX, y + 5, cursorX + 1, y + 16, IsotopeColors.TEXT_PRIMARY);
-            }
+            String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
+            int cursorX = textX + font.width(beforeCursor);
+            ScreenUtils.renderCursor(graphics, cursorX, y + 5, 11);
         } else {
             String weightStr = String.valueOf(entry.weight());
             int weightTextX = x + (weightBoxWidth - font.width(weightStr)) / 2;
@@ -1114,11 +1112,9 @@ public class LootTableEditPanel extends AbstractWidget {
         if (minEditing) {
             int textX = x + (countBoxWidth - font.width(editText)) / 2;
             graphics.drawString(font, editText, textX, y + 7, IsotopeColors.TEXT_PRIMARY, false);
-            if ((System.currentTimeMillis() / 500) % 2 == 0) {
-                String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
-                int cursorX = textX + font.width(beforeCursor);
-                graphics.fill(cursorX, y + 5, cursorX + 1, y + 16, IsotopeColors.TEXT_PRIMARY);
-            }
+            String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
+            int cursorX = textX + font.width(beforeCursor);
+            ScreenUtils.renderCursor(graphics, cursorX, y + 5, 11);
         } else {
             String minStr = String.valueOf(minCount);
             graphics.drawString(font, minStr, x + (countBoxWidth - font.width(minStr)) / 2, y + 7,
@@ -1144,11 +1140,9 @@ public class LootTableEditPanel extends AbstractWidget {
         if (maxEditing) {
             int textX = x + (countBoxWidth - font.width(editText)) / 2;
             graphics.drawString(font, editText, textX, y + 7, IsotopeColors.TEXT_PRIMARY, false);
-            if ((System.currentTimeMillis() / 500) % 2 == 0) {
-                String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
-                int cursorX = textX + font.width(beforeCursor);
-                graphics.fill(cursorX, y + 5, cursorX + 1, y + 16, IsotopeColors.TEXT_PRIMARY);
-            }
+            String beforeCursor = editText.substring(0, Math.min(editCursorPos, editText.length()));
+            int cursorX = textX + font.width(beforeCursor);
+            ScreenUtils.renderCursor(graphics, cursorX, y + 5, 11);
         } else {
             String maxStr = String.valueOf(maxCount);
             graphics.drawString(font, maxStr, x + (countBoxWidth - font.width(maxStr)) / 2, y + 7,

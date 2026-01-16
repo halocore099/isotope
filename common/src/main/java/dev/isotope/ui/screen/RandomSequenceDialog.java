@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -65,7 +66,7 @@ public class RandomSequenceDialog extends DialogScreen {
 
         // Input text with cursor
         String displayText = inputText;
-        if (inputFocused && (System.currentTimeMillis() / 500) % 2 == 0) {
+        if (inputFocused && ScreenUtils.shouldShowCursor()) {
             displayText += "_";
         }
         graphics.drawString(font, displayText, inputX + 4, inputY + 5, IsotopeColors.TEXT_PRIMARY);

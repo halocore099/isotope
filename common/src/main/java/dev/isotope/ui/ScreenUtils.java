@@ -166,4 +166,42 @@ public final class ScreenUtils {
         graphics.fill(x - 2, y - 2, x + width + 2, y + height + 2, IsotopeColors.BORDER_OUTER_DARK);
         graphics.fill(x, y, x + width, y + height, IsotopeColors.BACKGROUND_MEDIUM);
     }
+
+    /**
+     * Check if a blinking cursor should be visible based on 500ms blink cycle.
+     * Use this for text input cursor animation.
+     *
+     * @return True if cursor should be visible (alternates every 500ms)
+     */
+    public static boolean shouldShowCursor() {
+        return (System.currentTimeMillis() / 500) % 2 == 0;
+    }
+
+    /**
+     * Render a blinking text cursor at the specified position.
+     * Only renders if the blink cycle indicates the cursor should be visible.
+     *
+     * @param graphics The GuiGraphics context
+     * @param x        Cursor X position
+     * @param y        Cursor top Y position
+     * @param height   Cursor height in pixels
+     * @param color    Cursor color
+     */
+    public static void renderCursor(GuiGraphics graphics, int x, int y, int height, int color) {
+        if (shouldShowCursor()) {
+            graphics.fill(x, y, x + 1, y + height, color);
+        }
+    }
+
+    /**
+     * Render a blinking text cursor with default color (TEXT_PRIMARY).
+     *
+     * @param graphics The GuiGraphics context
+     * @param x        Cursor X position
+     * @param y        Cursor top Y position
+     * @param height   Cursor height in pixels
+     */
+    public static void renderCursor(GuiGraphics graphics, int x, int y, int height) {
+        renderCursor(graphics, x, y, height, IsotopeColors.TEXT_PRIMARY);
+    }
 }
