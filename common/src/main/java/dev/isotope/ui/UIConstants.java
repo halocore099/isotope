@@ -162,4 +162,23 @@ public final class UIConstants {
 
     /** F1 key code (GLFW_KEY_F1). */
     public static final int KEY_F1 = 290;
+
+    // === Button Labels ===
+    /** Close button label. */
+    public static final String LABEL_CLOSE = "Close";
+
+    /** Cancel button label. */
+    public static final String LABEL_CANCEL = "Cancel";
+
+    /** Add button label. */
+    public static final String LABEL_ADD = "Add";
+
+    /** Apply button label. */
+    public static final String LABEL_APPLY = "Apply";
+
+    /** Save button label. */
+    public static final String LABEL_SAVE = "Save";
+
+    /** Delete button label. */
+    public static final String LABEL_DELETE = "Delete";
 }

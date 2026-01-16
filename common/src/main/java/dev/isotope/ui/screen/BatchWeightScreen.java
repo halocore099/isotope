@@ -77,7 +77,7 @@ public class BatchWeightScreen extends Screen {
         addRenderableWidget(confirmButton);
 
         // Cancel button
-        cancelButton = Button.builder(Component.literal("Cancel"), btn -> {
+        cancelButton = Button.builder(Component.literal(UIConstants.LABEL_CANCEL), btn -> {
             minecraft.setScreen(parent);
         }).pos(dialogX + DIALOG_WIDTH - 90, dialogY + DIALOG_HEIGHT - 30).size(70, 20).build();
         addRenderableWidget(cancelButton);

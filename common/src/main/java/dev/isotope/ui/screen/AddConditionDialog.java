@@ -164,7 +164,7 @@ public class AddConditionDialog extends Screen {
 
         // Cancel button
         addRenderableWidget(Button.builder(
-            Component.literal("Cancel"),
+            Component.literal(UIConstants.LABEL_CANCEL),
             b -> onClose()
         ).pos(dialogX + 10, dialogY + DIALOG_HEIGHT - 30).size(70, 20).build());
 

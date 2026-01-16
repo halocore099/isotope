@@ -75,7 +75,7 @@ public class ShortcutsScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Close button
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
+        addRenderableWidget(Button.builder(Component.literal(UIConstants.LABEL_CLOSE), b -> onClose())
             .pos(dialogX + DIALOG_WIDTH / 2 - 40, dialogY + DIALOG_HEIGHT - 30)
             .size(80, 20)
             .build());

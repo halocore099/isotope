@@ -2,6 +2,7 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.data.loot.LootCondition;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import dev.isotope.ui.widget.IsotopeWindow;
 import dev.isotope.ui.widget.ScrollableListWidget;
 import net.fabricmc.api.EnvType;
@@ -75,7 +76,7 @@ public class ConditionPickerScreen extends IsotopeScreen {
         );
 
         this.addRenderableWidget(
-            Button.builder(Component.literal("Cancel"), button -> onClose())
+            Button.builder(Component.literal(UIConstants.LABEL_CANCEL), button -> onClose())
                 .pos(windowX + windowWidth / 2 + 5, buttonY)
                 .size(buttonWidth, 20)
                 .build()

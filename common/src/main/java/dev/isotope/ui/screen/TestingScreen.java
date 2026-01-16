@@ -14,6 +14,7 @@ import dev.isotope.testing.TestingTools;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -239,7 +240,7 @@ public class TestingScreen extends Screen {
 
         // Close button
         addRenderableWidget(Button.builder(
-            Component.literal("Close"),
+            Component.literal(UIConstants.LABEL_CLOSE),
             b -> onClose()
         ).pos(panelX + PANEL_WIDTH - 55, footerY).size(50, 20).build());
 

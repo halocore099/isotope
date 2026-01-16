@@ -7,6 +7,7 @@ import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.ScreenUtils;
+import dev.isotope.ui.UIConstants;
 import dev.isotope.wizards.QuickFix;
 import dev.isotope.wizards.QuickFix.FixResult;
 import dev.isotope.wizards.QuickFix.FixType;
@@ -71,7 +72,7 @@ public class QuickFixScreen extends Screen {
 
         // Close button
         addRenderableWidget(Button.builder(
-            Component.literal("Close"),
+            Component.literal(UIConstants.LABEL_CLOSE),
             b -> onClose()
         ).pos(dialogX + DIALOG_WIDTH - 90, dialogY + DIALOG_HEIGHT - 30).size(80, 20).build());
 

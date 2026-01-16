@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -209,7 +210,7 @@ public class AddFunctionDialog extends Screen {
 
         // Cancel button
         addRenderableWidget(Button.builder(
-            Component.literal("Cancel"),
+            Component.literal(UIConstants.LABEL_CANCEL),
             b -> onClose()
         ).pos(dialogX + 10, dialogY + DIALOG_HEIGHT - 30).size(70, 20).build());
 

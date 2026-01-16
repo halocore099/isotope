@@ -219,7 +219,7 @@ public class TemplateEditorScreen extends Screen {
             .bounds(buttonStartX, buttonY, buttonWidth, 20)
             .build());
 
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), btn -> onClose())
+        addRenderableWidget(Button.builder(Component.literal(UIConstants.LABEL_CANCEL), btn -> onClose())
             .bounds(buttonStartX + buttonWidth + buttonSpacing, buttonY, buttonWidth, 20)
             .build());
 

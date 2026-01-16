@@ -94,7 +94,7 @@ public class ItemPickerScreen extends Screen {
         gridHeight = panelHeight - 100;
 
         // Cancel button
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), btn -> onClose())
+        addRenderableWidget(Button.builder(Component.literal(UIConstants.LABEL_CANCEL), btn -> onClose())
             .bounds(panelX + panelWidth - 70, panelY + panelHeight - 30, 60, 20)
             .build());
 

@@ -6,6 +6,7 @@ import dev.isotope.importing.DatapackImporter.ImportResult;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.UIConstants;
 import dev.isotope.ui.TabManager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -93,7 +94,7 @@ public class ImportScreen extends Screen {
             .build();
         addRenderableWidget(importButton);
 
-        closeButton = Button.builder(Component.literal("Close"), b -> onClose())
+        closeButton = Button.builder(Component.literal(UIConstants.LABEL_CLOSE), b -> onClose())
             .pos(dialogX + DIALOG_WIDTH - PADDING - 80, buttonY)
             .size(80, 20)
             .build();

@@ -73,7 +73,7 @@ public class TemplatePickerScreen extends Screen {
             .build());
 
         // Cancel button
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), btn -> onClose())
+        addRenderableWidget(Button.builder(Component.literal(UIConstants.LABEL_CANCEL), btn -> onClose())
             .pos(dialogX + DIALOG_WIDTH - 80, dialogY + DIALOG_HEIGHT - 30)
             .size(70, 20)
             .build());

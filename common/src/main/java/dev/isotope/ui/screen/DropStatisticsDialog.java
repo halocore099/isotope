@@ -4,6 +4,7 @@ import dev.isotope.testing.DropStatistics;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.ScreenUtils;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -98,7 +99,7 @@ public class DropStatisticsDialog extends Screen {
 
         // Close button
         addRenderableWidget(Button.builder(
-            Component.literal("Close"),
+            Component.literal(UIConstants.LABEL_CLOSE),
             b -> onClose()
         ).pos(dialogX + DIALOG_WIDTH - 70, dialogY + DIALOG_HEIGHT - 30).size(60, 20).build());
 

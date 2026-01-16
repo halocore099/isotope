@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -113,7 +114,7 @@ public class ConfirmDialog extends DialogScreen {
         int buttonY = dialogY + DIALOG_HEIGHT - 30;
 
         // Cancel button
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
+        addRenderableWidget(Button.builder(Component.literal(UIConstants.LABEL_CANCEL), b -> onClose())
             .pos(dialogX + DIALOG_WIDTH / 2 - buttonWidth - 10, buttonY)
             .size(buttonWidth, 20)
             .build());

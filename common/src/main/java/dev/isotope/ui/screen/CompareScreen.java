@@ -8,6 +8,7 @@ import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -115,7 +116,7 @@ public class CompareScreen extends Screen {
         addRenderableWidget(swapButton);
 
         // Close button
-        closeButton = Button.builder(Component.literal("Close"), b -> onClose())
+        closeButton = Button.builder(Component.literal(UIConstants.LABEL_CLOSE), b -> onClose())
             .pos(width - 70, 5)
             .size(60, 16)
             .build();

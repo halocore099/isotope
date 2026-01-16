@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import dev.isotope.ui.widget.IsotopeWindow;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -92,7 +93,7 @@ public class LootTablePickerScreen extends IsotopeScreen {
         selectButton.active = false;
         this.addRenderableWidget(selectButton);
 
-        cancelButton = Button.builder(Component.literal("Cancel"), btn -> onClose())
+        cancelButton = Button.builder(Component.literal(UIConstants.LABEL_CANCEL), btn -> onClose())
             .pos(window.getX() + window.getWidth() / 2 + 5, buttonY)
             .size(buttonWidth, 20)
             .build();

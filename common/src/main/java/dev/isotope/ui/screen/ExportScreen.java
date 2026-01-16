@@ -6,6 +6,7 @@ import dev.isotope.export.ExportManager.ExportConfig;
 import dev.isotope.export.ExportManager.ExportResult;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -108,7 +109,7 @@ public class ExportScreen extends IsotopeScreen {
         this.addRenderableWidget(exportDatapackButton);
 
         // Close button
-        closeButton = Button.builder(Component.literal("Close"), btn -> onClose())
+        closeButton = Button.builder(Component.literal(UIConstants.LABEL_CLOSE), btn -> onClose())
             .pos(centerX + 60, buttonY)
             .size(100, 20)
             .build();
