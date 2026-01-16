@@ -278,6 +278,17 @@ public class LootTableEditPanel extends AbstractWidget {
         return height;
     }
 
+    /**
+     * Calculate the height of the table-level functions section.
+     */
+    private int getTableFunctionsHeight(LootTableStructure display) {
+        // Header + function list + random sequence row + spacer
+        return POOL_FUNC_COND_LINE_HEIGHT + 6  // Header
+             + display.functions().size() * POOL_FUNC_COND_LINE_HEIGHT  // Functions
+             + POOL_FUNC_COND_LINE_HEIGHT  // Random sequence row
+             + 4;  // Spacer
+    }
+
     private void refreshFromEdits() {
         if (tableId == null) return;
         editedStructure = LootEditManager.getInstance().getEditedStructure(tableId).orElse(structure);
@@ -531,6 +542,9 @@ public class LootTableEditPanel extends AbstractWidget {
             y += BATCH_BAR_HEIGHT;
         }
 
+        // Account for table-level functions section
+        y += getTableFunctionsHeight(display);
+
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             if (poolIdx == poolDropTargetIdx) {
                 return y;
@@ -553,6 +567,9 @@ public class LootTableEditPanel extends AbstractWidget {
         if (multiSelection.size() > 1) {
             y += BATCH_BAR_HEIGHT;
         }
+
+        // Account for table-level functions section
+        y += getTableFunctionsHeight(display);
 
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);
@@ -1481,6 +1498,9 @@ public class LootTableEditPanel extends AbstractWidget {
             y += BATCH_BAR_HEIGHT;
         }
 
+        // Account for table-level functions section
+        y += getTableFunctionsHeight(display);
+
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);
 
@@ -1715,6 +1735,9 @@ public class LootTableEditPanel extends AbstractWidget {
             y += BATCH_BAR_HEIGHT;
         }
 
+        // Account for table-level functions section
+        y += getTableFunctionsHeight(display);
+
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);
 
@@ -1757,6 +1780,9 @@ public class LootTableEditPanel extends AbstractWidget {
         if (multiSelection.size() > 1) {
             y += BATCH_BAR_HEIGHT;
         }
+
+        // Account for table-level functions section
+        y += getTableFunctionsHeight(display);
 
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);

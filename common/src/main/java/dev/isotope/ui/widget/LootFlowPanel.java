@@ -180,8 +180,14 @@ public class LootFlowPanel extends AbstractWidget {
         updateHoveredNode(mouseX, mouseY, contentY);
 
         // Render edges first (below nodes)
+        // Track edge index per source for curvature variation
+        Map<ResourceLocation, Integer> edgeIndexBySource = new HashMap<>();
         for (FlowEdge edge : graph.getEdges()) {
-            renderEdge(graphics, edge);
+            int edgeIndex = edgeIndexBySource.getOrDefault(edge.fromId(), 0);
+            edgeIndexBySource.put(edge.fromId(), edgeIndex + 1);
+            boolean isHighlighted = hoveredNode != null &&
+                (edge.fromId().equals(hoveredNode.id()) || edge.toId().equals(hoveredNode.id()));
+            renderEdge(graphics, edge, edgeIndex, isHighlighted);
         }
 
         // Render nodes
@@ -291,7 +297,7 @@ public class LootFlowPanel extends AbstractWidget {
         graphics.drawString(font, label, x + 6, y + (h - 8) / 2, IsotopeColors.TEXT_PRIMARY, false);
     }
 
-    private void renderEdge(GuiGraphics graphics, FlowEdge edge) {
+    private void renderEdge(GuiGraphics graphics, FlowEdge edge, int edgeIndex, boolean isHighlighted) {
         Optional<FlowNode> fromOpt = graph.getNode(edge.fromId());
         Optional<FlowNode> toOpt = graph.getNode(edge.toId());
 
@@ -305,21 +311,30 @@ public class LootFlowPanel extends AbstractWidget {
         int x2 = to.getLeftEdgeX();
         int y2 = to.getLeftEdgeY();
 
-        // Calculate bezier control points
+        // Add curvature variation based on edge index to spread out overlapping lines
+        // Alternate between positive and negative offsets
+        int curveVariation = (edgeIndex % 2 == 0 ? 1 : -1) * ((edgeIndex / 2) + 1) * 8;
+
+        // Calculate bezier control points with variation
         int ctrlOffset = (x2 - x1) / 2;
         int cx1 = x1 + ctrlOffset;
-        int cy1 = y1;
+        int cy1 = y1 + curveVariation;
         int cx2 = x2 - ctrlOffset;
-        int cy2 = y2;
+        int cy2 = y2 + curveVariation;
 
-        // Edge color with confidence-based alpha
-        int color = IsotopeColors.withAlpha(getEdgeColor(edge), edge.getAlpha());
+        // Edge color with confidence-based alpha (brighter when highlighted)
+        int baseAlpha = edge.getAlpha();
+        int alpha = isHighlighted ? 0xFF : baseAlpha;
+        int baseColor = isHighlighted ? IsotopeColors.ACCENT_GOLD : getEdgeColor(edge);
+        int color = IsotopeColors.withAlpha(baseColor, alpha);
 
         // Draw bezier curve (approximated with line segments)
-        drawBezierCurve(graphics, x1, y1, cx1, cy1, cx2, cy2, x2, y2, color);
+        // Use thicker lines when highlighted
+        int thickness = isHighlighted ? 2 : 1;
+        drawBezierCurve(graphics, x1, y1, cx1, cy1, cx2, cy2, x2, y2, color, thickness);
     }
 
-    private void drawBezierCurve(GuiGraphics graphics, int x1, int y1, int cx1, int cy1, int cx2, int cy2, int x2, int y2, int color) {
+    private void drawBezierCurve(GuiGraphics graphics, int x1, int y1, int cx1, int cy1, int cx2, int cy2, int x2, int y2, int color, int thickness) {
         int segments = 16;
         int prevX = x1;
         int prevY = y1;
@@ -332,7 +347,15 @@ public class LootFlowPanel extends AbstractWidget {
             int x = (int) (u * u * u * x1 + 3 * u * u * t * cx1 + 3 * u * t * t * cx2 + t * t * t * x2);
             int y = (int) (u * u * u * y1 + 3 * u * u * t * cy1 + 3 * u * t * t * cy2 + t * t * t * y2);
 
-            graphics.fill(Math.min(prevX, x), Math.min(prevY, y) - 1, Math.max(prevX, x) + 1, Math.max(prevY, y) + 1, color);
+            // Draw line segment with thickness
+            int halfThick = thickness / 2;
+            graphics.fill(
+                Math.min(prevX, x) - halfThick,
+                Math.min(prevY, y) - thickness,
+                Math.max(prevX, x) + 1 + halfThick,
+                Math.max(prevY, y) + 1,
+                color
+            );
 
             prevX = x;
             prevY = y;

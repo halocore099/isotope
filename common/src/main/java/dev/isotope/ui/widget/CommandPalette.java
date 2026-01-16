@@ -98,6 +98,7 @@ public class CommandPalette extends AbstractWidget {
      */
     public void reset() {
         searchBox.setValue("");
+        searchBox.setFocused(true);
         selectedIndex = 0;
         scrollOffset = 0;
         updateFilteredCommands("");
