@@ -1,7 +1,6 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.analysis.OrphanDetector;
-import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.data.loot.NumberProvider;
@@ -11,7 +10,6 @@ import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.validation.LootTableValidator;
-import dev.isotope.validation.LootTableValidator.IssueType;
 import dev.isotope.validation.LootTableValidator.ValidationIssue;
 import dev.isotope.validation.LootTableValidator.ValidationResult;
 import net.fabricmc.api.EnvType;

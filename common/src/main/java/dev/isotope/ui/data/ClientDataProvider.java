@@ -12,7 +12,6 @@ import net.fabricmc.api.Environment;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Bridge to access registry and link data from client UI.

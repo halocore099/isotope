@@ -15,7 +15,6 @@ import dev.isotope.ui.screen.TemplatePickerScreen;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.FeatureRegistry;
 import dev.isotope.registry.StructureLootLinker;
-import dev.isotope.data.EntryTemplate;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
@@ -33,7 +32,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;

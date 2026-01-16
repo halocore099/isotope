@@ -2,7 +2,6 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.importing.DatapackImporter;
 import dev.isotope.importing.DatapackImporter.DatapackInfo;
-import dev.isotope.importing.DatapackImporter.ImportResult;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;

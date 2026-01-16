@@ -14,7 +14,6 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-import dev.isotope.Isotope;
 import dev.isotope.registry.LootTableRegistry;
 import java.util.ArrayList;
 import java.util.List;

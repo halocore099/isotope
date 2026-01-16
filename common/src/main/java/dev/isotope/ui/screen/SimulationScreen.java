@@ -1,6 +1,5 @@
 package dev.isotope.ui.screen;
 
-import dev.isotope.analysis.DropRateCalculator;
 import dev.isotope.analysis.DropSimulator;
 import dev.isotope.analysis.DropSimulator.ItemResult;
 import dev.isotope.analysis.DropSimulator.SimulationResult;
@@ -22,7 +21,6 @@ import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Screen for running loot table drop simulations.
