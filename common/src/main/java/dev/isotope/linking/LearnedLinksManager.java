@@ -619,7 +619,11 @@ public final class LearnedLinksManager {
     }
 
     private String getIsotopeVersion() {
-        return "1.0.0"; // TODO: Get from mod metadata
+        try {
+            return dev.architectury.platform.Platform.getMod(Isotope.MOD_ID).getVersion();
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 
     @FunctionalInterface
