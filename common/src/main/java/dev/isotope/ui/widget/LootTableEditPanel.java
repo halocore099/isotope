@@ -297,7 +297,7 @@ public class LootTableEditPanel extends AbstractWidget {
         var font = Minecraft.getInstance().font;
 
         // Background
-        graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1a1a1a);
+        graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
 
         if (tableId == null) {
             // Empty state with icon and helpful messaging
@@ -305,14 +305,14 @@ public class LootTableEditPanel extends AbstractWidget {
             int centerY = getY() + height / 2;
 
             // Large icon
-            graphics.drawString(font, "◇", centerX - 4, centerY - 50, 0xFF4a4a4a, false);
+            graphics.drawString(font, "◇", centerX - 4, centerY - 50, IsotopeColors.TEXT_DISABLED, false);
 
             String title = "No Loot Table Selected";
             graphics.drawString(font, title, centerX - font.width(title) / 2, centerY - 24,
                 IsotopeColors.TEXT_PRIMARY, false);
 
             // Separator line
-            graphics.fill(centerX - 60, centerY - 8, centerX + 60, centerY - 7, 0xFF333333);
+            graphics.fill(centerX - 60, centerY - 8, centerX + 60, centerY - 7, IsotopeColors.BORDER_DEFAULT);
 
             // Tips
             String hint1 = "← Select a table from the browser";
@@ -326,7 +326,7 @@ public class LootTableEditPanel extends AbstractWidget {
             // Keyboard shortcuts hint at bottom
             String shortcutHint = "F1 - Keyboard shortcuts  |  Ctrl+P - Commands";
             graphics.drawString(font, shortcutHint, centerX - font.width(shortcutHint) / 2, centerY + 50,
-                0xFF555555, false);
+                IsotopeColors.BUTTON_BACKGROUND, false);
             return;
         }
 
@@ -374,8 +374,8 @@ public class LootTableEditPanel extends AbstractWidget {
             boolean hovered = mouseX >= btnX && mouseX < btnX + btnWidth &&
                 mouseY >= y && mouseY < y + 22;
 
-            graphics.fill(btnX, y + 2, btnX + btnWidth, y + 22, hovered ? 0xFF3a3a3a : 0xFF2a2a2a);
-            graphics.renderOutline(btnX, y + 2, btnWidth, 20, 0xFF404040);
+            graphics.fill(btnX, y + 2, btnX + btnWidth, y + 22, hovered ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND);
+            graphics.renderOutline(btnX, y + 2, btnWidth, 20, IsotopeColors.BORDER_DEFAULT);
 
             String addPoolText = "+ Add Pool";
             int textX = btnX + (btnWidth - font.width(addPoolText)) / 2;
@@ -391,8 +391,8 @@ public class LootTableEditPanel extends AbstractWidget {
             int thumbHeight = Math.max(20, (int) ((float) height / (height + maxScroll) * scrollbarHeight));
             int thumbY = getY() + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, getY(), scrollbarX + 4, getY() + height, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+            graphics.fill(scrollbarX, getY(), scrollbarX + 4, getY() + height, IsotopeColors.SCROLLBAR_TRACK);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.SCROLLBAR_THUMB);
         }
 
         // Orphan tooltip (render last so it's on top)
@@ -420,9 +420,9 @@ public class LootTableEditPanel extends AbstractWidget {
                 int tooltipY = orphanTooltipY;
 
                 // Draw tooltip background
-                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, 0xFF000000);
-                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, 0xFF1a1a2e);
-                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, 0xFF252540);
+                graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + tooltipWidth + 2, tooltipY + tooltipHeight + 2, IsotopeColors.TOOLTIP_BORDER);
+                graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + tooltipWidth + 1, tooltipY + tooltipHeight + 1, IsotopeColors.TOOLTIP_BACKGROUND);
+                graphics.fill(tooltipX, tooltipY, tooltipX + tooltipWidth, tooltipY + tooltipHeight, IsotopeColors.TOOLTIP_BACKGROUND_WARNING);
 
                 // Draw lines
                 int lineY = tooltipY + 4;
@@ -451,10 +451,10 @@ public class LootTableEditPanel extends AbstractWidget {
                 // Draw a bright line where the entry will be dropped
                 int lineX1 = getX() + PADDING + 10;
                 int lineX2 = getX() + width - PADDING - 10;
-                graphics.fill(lineX1, dropY - 1, lineX2, dropY + 1, 0xFF55FF55);
+                graphics.fill(lineX1, dropY - 1, lineX2, dropY + 1, IsotopeColors.DRAG_ENTRY_INDICATOR);
 
                 // Arrow indicator
-                graphics.fill(lineX1 - 4, dropY - 4, lineX1, dropY + 4, 0xFF55FF55);
+                graphics.fill(lineX1 - 4, dropY - 4, lineX1, dropY + 4, IsotopeColors.DRAG_ENTRY_INDICATOR);
             }
         }
 
@@ -469,8 +469,8 @@ public class LootTableEditPanel extends AbstractWidget {
                 int ghostWidth = 140;
 
                 // Semi-transparent background
-                graphics.fill(ghostX, ghostY, ghostX + ghostWidth, ghostY + ENTRY_HEIGHT, 0xAA2a3a2a);
-                graphics.renderOutline(ghostX, ghostY, ghostWidth, ENTRY_HEIGHT, 0xAA55FF55);
+                graphics.fill(ghostX, ghostY, ghostX + ghostWidth, ghostY + ENTRY_HEIGHT, IsotopeColors.withAlpha(IsotopeColors.ENTRY_BACKGROUND, 0xAA));
+                graphics.renderOutline(ghostX, ghostY, ghostWidth, ENTRY_HEIGHT, IsotopeColors.DRAG_GHOST_ENTRY);
 
                 // Item icon
                 if (entry.isItem() && entry.name().isPresent()) {
@@ -488,7 +488,7 @@ public class LootTableEditPanel extends AbstractWidget {
                     }
                     name += "...";
                 }
-                graphics.drawString(font, name, ghostX + 22, ghostY + 8, 0xFFAAFFAA, false);
+                graphics.drawString(font, name, ghostX + 22, ghostY + 8, IsotopeColors.CONFIDENCE_HIGH, false);
             }
         }
     }
@@ -501,11 +501,11 @@ public class LootTableEditPanel extends AbstractWidget {
                 // Draw a bright cyan line where the pool will be dropped
                 int lineX1 = getX() + PADDING;
                 int lineX2 = getX() + width - PADDING;
-                graphics.fill(lineX1, dropY - 2, lineX2, dropY + 2, 0xFF55FFFF);
+                graphics.fill(lineX1, dropY - 2, lineX2, dropY + 2, IsotopeColors.DRAG_POOL_INDICATOR);
 
                 // Arrow indicators on both sides
-                graphics.fill(lineX1 - 6, dropY - 5, lineX1, dropY + 5, 0xFF55FFFF);
-                graphics.fill(lineX2, dropY - 5, lineX2 + 6, dropY + 5, 0xFF55FFFF);
+                graphics.fill(lineX1 - 6, dropY - 5, lineX1, dropY + 5, IsotopeColors.DRAG_POOL_INDICATOR);
+                graphics.fill(lineX2, dropY - 5, lineX2 + 6, dropY + 5, IsotopeColors.DRAG_POOL_INDICATOR);
             }
         }
 
@@ -518,16 +518,16 @@ public class LootTableEditPanel extends AbstractWidget {
             int ghostWidth = 160;
 
             // Semi-transparent background
-            graphics.fill(ghostX, ghostY, ghostX + ghostWidth, ghostY + POOL_HEADER_HEIGHT, 0xAA2a3a4a);
-            graphics.renderOutline(ghostX, ghostY, ghostWidth, POOL_HEADER_HEIGHT, 0xAA55FFFF);
+            graphics.fill(ghostX, ghostY, ghostX + ghostWidth, ghostY + POOL_HEADER_HEIGHT, IsotopeColors.withAlpha(IsotopeColors.POOL_HEADER_BACKGROUND, 0xAA));
+            graphics.renderOutline(ghostX, ghostY, ghostWidth, POOL_HEADER_HEIGHT, IsotopeColors.DRAG_GHOST_POOL);
 
             // Pool name
             String poolName = "Pool " + (draggedPoolIdx + 1);
-            graphics.drawString(font, poolName, ghostX + 6, ghostY + 6, 0xFFAAFFFF, false);
+            graphics.drawString(font, poolName, ghostX + 6, ghostY + 6, IsotopeColors.ACCENT_CYAN_HOVER, false);
 
             // Entry count
             String entryCount = pool.entries().size() + " entries";
-            graphics.drawString(font, entryCount, ghostX + 6, ghostY + 16, 0xFF88CCCC, false);
+            graphics.drawString(font, entryCount, ghostX + 6, ghostY + 16, IsotopeColors.ACCENT_CYAN_DARK, false);
         }
     }
 
@@ -589,7 +589,7 @@ public class LootTableEditPanel extends AbstractWidget {
         String ns = tableId.getNamespace();
         int nsWidth = font.width(ns) + 6;
         int nsX = getX() + width - PADDING - nsWidth;
-        graphics.fill(nsX, y + 4, nsX + nsWidth, y + 16, 0xFF3a3a3a);
+        graphics.fill(nsX, y + 4, nsX + nsWidth, y + 16, IsotopeColors.ENTRY_BACKGROUND_HOVER);
         graphics.drawString(font, ns, nsX + 3, y + 6, IsotopeColors.TEXT_MUTED, false);
 
         // Check if this is an entity loot table
@@ -694,18 +694,18 @@ public class LootTableEditPanel extends AbstractWidget {
 
         // Separator
         graphics.fill(getX() + PADDING, y + HEADER_HEIGHT - 2, getX() + width - PADDING, y + HEADER_HEIGHT - 1,
-            0xFF333333);
+            IsotopeColors.BORDER_DEFAULT);
     }
 
     private static final int BATCH_BAR_HEIGHT = 28;
 
     private int renderBatchActionBar(GuiGraphics graphics, Font font, int y, int mouseX, int mouseY) {
         // Background
-        graphics.fill(getX(), y, getX() + width, y + BATCH_BAR_HEIGHT, 0xFF2a2a3a);
+        graphics.fill(getX(), y, getX() + width, y + BATCH_BAR_HEIGHT, IsotopeColors.BATCH_BAR_BACKGROUND);
 
         // Selection count
         String selectionText = multiSelection.size() + " entries selected";
-        graphics.drawString(font, selectionText, getX() + PADDING, y + 9, 0xFF9966ff, false);
+        graphics.drawString(font, selectionText, getX() + PADDING, y + 9, IsotopeColors.BATCH_ACCENT, false);
 
         // Buttons on the right
         int btnY = y + 4;
@@ -715,26 +715,26 @@ public class LootTableEditPanel extends AbstractWidget {
         int clearX = getX() + width - PADDING - 20;
         boolean clearHovered = mouseX >= clearX && mouseX < clearX + 18 &&
             mouseY >= btnY && mouseY < btnY + btnHeight;
-        graphics.fill(clearX, btnY, clearX + 18, btnY + btnHeight, clearHovered ? 0xFF4a3a3a : 0xFF3a3a3a);
-        graphics.drawString(font, "×", clearX + 5, btnY + 6, clearHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+        graphics.fill(clearX, btnY, clearX + 18, btnY + btnHeight, clearHovered ? IsotopeColors.BATCH_BUTTON_HOVER : IsotopeColors.BATCH_BUTTON_BACKGROUND);
+        graphics.drawString(font, "×", clearX + 5, btnY + 6, clearHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED, false);
 
         // Delete All button
         int deleteX = clearX - 70;
         batchDeleteHovered = mouseX >= deleteX && mouseX < deleteX + 65 &&
             mouseY >= btnY && mouseY < btnY + btnHeight;
         graphics.fill(deleteX, btnY, deleteX + 65, btnY + btnHeight,
-            batchDeleteHovered ? 0xFF5a2a2a : 0xFF3a3a3a);
-        graphics.renderOutline(deleteX, btnY, 65, btnHeight, 0xFF505050);
+            batchDeleteHovered ? IsotopeColors.DESTRUCTIVE_HOVER : IsotopeColors.BATCH_BUTTON_BACKGROUND);
+        graphics.renderOutline(deleteX, btnY, 65, btnHeight, IsotopeColors.INPUT_BORDER);
         graphics.drawString(font, "Delete All", deleteX + 6, btnY + 6,
-            batchDeleteHovered ? 0xFFff6666 : IsotopeColors.TEXT_PRIMARY, false);
+            batchDeleteHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_PRIMARY, false);
 
         // Set Weight button
         int weightX = deleteX - 75;
         batchWeightHovered = mouseX >= weightX && mouseX < weightX + 70 &&
             mouseY >= btnY && mouseY < btnY + btnHeight;
         graphics.fill(weightX, btnY, weightX + 70, btnY + btnHeight,
-            batchWeightHovered ? 0xFF3a4a5a : 0xFF3a3a3a);
-        graphics.renderOutline(weightX, btnY, 70, btnHeight, 0xFF505050);
+            batchWeightHovered ? IsotopeColors.ENTRY_BACKGROUND_EDITED : IsotopeColors.BATCH_BUTTON_BACKGROUND);
+        graphics.renderOutline(weightX, btnY, 70, btnHeight, IsotopeColors.INPUT_BORDER);
         graphics.drawString(font, "Set Weight", weightX + 6, btnY + 6,
             batchWeightHovered ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_PRIMARY, false);
 
@@ -746,7 +746,7 @@ public class LootTableEditPanel extends AbstractWidget {
 
         // Pool header
         if (y + POOL_HEADER_HEIGHT > getY() && y < getY() + height) {
-            graphics.fill(getX(), y, getX() + width, y + POOL_HEADER_HEIGHT, 0xFF252525);
+            graphics.fill(getX(), y, getX() + width, y + POOL_HEADER_HEIGHT, IsotopeColors.POOL_HEADER_BACKGROUND);
 
             // Pool label
             String poolLabel = "Pool " + (poolIdx + 1);
@@ -761,14 +761,14 @@ public class LootTableEditPanel extends AbstractWidget {
             int bonusX = rollsX + font.width(rollsText) + 10;
             if (pool.bonusRolls() != null && pool.bonusRolls().getMax() > 0) {
                 String bonusText = "Luck: +" + formatNumberProvider(pool.bonusRolls());
-                graphics.drawString(font, bonusText, bonusX, y + 6, 0xFF55FF55, false); // Green for luck
+                graphics.drawString(font, bonusText, bonusX, y + 6, IsotopeColors.ACCENT_GREEN, false); // Green for luck
             } else {
                 // Show clickable "Add Luck" text
                 String addLuckText = "[+Luck]";
                 boolean addLuckHovered = mouseX >= bonusX && mouseX < bonusX + font.width(addLuckText) &&
                     mouseY >= y + 2 && mouseY < y + 18;
                 graphics.drawString(font, addLuckText, bonusX, y + 6,
-                    addLuckHovered ? 0xFF55FF55 : IsotopeColors.TEXT_MUTED, false);
+                    addLuckHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.TEXT_MUTED, false);
             }
 
             // Remove pool button (X)
@@ -777,9 +777,9 @@ public class LootTableEditPanel extends AbstractWidget {
                 mouseY >= y + 4 && mouseY < y + 18;
             if (removeHovered) {
                 hoveredRemovePool = poolIdx;
-                graphics.fill(removeX, y + 4, removeX + 14, y + 18, 0xFF4a2a2a);
+                graphics.fill(removeX, y + 4, removeX + 14, y + 18, IsotopeColors.DESTRUCTIVE_BACKGROUND);
             }
-            graphics.drawString(font, "×", removeX + 4, y + 5, removeHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+            graphics.drawString(font, "×", removeX + 4, y + 5, removeHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED, false);
         }
         y += POOL_HEADER_HEIGHT;
 
@@ -808,7 +808,7 @@ public class LootTableEditPanel extends AbstractWidget {
             // Add Item button
             boolean addHovered = mouseX >= addBtnX && mouseX < addBtnX + addBtnWidth &&
                 mouseY >= y && mouseY < y + 20;
-            graphics.fill(addBtnX, y + 2, addBtnX + addBtnWidth, y + 20, addHovered ? 0xFF353535 : 0xFF2a2a2a);
+            graphics.fill(addBtnX, y + 2, addBtnX + addBtnWidth, y + 20, addHovered ? IsotopeColors.POOL_HEADER_HOVER : IsotopeColors.ENTRY_BACKGROUND);
             String addText = "+ Add Item";
             int addTextX = addBtnX + (addBtnWidth - font.width(addText)) / 2;
             graphics.drawString(font, addText, addTextX, y + 6, IsotopeColors.TEXT_MUTED, false);
@@ -817,7 +817,7 @@ public class LootTableEditPanel extends AbstractWidget {
             boolean templateHovered = mouseX >= templateBtnX && mouseX < templateBtnX + templateBtnWidth &&
                 mouseY >= y && mouseY < y + 20;
             graphics.fill(templateBtnX, y + 2, templateBtnX + templateBtnWidth, y + 20,
-                templateHovered ? 0xFF3a4a3a : 0xFF2a2a2a);
+                templateHovered ? IsotopeColors.ENTRY_BACKGROUND_EDITED_HOVER : IsotopeColors.ENTRY_BACKGROUND);
             String templateText = "☆ Template";
             int templateTextX = templateBtnX + (templateBtnWidth - font.width(templateText)) / 2;
             graphics.drawString(font, templateText, templateTextX, y + 6,
@@ -839,7 +839,7 @@ public class LootTableEditPanel extends AbstractWidget {
         // Header with [+] button
         addTableFunctionBtn = null;
         if (y + POOL_FUNC_COND_LINE_HEIGHT + 4 > getY() && y < getY() + height) {
-            graphics.fill(x, y, getX() + width - PADDING, y + POOL_FUNC_COND_LINE_HEIGHT + 4, 0xFF252530);
+            graphics.fill(x, y, getX() + width - PADDING, y + POOL_FUNC_COND_LINE_HEIGHT + 4, IsotopeColors.FUNC_COND_BACKGROUND);
             graphics.drawString(font, "✦ Table Functions", x + 4, y + 4, IsotopeColors.ACCENT_GOLD, false);
 
             // [+] add button on the right
@@ -850,10 +850,10 @@ public class LootTableEditPanel extends AbstractWidget {
             boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
                 mouseY >= btnY && mouseY < btnY + btnH;
             if (hovered) {
-                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF3a4a3a);
+                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, IsotopeColors.SUCCESS_BACKGROUND);
             }
             graphics.drawString(font, "+", btnX + 4, btnY + 2,
-                hovered ? 0xFF55FF55 : IsotopeColors.TEXT_SECONDARY, false);
+                hovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.TEXT_SECONDARY, false);
             addTableFunctionBtn = new int[]{btnX, btnY, btnW, btnH};
         }
         y += POOL_FUNC_COND_LINE_HEIGHT + 6;
@@ -879,10 +879,10 @@ public class LootTableEditPanel extends AbstractWidget {
                 boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
                     mouseY >= btnY && mouseY < btnY + btnH;
                 if (hovered) {
-                    graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF4a2a2a);
+                    graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, IsotopeColors.DESTRUCTIVE_BACKGROUND);
                 }
                 graphics.drawString(font, "×", btnX + 4, btnY + 2,
-                    hovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+                    hovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED, false);
                 removeTableFunctionBtns.add(new int[]{funcIndex, btnX, btnY, btnW, btnH});
             }
             y += POOL_FUNC_COND_LINE_HEIGHT;
@@ -907,10 +907,10 @@ public class LootTableEditPanel extends AbstractWidget {
             boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
                 mouseY >= btnY && mouseY < btnY + btnH;
             if (hovered) {
-                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF3a4a3a);
+                graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, IsotopeColors.SUCCESS_BACKGROUND);
             }
             graphics.drawString(font, "✎", btnX + 8, btnY + 2,
-                hovered ? 0xFF55FF55 : IsotopeColors.TEXT_MUTED, false);
+                hovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.TEXT_MUTED, false);
             randomSequenceEditBtn = new int[]{btnX, btnY, btnW, btnH};
         }
         y += POOL_FUNC_COND_LINE_HEIGHT;
@@ -958,10 +958,10 @@ public class LootTableEditPanel extends AbstractWidget {
                     boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
                         mouseY >= btnY && mouseY < btnY + btnH;
                     if (hovered) {
-                        graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF4a2a2a);
+                        graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, IsotopeColors.DESTRUCTIVE_BACKGROUND);
                     }
                     graphics.drawString(font, "×", btnX + 4, btnY + 2,
-                        hovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+                        hovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED, false);
                     removePoolFunctionBtns.add(new int[]{poolIdx, funcIndex, btnX, btnY, btnW, btnH});
                 }
                 y += POOL_FUNC_COND_LINE_HEIGHT;
@@ -996,10 +996,10 @@ public class LootTableEditPanel extends AbstractWidget {
                     boolean hovered = mouseX >= btnX && mouseX < btnX + btnW &&
                         mouseY >= btnY && mouseY < btnY + btnH;
                     if (hovered) {
-                        graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, 0xFF4a2a2a);
+                        graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, IsotopeColors.DESTRUCTIVE_BACKGROUND);
                     }
                     graphics.drawString(font, "×", btnX + 4, btnY + 2,
-                        hovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+                        hovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED, false);
                     removePoolConditionBtns.add(new int[]{poolIdx, condIndex, btnX, btnY, btnW, btnH});
                 }
                 y += POOL_FUNC_COND_LINE_HEIGHT;
@@ -1020,14 +1020,14 @@ public class LootTableEditPanel extends AbstractWidget {
 
         if (isMultiSelected) {
             // Multi-selected entries (purple tint)
-            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, 0xFF3a2a4a);
-            graphics.renderOutline(getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, 0xFF9966ff);
+            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, IsotopeColors.MULTI_SELECT_BACKGROUND);
+            graphics.renderOutline(getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, IsotopeColors.MULTI_SELECT_BORDER);
         } else if (isSelected) {
             // Single selected highlight (stronger blue tint)
-            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, 0xFF2a3a4a);
+            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, IsotopeColors.SINGLE_SELECT_BACKGROUND);
             graphics.renderOutline(getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, IsotopeColors.ACCENT_GOLD);
         } else if (rowHovered) {
-            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, 0xFF2a2a2a);
+            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, IsotopeColors.ENTRY_BACKGROUND);
         }
 
         int x = getX() + PADDING + 10;
@@ -1069,8 +1069,8 @@ public class LootTableEditPanel extends AbstractWidget {
         boolean weightHovered = mouseX >= x && mouseX < x + weightBoxWidth &&
             mouseY >= y + 3 && mouseY < y + 19;
 
-        int weightBgColor = weightEditing ? 0xFF2a3a4a : (weightHovered ? 0xFF404040 : 0xFF303030);
-        int weightBorderColor = weightEditing ? IsotopeColors.ACCENT_GOLD : 0xFF505050;
+        int weightBgColor = weightEditing ? IsotopeColors.SINGLE_SELECT_BACKGROUND : (weightHovered ? IsotopeColors.INPUT_BACKGROUND_HOVER : IsotopeColors.INPUT_BACKGROUND);
+        int weightBorderColor = weightEditing ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER;
         graphics.fill(x, y + 3, x + weightBoxWidth, y + 19, weightBgColor);
         graphics.renderOutline(x, y + 3, weightBoxWidth, 16, weightBorderColor);
 
@@ -1104,8 +1104,8 @@ public class LootTableEditPanel extends AbstractWidget {
         boolean minHovered = mouseX >= x && mouseX < x + countBoxWidth &&
             mouseY >= y + 3 && mouseY < y + 19;
 
-        int minBgColor = minEditing ? 0xFF2a3a4a : (minHovered ? 0xFF404040 : 0xFF303030);
-        int minBorderColor = minEditing ? IsotopeColors.ACCENT_GOLD : 0xFF505050;
+        int minBgColor = minEditing ? IsotopeColors.SINGLE_SELECT_BACKGROUND : (minHovered ? IsotopeColors.INPUT_BACKGROUND_HOVER : IsotopeColors.INPUT_BACKGROUND);
+        int minBorderColor = minEditing ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER;
         graphics.fill(x, y + 3, x + countBoxWidth, y + 19, minBgColor);
         graphics.renderOutline(x, y + 3, countBoxWidth, 16, minBorderColor);
 
@@ -1134,8 +1134,8 @@ public class LootTableEditPanel extends AbstractWidget {
         boolean maxHovered = mouseX >= x && mouseX < x + countBoxWidth &&
             mouseY >= y + 3 && mouseY < y + 19;
 
-        int maxBgColor = maxEditing ? 0xFF2a3a4a : (maxHovered ? 0xFF404040 : 0xFF303030);
-        int maxBorderColor = maxEditing ? IsotopeColors.ACCENT_GOLD : 0xFF505050;
+        int maxBgColor = maxEditing ? IsotopeColors.SINGLE_SELECT_BACKGROUND : (maxHovered ? IsotopeColors.INPUT_BACKGROUND_HOVER : IsotopeColors.INPUT_BACKGROUND);
+        int maxBorderColor = maxEditing ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER;
         graphics.fill(x, y + 3, x + countBoxWidth, y + 19, maxBgColor);
         graphics.renderOutline(x, y + 3, countBoxWidth, 16, maxBorderColor);
 
@@ -1207,9 +1207,9 @@ public class LootTableEditPanel extends AbstractWidget {
         if (removeHovered) {
             hoveredRemoveEntry = entryIdx;
             hoveredRemoveEntryPool = poolIdx;
-            graphics.fill(removeX, y + 4, removeX + 16, y + 20, 0xFF4a2a2a);
+            graphics.fill(removeX, y + 4, removeX + 16, y + 20, IsotopeColors.DESTRUCTIVE_BACKGROUND);
         }
-        graphics.drawString(font, "×", removeX + 5, y + 7, removeHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "×", removeX + 5, y + 7, removeHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED, false);
     }
 
     private NumberProvider getCountFromEntry(LootEntry entry) {

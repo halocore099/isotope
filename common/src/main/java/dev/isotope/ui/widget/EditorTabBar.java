@@ -44,7 +44,7 @@ public class EditorTabBar extends AbstractWidget {
         int activeIndex = tabManager.getActiveTabIndex();
 
         // Background
-        graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1a1a1a);
+        graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
 
         if (tabs.isEmpty()) {
             // No tabs message
@@ -74,11 +74,11 @@ public class EditorTabBar extends AbstractWidget {
             // Tab background
             int bgColor;
             if (isActive) {
-                bgColor = 0xFF2a2a2a;
+                bgColor = IsotopeColors.ENTRY_BACKGROUND;
             } else if (isHovered) {
-                bgColor = 0xFF252525;
+                bgColor = IsotopeColors.POOL_HEADER_BACKGROUND;
             } else {
-                bgColor = 0xFF1e1e1e;
+                bgColor = IsotopeColors.BACKGROUND_PANEL;
             }
             graphics.fill(x, getY(), x + tabWidth - 1, getY() + TAB_HEIGHT, bgColor);
 
@@ -88,7 +88,7 @@ public class EditorTabBar extends AbstractWidget {
             }
 
             // Tab separator
-            graphics.fill(x + tabWidth - 1, getY() + 4, x + tabWidth, getY() + TAB_HEIGHT - 4, 0xFF333333);
+            graphics.fill(x + tabWidth - 1, getY() + 4, x + tabWidth, getY() + TAB_HEIGHT - 4, IsotopeColors.BORDER_DEFAULT);
 
             // Modified indicator
             if (tab.hasUnsavedChanges()) {
@@ -117,10 +117,10 @@ public class EditorTabBar extends AbstractWidget {
 
             if (closeHovered) {
                 hoveredClose = i;
-                graphics.fill(closeX - 2, closeY - 2, closeX + CLOSE_BUTTON_SIZE + 2, closeY + CLOSE_BUTTON_SIZE + 2, 0xFF4a2a2a);
+                graphics.fill(closeX - 2, closeY - 2, closeX + CLOSE_BUTTON_SIZE + 2, closeY + CLOSE_BUTTON_SIZE + 2, IsotopeColors.DESTRUCTIVE_BACKGROUND);
             }
 
-            graphics.drawString(font, "\u00D7", closeX, closeY, closeHovered ? 0xFFff6666 : IsotopeColors.TEXT_MUTED, false);
+            graphics.drawString(font, "\u00D7", closeX, closeY, closeHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_MUTED, false);
 
             x += tabWidth;
         }
@@ -132,14 +132,14 @@ public class EditorTabBar extends AbstractWidget {
                 mouseY >= getY() && mouseY < getY() + TAB_HEIGHT;
 
             if (plusHovered) {
-                graphics.fill(plusX, getY() + 3, plusX + 18, getY() + TAB_HEIGHT - 3, 0xFF2a2a2a);
+                graphics.fill(plusX, getY() + 3, plusX + 18, getY() + TAB_HEIGHT - 3, IsotopeColors.ENTRY_BACKGROUND);
             }
             graphics.drawString(font, "+", plusX + 5, getY() + 7,
                 plusHovered ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.TEXT_MUTED, false);
         }
 
         // Bottom border
-        graphics.fill(getX(), getY() + TAB_HEIGHT - 1, getX() + width, getY() + TAB_HEIGHT, 0xFF333333);
+        graphics.fill(getX(), getY() + TAB_HEIGHT - 1, getX() + width, getY() + TAB_HEIGHT, IsotopeColors.BORDER_DEFAULT);
     }
 
     @Override

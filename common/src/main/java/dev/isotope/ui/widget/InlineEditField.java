@@ -91,8 +91,8 @@ public class InlineEditField extends AbstractWidget {
         boolean hovered = isHovered();
 
         // Background
-        int bgColor = editing ? 0xFF2a2a2a : (hovered ? 0xFF3a3a3a : 0xFF303030);
-        int borderColor = editing ? IsotopeColors.ACCENT_GOLD : (hovered ? 0xFF505050 : 0xFF404040);
+        int bgColor = editing ? IsotopeColors.ENTRY_BACKGROUND : (hovered ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.INPUT_BACKGROUND);
+        int borderColor = editing ? IsotopeColors.ACCENT_GOLD : (hovered ? IsotopeColors.INPUT_BORDER : IsotopeColors.BORDER_DEFAULT);
 
         graphics.fill(getX(), getY(), getX() + width, getY() + height, bgColor);
         graphics.renderOutline(getX(), getY(), width, height, borderColor);

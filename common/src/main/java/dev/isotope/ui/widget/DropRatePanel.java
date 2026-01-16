@@ -86,19 +86,19 @@ public class DropRatePanel extends AbstractWidget {
         Font font = Minecraft.getInstance().font;
 
         // Background
-        graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1a1a1a);
-        graphics.renderOutline(getX(), getY(), width, height, 0xFF333333);
+        graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(getX(), getY(), width, height, IsotopeColors.BORDER_INNER);
 
         // Title
         graphics.drawString(font, "Drop Rates", getX() + PADDING, getY() + 7, IsotopeColors.ACCENT_GOLD, false);
 
         if (structure == null || poolStats.isEmpty()) {
             int centerX = getX() + width / 2;
-            graphics.drawString(font, "📊", centerX - 6, getY() + 35, 0xFF3a3a3a, false);
+            graphics.drawString(font, "📊", centerX - 6, getY() + 35, IsotopeColors.ENTRY_BACKGROUND_HOVER, false);
             String msg = "Select a loot table";
             graphics.drawString(font, msg, centerX - font.width(msg) / 2, getY() + 55, IsotopeColors.TEXT_MUTED, false);
             String hint = "to see drop rates";
-            graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, 0xFF555555, false);
+            graphics.drawString(font, hint, centerX - font.width(hint) / 2, getY() + 68, IsotopeColors.TEXT_DISABLED, false);
             return;
         }
 
@@ -130,15 +130,15 @@ public class DropRatePanel extends AbstractWidget {
             int thumbHeight = Math.max(20, (int) ((float) (height - HEADER_HEIGHT) / (height - HEADER_HEIGHT + maxScroll) * scrollbarHeight));
             int thumbY = getY() + HEADER_HEIGHT + (int) ((float) scrollOffset / maxScroll * (scrollbarHeight - thumbHeight));
 
-            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 4, getY() + height, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+            graphics.fill(scrollbarX, getY() + HEADER_HEIGHT, scrollbarX + 4, getY() + height, IsotopeColors.SCROLLBAR_TRACK);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.SCROLLBAR_THUMB);
         }
     }
 
     private int renderPoolStats(GuiGraphics graphics, Font font, int y, PoolStats ps, int mouseX, int mouseY) {
         // Pool header
         if (y + HEADER_HEIGHT > getY() && y < getY() + height) {
-            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + HEADER_HEIGHT - 2, 0xFF252525);
+            graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + HEADER_HEIGHT - 2, IsotopeColors.POOL_HEADER_BACKGROUND);
 
             String poolLabel = String.format("Pool %d  (%.1f rolls, %d total weight)",
                 ps.poolIndex() + 1, ps.avgRolls(), ps.totalWeight());
@@ -180,7 +180,7 @@ public class DropRatePanel extends AbstractWidget {
         int barWidth = (int) (rate.probability() * BAR_MAX_WIDTH);
         int barColor = DropRateCalculator.getRarityColor(rate.probability());
 
-        graphics.fill(x, y + 4, x + BAR_MAX_WIDTH, y + 14, 0xFF2a2a2a);
+        graphics.fill(x, y + 4, x + BAR_MAX_WIDTH, y + 14, IsotopeColors.ENTRY_BACKGROUND);
         if (barWidth > 0) {
             graphics.fill(x, y + 4, x + barWidth, y + 14, barColor);
         }

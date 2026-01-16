@@ -63,8 +63,8 @@ public class GlobalSearchWidget extends AbstractWidget {
         Font font = Minecraft.getInstance().font;
 
         // Background
-        graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF1a1a1a);
-        graphics.renderOutline(getX(), getY(), width, height, 0xFF333333);
+        graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
+        graphics.renderOutline(getX(), getY(), width, height, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawString(font, "Global Search", getX() + 8, getY() + 8, IsotopeColors.ACCENT_GOLD, false);
@@ -91,8 +91,8 @@ public class GlobalSearchWidget extends AbstractWidget {
             mouseY >= filterY && mouseY < filterY + FILTER_HEIGHT;
 
         graphics.fill(getX() + 8, filterY, getX() + 8 + filterWidth, filterY + FILTER_HEIGHT,
-            filterHovered ? 0xFF3a3a3a : 0xFF2a2a2a);
-        graphics.renderOutline(getX() + 8, filterY, filterWidth, FILTER_HEIGHT, 0xFF404040);
+            filterHovered ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND);
+        graphics.renderOutline(getX() + 8, filterY, filterWidth, FILTER_HEIGHT, IsotopeColors.BORDER_DEFAULT);
         graphics.drawString(font, filterLabel, getX() + 12, filterY + 4, IsotopeColors.TEXT_PRIMARY, false);
         graphics.drawString(font, "▼", getX() + 8 + filterWidth - 10, filterY + 4, IsotopeColors.TEXT_MUTED, false);
 
@@ -121,7 +121,7 @@ public class GlobalSearchWidget extends AbstractWidget {
 
             if (hovered) {
                 hoveredResult = index;
-                graphics.fill(getX() + 4, y, getX() + width - 4, y + RESULT_HEIGHT, 0xFF2a3a4a);
+                graphics.fill(getX() + 4, y, getX() + width - 4, y + RESULT_HEIGHT, IsotopeColors.SINGLE_SELECT_BACKGROUND);
             }
 
             // Table icon
@@ -181,8 +181,8 @@ public class GlobalSearchWidget extends AbstractWidget {
             int thumbY = resultsY + (scrollbarHeight - thumbHeight) * scrollOffset /
                 Math.max(1, filteredResults.size() - visibleCount);
 
-            graphics.fill(scrollbarX, resultsY, scrollbarX + 4, resultsY + scrollbarHeight, 0xFF2a2a2a);
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, 0xFF555555);
+            graphics.fill(scrollbarX, resultsY, scrollbarX + 4, resultsY + scrollbarHeight, IsotopeColors.SCROLLBAR_TRACK);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.SCROLLBAR_THUMB);
         }
     }
 
@@ -193,8 +193,8 @@ public class GlobalSearchWidget extends AbstractWidget {
         int dropdownHeight = maxItems * itemHeight + 4;
 
         // Dropdown background
-        graphics.fill(getX() + 8, startY, getX() + 8 + dropdownWidth, startY + dropdownHeight, 0xFF252525);
-        graphics.renderOutline(getX() + 8, startY, dropdownWidth, dropdownHeight, 0xFF404040);
+        graphics.fill(getX() + 8, startY, getX() + 8 + dropdownWidth, startY + dropdownHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
+        graphics.renderOutline(getX() + 8, startY, dropdownWidth, dropdownHeight, IsotopeColors.BORDER_DEFAULT);
 
         hoveredNamespace = -1;
         int y = startY + 2;
@@ -204,7 +204,7 @@ public class GlobalSearchWidget extends AbstractWidget {
             mouseY >= y && mouseY < y + itemHeight;
         if (allHovered) {
             hoveredNamespace = -1; // Special value for "All"
-            graphics.fill(getX() + 10, y, getX() + 8 + dropdownWidth - 2, y + itemHeight, 0xFF3a3a3a);
+            graphics.fill(getX() + 10, y, getX() + 8 + dropdownWidth - 2, y + itemHeight, IsotopeColors.ENTRY_BACKGROUND_HOVER);
         }
         int textColor = selectedNamespace == null ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_PRIMARY;
         graphics.drawString(font, "All Mods", getX() + 12, y + 3, textColor, false);
@@ -217,7 +217,7 @@ public class GlobalSearchWidget extends AbstractWidget {
                 mouseY >= y && mouseY < y + itemHeight;
             if (hovered) {
                 hoveredNamespace = i;
-                graphics.fill(getX() + 10, y, getX() + 8 + dropdownWidth - 2, y + itemHeight, 0xFF3a3a3a);
+                graphics.fill(getX() + 10, y, getX() + 8 + dropdownWidth - 2, y + itemHeight, IsotopeColors.ENTRY_BACKGROUND_HOVER);
             }
             textColor = ns.equals(selectedNamespace) ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_PRIMARY;
             String displayNs = font.width(ns) > dropdownWidth - 10 ? font.plainSubstrByWidth(ns, dropdownWidth - 15) + ".." : ns;

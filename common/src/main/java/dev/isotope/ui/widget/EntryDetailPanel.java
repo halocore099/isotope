@@ -462,10 +462,10 @@ public class EntryDetailPanel extends AbstractWidget {
         graphics.fill(x, y, x + BTN_SIZE, y + BTN_SIZE, IsotopeColors.BUTTON_BACKGROUND);
 
         // 3D border
-        graphics.fill(x, y, x + BTN_SIZE, y + 1, 0xFFC6C6C6);
-        graphics.fill(x, y, x + 1, y + BTN_SIZE, 0xFFC6C6C6);
-        graphics.fill(x, y + BTN_SIZE - 1, x + BTN_SIZE, y + BTN_SIZE, 0xFF2A2A2A);
-        graphics.fill(x + BTN_SIZE - 1, y, x + BTN_SIZE, y + BTN_SIZE, 0xFF2A2A2A);
+        graphics.fill(x, y, x + BTN_SIZE, y + 1, IsotopeColors.BUTTON_BORDER_LIGHT);
+        graphics.fill(x, y, x + 1, y + BTN_SIZE, IsotopeColors.BUTTON_BORDER_LIGHT);
+        graphics.fill(x, y + BTN_SIZE - 1, x + BTN_SIZE, y + BTN_SIZE, IsotopeColors.BUTTON_BORDER_DARK);
+        graphics.fill(x + BTN_SIZE - 1, y, x + BTN_SIZE, y + BTN_SIZE, IsotopeColors.BUTTON_BORDER_DARK);
 
         // Label centered
         int textWidth = font.width(label);
@@ -481,10 +481,10 @@ public class EntryDetailPanel extends AbstractWidget {
         graphics.fill(x, y, x + width, y + btnHeight, IsotopeColors.DESTRUCTIVE_BACKGROUND);
 
         // Border
-        graphics.fill(x, y, x + width, y + 1, 0xFF8A4040);
-        graphics.fill(x, y, x + 1, y + btnHeight, 0xFF8A4040);
-        graphics.fill(x, y + btnHeight - 1, x + width, y + btnHeight, 0xFF3A1010);
-        graphics.fill(x + width - 1, y, x + width, y + btnHeight, 0xFF3A1010);
+        graphics.fill(x, y, x + width, y + 1, IsotopeColors.DESTRUCTIVE_BORDER_LIGHT);
+        graphics.fill(x, y, x + 1, y + btnHeight, IsotopeColors.DESTRUCTIVE_BORDER_LIGHT);
+        graphics.fill(x, y + btnHeight - 1, x + width, y + btnHeight, IsotopeColors.DESTRUCTIVE_BORDER_DARK);
+        graphics.fill(x + width - 1, y, x + width, y + btnHeight, IsotopeColors.DESTRUCTIVE_BORDER_DARK);
 
         // Label centered
         int textWidth = font.width(label);
@@ -510,13 +510,13 @@ public class EntryDetailPanel extends AbstractWidget {
         int btnHeight = 14;
 
         // Green-ish background
-        graphics.fill(x, y, x + width, y + btnHeight, 0xFF3A5A3A);
+        graphics.fill(x, y, x + width, y + btnHeight, IsotopeColors.SUCCESS_BACKGROUND);
 
         // Border
-        graphics.fill(x, y, x + width, y + 1, 0xFF5A7A5A);
-        graphics.fill(x, y, x + 1, y + btnHeight, 0xFF5A7A5A);
-        graphics.fill(x, y + btnHeight - 1, x + width, y + btnHeight, 0xFF1A3A1A);
-        graphics.fill(x + width - 1, y, x + width, y + btnHeight, 0xFF1A3A1A);
+        graphics.fill(x, y, x + width, y + 1, IsotopeColors.SUCCESS_BORDER_LIGHT);
+        graphics.fill(x, y, x + 1, y + btnHeight, IsotopeColors.SUCCESS_BORDER_LIGHT);
+        graphics.fill(x, y + btnHeight - 1, x + width, y + btnHeight, IsotopeColors.SUCCESS_BORDER_DARK);
+        graphics.fill(x + width - 1, y, x + width, y + btnHeight, IsotopeColors.SUCCESS_BORDER_DARK);
 
         // Label centered
         int textWidth = font.width(label);

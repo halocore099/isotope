@@ -73,6 +73,18 @@ public final class IsotopeColors {
     public static final int DESTRUCTIVE_BACKGROUND = 0xFF5A2020;
     public static final int DESTRUCTIVE_HOVER = 0xFF7A3030;
     public static final int DESTRUCTIVE_TEXT = 0xFFFF8888;
+    public static final int DESTRUCTIVE_BORDER_LIGHT = 0xFF8A4040;
+    public static final int DESTRUCTIVE_BORDER_DARK = 0xFF3A1010;
+
+    // === Success/Add button colors ===
+    public static final int SUCCESS_BACKGROUND = 0xFF3A5A3A;
+    public static final int SUCCESS_HOVER = 0xFF4A6A4A;
+    public static final int SUCCESS_BORDER_LIGHT = 0xFF5A7A5A;
+    public static final int SUCCESS_BORDER_DARK = 0xFF1A3A1A;
+
+    // === Button 3D border colors ===
+    public static final int BUTTON_BORDER_LIGHT = 0xFFC6C6C6;
+    public static final int BUTTON_BORDER_DARK = 0xFF2A2A2A;
 
     // === List colors (vanilla-style selection) ===
     public static final int LIST_SELECTED = 0x80FFFFFF;         // Semi-transparent white
@@ -96,6 +108,74 @@ public final class IsotopeColors {
     public static final int TAB_ACTIVE = 0xFFC6C6C6;            // Light gray
     public static final int TAB_INACTIVE = 0xFF555555;          // Dark gray
     public static final int TAB_HOVER = 0xFF7A7A7A;
+
+    // === Drag and drop indicators ===
+    public static final int DRAG_ENTRY_INDICATOR = 0xFF55FF55;  // Green line for entry drag
+    public static final int DRAG_POOL_INDICATOR = 0xFF55FFFF;   // Cyan line for pool drag
+    public static final int DRAG_GHOST_ENTRY = 0x8055FF55;      // Semi-transparent green
+    public static final int DRAG_GHOST_POOL = 0x8055FFFF;       // Semi-transparent cyan
+
+    // === Tooltip colors ===
+    public static final int TOOLTIP_BACKGROUND = 0xFF1A1A1A;
+    public static final int TOOLTIP_BORDER = 0xFF000000;
+    public static final int TOOLTIP_BACKGROUND_WARNING = 0xFF252540;
+
+    // === Entry/Pool edit panel colors ===
+    public static final int ENTRY_BACKGROUND = 0xFF2A2A2A;
+    public static final int ENTRY_BACKGROUND_HOVER = 0xFF3A3A3A;
+    public static final int ENTRY_BACKGROUND_SELECTED = 0xFF3A3A3A;
+    public static final int ENTRY_BACKGROUND_EDITED = 0xFF2A3A2A;      // Green tint for edited
+    public static final int ENTRY_BACKGROUND_EDITED_HOVER = 0xFF3A4A3A;
+    public static final int POOL_HEADER_BACKGROUND = 0xFF252525;
+    public static final int POOL_HEADER_HOVER = 0xFF353535;
+
+    // === Input field colors ===
+    public static final int INPUT_BACKGROUND = 0xFF303030;
+    public static final int INPUT_BACKGROUND_ACTIVE = 0xFF252525;
+    public static final int INPUT_BORDER = 0xFF505050;
+    public static final int INPUT_BORDER_FOCUS = ACCENT_AQUA;
+
+    // === Success color alias ===
+    public static final int SUCCESS = STATUS_SUCCESS;
+
+    // === Multi-select/batch colors ===
+    public static final int BATCH_BAR_BACKGROUND = 0xFF2A2A3A;          // Purple tint background
+    public static final int BATCH_ACCENT = 0xFF9966FF;                  // Purple accent for selection
+    public static final int BATCH_BUTTON_BACKGROUND = 0xFF3A3A3A;
+    public static final int BATCH_BUTTON_HOVER = 0xFF4A3A3A;
+
+    // === Function/Condition section colors ===
+    public static final int FUNC_COND_BACKGROUND = 0xFF252530;          // Dark blue tint for function sections
+
+    // === Selection/editing colors ===
+    public static final int MULTI_SELECT_BACKGROUND = 0xFF3A2A4A;       // Purple tint for multi-selected
+    public static final int MULTI_SELECT_BORDER = 0xFF9966FF;           // Purple outline for multi-selected
+    public static final int SINGLE_SELECT_BACKGROUND = 0xFF2A3A4A;      // Blue tint for selected
+
+    // === Input field state colors ===
+    public static final int INPUT_BACKGROUND_HOVER = 0xFF404040;
+
+    // === Browser category colors ===
+    public static final int CATEGORY_BOOKMARKS = 0xFF2A2520;           // Gold tint
+    public static final int CATEGORY_BOOKMARKS_HOVER = 0xFF3A3530;
+    public static final int CATEGORY_RECENT = 0xFF202530;              // Cyan tint
+    public static final int CATEGORY_RECENT_HOVER = 0xFF303540;
+    public static final int CATEGORY_ENTITIES = 0xFF303030;            // Neutral
+    public static final int CATEGORY_ENTITIES_HOVER = 0xFF353535;
+
+    // === Browser item selection colors ===
+    public static final int ITEM_BOOKMARKS_SELECTED = 0xFF5A4A2A;
+    public static final int ITEM_BOOKMARKS_HOVER = 0xFF3A3020;
+    public static final int ITEM_RECENT_SELECTED = 0xFF2A4A5A;
+    public static final int ITEM_RECENT_HOVER = 0xFF253035;
+    public static final int ITEM_ENTITY_SELECTED = 0xFF3A5A8A;
+    public static final int STAR_MUTED = 0xFF666666;
+
+    // === Feature tooltip colors ===
+    public static final int TOOLTIP_FEATURE_BG = 0xFF3E2A1A;
+    public static final int TOOLTIP_FEATURE_INNER = 0xFF402520;
+    public static final int TOOLTIP_ENTITY_BG = 0xFF2A1A3E;
+    public static final int TOOLTIP_ENTITY_INNER = 0xFF352540;
 
     private IsotopeColors() {}
 
