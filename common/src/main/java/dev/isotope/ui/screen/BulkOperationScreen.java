@@ -6,6 +6,7 @@ import dev.isotope.bulk.BulkOperation.Type;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -173,21 +174,16 @@ public class BulkOperationScreen extends Screen {
     }
 
     private float parseScale() {
-        try {
-            float scale = Float.parseFloat(scaleInput.getValue().trim());
-            if (scale <= 0) {
-                IsotopeToast.error("Invalid", "Scale must be positive");
-                return -1;
-            }
-            if (scale > 100) {
-                IsotopeToast.error("Invalid", "Scale too large (max 100)");
-                return -1;
-            }
-            return scale;
-        } catch (NumberFormatException e) {
-            IsotopeToast.error("Invalid", "Enter a valid number");
+        float scale = ScreenUtils.parseFloatSafe(scaleInput.getValue(), -1);
+        if (scale <= 0) {
+            IsotopeToast.error("Invalid", "Scale must be positive");
             return -1;
         }
+        if (scale > 100) {
+            IsotopeToast.error("Invalid", "Scale too large (max 100)");
+            return -1;
+        }
+        return scale;
     }
 
     private void applyChanges() {

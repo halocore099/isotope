@@ -4,6 +4,7 @@ import dev.isotope.testing.TestArenaManager;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -83,17 +84,12 @@ public class TestArenaScreen extends Screen {
 
     private void onCreateArena() {
         // Parse count
-        try {
-            int count = Integer.parseInt(countInput.getValue().trim());
-            if (count < 1 || count > 64) {
-                IsotopeToast.error("Invalid Count", "Enter a number between 1 and 64");
-                return;
-            }
-            TestArenaManager.getInstance().setStructureCount(count);
-        } catch (NumberFormatException e) {
-            IsotopeToast.error("Invalid Count", "Enter a valid number");
+        int count = ScreenUtils.parseIntSafe(countInput.getValue(), 0);
+        if (count < 1 || count > 64) {
+            IsotopeToast.error("Invalid Count", "Enter a number between 1 and 64");
             return;
         }
+        TestArenaManager.getInstance().setStructureCount(count);
 
         // Close screens and create arena
         if (minecraft != null) {
@@ -144,10 +140,7 @@ public class TestArenaScreen extends Screen {
         graphics.drawString(font, "Presets:", dialogX + 20, dialogY + 115, IsotopeColors.TEXT_MUTED, false);
 
         // Grid preview
-        int count = 16;
-        try {
-            count = Integer.parseInt(countInput.getValue().trim());
-        } catch (NumberFormatException ignored) {}
+        int count = ScreenUtils.parseIntSafe(countInput.getValue(), 16);
         int gridSize = (int) Math.ceil(Math.sqrt(count));
         String gridInfo = gridSize + "x" + gridSize + " grid";
         graphics.drawString(font, gridInfo, dialogX + 190, dialogY + 73, IsotopeColors.TEXT_SECONDARY, false);

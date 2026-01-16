@@ -17,6 +17,7 @@ import dev.isotope.registry.FeatureRegistry;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -1949,49 +1950,43 @@ public class LootTableEditPanel extends AbstractWidget {
     private void commitEdit() {
         if (editingField == EditingField.NONE || tableId == null) return;
 
-        try {
-            int value = Integer.parseInt(editText);
-            if (value < 1) value = 1;
-            if (value > 9999) value = 9999;
+        int value = ScreenUtils.parseIntSafe(editText, 1);
+        value = Math.max(1, Math.min(9999, value));
 
-            LootTableStructure display = editedStructure != null ? editedStructure : structure;
-            if (display == null) {
-                cancelEdit();
-                return;
-            }
-
-            if (editingField == EditingField.WEIGHT) {
-                LootEditOperation op = new LootEditOperation.ModifyEntryWeight(editingPoolIdx, editingEntryIdx, value);
-                LootEditManager.getInstance().applyOperation(tableId, op);
-            } else {
-                // Count editing
-                LootPool pool = display.pools().get(editingPoolIdx);
-                LootEntry entry = pool.entries().get(editingEntryIdx);
-                NumberProvider currentCount = getCountFromEntry(entry);
-                int min = (int) currentCount.getMin();
-                int max = (int) currentCount.getMax();
-
-                if (editingField == EditingField.COUNT_MIN) {
-                    min = value;
-                    if (min > max) max = min;  // Adjust max if min exceeds it
-                } else {
-                    max = value;
-                    if (max < min) min = max;  // Adjust min if max is below it
-                }
-
-                NumberProvider newCount = min == max
-                    ? new NumberProvider.Constant(min)
-                    : new NumberProvider.Uniform(min, max);
-
-                LootEditOperation op = new LootEditOperation.SetItemCount(editingPoolIdx, editingEntryIdx, newCount);
-                LootEditManager.getInstance().applyOperation(tableId, op);
-            }
-
-            refreshFromEdits();
-        } catch (NumberFormatException e) {
-            // Invalid input, just cancel
+        LootTableStructure display = editedStructure != null ? editedStructure : structure;
+        if (display == null) {
+            cancelEdit();
+            return;
         }
 
+        if (editingField == EditingField.WEIGHT) {
+            LootEditOperation op = new LootEditOperation.ModifyEntryWeight(editingPoolIdx, editingEntryIdx, value);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+        } else {
+            // Count editing
+            LootPool pool = display.pools().get(editingPoolIdx);
+            LootEntry entry = pool.entries().get(editingEntryIdx);
+            NumberProvider currentCount = getCountFromEntry(entry);
+            int min = (int) currentCount.getMin();
+            int max = (int) currentCount.getMax();
+
+            if (editingField == EditingField.COUNT_MIN) {
+                min = value;
+                if (min > max) max = min;  // Adjust max if min exceeds it
+            } else {
+                max = value;
+                if (max < min) min = max;  // Adjust min if max is below it
+            }
+
+            NumberProvider newCount = min == max
+                ? new NumberProvider.Constant(min)
+                : new NumberProvider.Uniform(min, max);
+
+            LootEditOperation op = new LootEditOperation.SetItemCount(editingPoolIdx, editingEntryIdx, newCount);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+        }
+
+        refreshFromEdits();
         cancelEdit();
     }
 

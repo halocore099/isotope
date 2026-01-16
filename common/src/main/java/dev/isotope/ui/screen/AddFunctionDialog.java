@@ -401,21 +401,17 @@ public class AddFunctionDialog extends Screen {
     }
 
     private String cycleNumber(String current, String defaultVal) {
-        try {
-            int val = Integer.parseInt(current.isEmpty() ? defaultVal : current);
-            // Cycle: +1, or +5 if shift, or +10 if ctrl
-            if (hasShiftDown()) {
-                val += 5;
-            } else if (hasControlDown()) {
-                val += 10;
-            } else {
-                val += 1;
-            }
-            if (val > 100) val = 1;
-            return String.valueOf(val);
-        } catch (NumberFormatException e) {
-            return defaultVal != null ? defaultVal : "1";
+        int val = ScreenUtils.parseIntSafe(current.isEmpty() ? defaultVal : current, 1);
+        // Cycle: +1, or +5 if shift, or +10 if ctrl
+        if (hasShiftDown()) {
+            val += 5;
+        } else if (hasControlDown()) {
+            val += 10;
+        } else {
+            val += 1;
         }
+        if (val > 100) val = 1;
+        return String.valueOf(val);
     }
 
     @Override

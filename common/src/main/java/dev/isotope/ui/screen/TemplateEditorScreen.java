@@ -8,6 +8,7 @@ import dev.isotope.data.loot.LootFunction;
 import dev.isotope.data.loot.NumberProvider;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -542,30 +543,16 @@ public class TemplateEditorScreen extends Screen {
             category = "Custom";
         }
 
-        int weight;
-        try {
-            weight = Integer.parseInt(weightBox.getValue().trim());
-            if (weight < 1) weight = 1;
-            if (weight > 9999) weight = 9999;
-        } catch (NumberFormatException e) {
-            weight = 10;
-        }
+        int weight = ScreenUtils.parseIntSafe(weightBox.getValue(), 10);
+        weight = Math.max(1, Math.min(9999, weight));
 
-        int countMin, countMax;
-        try {
-            countMin = Integer.parseInt(countMinBox.getValue().trim());
-            if (countMin < 1) countMin = 1;
-        } catch (NumberFormatException e) {
-            countMin = 1;
-        }
+        int countMin = ScreenUtils.parseIntSafe(countMinBox.getValue(), 1);
+        countMin = Math.max(1, countMin);
 
+        int countMax;
         if (useRange) {
-            try {
-                countMax = Integer.parseInt(countMaxBox.getValue().trim());
-                if (countMax < countMin) countMax = countMin;
-            } catch (NumberFormatException e) {
-                countMax = countMin;
-            }
+            countMax = ScreenUtils.parseIntSafe(countMaxBox.getValue(), countMin);
+            if (countMax < countMin) countMax = countMin;
         } else {
             countMax = countMin;
         }

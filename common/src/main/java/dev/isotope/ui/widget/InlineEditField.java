@@ -1,6 +1,7 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -69,17 +70,13 @@ public class InlineEditField extends AbstractWidget {
         editing = false;
 
         if (commit) {
-            try {
-                int newValue = Integer.parseInt(editText);
-                newValue = Math.max(minValue, Math.min(maxValue, newValue));
-                if (newValue != value) {
-                    value = newValue;
-                    if (onValueChanged != null) {
-                        onValueChanged.accept(value);
-                    }
+            int newValue = ScreenUtils.parseIntSafe(editText, value);
+            newValue = Math.max(minValue, Math.min(maxValue, newValue));
+            if (newValue != value) {
+                value = newValue;
+                if (onValueChanged != null) {
+                    onValueChanged.accept(value);
                 }
-            } catch (NumberFormatException e) {
-                // Revert to original value
             }
         }
         editText = String.valueOf(value);

@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -67,13 +68,10 @@ public class BatchWeightScreen extends Screen {
 
         // Confirm button
         confirmButton = Button.builder(Component.literal("Apply"), btn -> {
-            try {
-                int weight = Integer.parseInt(weightInput.getValue());
-                if (weight > 0) {
-                    onConfirm.accept(weight);
-                    minecraft.setScreen(parent);
-                }
-            } catch (NumberFormatException ignored) {
+            int weight = ScreenUtils.parseIntSafe(weightInput.getValue(), 0);
+            if (weight > 0) {
+                onConfirm.accept(weight);
+                minecraft.setScreen(parent);
             }
         }).pos(dialogX + 20, dialogY + DIALOG_HEIGHT - 30).size(70, 20).build();
         addRenderableWidget(confirmButton);
