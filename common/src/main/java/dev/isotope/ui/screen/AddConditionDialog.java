@@ -187,7 +187,7 @@ public class AddConditionDialog extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DARK);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;

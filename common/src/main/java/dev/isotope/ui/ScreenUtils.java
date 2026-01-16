@@ -98,4 +98,43 @@ public final class ScreenUtils {
         }
         return result.toString();
     }
+
+    /**
+     * Clamp an integer value to a range.
+     *
+     * @param value The value to clamp
+     * @param min   The minimum value
+     * @param max   The maximum value
+     * @return The clamped value
+     */
+    public static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    /**
+     * Clamp a float value to a range.
+     *
+     * @param value The value to clamp
+     * @param min   The minimum value
+     * @param max   The maximum value
+     * @return The clamped value
+     */
+    public static float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    /**
+     * Check if mouse coordinates are within a rectangular bounds.
+     *
+     * @param mouseX Mouse X coordinate
+     * @param mouseY Mouse Y coordinate
+     * @param x      Rectangle X position
+     * @param y      Rectangle Y position
+     * @param width  Rectangle width
+     * @param height Rectangle height
+     * @return True if mouse is within bounds
+     */
+    public static boolean isMouseOver(double mouseX, double mouseY, int x, int y, int width, int height) {
+        return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+    }
 }

@@ -141,7 +141,7 @@ public class LootTablePickerScreen extends IsotopeScreen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dim background
-        graphics.fill(0, 0, this.width, this.height, 0x80000000);
+        graphics.fill(0, 0, this.width, this.height, IsotopeColors.OVERLAY_DARK);
 
         // Render window frame
         if (window != null) {

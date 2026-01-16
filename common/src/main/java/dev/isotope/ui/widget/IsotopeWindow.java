@@ -58,7 +58,7 @@ public class IsotopeWindow {
 
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dim background behind window
-        graphics.fill(0, 0, graphics.guiWidth(), graphics.guiHeight(), 0x80000000);
+        graphics.fill(0, 0, graphics.guiWidth(), graphics.guiHeight(), IsotopeColors.OVERLAY_DARK);
 
         // Render window frame using vanilla texture
         renderVanillaFrame(graphics);

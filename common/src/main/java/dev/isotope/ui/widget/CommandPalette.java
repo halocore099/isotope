@@ -145,7 +145,7 @@ public class CommandPalette extends AbstractWidget {
         int shadowOffset = 4;
         graphics.fill(getX() + shadowOffset, getY() + shadowOffset,
             getX() + width + shadowOffset, getY() + height + shadowOffset,
-            0x80000000);
+            IsotopeColors.OVERLAY_DARK);
 
         // Main background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_SOLID);

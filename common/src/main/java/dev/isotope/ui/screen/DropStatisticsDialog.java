@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.testing.DropStatistics;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -146,7 +147,7 @@ public class DropStatisticsDialog extends Screen {
                 ? String.valueOf(entry.min)
                 : entry.min + "-" + entry.max;
             sb.append(String.format("%-25s %6d %6.1f %5.0f%% %8s\n",
-                truncate(entry.itemName, 25),
+                ScreenUtils.truncate(entry.itemName, 25),
                 entry.total,
                 entry.average,
                 entry.dropRate,
@@ -157,14 +158,10 @@ public class DropStatisticsDialog extends Screen {
         IsotopeToast.success("Copied", "Statistics copied to clipboard");
     }
 
-    private String truncate(String s, int maxLen) {
-        return s.length() > maxLen ? s.substring(0, maxLen - 2) + ".." : s;
-    }
-
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DARK);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;

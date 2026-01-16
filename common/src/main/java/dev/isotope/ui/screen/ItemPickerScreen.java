@@ -153,7 +153,7 @@ public class ItemPickerScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DARK);
 
         // Panel background
         graphics.fill(panelX - 2, panelY - 2, panelX + panelWidth + 2, panelY + panelHeight + 2, IsotopeColors.BORDER_DEFAULT);

@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.testing.DropStatistics;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -179,7 +180,7 @@ public class CompareStatisticsDialog extends Screen {
                              String.format("%+.1f", entry.avgDiff());
 
             sb.append(String.format("%-25s %12s %12s %10s\n",
-                truncate(entry.itemName(), 25),
+                ScreenUtils.truncate(entry.itemName(), 25),
                 origText,
                 editText,
                 diffText));
@@ -189,14 +190,10 @@ public class CompareStatisticsDialog extends Screen {
         IsotopeToast.success("Copied", "Comparison copied to clipboard");
     }
 
-    private String truncate(String s, int maxLen) {
-        return s.length() > maxLen ? s.substring(0, maxLen - 2) + ".." : s;
-    }
-
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DARK);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
