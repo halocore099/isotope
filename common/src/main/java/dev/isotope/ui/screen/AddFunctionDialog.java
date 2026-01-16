@@ -184,9 +184,7 @@ public class AddFunctionDialog extends Screen {
 
     private static LootFunction createExplorationMap(String destination) {
         com.google.gson.JsonObject params = new com.google.gson.JsonObject();
-        String dest = destination.trim();
-        if (!dest.contains(":")) dest = "minecraft:" + dest;
-        params.addProperty("destination", dest);
+        params.addProperty("destination", ScreenUtils.ensureNamespace(destination.trim()));
         params.addProperty("decoration", "target_x");
         params.addProperty("zoom", 2);
         params.addProperty("skip_existing_chunks", true);
@@ -195,9 +193,7 @@ public class AddFunctionDialog extends Screen {
 
     private static LootFunction createSetPotion(String potionId) {
         com.google.gson.JsonObject params = new com.google.gson.JsonObject();
-        String id = potionId.trim();
-        if (!id.contains(":")) id = "minecraft:" + id;
-        params.addProperty("id", id);
+        params.addProperty("id", ScreenUtils.ensureNamespace(potionId.trim()));
         return new LootFunction("minecraft:set_potion", params, List.of());
     }
 

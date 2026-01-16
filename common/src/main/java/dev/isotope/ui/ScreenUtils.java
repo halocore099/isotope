@@ -114,6 +114,23 @@ public final class ScreenUtils {
     }
 
     /**
+     * Ensure a string has a namespace prefix.
+     * If the input doesn't contain ':', prepends "minecraft:".
+     * Useful for parsing user input that might omit the namespace.
+     * Example: "diamond" -&gt; "minecraft:diamond"
+     * Example: "modid:item" -&gt; "modid:item" (unchanged)
+     *
+     * @param input The input string
+     * @return The string with a namespace prefix
+     */
+    public static String ensureNamespace(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        return input.contains(":") ? input : "minecraft:" + input;
+    }
+
+    /**
      * Clamp an integer value to a range.
      *
      * @param value The value to clamp

@@ -308,12 +308,7 @@ public class EntryTypeDialog extends DialogScreen {
         Optional<ResourceLocation> name = Optional.empty();
 
         if (opt.needsName && !nameInput.isEmpty()) {
-            // Parse the name input
-            String input = nameInput;
-            if (!input.contains(":")) {
-                input = "minecraft:" + input;
-            }
-            name = Optional.of(ResourceLocation.parse(input));
+            name = Optional.of(ResourceLocation.parse(ScreenUtils.ensureNamespace(nameInput)));
         }
 
         onTypeSelected.accept(opt.type, name);

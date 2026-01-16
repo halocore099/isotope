@@ -180,11 +180,7 @@ public class RandomSequenceDialog extends DialogScreen {
         if (inputText.isEmpty()) {
             result = Optional.empty();
         } else {
-            String input = inputText;
-            if (!input.contains(":")) {
-                input = "minecraft:" + input;
-            }
-            result = Optional.of(ResourceLocation.parse(input));
+            result = Optional.of(ResourceLocation.parse(ScreenUtils.ensureNamespace(inputText)));
         }
         onSequenceSelected.accept(result);
         onClose();
