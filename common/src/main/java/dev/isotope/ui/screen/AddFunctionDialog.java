@@ -291,8 +291,9 @@ public class AddFunctionDialog extends Screen {
                 graphics.drawString(font, preset.param1Label, paramX, paramY + 8, IsotopeColors.TEXT_MUTED, false);
                 // Input box
                 int inputX = paramX + font.width(preset.param1Label) + 5;
-                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, IsotopeColors.INPUT_BACKGROUND);
-                graphics.renderOutline(inputX, paramY + 5, 40, 14, IsotopeColors.INPUT_BORDER);
+                ScreenUtils.renderInputBox(graphics, inputX, paramY + 5, 40, 14, false,
+                    IsotopeColors.INPUT_BACKGROUND, IsotopeColors.INPUT_BACKGROUND,
+                    IsotopeColors.INPUT_BORDER, IsotopeColors.INPUT_BORDER);
                 graphics.drawString(font, param1.isEmpty() ? preset.param1Default : param1, inputX + 3, paramY + 8,
                     param1.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY, false);
                 paramX = inputX + 50;
@@ -301,8 +302,9 @@ public class AddFunctionDialog extends Screen {
             if (preset.param2Label != null) {
                 graphics.drawString(font, preset.param2Label, paramX, paramY + 8, IsotopeColors.TEXT_MUTED, false);
                 int inputX = paramX + font.width(preset.param2Label) + 5;
-                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, IsotopeColors.INPUT_BACKGROUND);
-                graphics.renderOutline(inputX, paramY + 5, 40, 14, IsotopeColors.INPUT_BORDER);
+                ScreenUtils.renderInputBox(graphics, inputX, paramY + 5, 40, 14, false,
+                    IsotopeColors.INPUT_BACKGROUND, IsotopeColors.INPUT_BACKGROUND,
+                    IsotopeColors.INPUT_BORDER, IsotopeColors.INPUT_BORDER);
                 graphics.drawString(font, param2.isEmpty() ? preset.param2Default : param2, inputX + 3, paramY + 8,
                     param2.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY, false);
                 paramX = inputX + 50;
@@ -311,8 +313,9 @@ public class AddFunctionDialog extends Screen {
             if (preset.param3Label != null) {
                 graphics.drawString(font, preset.param3Label, paramX, paramY + 8, IsotopeColors.TEXT_MUTED, false);
                 int inputX = paramX + font.width(preset.param3Label) + 5;
-                graphics.fill(inputX, paramY + 5, inputX + 40, paramY + 19, IsotopeColors.INPUT_BACKGROUND);
-                graphics.renderOutline(inputX, paramY + 5, 40, 14, IsotopeColors.INPUT_BORDER);
+                ScreenUtils.renderInputBox(graphics, inputX, paramY + 5, 40, 14, false,
+                    IsotopeColors.INPUT_BACKGROUND, IsotopeColors.INPUT_BACKGROUND,
+                    IsotopeColors.INPUT_BORDER, IsotopeColors.INPUT_BORDER);
                 graphics.drawString(font, param3.isEmpty() ? preset.param3Default : param3, inputX + 3, paramY + 8,
                     param3.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY, false);
             }

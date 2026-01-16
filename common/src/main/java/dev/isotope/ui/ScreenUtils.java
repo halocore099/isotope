@@ -250,4 +250,45 @@ public final class ScreenUtils {
         renderScrollbar(graphics, x, y, trackWidth, trackHeight, scrollOffset, maxScroll,
             IsotopeColors.SCROLLBAR_TRACK, IsotopeColors.SCROLLBAR_THUMB);
     }
+
+    /**
+     * Render an input box with background and border.
+     * Colors change based on focus state.
+     *
+     * @param graphics    The GuiGraphics context
+     * @param x           Input box X position
+     * @param y           Input box Y position
+     * @param width       Input box width
+     * @param height      Input box height
+     * @param focused     Whether the input is focused
+     * @param bgNormal    Background color when not focused
+     * @param bgFocused   Background color when focused
+     * @param borderNormal Border color when not focused
+     * @param borderFocused Border color when focused
+     */
+    public static void renderInputBox(GuiGraphics graphics, int x, int y, int width, int height, boolean focused,
+                                       int bgNormal, int bgFocused, int borderNormal, int borderFocused) {
+        int bgColor = focused ? bgFocused : bgNormal;
+        int borderColor = focused ? borderFocused : borderNormal;
+        graphics.fill(x, y, x + width, y + height, bgColor);
+        graphics.renderOutline(x, y, width, height, borderColor);
+    }
+
+    /**
+     * Render an input box with default colors.
+     * Uses ENTRY_BACKGROUND/ENTRY_BACKGROUND_HOVER for background
+     * and BORDER_DEFAULT/ACCENT_GREEN for border.
+     *
+     * @param graphics The GuiGraphics context
+     * @param x        Input box X position
+     * @param y        Input box Y position
+     * @param width    Input box width
+     * @param height   Input box height
+     * @param focused  Whether the input is focused
+     */
+    public static void renderInputBox(GuiGraphics graphics, int x, int y, int width, int height, boolean focused) {
+        renderInputBox(graphics, x, y, width, height, focused,
+            IsotopeColors.ENTRY_BACKGROUND, IsotopeColors.ENTRY_BACKGROUND_HOVER,
+            IsotopeColors.BORDER_DEFAULT, IsotopeColors.ACCENT_GREEN);
+    }
 }

@@ -59,10 +59,7 @@ public class RandomSequenceDialog extends DialogScreen {
         int inputY = dialogY + 54;
         int inputWidth = DIALOG_WIDTH - 20;
         int inputHeight = 18;
-        int inputBgColor = inputFocused ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND;
-        int inputBorderColor = inputFocused ? IsotopeColors.ACCENT_GREEN : IsotopeColors.BORDER_DEFAULT;
-        graphics.fill(inputX, inputY, inputX + inputWidth, inputY + inputHeight, inputBgColor);
-        graphics.renderOutline(inputX, inputY, inputWidth, inputHeight, inputBorderColor);
+        ScreenUtils.renderInputBox(graphics, inputX, inputY, inputWidth, inputHeight, inputFocused);
 
         // Input text with cursor
         String displayText = inputText;

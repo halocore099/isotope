@@ -247,8 +247,9 @@ public class AddConditionDialog extends Screen {
                 int inputX = paramX + font.width(preset.param1Label) + 5;
                 int inputWidth = 60;
                 boolean field1Selected = activeParamField == 1;
-                graphics.fill(inputX, paramY + 7, inputX + inputWidth, paramY + 23, field1Selected ? IsotopeColors.FUNC_COND_BACKGROUND : IsotopeColors.INPUT_BACKGROUND);
-                graphics.renderOutline(inputX, paramY + 7, inputWidth, 16, field1Selected ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER);
+                ScreenUtils.renderInputBox(graphics, inputX, paramY + 7, inputWidth, 16, field1Selected,
+                    IsotopeColors.INPUT_BACKGROUND, IsotopeColors.FUNC_COND_BACKGROUND,
+                    IsotopeColors.INPUT_BORDER, IsotopeColors.ACCENT_GOLD);
                 String displayText = param1.isEmpty() ? preset.param1Default : param1;
                 int textColor = param1.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY;
                 graphics.drawString(font, displayText, inputX + 4, paramY + 11, textColor, false);
@@ -267,8 +268,9 @@ public class AddConditionDialog extends Screen {
                 int inputX = paramX + font.width(preset.param2Label) + 5;
                 int inputWidth = 60;
                 boolean field2Selected = activeParamField == 2;
-                graphics.fill(inputX, paramY + 7, inputX + inputWidth, paramY + 23, field2Selected ? IsotopeColors.FUNC_COND_BACKGROUND : IsotopeColors.INPUT_BACKGROUND);
-                graphics.renderOutline(inputX, paramY + 7, inputWidth, 16, field2Selected ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER);
+                ScreenUtils.renderInputBox(graphics, inputX, paramY + 7, inputWidth, 16, field2Selected,
+                    IsotopeColors.INPUT_BACKGROUND, IsotopeColors.FUNC_COND_BACKGROUND,
+                    IsotopeColors.INPUT_BORDER, IsotopeColors.ACCENT_GOLD);
                 String displayText = param2.isEmpty() ? preset.param2Default : param2;
                 int textColor = param2.isEmpty() ? IsotopeColors.TEXT_MUTED : IsotopeColors.TEXT_PRIMARY;
                 graphics.drawString(font, displayText, inputX + 4, paramY + 11, textColor, false);

@@ -143,10 +143,7 @@ public class EntryTypeDialog extends DialogScreen {
             int inputX = dialogX + 10;
             int inputWidth = DIALOG_WIDTH - 20;
             int inputHeight = 16;
-            int inputBgColor = inputFocused ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND;
-            int inputBorderColor = inputFocused ? IsotopeColors.ACCENT_GREEN : IsotopeColors.BORDER_DEFAULT;
-            graphics.fill(inputX, btnY, inputX + inputWidth, btnY + inputHeight, inputBgColor);
-            graphics.renderOutline(inputX, btnY, inputWidth, inputHeight, inputBorderColor);
+            ScreenUtils.renderInputBox(graphics, inputX, btnY, inputWidth, inputHeight, inputFocused);
 
             // Input text with cursor
             String displayText = nameInput;
