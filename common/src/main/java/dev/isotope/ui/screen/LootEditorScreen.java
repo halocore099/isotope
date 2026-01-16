@@ -18,6 +18,8 @@ import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.KeyboardShortcuts;
 import dev.isotope.ui.TabManager;
+import dev.isotope.ui.ThemeManager;
+import dev.isotope.ui.UIConstants;
 import dev.isotope.ui.widget.ActivityBar;
 import dev.isotope.ui.widget.CommandPalette;
 import dev.isotope.ui.widget.ContextMenu;
@@ -55,11 +57,11 @@ import org.lwjgl.glfw.GLFW;
 @Environment(EnvType.CLIENT)
 public class LootEditorScreen extends Screen implements KeyboardShortcuts.ShortcutContext {
 
-    private static final int HEADER_HEIGHT = 30;
-    private static final int TAB_BAR_HEIGHT = 22;
-    private static final int STATUS_BAR_HEIGHT = 20;
-    private static final int LEFT_PANEL_WIDTH = 200;
-    private static final int PADDING = 5;
+    private static final int HEADER_HEIGHT = UIConstants.HEADER_HEIGHT;
+    private static final int TAB_BAR_HEIGHT = UIConstants.TAB_BAR_HEIGHT;
+    private static final int STATUS_BAR_HEIGHT = UIConstants.STATUS_BAR_HEIGHT;
+    private static final int LEFT_PANEL_WIDTH = UIConstants.LEFT_PANEL_WIDTH;
+    private static final int PADDING = UIConstants.PADDING;
 
     // Activity bar panel IDs
     private static final String PANEL_BROWSER = "browser";
@@ -86,6 +88,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     private Button undoButton;
     private Button redoButton;
     private Button exportButton;
+    private Button themeButton;
 
     // Overlay states
     private boolean commandPaletteVisible = false;
@@ -164,6 +167,15 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             .tooltip(Tooltip.create(Component.literal("Undo (Ctrl+Z)")))
             .build();
         addRenderableWidget(undoButton);
+
+        // Theme toggle button
+        buttonX -= 30;
+        themeButton = Button.builder(Component.literal(getThemeIcon()), b -> onToggleTheme())
+            .pos(buttonX, buttonY)
+            .size(25, 20)
+            .tooltip(Tooltip.create(Component.literal("Toggle Theme (Dark/Light)")))
+            .build();
+        addRenderableWidget(themeButton);
 
         // === Main Content Area ===
         int contentX = ActivityBar.WIDTH;
@@ -380,7 +392,10 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             // Help
             .addCommand("shortcuts", "?", "Keyboard Shortcuts", "F1", this::showHelp)
             .addCommand("documentation", "\u2709", "Open Documentation", "", HelpLinks::openDocs)
-            .addCommand("report-issue", "\u2691", "Report Issue on GitHub", "", HelpLinks::openIssues);
+            .addCommand("report-issue", "\u2691", "Report Issue on GitHub", "", HelpLinks::openIssues)
+
+            // Settings
+            .addCommand("toggle-theme", "\u263E", "Toggle Theme (Dark/Light)", "", this::onToggleTheme);
     }
 
     private void switchPanel(String panelId) {
@@ -708,6 +723,17 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
                 updateAnalysisPanels();
             }
         }
+    }
+
+    private void onToggleTheme() {
+        ThemeManager.getInstance().toggleTheme();
+        // Rebuild widgets to apply new theme colors
+        rebuildWidgets();
+        IsotopeToast.info("Theme", ThemeManager.getInstance().isDarkTheme() ? "Dark theme" : "Light theme");
+    }
+
+    private String getThemeIcon() {
+        return ThemeManager.getInstance().isDarkTheme() ? "\u263E" : "\u2600"; // ☾ or ☀
     }
 
     private void onExport() {
@@ -1049,15 +1075,15 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         // Background
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        // Header bar
-        graphics.fill(0, 0, width, HEADER_HEIGHT, IsotopeColors.BACKGROUND_SOLID);
-        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, IsotopeColors.BORDER_INNER);
+        // Header bar (theme-aware)
+        graphics.fill(0, 0, width, HEADER_HEIGHT, IsotopeColors.backgroundSolid());
+        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, IsotopeColors.borderInner());
 
         // Title
         graphics.drawString(font, "ISOTOPE", ActivityBar.WIDTH + 10, 10, IsotopeColors.ACCENT_GOLD, false);
 
         // Command palette hint
-        graphics.drawString(font, "Ctrl+P", ActivityBar.WIDTH + 70, 11, IsotopeColors.TEXT_MUTED, false);
+        graphics.drawString(font, "Ctrl+P", ActivityBar.WIDTH + 70, 11, IsotopeColors.textMuted(), false);
 
         // Edit count indicator
         int editCount = LootEditManager.getInstance().getEditedTableCount();
@@ -1069,19 +1095,19 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         // Render widgets
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        // Status bar (rendered AFTER widgets so it's on top)
+        // Status bar (rendered AFTER widgets so it's on top, theme-aware)
         int statusY = height - STATUS_BAR_HEIGHT;
-        graphics.fill(0, statusY, width, height, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.fill(0, statusY, width, statusY + 1, IsotopeColors.BORDER_INNER);
+        graphics.fill(0, statusY, width, height, IsotopeColors.backgroundMedium());
+        graphics.fill(0, statusY, width, statusY + 1, IsotopeColors.borderInner());
 
         // Status bar content
         ResourceLocation selectedTable = getSelectedTable();
         if (selectedTable != null) {
             graphics.drawString(font, selectedTable.toString(), ActivityBar.WIDTH + 5, statusY + 6,
-                IsotopeColors.TEXT_SECONDARY, false);
+                IsotopeColors.textSecondary(), false);
         } else {
             graphics.drawString(font, "No table selected", ActivityBar.WIDTH + 5, statusY + 6,
-                IsotopeColors.TEXT_MUTED, false);
+                IsotopeColors.textMuted(), false);
         }
 
         // Show edit count in status bar too

@@ -312,8 +312,7 @@ public class LootFlowPanel extends AbstractWidget {
         int cy2 = y2;
 
         // Edge color with confidence-based alpha
-        int alpha = edge.getAlpha();
-        int color = (alpha << 24) | (getEdgeColor(edge) & 0x00FFFFFF);
+        int color = IsotopeColors.withAlpha(getEdgeColor(edge), edge.getAlpha());
 
         // Draw bezier curve (approximated with line segments)
         drawBezierCurve(graphics, x1, y1, cx1, cy1, cx2, cy2, x2, y2, color);

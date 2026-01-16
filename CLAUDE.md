@@ -1722,6 +1722,71 @@ Graph-based visualization of loot table relationships for a namespace.
 - `FlowLayoutEngine` - Computes hierarchical node positions
 - `LootFlowPanel` - Main panel widget with rendering
 
+## UI Theme System
+
+ISOTOPE supports light and dark themes. The theme preference is persisted to disk.
+
+### Key Classes
+
+- `ColorTheme` - Record containing all themeable colors with DARK and LIGHT presets
+- `ThemeManager` - Singleton managing current theme, persistence, and listeners
+- `IsotopeColors` - Contains both static constants and theme-aware accessor methods
+- `UIConstants` - Centralized UI layout constants (padding, heights, widths)
+- `DialogScreen` - Base class for modal dialogs with common rendering
+
+### Theme-Aware Colors
+
+IsotopeColors provides two ways to access colors:
+
+| Type | Example | Usage |
+|------|---------|-------|
+| **Constants** | `IsotopeColors.BACKGROUND_MEDIUM` | Fixed dark theme values, backward-compatible |
+| **Methods** | `IsotopeColors.backgroundMedium()` | Returns theme-appropriate colors, use for new code |
+
+Theme-aware methods available:
+- `backgroundDark()`, `backgroundMedium()`, `backgroundSolid()`, `backgroundPanel()`
+- `textPrimary()`, `textSecondary()`, `textMuted()`, `textTitle()`, `textDisabled()`
+- `borderOuterDark()`, `borderInner()`, `borderDefault()`, `borderHighlight()`, `borderSelected()`, `borderHover()`
+- `buttonBackground()`, `buttonHover()`, `buttonPressed()`, `buttonDisabled()`
+- `inputBackground()`, `inputBackgroundActive()`, `inputBorder()`
+- `entryBackground()`, `entryBackgroundHover()`, `entryBackgroundSelected()`
+- `poolHeaderBackground()`, `poolHeaderHover()`
+- `scrollbarTrack()`, `scrollbarThumb()`, `scrollbarThumbHover()`
+- `tabActive()`, `tabInactive()`, `tabHover()`
+- `tooltipBackground()`, `tooltipBorder()`
+- `overlayDim()`, `overlayDark()`, `overlayDarker()`
+- `listSelected()`, `listHover()`, `listItemBg()`, `listItemHover()`, `listItemSelected()`
+
+### Helper Methods
+
+- `IsotopeColors.withAlpha(color, alpha)` - Apply alpha to a color
+
+### Theme Toggle
+
+- Located in the editor header toolbar (☾ for dark, ☀ for light)
+- Available via command palette: "Toggle Theme (Dark/Light)"
+- Preference stored in `.minecraft/isotope/theme.json`
+
+### UIConstants
+
+Common dimensions extracted to avoid magic numbers:
+
+```java
+UIConstants.PADDING          // 5 - Standard padding
+UIConstants.PADDING_SMALL    // 4 - Small padding
+UIConstants.PADDING_MEDIUM   // 8 - Medium padding
+UIConstants.SPACING          // 10 - Element spacing
+UIConstants.BUTTON_HEIGHT    // 20 - Button height
+UIConstants.ITEM_HEIGHT      // 22 - List item height
+UIConstants.HEADER_HEIGHT    // 30 - Header height
+UIConstants.TAB_BAR_HEIGHT   // 22 - Tab bar height
+UIConstants.STATUS_BAR_HEIGHT // 20 - Status bar height
+UIConstants.LEFT_PANEL_WIDTH // 200 - Left panel width
+UIConstants.SCROLLBAR_WIDTH  // 5 - Scrollbar width
+UIConstants.BORDER_THICKNESS // 1 - Border thickness
+UIConstants.DIALOG_WIDTH     // 320 - Default dialog width
+```
+
 ## Key Features (DO NOT REMOVE)
 
 - 3-panel layout (namespace list, item list, detail panel)
@@ -1744,6 +1809,7 @@ Graph-based visualization of loot table relationships for a namespace.
 - KubeJS and CraftTweaker export
 - JSON import from clipboard
 - Loot flow visualization
+- Theme support (light/dark)
 
 ## Build Commands
 

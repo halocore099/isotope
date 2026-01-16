@@ -107,11 +107,11 @@ public class ActivityBar extends AbstractWidget {
 
     @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Background
-        graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_SOLID);
+        // Background (theme-aware)
+        graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.backgroundSolid());
 
-        // Right border
-        graphics.fill(getX() + width - 1, getY(), getX() + width, getY() + height, IsotopeColors.BORDER_INNER);
+        // Right border (theme-aware)
+        graphics.fill(getX() + width - 1, getY(), getX() + width, getY() + height, IsotopeColors.borderInner());
 
         // Update hovered state
         hoveredIndex = -1;
@@ -143,19 +143,19 @@ public class ActivityBar extends AbstractWidget {
             // Background highlight
             if (isHovered && !isSelected) {
                 graphics.fill(itemX + 2, itemY, itemX + width - 1, itemY + itemHeight,
-                    IsotopeColors.withAlpha(IsotopeColors.TEXT_PRIMARY, 0x20));
+                    IsotopeColors.withAlpha(IsotopeColors.textPrimary(), 0x20));
             } else if (isSelected) {
                 graphics.fill(itemX + 2, itemY, itemX + width - 1, itemY + itemHeight,
-                    IsotopeColors.withAlpha(IsotopeColors.TEXT_PRIMARY, 0x10));
+                    IsotopeColors.withAlpha(IsotopeColors.textPrimary(), 0x10));
             }
 
             // Icon (centered)
             int iconX = itemX + (width - 8) / 2; // Approximate center for single char
             int iconY = itemY + ICON_PADDING + (ICON_SIZE - 8) / 2;
 
-            int iconColor = isSelected ? IsotopeColors.TEXT_PRIMARY :
-                           isHovered ? IsotopeColors.TEXT_SECONDARY :
-                           IsotopeColors.TEXT_MUTED;
+            int iconColor = isSelected ? IsotopeColors.textPrimary() :
+                           isHovered ? IsotopeColors.textSecondary() :
+                           IsotopeColors.textMuted();
 
             graphics.drawCenteredString(
                 net.minecraft.client.Minecraft.getInstance().font,
@@ -177,7 +177,7 @@ public class ActivityBar extends AbstractWidget {
                 // Badge background (red for errors)
                 graphics.fill(badgeX, badgeY, badgeX + badgeWidth, badgeY + 10, IsotopeColors.ERROR_BRIGHT);
                 // Badge text
-                graphics.drawString(font, badgeText, badgeX + 2, badgeY + 1, IsotopeColors.TEXT_PRIMARY, false);
+                graphics.drawString(font, badgeText, badgeX + 2, badgeY + 1, IsotopeColors.textPrimary(), false);
             }
 
             itemY += itemHeight;
@@ -188,28 +188,28 @@ public class ActivityBar extends AbstractWidget {
             ActivityItem hoveredItem = items.get(hoveredIndex);
             int tooltipY = getY() + hoveredIndex * itemHeight + itemHeight / 2;
 
-            // Draw tooltip to the right of the bar
+            // Draw tooltip to the right of the bar (theme-aware)
             String tooltip = hoveredItem.tooltip();
             int tooltipWidth = net.minecraft.client.Minecraft.getInstance().font.width(tooltip) + 8;
             int tooltipX = getX() + width + 4;
 
             graphics.fill(tooltipX - 2, tooltipY - 6, tooltipX + tooltipWidth, tooltipY + 8,
-                IsotopeColors.BACKGROUND_SOLID);
+                IsotopeColors.backgroundSolid());
             graphics.fill(tooltipX - 2, tooltipY - 6, tooltipX + tooltipWidth, tooltipY - 5,
-                IsotopeColors.BORDER_INNER);
+                IsotopeColors.borderInner());
             graphics.fill(tooltipX - 2, tooltipY + 7, tooltipX + tooltipWidth, tooltipY + 8,
-                IsotopeColors.BORDER_INNER);
+                IsotopeColors.borderInner());
             graphics.fill(tooltipX - 2, tooltipY - 6, tooltipX - 1, tooltipY + 8,
-                IsotopeColors.BORDER_INNER);
+                IsotopeColors.borderInner());
             graphics.fill(tooltipX + tooltipWidth - 1, tooltipY - 6, tooltipX + tooltipWidth, tooltipY + 8,
-                IsotopeColors.BORDER_INNER);
+                IsotopeColors.borderInner());
 
             graphics.drawString(
                 net.minecraft.client.Minecraft.getInstance().font,
                 tooltip,
                 tooltipX + 2,
                 tooltipY - 4,
-                IsotopeColors.TEXT_PRIMARY,
+                IsotopeColors.textPrimary(),
                 false
             );
         }

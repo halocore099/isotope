@@ -83,35 +83,29 @@ public class IsotopeToast implements Toast {
         int bgAlpha = (int)(alpha * 0xF0);
         int textAlpha = (int)(alpha * 0xFF);
 
-        // Background with shadow
-        graphics.fill(2, 2, width(), height(), (int)(alpha * 0x40) << 24); // Shadow
-        graphics.fill(0, 0, width() - 2, height() - 2, (bgAlpha << 24) | (IsotopeColors.TOAST_BACKGROUND & 0x00FFFFFF));
+        // Background with shadow (using withAlpha for consistency)
+        graphics.fill(2, 2, width(), height(), IsotopeColors.withAlpha(0x000000, (int)(alpha * 0x40)));
+        graphics.fill(0, 0, width() - 2, height() - 2, IsotopeColors.withAlpha(IsotopeColors.TOAST_BACKGROUND, bgAlpha));
 
         // Colored accent bar (left edge)
-        int accentColor = (textAlpha << 24) | (type.color & 0x00FFFFFF);
-        graphics.fill(0, 0, 3, height() - 2, accentColor);
+        graphics.fill(0, 0, 3, height() - 2, IsotopeColors.withAlpha(type.color, textAlpha));
 
         // Border
-        int borderColor = (int)(alpha * 0x50) << 24 | (IsotopeColors.TOAST_BORDER & 0x00FFFFFF);
-        graphics.renderOutline(0, 0, width() - 2, height() - 2, borderColor);
+        graphics.renderOutline(0, 0, width() - 2, height() - 2, IsotopeColors.withAlpha(IsotopeColors.TOAST_BORDER, (int)(alpha * 0x50)));
 
         // Icon
-        int iconColor = (textAlpha << 24) | (type.color & 0x00FFFFFF);
-        graphics.drawString(font, type.icon, 8, 7, iconColor, false);
+        graphics.drawString(font, type.icon, 8, 7, IsotopeColors.withAlpha(type.color, textAlpha), false);
 
         // Title
-        int titleColor = (textAlpha << 24) | (IsotopeColors.TOAST_TITLE & 0x00FFFFFF);
-        graphics.drawString(font, title, 22, 7, titleColor, false);
+        graphics.drawString(font, title, 22, 7, IsotopeColors.withAlpha(IsotopeColors.TOAST_TITLE, textAlpha), false);
 
         // Message (dimmer)
-        int messageColor = (textAlpha << 24) | (IsotopeColors.TOAST_MESSAGE & 0x00FFFFFF);
-        graphics.drawString(font, message, 22, 19, messageColor, false);
+        graphics.drawString(font, message, 22, 19, IsotopeColors.withAlpha(IsotopeColors.TOAST_MESSAGE, textAlpha), false);
 
         // ISOTOPE badge (subtle)
         String badge = "ISOTOPE";
         int badgeWidth = font.width(badge);
-        int badgeColor = (int)(alpha * 0x40) << 24 | 0xFFFFFF;
-        graphics.drawString(font, badge, width() - badgeWidth - 8, 19, badgeColor, false);
+        graphics.drawString(font, badge, width() - badgeWidth - 8, 19, IsotopeColors.withAlpha(0xFFFFFF, (int)(alpha * 0x40)), false);
     }
 
     @Override

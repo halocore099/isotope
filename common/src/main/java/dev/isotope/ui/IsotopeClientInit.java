@@ -38,6 +38,9 @@ public final class IsotopeClientInit {
             return;
         }
 
+        // Initialize theme manager
+        ThemeManager.getInstance().initialize(Minecraft.getInstance().gameDirectory.toPath());
+
         // Register screen modification event
         ClientGuiEvent.INIT_POST.register(IsotopeClientInit::onScreenInit);
 

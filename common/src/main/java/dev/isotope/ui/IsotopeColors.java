@@ -6,6 +6,17 @@ import net.fabricmc.api.Environment;
 /**
  * Color palette for ISOTOPE UI - Vanilla Minecraft style.
  * Uses colors that match Minecraft's native UI aesthetic.
+ *
+ * <p>This class provides two ways to access colors:</p>
+ * <ul>
+ *   <li><b>Constants</b> (e.g., {@code BACKGROUND_MEDIUM}) - Fixed values for dark theme.
+ *       Use these for backward compatibility or when theme support isn't needed.</li>
+ *   <li><b>Methods</b> (e.g., {@code background()}) - Theme-aware accessors that return
+ *       different values based on the current theme. Prefer these for new code.</li>
+ * </ul>
+ *
+ * @see ThemeManager
+ * @see ColorTheme
  */
 @Environment(EnvType.CLIENT)
 public final class IsotopeColors {
@@ -258,5 +269,230 @@ public final class IsotopeColors {
      */
     public static int withAlpha(int color, int alpha) {
         return (alpha << 24) | (color & 0x00FFFFFF);
+    }
+
+    // ========================================================================
+    // THEME-AWARE ACCESSORS
+    // These methods return colors based on the current theme.
+    // Prefer these over constants for new code.
+    // ========================================================================
+
+    private static ThemeManager theme() {
+        return ThemeManager.getInstance();
+    }
+
+    /** Theme-aware background (semi-transparent dark/light). */
+    public static int backgroundDark() {
+        return theme().getTheme().backgroundDark();
+    }
+
+    /** Theme-aware medium background. */
+    public static int backgroundMedium() {
+        return theme().getTheme().backgroundMedium();
+    }
+
+    /** Theme-aware solid background. */
+    public static int backgroundSolid() {
+        return theme().getTheme().backgroundSolid();
+    }
+
+    /** Theme-aware panel background. */
+    public static int backgroundPanel() {
+        return theme().getTheme().backgroundPanel();
+    }
+
+    /** Theme-aware primary text color. */
+    public static int textPrimary() {
+        return theme().getTheme().textPrimary();
+    }
+
+    /** Theme-aware secondary text color. */
+    public static int textSecondary() {
+        return theme().getTheme().textSecondary();
+    }
+
+    /** Theme-aware muted text color. */
+    public static int textMuted() {
+        return theme().getTheme().textMuted();
+    }
+
+    /** Theme-aware title text color. */
+    public static int textTitle() {
+        return theme().getTheme().textTitle();
+    }
+
+    /** Theme-aware disabled text color. */
+    public static int textDisabled() {
+        return theme().getTheme().textDisabled();
+    }
+
+    /** Theme-aware outer dark border. */
+    public static int borderOuterDark() {
+        return theme().getTheme().borderOuterDark();
+    }
+
+    /** Theme-aware inner border. */
+    public static int borderInner() {
+        return theme().getTheme().borderInner();
+    }
+
+    /** Theme-aware default border. */
+    public static int borderDefault() {
+        return theme().getTheme().borderDefault();
+    }
+
+    /** Theme-aware highlight border. */
+    public static int borderHighlight() {
+        return theme().getTheme().borderHighlight();
+    }
+
+    /** Theme-aware selected border. */
+    public static int borderSelected() {
+        return theme().getTheme().borderSelected();
+    }
+
+    /** Theme-aware hover border. */
+    public static int borderHover() {
+        return theme().getTheme().borderHover();
+    }
+
+    /** Theme-aware button background. */
+    public static int buttonBackground() {
+        return theme().getTheme().buttonBackground();
+    }
+
+    /** Theme-aware button hover background. */
+    public static int buttonHover() {
+        return theme().getTheme().buttonHover();
+    }
+
+    /** Theme-aware button pressed background. */
+    public static int buttonPressed() {
+        return theme().getTheme().buttonPressed();
+    }
+
+    /** Theme-aware disabled button background. */
+    public static int buttonDisabled() {
+        return theme().getTheme().buttonDisabled();
+    }
+
+    /** Theme-aware input background. */
+    public static int inputBackground() {
+        return theme().getTheme().inputBackground();
+    }
+
+    /** Theme-aware active input background. */
+    public static int inputBackgroundActive() {
+        return theme().getTheme().inputBackgroundActive();
+    }
+
+    /** Theme-aware input border. */
+    public static int inputBorder() {
+        return theme().getTheme().inputBorder();
+    }
+
+    /** Theme-aware entry background. */
+    public static int entryBackground() {
+        return theme().getTheme().entryBackground();
+    }
+
+    /** Theme-aware entry hover background. */
+    public static int entryBackgroundHover() {
+        return theme().getTheme().entryBackgroundHover();
+    }
+
+    /** Theme-aware entry selected background. */
+    public static int entryBackgroundSelected() {
+        return theme().getTheme().entryBackgroundSelected();
+    }
+
+    /** Theme-aware pool header background. */
+    public static int poolHeaderBackground() {
+        return theme().getTheme().poolHeaderBackground();
+    }
+
+    /** Theme-aware pool header hover background. */
+    public static int poolHeaderHover() {
+        return theme().getTheme().poolHeaderHover();
+    }
+
+    /** Theme-aware scrollbar track. */
+    public static int scrollbarTrack() {
+        return theme().getTheme().scrollbarTrack();
+    }
+
+    /** Theme-aware scrollbar thumb. */
+    public static int scrollbarThumb() {
+        return theme().getTheme().scrollbarThumb();
+    }
+
+    /** Theme-aware scrollbar thumb hover. */
+    public static int scrollbarThumbHover() {
+        return theme().getTheme().scrollbarThumbHover();
+    }
+
+    /** Theme-aware active tab. */
+    public static int tabActive() {
+        return theme().getTheme().tabActive();
+    }
+
+    /** Theme-aware inactive tab. */
+    public static int tabInactive() {
+        return theme().getTheme().tabInactive();
+    }
+
+    /** Theme-aware tab hover. */
+    public static int tabHover() {
+        return theme().getTheme().tabHover();
+    }
+
+    /** Theme-aware tooltip background. */
+    public static int tooltipBackground() {
+        return theme().getTheme().tooltipBackground();
+    }
+
+    /** Theme-aware tooltip border. */
+    public static int tooltipBorder() {
+        return theme().getTheme().tooltipBorder();
+    }
+
+    /** Theme-aware dim overlay. */
+    public static int overlayDim() {
+        return theme().getTheme().overlayDim();
+    }
+
+    /** Theme-aware dark overlay. */
+    public static int overlayDark() {
+        return theme().getTheme().overlayDark();
+    }
+
+    /** Theme-aware darker overlay. */
+    public static int overlayDarker() {
+        return theme().getTheme().overlayDarker();
+    }
+
+    /** Theme-aware list selected background. */
+    public static int listSelected() {
+        return theme().getTheme().listSelected();
+    }
+
+    /** Theme-aware list hover background. */
+    public static int listHover() {
+        return theme().getTheme().listHover();
+    }
+
+    /** Theme-aware list item background. */
+    public static int listItemBg() {
+        return theme().getTheme().listItemBg();
+    }
+
+    /** Theme-aware list item hover background. */
+    public static int listItemHover() {
+        return theme().getTheme().listItemHover();
+    }
+
+    /** Theme-aware list item selected background. */
+    public static int listItemSelected() {
+        return theme().getTheme().listItemSelected();
     }
 }

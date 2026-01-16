@@ -3,7 +3,6 @@ package dev.isotope.ui.screen;
 import dev.isotope.ui.IsotopeColors;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.IntConsumer;
@@ -16,13 +15,11 @@ import java.util.function.IntConsumer;
  * - Negative quality: item becomes less likely with higher luck
  * - Zero: luck has no effect on this entry
  */
-public class QualityDialog extends Screen {
+public class QualityDialog extends DialogScreen {
 
     private static final int DIALOG_WIDTH = 200;
     private static final int DIALOG_HEIGHT = 200;
 
-    @Nullable
-    private final Screen parent;
     private final int poolIdx;
     private final int entryIdx;
     private final int currentQuality;
@@ -52,8 +49,7 @@ public class QualityDialog extends Screen {
     private int hoveredPreset = -1;
 
     public QualityDialog(@Nullable Screen parent, int poolIdx, int entryIdx, int currentQuality, IntConsumer onQualitySelected) {
-        super(Component.literal("Set Quality"));
-        this.parent = parent;
+        super(parent, "Set Quality");
         this.poolIdx = poolIdx;
         this.entryIdx = entryIdx;
         this.currentQuality = currentQuality;
@@ -61,20 +57,17 @@ public class QualityDialog extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Dim background
-        graphics.fill(0, 0, width, height, 0x80000000);
+    protected int getDialogWidth() {
+        return DIALOG_WIDTH;
+    }
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+    @Override
+    protected int getDialogHeight() {
+        return DIALOG_HEIGHT;
+    }
 
-        // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
-
-        // Title
-        graphics.drawCenteredString(font, "Set Quality", dialogX + DIALOG_WIDTH / 2, dialogY + 8, IsotopeColors.ACCENT_GOLD);
-
+    @Override
+    protected void renderDialogContent(GuiGraphics graphics, int dialogX, int dialogY, int mouseX, int mouseY, float partialTick) {
         // Subtitle
         String subtitle = "Pool " + (poolIdx + 1) + ", Entry " + (entryIdx + 1);
         graphics.drawCenteredString(font, subtitle, dialogX + DIALOG_WIDTH / 2, dialogY + 22, IsotopeColors.TEXT_MUTED);
@@ -136,8 +129,8 @@ public class QualityDialog extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            int dialogX = (width - DIALOG_WIDTH) / 2;
-            int dialogY = (height - DIALOG_HEIGHT) / 2;
+            int dialogX = getDialogX();
+            int dialogY = getDialogY();
 
             // Check preset clicks
             if (hoveredPreset >= 0 && hoveredPreset < PRESETS.length) {
@@ -159,24 +152,5 @@ public class QualityDialog extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == 256) { // Escape
-            onClose();
-            return true;
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    @Override
-    public void onClose() {
-        if (minecraft != null) {
-            minecraft.setScreen(parent);
-        }
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
+    // keyPressed, onClose, and isPauseScreen are provided by DialogScreen base class
 }
