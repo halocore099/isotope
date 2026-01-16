@@ -10,6 +10,7 @@ import dev.isotope.testing.TestWorldManager;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -244,8 +245,7 @@ public class TestSetupScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
+        ScreenUtils.drawDialogBackground(graphics, dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT);
 
         // Title bar
         graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 28, IsotopeColors.POOL_HEADER_BACKGROUND);

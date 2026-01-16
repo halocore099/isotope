@@ -2,6 +2,8 @@ package dev.isotope.ui;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Utility methods for screen-related operations.
@@ -73,6 +75,18 @@ public final class ScreenUtils {
     }
 
     /**
+     * Format an item name from a ResourceLocation.
+     * Converts underscores to spaces and capitalizes words.
+     * Example: "minecraft:golden_apple" -&gt; "Golden Apple"
+     *
+     * @param itemId The ResourceLocation of the item
+     * @return The formatted display name
+     */
+    public static String formatItemName(ResourceLocation itemId) {
+        return formatItemName(itemId != null ? itemId.getPath() : "");
+    }
+
+    /**
      * Format an item name from a ResourceLocation path.
      * Converts underscores to spaces and capitalizes words.
      * Example: "golden_apple" -&gt; "Golden Apple"
@@ -136,5 +150,20 @@ public final class ScreenUtils {
      */
     public static boolean isMouseOver(double mouseX, double mouseY, int x, int y, int width, int height) {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+    }
+
+    /**
+     * Draw a standard dialog background with border.
+     * Renders a 2-pixel outer border and filled background.
+     *
+     * @param graphics The GuiGraphics context
+     * @param x        Dialog X position
+     * @param y        Dialog Y position
+     * @param width    Dialog width
+     * @param height   Dialog height
+     */
+    public static void drawDialogBackground(GuiGraphics graphics, int x, int y, int width, int height) {
+        graphics.fill(x - 2, y - 2, x + width + 2, y + height + 2, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(x, y, x + width, y + height, IsotopeColors.BACKGROUND_MEDIUM);
     }
 }

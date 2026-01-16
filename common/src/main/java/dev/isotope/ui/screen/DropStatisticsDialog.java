@@ -74,7 +74,7 @@ public class DropStatisticsDialog extends Screen {
 
             entries.add(new StatEntry(
                 itemId,
-                formatItemName(itemId),
+                ScreenUtils.formatItemName(itemId),
                 total,
                 avg,
                 rate,
@@ -87,24 +87,6 @@ public class DropStatisticsDialog extends Screen {
         int contentHeight = entries.size() * 24 + 20;
         int viewHeight = DIALOG_HEIGHT - 140;
         maxScroll = Math.max(0, contentHeight - viewHeight);
-    }
-
-    private String formatItemName(ResourceLocation itemId) {
-        String path = itemId.getPath();
-        StringBuilder result = new StringBuilder();
-        boolean capitalize = true;
-        for (char c : path.toCharArray()) {
-            if (c == '_') {
-                result.append(' ');
-                capitalize = true;
-            } else if (capitalize) {
-                result.append(Character.toUpperCase(c));
-                capitalize = false;
-            } else {
-                result.append(c);
-            }
-        }
-        return result.toString();
     }
 
     @Override
@@ -167,8 +149,7 @@ public class DropStatisticsDialog extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // Dialog background
-        graphics.fill(dialogX - 2, dialogY - 2, dialogX + DIALOG_WIDTH + 2, dialogY + DIALOG_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
+        ScreenUtils.drawDialogBackground(graphics, dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT);
 
         // Header
         graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + 50, IsotopeColors.POOL_HEADER_BACKGROUND);

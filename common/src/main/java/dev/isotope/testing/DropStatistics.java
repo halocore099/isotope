@@ -1,5 +1,6 @@
 package dev.isotope.testing;
 
+import dev.isotope.ui.ScreenUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -197,34 +198,13 @@ public class DropStatistics {
                 float rate = getDropRateForItem(itemId);
                 int[] minMax = getMinMaxForItem(itemId);
 
-                String itemName = formatItemName(itemId);
+                String itemName = ScreenUtils.formatItemName(itemId);
                 lines.add(String.format("§f%s§7: %d (%.1f avg, %.0f%% rate, %d-%d)",
                     itemName, total, avg, rate, minMax[0], minMax[1]));
             }
         }
 
         return lines;
-    }
-
-    /**
-     * Format item ID to display name.
-     */
-    private String formatItemName(ResourceLocation itemId) {
-        String path = itemId.getPath();
-        StringBuilder result = new StringBuilder();
-        boolean capitalize = true;
-        for (char c : path.toCharArray()) {
-            if (c == '_') {
-                result.append(' ');
-                capitalize = true;
-            } else if (capitalize) {
-                result.append(Character.toUpperCase(c));
-                capitalize = false;
-            } else {
-                result.append(c);
-            }
-        }
-        return result.toString();
     }
 
     /**
