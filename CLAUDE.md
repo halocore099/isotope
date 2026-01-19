@@ -25,16 +25,13 @@ Uses **Stonecutter** for multi-version builds from a single branch (`main`).
 
 Instead of building a separate JAR for each MC version, we build **3 JARs** that each cover a range of compatible versions:
 
-| Build | Covers | Fabric | NeoForge | Forge | Java | Notes |
-|-------|--------|--------|----------|-------|------|-------|
-| 1.21.4 | 1.21 - 1.21.11+ | ✅ | ✅ | N/A | 21 | Primary target |
-| 1.20.4 | 1.20.2 - 1.20.6 | ✅ | ✅ | N/A | 17 | Old registry API |
-| 1.20.1 | 1.20.1 only | ✅ | N/A | 🔶 | 17 | Different mixin target |
+| Build | Covers | Fabric | NeoForge | Java | Notes |
+|-------|--------|--------|----------|------|-------|
+| 1.21.4 | 1.21 - 1.21.11+ | ✅ | ✅ | 21 | Primary target |
+| 1.20.4 | 1.20.2 - 1.20.6 | ✅ | ✅ | 17 | Old registry API |
+| 1.20.1 | 1.20.1 only | ✅ | ✅ | 17 | Different mixin target |
 
-**Forge vs NeoForge**:
-- **NeoForge** is the successor to Forge, starting at MC 1.20.4. Used for 1.20.4+ and all 1.21.x
-- **Forge** (original) only exists for 1.20.1 and earlier. No Forge for 1.21+
-- 1.20.1 Forge support is disabled (🔶) because Architectury Loom 1.13+ dropped old Forge support
+All versions support **Fabric + NeoForge**. NeoForge exists for 1.20.1+.
 
 **Why version grouping works**:
 - **1.21.x**: Same mixin targets, same registry API, same Java version
