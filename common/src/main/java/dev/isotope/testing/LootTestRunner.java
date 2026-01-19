@@ -1,9 +1,9 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -111,7 +111,7 @@ public final class LootTestRunner {
             DropStatistics stats = new DropStatistics(entityId, entityName, conditionText);
 
             // Get entity type
-            Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
+            Optional<EntityType<?>> entityTypeOpt = RegistryHelper.getEntityType(entityId);
             if (entityTypeOpt.isEmpty()) {
                 return TestResult.error("Unknown entity: " + entityId);
             }
@@ -186,11 +186,17 @@ public final class LootTestRunner {
         List<ItemStack> drops = new ArrayList<>();
 
         try {
+            //? if >=1.21 {
             var lootTableKey = entity.getLootTable().orElse(null);
             if (lootTableKey == null) return drops;
-
-            LootTable lootTable = level.getServer().reloadableRegistries()
-                .getLootTable(lootTableKey);
+            LootTable lootTable = RegistryHelper.getLootTable(level.getServer(), lootTableKey);
+            //?} else {
+            /*
+            ResourceLocation lootTableId = entity.getLootTable();
+            if (lootTableId == null) return drops;
+            LootTable lootTable = RegistryHelper.getLootTable(level.getServer(), lootTableId);
+            */
+            //?}
 
             if (lootTable == LootTable.EMPTY) return drops;
 
@@ -249,8 +255,7 @@ public final class LootTestRunner {
             DropStatistics stats = new DropStatistics(lootTableId, tableName, condition);
 
             // Get loot table
-            LootTable lootTable = server.reloadableRegistries()
-                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
+            LootTable lootTable = RegistryHelper.getLootTable(server, lootTableId);
 
             if (lootTable == LootTable.EMPTY) {
                 return TestResult.error("Loot table not found: " + lootTableId);
@@ -323,8 +328,7 @@ public final class LootTestRunner {
 
             if (level == null || player == null) return 0;
 
-            LootTable lootTable = server.reloadableRegistries()
-                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
+            LootTable lootTable = RegistryHelper.getLootTable(server, lootTableId);
 
             if (lootTable == LootTable.EMPTY) return 0;
 
@@ -379,8 +383,7 @@ public final class LootTestRunner {
 
             if (level == null || player == null) return 0;
 
-            LootTable lootTable = server.reloadableRegistries()
-                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
+            LootTable lootTable = RegistryHelper.getLootTable(server, lootTableId);
 
             if (lootTable == LootTable.EMPTY) return 0;
 
@@ -602,7 +605,7 @@ public final class LootTestRunner {
             // Create fake stacks to record the totals
             int total = source.getTotalForItem(itemId);
             if (total > 0) {
-                var itemOpt = BuiltInRegistries.ITEM.getOptional(itemId);
+                var itemOpt = RegistryHelper.getItem(itemId);
                 if (itemOpt.isPresent()) {
                     dest.recordDrop(new ItemStack(itemOpt.get(), total));
                 }

@@ -1,9 +1,9 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.LootSource;
 import dev.isotope.data.LootTableInfo;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 
@@ -103,10 +103,10 @@ public final class EntityLootRegistry {
      */
     private String getEntityDisplayName(ResourceLocation entityId) {
         try {
-            EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
-            if (entityType != null) {
+            var entityTypeOpt = RegistryHelper.getEntityType(entityId);
+            if (entityTypeOpt.isPresent()) {
                 // Get the translation key and format it nicely
-                String key = entityType.getDescriptionId();
+                String key = entityTypeOpt.get().getDescriptionId();
                 // Extract the entity name from "entity.minecraft.zombie" -> "Zombie"
                 String[] parts = key.split("\\.");
                 if (parts.length > 0) {

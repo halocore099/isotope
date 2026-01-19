@@ -154,24 +154,23 @@ public class DropSimulator {
      * Roll a NumberProvider to get an integer value.
      */
     private static int rollNumberProvider(NumberProvider provider) {
-        return switch (provider) {
-            case NumberProvider.Constant c -> (int) c.value();
-            case NumberProvider.Uniform u -> {
-                int min = (int) u.min();
-                int max = (int) u.max();
-                yield min + ThreadLocalRandom.current().nextInt(max - min + 1);
-            }
-            case NumberProvider.Binomial b -> {
-                int successes = 0;
-                int n = (int) b.n();
-                for (int i = 0; i < n; i++) {
-                    if (ThreadLocalRandom.current().nextFloat() < b.p()) {
-                        successes++;
-                    }
+        if (provider instanceof NumberProvider.Constant c) {
+            return (int) c.value();
+        } else if (provider instanceof NumberProvider.Uniform u) {
+            int min = (int) u.min();
+            int max = (int) u.max();
+            return min + ThreadLocalRandom.current().nextInt(max - min + 1);
+        } else if (provider instanceof NumberProvider.Binomial b) {
+            int successes = 0;
+            int n = (int) b.n();
+            for (int i = 0; i < n; i++) {
+                if (ThreadLocalRandom.current().nextFloat() < b.p()) {
+                    successes++;
                 }
-                yield successes;
             }
-        };
+            return successes;
+        }
+        return 1;
     }
 
     /**

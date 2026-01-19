@@ -27,6 +27,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import dev.isotope.ui.screen.ItemPickerScreen;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -477,9 +478,9 @@ public class LootTableEditPanel extends AbstractWidget {
 
                 // Item icon
                 if (entry.isItem() && entry.name().isPresent()) {
-                    var itemOpt = BuiltInRegistries.ITEM.get(entry.name().get());
+                    var itemOpt = RegistryHelper.getItem(entry.name().get());
                     if (itemOpt.isPresent()) {
-                        graphics.renderItem(new ItemStack(itemOpt.get().value()), ghostX + 2, ghostY + 4);
+                        graphics.renderItem(new ItemStack(itemOpt.get()), ghostX + 2, ghostY + 4);
                     }
                 }
 
@@ -1044,9 +1045,9 @@ public class LootTableEditPanel extends AbstractWidget {
         // Item icon
         if (entry.name().isPresent()) {
             ResourceLocation itemId = entry.name().get();
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+            var itemOpt = RegistryHelper.getItem(itemId);
             if (itemOpt.isPresent()) {
-                ItemStack stack = new ItemStack(itemOpt.get().value());
+                ItemStack stack = new ItemStack(itemOpt.get());
                 graphics.renderItem(stack, x, y + 4);
             }
         }
@@ -1244,11 +1245,14 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     private String formatNumberProvider(NumberProvider provider) {
-        return switch (provider) {
-            case NumberProvider.Constant c -> String.valueOf((int) c.value());
-            case NumberProvider.Uniform u -> (int) u.min() + "-" + (int) u.max();
-            case NumberProvider.Binomial b -> "B(" + b.n() + "," + b.p() + ")";
-        };
+        if (provider instanceof NumberProvider.Constant c) {
+            return String.valueOf((int) c.value());
+        } else if (provider instanceof NumberProvider.Uniform u) {
+            return (int) u.min() + "-" + (int) u.max();
+        } else if (provider instanceof NumberProvider.Binomial b) {
+            return "B(" + b.n() + "," + b.p() + ")";
+        }
+        return "1";
     }
 
     /**

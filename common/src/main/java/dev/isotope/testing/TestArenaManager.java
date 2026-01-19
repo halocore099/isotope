@@ -1,6 +1,7 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -122,8 +123,7 @@ public final class TestArenaManager {
         }
 
         // Get structure from registry
-        Registry<Structure> structureRegistry = level.registryAccess()
-            .lookupOrThrow(Registries.STRUCTURE);
+        Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(level.registryAccess());
 
         ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);
         Optional<Holder.Reference<Structure>> structureHolder = structureRegistry.get(structureKey);

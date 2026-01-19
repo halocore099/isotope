@@ -9,7 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.core.registries.BuiltInRegistries;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -59,12 +59,8 @@ public class ItemPickerScreen extends Screen {
     }
 
     private void collectMods() {
-        Set<String> mods = new TreeSet<>();
-        for (var entry : BuiltInRegistries.ITEM.entrySet()) {
-            mods.add(entry.getKey().location().getNamespace());
-        }
         availableMods.add("All");
-        availableMods.addAll(mods);
+        availableMods.addAll(RegistryHelper.getAllItemNamespaces());
     }
 
     @Override
@@ -113,9 +109,9 @@ public class ItemPickerScreen extends Screen {
         filteredItems.clear();
         String search = searchBox != null ? searchBox.getValue().toLowerCase() : "";
 
-        for (var entry : BuiltInRegistries.ITEM.entrySet()) {
+        for (var entry : RegistryHelper.getAllItems().entrySet()) {
             Item item = entry.getValue();
-            ResourceLocation id = entry.getKey().location();
+            ResourceLocation id = entry.getKey();
 
             // Skip air
             if (item == Items.AIR) continue;
@@ -326,7 +322,7 @@ public class ItemPickerScreen extends Screen {
 
             if (index >= 0 && index < filteredItems.size()) {
                 Item item = filteredItems.get(index);
-                ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
+                ResourceLocation id = RegistryHelper.getItemId(item);
                 onItemSelected.accept(id);
                 onClose();
                 return true;

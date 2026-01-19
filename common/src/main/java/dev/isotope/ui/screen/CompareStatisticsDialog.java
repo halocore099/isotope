@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -250,9 +251,9 @@ public class CompareStatisticsDialog extends Screen {
                     }
 
                     // Item icon
-                    var itemOpt = BuiltInRegistries.ITEM.get(entry.itemId);
+                    var itemOpt = RegistryHelper.getItem(entry.itemId);
                     if (itemOpt.isPresent()) {
-                        ItemStack stack = new ItemStack(itemOpt.get().value());
+                        ItemStack stack = new ItemStack(itemOpt.get());
                         graphics.renderItem(stack, dialogX + 10, entryY + 2);
                     }
 

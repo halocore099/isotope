@@ -1,8 +1,8 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -108,7 +108,7 @@ public final class TestMobTools {
             }
 
             // Get entity type from registry
-            Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
+            Optional<EntityType<?>> entityTypeOpt = RegistryHelper.getEntityType(entityId);
             if (entityTypeOpt.isEmpty()) {
                 return SpawnResult.error("Unknown entity: " + entityId);
             }
@@ -317,7 +317,7 @@ public final class TestMobTools {
 
                 // Check entity type if specified
                 if (entityId != null) {
-                    ResourceLocation entityType = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+                    ResourceLocation entityType = RegistryHelper.getEntityTypeId(entity.getType());
                     if (!entityId.equals(entityType)) continue;
                 }
 
@@ -348,7 +348,7 @@ public final class TestMobTools {
      * Get entity display name from entity ID.
      */
     public static String getEntityDisplayName(ResourceLocation entityId) {
-        Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
+        Optional<EntityType<?>> entityTypeOpt = RegistryHelper.getEntityType(entityId);
         if (entityTypeOpt.isPresent()) {
             String key = entityTypeOpt.get().getDescriptionId();
             // Extract name from "entity.minecraft.zombie" -> "Zombie"

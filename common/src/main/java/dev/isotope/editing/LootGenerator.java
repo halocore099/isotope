@@ -2,6 +2,7 @@ package dev.isotope.editing;
 
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.loot.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -193,18 +194,14 @@ public final class LootGenerator {
      */
     private static ItemStack createItemStack(ResourceLocation itemId, LootEntry entry, Random random) {
         try {
-            // In 1.21.4, registry get returns Optional<Reference<Item>>
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+            // Use RegistryHelper for version-compatible item lookup
+            var itemOpt = RegistryHelper.getItem(itemId);
             if (itemOpt.isEmpty()) {
                 Isotope.LOGGER.warn("Unknown item: {}", itemId);
                 return ItemStack.EMPTY;
             }
 
-            var item = itemOpt.get().value();
-            if (item == Items.AIR) {
-                Isotope.LOGGER.warn("Item is AIR: {}", itemId);
-                return ItemStack.EMPTY;
-            }
+            var item = itemOpt.get();
 
             // Get count from set_count function
             int count = 1;

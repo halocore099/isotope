@@ -1,5 +1,6 @@
 package dev.isotope.validation;
 
+import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.loot.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -205,8 +206,7 @@ public class LootTableValidator {
             // Check if item exists (only for minecraft namespace to avoid false positives with mods)
             if (itemId.getNamespace().equals("minecraft")) {
                 try {
-                    var item = BuiltInRegistries.ITEM.get(itemId);
-                    if (item == null || item == BuiltInRegistries.ITEM.get(ResourceLocation.withDefaultNamespace("air"))) {
+                    if (!RegistryHelper.itemExists(itemId)) {
                         issues.add(new ValidationIssue(
                             IssueType.MISSING_ITEM,
                             Severity.ERROR,

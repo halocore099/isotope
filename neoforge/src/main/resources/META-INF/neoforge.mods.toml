@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[4,)"
+loaderVersion = "${neoforge_loader_version}"
 license = "${mod_license}"
 issueTrackerURL = "https://github.com/halocore099/isotope/issues"
 
@@ -15,20 +15,20 @@ displayURL = "https://github.com/halocore099/isotope"
 [[dependencies.${mod_id}]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.4,)"
+versionRange = "[${neoforge_version},)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21,)"
+versionRange = "${minecraft_version_range_neoforge}"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "architectury"
 type = "required"
-versionRange = "[15.0.0,)"
+versionRange = "[${architectury_min_version},)"
 ordering = "NONE"
 side = "BOTH"

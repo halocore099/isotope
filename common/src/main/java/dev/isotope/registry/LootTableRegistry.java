@@ -2,6 +2,7 @@ package dev.isotope.registry;
 
 import dev.isotope.Isotope;
 import dev.isotope.analysis.LootTableContentAnalyzer;
+import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
 import net.minecraft.core.Registry;
@@ -33,7 +34,8 @@ public final class LootTableRegistry {
 
     /**
      * Scan the loot table registry from the server.
-     * In 1.21.4, loot tables are in the reloadable registries.
+     * In 1.21+, loot tables are in the reloadable registries.
+     * In 1.20.x, loot tables are accessed via getLootData().
      *
      * Uses content-based analysis to detect categories, with path-based fallback.
      */
@@ -44,18 +46,13 @@ public final class LootTableRegistry {
         int pathFallback = 0;
 
         try {
-            // In 1.21.4, reloadableRegistries() returns a Holder with a lookup() method
-            var holder = server.reloadableRegistries();
-
-            // Log the holder type for debugging
-            Isotope.LOGGER.info("Holder type: {}", holder.getClass().getName());
-
-            // Try lookup() with no args to see what it returns
-            var lookup = holder.lookup();
-            Isotope.LOGGER.info("Lookup type: {}", lookup.getClass().getName());
-
             // Collect all IDs first
             List<ResourceLocation> tableIds = new ArrayList<>();
+
+            //? if >=1.21 {
+            // In 1.21+, reloadableRegistries() returns a Holder with a lookup() method
+            var holder = server.reloadableRegistries();
+            var lookup = holder.lookup();
 
             // The lookup should implement HolderLookup.Provider
             if (lookup instanceof net.minecraft.core.HolderLookup.Provider provider) {
@@ -71,6 +68,17 @@ public final class LootTableRegistry {
             } else {
                 Isotope.LOGGER.warn("Lookup is not a HolderLookup.Provider: {}", lookup.getClass());
             }
+            //?} else {
+            /*
+            // In 1.20.x, use getLootData() to access loot tables
+            var lootData = server.getLootData();
+            lootData.getKeys(net.minecraft.world.level.storage.loot.LootDataType.TABLE).forEach(id -> {
+                if (!id.getPath().equals("empty")) {
+                    tableIds.add(id);
+                }
+            });
+            */
+            //?}
 
             // Now analyze each table with content-based detection
             for (ResourceLocation id : tableIds) {

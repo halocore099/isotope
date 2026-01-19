@@ -607,14 +607,16 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         if (!entry.isComposite()) return;
 
         minecraft.setScreen(new CompositeChildrenDialog(this, poolIdx, entryIdx, entry.type(), entry.children(), operation -> {
-            LootEditOperation op = switch (operation) {
-                case CompositeChildrenDialog.ChildOperation.Add add ->
-                    new LootEditOperation.AddChild(poolIdx, entryIdx, add.index(), add.child());
-                case CompositeChildrenDialog.ChildOperation.Remove remove ->
-                    new LootEditOperation.RemoveChild(poolIdx, entryIdx, remove.index());
-                case CompositeChildrenDialog.ChildOperation.Modify modify ->
-                    new LootEditOperation.ModifyChild(poolIdx, entryIdx, modify.index(), modify.newChild());
-            };
+            LootEditOperation op;
+            if (operation instanceof CompositeChildrenDialog.ChildOperation.Add add) {
+                op = new LootEditOperation.AddChild(poolIdx, entryIdx, add.index(), add.child());
+            } else if (operation instanceof CompositeChildrenDialog.ChildOperation.Remove remove) {
+                op = new LootEditOperation.RemoveChild(poolIdx, entryIdx, remove.index());
+            } else if (operation instanceof CompositeChildrenDialog.ChildOperation.Modify modify) {
+                op = new LootEditOperation.ModifyChild(poolIdx, entryIdx, modify.index(), modify.newChild());
+            } else {
+                return;
+            }
             LootEditManager.getInstance().applyOperation(tableId, op);
             editPanel.refresh();
         }));

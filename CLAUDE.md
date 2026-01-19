@@ -21,14 +21,22 @@
 
 Uses **Stonecutter** for multi-version builds from a single branch (`main`).
 
-| Version | Fabric | NeoForge | Forge | Java | Status |
-|---------|--------|----------|-------|------|--------|
-| 1.21.4 | ✅ | ✅ | N/A | 21 | Primary target |
-| 1.21.1 | ✅ | ✅ | N/A | 21 | Supported |
-| 1.21 | ✅ | ✅ | N/A | 21 | Supported |
-| 1.20.6 | ✅ | ✅ | N/A | 17 | Supported |
-| 1.20.4 | ✅ | ✅ | N/A | 17 | Supported |
-| 1.20.1 | ✅ | N/A | 🔶 | 17 | Fabric works, Forge needs Loom 1.6.x |
+### Version Groups
+
+Instead of building a separate JAR for each MC version, we build **3 JARs** that each cover a range of compatible versions:
+
+| Build | Covers | Fabric | NeoForge | Forge | Java | Notes |
+|-------|--------|--------|----------|-------|------|-------|
+| 1.21.4 | 1.21 - 1.21.4 | ✅ | ✅ | N/A | 21 | Primary target |
+| 1.20.4 | 1.20.2 - 1.20.6 | ✅ | ✅ | N/A | 17 | Old registry API |
+| 1.20.1 | 1.20.1 only | ✅ | N/A | 🔶 | 17 | Different mixin target |
+
+**Why version grouping works**:
+- **1.21 - 1.21.4**: Same mixin targets, same registry API, same Java version
+- **1.20.2 - 1.20.6**: Same mixin target (`ReloadableServerRegistries.Holder`), same registry API
+- **1.20.1**: Requires different mixin target (`LootDataManager.getElement()`)
+
+The mod metadata declares version ranges (e.g., `>=1.21 <1.22` for Fabric) so one JAR works across multiple MC versions.
 
 **Why multi-version works**:
 - Architectury insulates from loader quirks
@@ -40,15 +48,31 @@ Uses **Stonecutter** for multi-version builds from a single branch (`main`).
 
 ### Stonecutter Configuration
 
+The `settings.gradle.kts` defines 3 version groups:
+```kotlin
+stonecutter {
+    shared {
+        versions("1.20.1", "1.20.4", "1.21.4")
+        vcsVersion = "1.21.4"
+    }
+}
+```
+
 Version-specific properties in `versions/<version>/gradle.properties`:
-- `minecraft_version` - Target MC version
+- `minecraft_version` - Target MC version (e.g., `1.20.4`)
 - `enabled_platforms` - `fabric,neoforge` or `fabric,forge`
 - `java_version` - 17 for 1.20.x, 21 for 1.21.x
 - Loader-specific versions (fabric_api_version, neoforge_version, forge_version)
+- **Version ranges for mod metadata**:
+  - `minecraft_version_range_fabric` - Semver range (e.g., `>=1.20.2 <1.21`)
+  - `minecraft_version_range_neoforge` - Maven range (e.g., `[1.20.2,1.21)`)
+  - `minecraft_version_range_forge` - Maven range (for 1.20.1 only)
 
 Switch active version: Edit `stonecutter active "X.X.X"` in `stonecutter.gradle.kts`
 
 Build all versions: `./gradlew chiseledBuild`
+
+Build single version: `./gradlew :fabric:build` or `./gradlew :neoforge:build`
 
 ### Version Compatibility Layer (`compat/` package)
 

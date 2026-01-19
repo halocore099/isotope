@@ -202,38 +202,35 @@ public final class LootTableSerializer {
      * Serialize a number provider to JSON.
      */
     private static JsonElement serializeNumberProvider(NumberProvider provider) {
-        return switch (provider) {
-            case NumberProvider.Constant c -> {
-                // For simple constants, just use the number directly
-                if (c.value() == (int) c.value()) {
-                    yield new JsonPrimitive((int) c.value());
-                }
-                yield new JsonPrimitive(c.value());
+        if (provider instanceof NumberProvider.Constant c) {
+            // For simple constants, just use the number directly
+            if (c.value() == (int) c.value()) {
+                return new JsonPrimitive((int) c.value());
             }
-            case NumberProvider.Uniform u -> {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("type", "minecraft:uniform");
-                // Use integers for whole numbers
-                if (u.min() == (int) u.min()) {
-                    obj.addProperty("min", (int) u.min());
-                } else {
-                    obj.addProperty("min", u.min());
-                }
-                if (u.max() == (int) u.max()) {
-                    obj.addProperty("max", (int) u.max());
-                } else {
-                    obj.addProperty("max", u.max());
-                }
-                yield obj;
+            return new JsonPrimitive(c.value());
+        } else if (provider instanceof NumberProvider.Uniform u) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("type", "minecraft:uniform");
+            // Use integers for whole numbers
+            if (u.min() == (int) u.min()) {
+                obj.addProperty("min", (int) u.min());
+            } else {
+                obj.addProperty("min", u.min());
             }
-            case NumberProvider.Binomial b -> {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("type", "minecraft:binomial");
-                obj.addProperty("n", b.n());
-                obj.addProperty("p", b.p());
-                yield obj;
+            if (u.max() == (int) u.max()) {
+                obj.addProperty("max", (int) u.max());
+            } else {
+                obj.addProperty("max", u.max());
             }
-        };
+            return obj;
+        } else if (provider instanceof NumberProvider.Binomial b) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("type", "minecraft:binomial");
+            obj.addProperty("n", b.n());
+            obj.addProperty("p", b.p());
+            return obj;
+        }
+        return new JsonPrimitive(1);
     }
 
     /**

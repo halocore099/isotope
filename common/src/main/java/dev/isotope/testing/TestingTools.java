@@ -1,6 +1,7 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -80,8 +81,7 @@ public final class TestingTools {
             BlockPos playerPos = player.blockPosition();
 
             // Get structure registry
-            Registry<Structure> structureRegistry = level.registryAccess()
-                .lookupOrThrow(Registries.STRUCTURE);
+            Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(level.registryAccess());
 
             // Find the structure holder
             ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);

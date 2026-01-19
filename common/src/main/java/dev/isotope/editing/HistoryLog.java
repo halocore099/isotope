@@ -55,33 +55,32 @@ public final class HistoryLog {
         }
 
         private static String getOperationType(LootEditOperation op) {
-            return switch (op) {
-                case LootEditOperation.AddPool ignored -> "ADD_POOL";
-                case LootEditOperation.RemovePool ignored -> "REMOVE_POOL";
-                case LootEditOperation.ModifyPoolRolls ignored -> "MODIFY_ROLLS";
-                case LootEditOperation.ModifyBonusRolls ignored -> "MODIFY_BONUS_ROLLS";
-                case LootEditOperation.AddEntry ignored -> "ADD_ENTRY";
-                case LootEditOperation.RemoveEntry ignored -> "REMOVE_ENTRY";
-                case LootEditOperation.ModifyEntryWeight ignored -> "MODIFY_WEIGHT";
-                case LootEditOperation.ModifyEntryQuality ignored -> "MODIFY_QUALITY";
-                case LootEditOperation.ModifyEntryItem ignored -> "MODIFY_ITEM";
-                case LootEditOperation.ModifyEntryType ignored -> "MODIFY_TYPE";
-                case LootEditOperation.SetItemCount ignored -> "SET_COUNT";
-                case LootEditOperation.AddFunction ignored -> "ADD_FUNCTION";
-                case LootEditOperation.RemoveFunction ignored -> "REMOVE_FUNCTION";
-                case LootEditOperation.AddCondition ignored -> "ADD_CONDITION";
-                case LootEditOperation.RemoveCondition ignored -> "REMOVE_CONDITION";
-                case LootEditOperation.AddPoolFunction ignored -> "ADD_POOL_FUNC";
-                case LootEditOperation.RemovePoolFunction ignored -> "REMOVE_POOL_FUNC";
-                case LootEditOperation.AddPoolCondition ignored -> "ADD_POOL_COND";
-                case LootEditOperation.RemovePoolCondition ignored -> "REMOVE_POOL_COND";
-                case LootEditOperation.AddTableFunction ignored -> "ADD_TABLE_FUNC";
-                case LootEditOperation.RemoveTableFunction ignored -> "REMOVE_TABLE_FUNC";
-                case LootEditOperation.SetRandomSequence ignored -> "SET_RANDOM_SEQ";
-                case LootEditOperation.AddChild ignored -> "ADD_CHILD";
-                case LootEditOperation.RemoveChild ignored -> "REMOVE_CHILD";
-                case LootEditOperation.ModifyChild ignored -> "MODIFY_CHILD";
-            };
+            if (op instanceof LootEditOperation.AddPool) return "ADD_POOL";
+            if (op instanceof LootEditOperation.RemovePool) return "REMOVE_POOL";
+            if (op instanceof LootEditOperation.ModifyPoolRolls) return "MODIFY_ROLLS";
+            if (op instanceof LootEditOperation.ModifyBonusRolls) return "MODIFY_BONUS_ROLLS";
+            if (op instanceof LootEditOperation.AddEntry) return "ADD_ENTRY";
+            if (op instanceof LootEditOperation.RemoveEntry) return "REMOVE_ENTRY";
+            if (op instanceof LootEditOperation.ModifyEntryWeight) return "MODIFY_WEIGHT";
+            if (op instanceof LootEditOperation.ModifyEntryQuality) return "MODIFY_QUALITY";
+            if (op instanceof LootEditOperation.ModifyEntryItem) return "MODIFY_ITEM";
+            if (op instanceof LootEditOperation.ModifyEntryType) return "MODIFY_TYPE";
+            if (op instanceof LootEditOperation.SetItemCount) return "SET_COUNT";
+            if (op instanceof LootEditOperation.AddFunction) return "ADD_FUNCTION";
+            if (op instanceof LootEditOperation.RemoveFunction) return "REMOVE_FUNCTION";
+            if (op instanceof LootEditOperation.AddCondition) return "ADD_CONDITION";
+            if (op instanceof LootEditOperation.RemoveCondition) return "REMOVE_CONDITION";
+            if (op instanceof LootEditOperation.AddPoolFunction) return "ADD_POOL_FUNC";
+            if (op instanceof LootEditOperation.RemovePoolFunction) return "REMOVE_POOL_FUNC";
+            if (op instanceof LootEditOperation.AddPoolCondition) return "ADD_POOL_COND";
+            if (op instanceof LootEditOperation.RemovePoolCondition) return "REMOVE_POOL_COND";
+            if (op instanceof LootEditOperation.AddTableFunction) return "ADD_TABLE_FUNC";
+            if (op instanceof LootEditOperation.RemoveTableFunction) return "REMOVE_TABLE_FUNC";
+            if (op instanceof LootEditOperation.SetRandomSequence) return "SET_RANDOM_SEQ";
+            if (op instanceof LootEditOperation.AddChild) return "ADD_CHILD";
+            if (op instanceof LootEditOperation.RemoveChild) return "REMOVE_CHILD";
+            if (op instanceof LootEditOperation.ModifyChild) return "MODIFY_CHILD";
+            return "UNKNOWN";
         }
     }
 

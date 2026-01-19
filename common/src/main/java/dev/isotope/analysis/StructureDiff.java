@@ -170,36 +170,37 @@ public final class StructureDiff {
      * Get a human-readable description of a diff entry.
      */
     public static String describe(DiffEntry entry) {
-        return switch (entry) {
-            case DiffEntry.AddedPool e ->
-                "+ Added Pool " + (e.poolIndex() + 1) + " (" + e.pool().entries().size() + " entries)";
-            case DiffEntry.RemovedPool e ->
-                "- Removed Pool " + (e.poolIndex() + 1);
-            case DiffEntry.AddedEntry e ->
-                "+ Added: " + e.entry().name().map(ResourceLocation::getPath).orElse("unknown");
-            case DiffEntry.RemovedEntry e ->
-                "- Removed: " + e.entry().name().map(ResourceLocation::getPath).orElse("unknown");
-            case DiffEntry.ModifiedWeight e ->
-                "~ " + e.item().getPath() + " weight: " + e.oldWeight() + " -> " + e.newWeight();
-            case DiffEntry.ModifiedCount e ->
-                "~ " + e.item().getPath() + " count: " + e.oldCount() + " -> " + e.newCount();
-            case DiffEntry.ModifiedItem e ->
-                "~ Changed: " + e.oldItem().getPath() + " -> " + e.newItem().getPath();
-        };
+        if (entry instanceof DiffEntry.AddedPool e) {
+            return "+ Added Pool " + (e.poolIndex() + 1) + " (" + e.pool().entries().size() + " entries)";
+        } else if (entry instanceof DiffEntry.RemovedPool e) {
+            return "- Removed Pool " + (e.poolIndex() + 1);
+        } else if (entry instanceof DiffEntry.AddedEntry e) {
+            return "+ Added: " + e.entry().name().map(ResourceLocation::getPath).orElse("unknown");
+        } else if (entry instanceof DiffEntry.RemovedEntry e) {
+            return "- Removed: " + e.entry().name().map(ResourceLocation::getPath).orElse("unknown");
+        } else if (entry instanceof DiffEntry.ModifiedWeight e) {
+            return "~ " + e.item().getPath() + " weight: " + e.oldWeight() + " -> " + e.newWeight();
+        } else if (entry instanceof DiffEntry.ModifiedCount e) {
+            return "~ " + e.item().getPath() + " count: " + e.oldCount() + " -> " + e.newCount();
+        } else if (entry instanceof DiffEntry.ModifiedItem e) {
+            return "~ Changed: " + e.oldItem().getPath() + " -> " + e.newItem().getPath();
+        }
+        return "Unknown change";
     }
 
     /**
      * Get color for a diff entry.
      */
     public static int getColor(DiffEntry entry) {
-        return switch (entry) {
-            case DiffEntry.AddedPool ignored -> 0xFF55FF55;    // Green
-            case DiffEntry.AddedEntry ignored -> 0xFF55FF55;
-            case DiffEntry.RemovedPool ignored -> 0xFFFF5555;  // Red
-            case DiffEntry.RemovedEntry ignored -> 0xFFFF5555;
-            case DiffEntry.ModifiedWeight ignored -> 0xFFFFFF55; // Yellow
-            case DiffEntry.ModifiedCount ignored -> 0xFFFFFF55;
-            case DiffEntry.ModifiedItem ignored -> 0xFFFFAA00;   // Orange
-        };
+        if (entry instanceof DiffEntry.AddedPool || entry instanceof DiffEntry.AddedEntry) {
+            return 0xFF55FF55;    // Green
+        } else if (entry instanceof DiffEntry.RemovedPool || entry instanceof DiffEntry.RemovedEntry) {
+            return 0xFFFF5555;  // Red
+        } else if (entry instanceof DiffEntry.ModifiedWeight || entry instanceof DiffEntry.ModifiedCount) {
+            return 0xFFFFFF55; // Yellow
+        } else if (entry instanceof DiffEntry.ModifiedItem) {
+            return 0xFFFFAA00;   // Orange
+        }
+        return 0xFFFFFFFF;
     }
 }

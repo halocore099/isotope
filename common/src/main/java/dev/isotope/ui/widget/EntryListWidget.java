@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
@@ -77,9 +78,9 @@ public class EntryListWidget extends ScrollableListWidget<LootEntry> {
 
     private static ItemStack getItemStack(ResourceLocation itemId) {
         try {
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+            var itemOpt = RegistryHelper.getItem(itemId);
             if (itemOpt.isPresent()) {
-                return new ItemStack(itemOpt.get().value());
+                return new ItemStack(itemOpt.get());
             }
         } catch (Exception e) {
             // Ignore

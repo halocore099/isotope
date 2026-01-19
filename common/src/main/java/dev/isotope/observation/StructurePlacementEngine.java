@@ -1,9 +1,11 @@
 package dev.isotope.observation;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -57,11 +59,10 @@ public final class StructurePlacementEngine {
         Map<ResourceLocation, PlacementResult> results = new LinkedHashMap<>();
 
         // Get all registered structures
-        HolderLookup.RegistryLookup<Structure> lookup = server.registryAccess()
-            .lookupOrThrow(Registries.STRUCTURE);
+        Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(server.registryAccess());
 
         List<ResourceLocation> structureIds = new ArrayList<>();
-        lookup.listElementIds().forEach(key -> structureIds.add(key.location()));
+        structureRegistry.keySet().forEach(structureIds::add);
 
         onProgress.accept("Found " + structureIds.size() + " structures to place");
 
@@ -116,9 +117,9 @@ public final class StructurePlacementEngine {
         try {
             // Get the structure from registry
             ResourceKey<Structure> key = ResourceKey.create(Registries.STRUCTURE, structureId);
-            var lookup = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+            Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(server.registryAccess());
 
-            Holder.Reference<Structure> holder = lookup.get(key).orElse(null);
+            Holder.Reference<Structure> holder = structureRegistry.get(key).orElse(null);
 
             if (holder == null) {
                 return PlacementResult.failed(structureId, "Structure not found in registry");

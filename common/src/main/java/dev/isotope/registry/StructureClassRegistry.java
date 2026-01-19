@@ -1,6 +1,7 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -53,7 +54,7 @@ public final class StructureClassRegistry {
         superclassToStructure.clear();
 
         try {
-            Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+            Registry<Structure> registry = RegistryHelper.getStructureRegistry(server.registryAccess());
 
             for (var entry : registry.entrySet()) {
                 ResourceLocation structureId = entry.getKey().location();

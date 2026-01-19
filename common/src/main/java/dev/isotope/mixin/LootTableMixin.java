@@ -1,5 +1,6 @@
 package dev.isotope.mixin;
 
+import dev.isotope.Isotope;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootGenerator;
@@ -44,17 +45,48 @@ public class LootTableMixin {
         cancellable = true
     )
     private void isotope$onGetRandomItems(LootParams params, long seed, Consumer<ItemStack> consumer, CallbackInfo ci) {
-        ResourceLocation tableId = LootTableTracker.getCurrentTableId();
+        if (isotope$tryGenerateEdited(params, seed, consumer)) {
+            ci.cancel();
+        }
+    }
 
-        if (tableId != null && LootEditManager.getInstance().isTestModeActive()) {
-            if (LootEditManager.getInstance().hasEdits(tableId)) {
-                Optional<LootTableStructure> editedStructure =
-                    LootEditManager.getInstance().getEditedStructure(tableId);
+    /**
+     * Also intercept the 2-parameter version (LootParams, Consumer) without explicit seed.
+     * This is the method called by LootTestRunner.generateChestLoot().
+     */
+    @Inject(
+        method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;Ljava/util/function/Consumer;)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void isotope$onGetRandomItemsNoSeed(LootParams params, Consumer<ItemStack> consumer, CallbackInfo ci) {
+        // Use nanoTime as seed, same as vanilla fallback
+        if (isotope$tryGenerateEdited(params, System.nanoTime(), consumer)) {
+            ci.cancel();
+        }
+    }
+
+    /**
+     * Common logic for intercepting loot generation.
+     * Returns true if we handled the generation (caller should cancel).
+     */
+    private boolean isotope$tryGenerateEdited(LootParams params, long seed, Consumer<ItemStack> consumer) {
+        ResourceLocation tableId = LootTableTracker.getCurrentTableId();
+        LootEditManager editManager = LootEditManager.getInstance();
+
+        if (tableId != null && editManager.isTestModeActive()) {
+            boolean hasEdits = editManager.hasEdits(tableId);
+            Isotope.LOGGER.info("ISOTOPE mixin: table={}, testMode=true, hasEdits={}", tableId, hasEdits);
+
+            if (hasEdits) {
+                Optional<LootTableStructure> editedStructure = editManager.getEditedStructure(tableId);
 
                 if (editedStructure.isPresent()) {
+                    Isotope.LOGGER.info("ISOTOPE mixin: Generating from edited structure for {}", tableId);
                     LootGenerator.generateFromStructure(editedStructure.get(), params, seed, consumer);
-                    ci.cancel();
-                    return;
+                    return true;
+                } else {
+                    Isotope.LOGGER.warn("ISOTOPE mixin: hasEdits=true but no edited structure for {}", tableId);
                 }
             }
         }
@@ -64,6 +96,8 @@ public class LootTableMixin {
             // Record invocation without item details for now
             LootObserver.getInstance().onLootTableInvoked(tableId, params, Collections.emptyList());
         }
+
+        return false;
     }
 
     /**

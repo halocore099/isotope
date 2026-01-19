@@ -1,7 +1,7 @@
 package dev.isotope.testing;
 
+import dev.isotope.compat.RegistryHelper;
 import dev.isotope.ui.ScreenUtils;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -50,7 +50,7 @@ public class DropStatistics {
     public void recordDrop(ItemStack stack) {
         if (stack.isEmpty()) return;
 
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        ResourceLocation itemId = RegistryHelper.getItemId(stack.getItem());
         int count = stack.getCount();
 
         // Initialize if first time seeing this item

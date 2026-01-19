@@ -161,11 +161,14 @@ public final class DropRateCalculator {
      * Get average rolls from a NumberProvider.
      */
     private static float getAverageRolls(NumberProvider rolls) {
-        return switch (rolls) {
-            case NumberProvider.Constant c -> c.value();
-            case NumberProvider.Uniform u -> (u.min() + u.max()) / 2f;
-            case NumberProvider.Binomial b -> b.n() * b.p();
-        };
+        if (rolls instanceof NumberProvider.Constant c) {
+            return c.value();
+        } else if (rolls instanceof NumberProvider.Uniform u) {
+            return (u.min() + u.max()) / 2f;
+        } else if (rolls instanceof NumberProvider.Binomial b) {
+            return b.n() * b.p();
+        }
+        return 1.0f;
     }
 
     /**

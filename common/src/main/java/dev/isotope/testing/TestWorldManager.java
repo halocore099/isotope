@@ -76,22 +76,18 @@ public final class TestWorldManager {
         // Store world name for deletion after disconnect
         pendingDeleteWorld = worldName;
 
-        // Clear test mode state
+        // Clear test mode state first
         TestModeState.getInstance().exitTestMode();
 
-        // Close current screen first
+        // Close current screen
         minecraft.setScreen(null);
 
-        // Use clearClientLevel - this is what "Save and Quit to Title" uses
-        // Schedule on next tick to avoid being in a callback chain
-        minecraft.execute(() -> {
-            if (minecraft.level != null) {
-                // Show saving screen and properly close the world
-                minecraft.clearClientLevel(new net.minecraft.client.gui.screens.GenericMessageScreen(
-                    net.minecraft.network.chat.Component.translatable("menu.savingLevel")
-                ));
-            }
-        });
+        // Disconnect from the world - simpler and more reliable than clearClientLevel
+        if (minecraft.getConnection() != null) {
+            minecraft.getConnection().getConnection().disconnect(
+                net.minecraft.network.chat.Component.literal("Exiting test mode")
+            );
+        }
     }
 
     /**

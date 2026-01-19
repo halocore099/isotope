@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -545,9 +546,9 @@ public class EntryDetailPanel extends AbstractWidget {
 
     private ItemStack getItemStack(ResourceLocation itemId) {
         try {
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+            var itemOpt = RegistryHelper.getItem(itemId);
             if (itemOpt.isPresent()) {
-                return new ItemStack(itemOpt.get().value());
+                return new ItemStack(itemOpt.get());
             }
         } catch (Exception e) {
             // Ignore

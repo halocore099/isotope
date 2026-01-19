@@ -21,10 +21,10 @@
     "isotope-common.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.16.0",
+    "fabricloader": ">=0.15.0",
     "fabric-api": "*",
-    "minecraft": "~1.21",
-    "architectury": ">=15.0.0",
-    "java": ">=21"
+    "minecraft": "${minecraft_version_range_fabric}",
+    "architectury": ">=${architectury_min_version}",
+    "java": ">=${java_version}"
   }
 }

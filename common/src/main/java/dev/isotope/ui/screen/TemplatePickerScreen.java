@@ -10,6 +10,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -169,9 +170,9 @@ public class TemplatePickerScreen extends Screen {
 
                 // Item icon (if has default item)
                 if (template.defaultItem().isPresent()) {
-                    var itemOpt = BuiltInRegistries.ITEM.get(template.defaultItem().get());
+                    var itemOpt = RegistryHelper.getItem(template.defaultItem().get());
                     if (itemOpt.isPresent()) {
-                        graphics.renderItem(new ItemStack(itemOpt.get().value()), entryX + 4, y + (entryHeight - 16) / 2);
+                        graphics.renderItem(new ItemStack(itemOpt.get()), entryX + 4, y + (entryHeight - 16) / 2);
                         textX = entryX + 26;
                     }
                 }
