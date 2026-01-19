@@ -17,17 +17,102 @@
 
 ## Version Support
 
-**Supported**: Minecraft 1.21.x (all patch versions from 1.21 to 1.21.4+)
+**Target Versions**: Minecraft 1.20.1 through 1.21.4+
 
-Single branch (`main`) supports the entire 1.21.x line. No per-patch branches needed.
+Uses **Stonecutter** for multi-version builds from a single branch (`main`).
 
-**Why this works**:
+| Version | Fabric | NeoForge | Forge | Java | Status |
+|---------|--------|----------|-------|------|--------|
+| 1.21.4 | ✅ | ✅ | N/A | 21 | Primary target |
+| 1.21.1 | ✅ | ✅ | N/A | 21 | Supported |
+| 1.21 | ✅ | ✅ | N/A | 21 | Supported |
+| 1.20.6 | ✅ | ✅ | N/A | 17 | Supported |
+| 1.20.4 | ✅ | ✅ | N/A | 17 | Supported |
+| 1.20.1 | ✅ | N/A | 🔶 | 17 | Fabric works, Forge needs Loom 1.6.x |
+
+**Why multi-version works**:
 - Architectury insulates from loader quirks
 - Data models use `String` types + raw `JsonObject` (tolerates unknown loot features)
 - Mixins use safe patterns (`@Inject` at `HEAD`/`TAIL` only, no bytecode manipulation)
-- MC 1.21.x has no breaking API changes between patches
+- Stonecutter conditionals handle API differences at build time
 
-**Releases**: Tag format `vX.X.X`. Published to all 1.21.x game versions on Modrinth/CurseForge.
+**Releases**: Tag format `vX.X.X`. Published to supported game versions on Modrinth/CurseForge.
+
+### Stonecutter Configuration
+
+Version-specific properties in `versions/<version>/gradle.properties`:
+- `minecraft_version` - Target MC version
+- `enabled_platforms` - `fabric,neoforge` or `fabric,forge`
+- `java_version` - 17 for 1.20.x, 21 for 1.21.x
+- Loader-specific versions (fabric_api_version, neoforge_version, forge_version)
+
+Switch active version: Edit `stonecutter active "X.X.X"` in `stonecutter.gradle.kts`
+
+Build all versions: `./gradlew chiseledBuild`
+
+### Version Compatibility Layer (`compat/` package)
+
+| Class | Purpose |
+|-------|---------|
+| `MCVersion` | Compile-time version flags via Stonecutter conditionals |
+| `FeatureFlags` | Feature availability per version |
+| `RegistryHelper` | Abstraction for registry API differences |
+
+**Key API differences handled**:
+
+| API | 1.21+ | 1.20.x |
+|-----|-------|--------|
+| Registry lookup | `registry.get(id).map(ref -> ref.value())` | `registry.getOptional(id)` |
+| Item exists check | `BuiltInRegistries.ITEM.get(id).isPresent()` | `BuiltInRegistries.ITEM.containsKey(id)` |
+| Structure registry | `registryAccess.lookupOrThrow()` | `registryAccess.registryOrThrow()` |
+| Loot table access | `server.reloadableRegistries().getLootTable(key)` | `server.getLootData().getLootTable(id)` |
+| Entity loot table | `entity.getLootTable()` returns `Optional<ResourceKey>` | Returns `ResourceLocation` (nullable) |
+
+**Mixin differences**:
+
+| Version | Loot Table Tracking Target |
+|---------|---------------------------|
+| 1.20.2+ | `ReloadableServerRegistries.Holder.getLootTable()` |
+| 1.20.1 | `LootDataManager.getElement()` |
+
+### Java Compatibility Notes
+
+The codebase is fully compatible with both Java 17 (1.20.x) and Java 21 (1.21.x):
+
+- **Switch expressions** (`case A -> ...`) - Java 14+, works in Java 17 ✅
+- **Pattern matching for instanceof** (`x instanceof Type t`) - Java 16+, works in Java 17 ✅
+- **Pattern matching in switch** (`case Type t -> ...`) - Java 21 only, **not currently used**
+
+**If Java 21-only features are added in the future**, use Stonecutter conditionals:
+```java
+//? if >=1.21 {
+case NumberProvider.Constant c -> String.valueOf((int) c.value());
+//?} else {
+/*
+// Java 17 alternative
+if (provider instanceof NumberProvider.Constant) {
+    NumberProvider.Constant c = (NumberProvider.Constant) provider;
+    return String.valueOf((int) c.value());
+}
+*/
+//?}
+```
+
+**Current status**: No Java 21-only features in use. Build verified to compile for 1.20.4 (Java 17).
+
+### Architectury Loom Version Issue
+
+**Problem**: Loom 1.13+ dropped support for old Forge (pre-NeoForge split).
+
+| MC Version | Loader | Required Loom |
+|------------|--------|---------------|
+| 1.21.x | NeoForge | 1.13+ ✅ |
+| 1.20.4+ | NeoForge | 1.13+ ✅ |
+| 1.20.1 | Forge | 1.6.x ❌ (not currently configured) |
+
+**Current workaround**: 1.20.1 builds only support Fabric. Forge support for 1.20.1 would require:
+1. Multi-Loom setup (different Loom versions per MC version)
+2. Or separate build configuration for 1.20.1 Forge
 
 ## Structure-Loot Linking Architecture
 
