@@ -8,7 +8,8 @@ def mcVersion = rootProject.findProperty("minecraft_version") ?: "1.21.4"
 def isNeoForgeVersion = mcVersion.startsWith("1.21") || mcVersion.startsWith("1.20.4") || mcVersion.startsWith("1.20.5") || mcVersion.startsWith("1.20.6")
 def isNeoForgeEnabled = enabledPlatforms.contains("neoforge") && rootProject.hasProperty("neoforge_version") && isNeoForgeVersion
 
-archivesBaseName = "isotope-neoforge"
+def mcLabel = rootProject.findProperty("minecraft_version_label") ?: mcVersion
+archivesBaseName = "isotope-neoforge-${mcLabel}"
 
 if (isNeoForgeEnabled) {
     repositories {
@@ -51,6 +52,10 @@ if (isNeoForgeEnabled) {
         inputs.property "mod_description", rootProject.mod_description
         inputs.property "mod_author", rootProject.mod_author
         inputs.property "mod_license", rootProject.mod_license
+        inputs.property "neoforge_loader_version", rootProject.findProperty("neoforge_loader_version") ?: "[4,)"
+        inputs.property "neoforge_version", rootProject.findProperty("neoforge_version") ?: "21.4.156"
+        inputs.property "minecraft_version_range_neoforge", rootProject.findProperty("minecraft_version_range_neoforge") ?: "[1.21,1.22)"
+        inputs.property "architectury_min_version", rootProject.findProperty("architectury_min_version") ?: "13.0.0"
 
         filesMatching("META-INF/neoforge.mods.toml") {
             expand(
@@ -59,7 +64,11 @@ if (isNeoForgeEnabled) {
                 "mod_name": rootProject.mod_name,
                 "mod_description": rootProject.mod_description,
                 "mod_author": rootProject.mod_author,
-                "mod_license": rootProject.mod_license
+                "mod_license": rootProject.mod_license,
+                "neoforge_loader_version": rootProject.findProperty("neoforge_loader_version") ?: "[4,)",
+                "neoforge_version": rootProject.findProperty("neoforge_version") ?: "21.4.156",
+                "minecraft_version_range_neoforge": rootProject.findProperty("minecraft_version_range_neoforge") ?: "[1.21,1.22)",
+                "architectury_min_version": rootProject.findProperty("architectury_min_version") ?: "13.0.0"
             )
         }
     }

@@ -1,6 +1,7 @@
 apply plugin: "com.github.johnrengelman.shadow"
 
-archivesBaseName = "isotope-fabric"
+def mcLabel = rootProject.findProperty("minecraft_version_label") ?: rootProject.minecraft_version
+archivesBaseName = "isotope-fabric-${mcLabel}"
 
 architectury {
     platformSetupLoomIde()
@@ -37,6 +38,9 @@ processResources {
     inputs.property "mod_description", rootProject.mod_description
     inputs.property "mod_author", rootProject.mod_author
     inputs.property "mod_license", rootProject.mod_license
+    inputs.property "minecraft_version_range_fabric", rootProject.findProperty("minecraft_version_range_fabric") ?: ">=1.21 <1.22"
+    inputs.property "architectury_min_version", rootProject.findProperty("architectury_min_version") ?: "13.0.0"
+    inputs.property "java_version", rootProject.findProperty("java_version") ?: "21"
 
     filesMatching("fabric.mod.json") {
         expand(
@@ -45,7 +49,10 @@ processResources {
             "mod_name": rootProject.mod_name,
             "mod_description": rootProject.mod_description,
             "mod_author": rootProject.mod_author,
-            "mod_license": rootProject.mod_license
+            "mod_license": rootProject.mod_license,
+            "minecraft_version_range_fabric": rootProject.findProperty("minecraft_version_range_fabric") ?: ">=1.21 <1.22",
+            "architectury_min_version": rootProject.findProperty("architectury_min_version") ?: "13.0.0",
+            "java_version": rootProject.findProperty("java_version") ?: "21"
         )
     }
 }

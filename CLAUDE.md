@@ -27,12 +27,12 @@ Instead of building a separate JAR for each MC version, we build **3 JARs** that
 
 | Build | Covers | Fabric | NeoForge | Forge | Java | Notes |
 |-------|--------|--------|----------|-------|------|-------|
-| 1.21.4 | 1.21 - 1.21.4 | ✅ | ✅ | N/A | 21 | Primary target |
+| 1.21.4 | 1.21 - 1.21.11+ | ✅ | ✅ | N/A | 21 | Primary target |
 | 1.20.4 | 1.20.2 - 1.20.6 | ✅ | ✅ | N/A | 17 | Old registry API |
 | 1.20.1 | 1.20.1 only | ✅ | N/A | 🔶 | 17 | Different mixin target |
 
 **Why version grouping works**:
-- **1.21 - 1.21.4**: Same mixin targets, same registry API, same Java version
+- **1.21.x**: Same mixin targets, same registry API, same Java version
 - **1.20.2 - 1.20.6**: Same mixin target (`ReloadableServerRegistries.Holder`), same registry API
 - **1.20.1**: Requires different mixin target (`LootDataManager.getElement()`)
 

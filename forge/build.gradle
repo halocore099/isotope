@@ -6,7 +6,8 @@ plugins {
 def enabledPlatforms = rootProject.findProperty("enabled_platforms") ?: ""
 def isForgeEnabled = enabledPlatforms.contains("forge") && rootProject.hasProperty("forge_version")
 
-archivesBaseName = "isotope-forge"
+def mcLabel = rootProject.findProperty("minecraft_version_label") ?: rootProject.minecraft_version
+archivesBaseName = "isotope-forge-${mcLabel}"
 
 repositories {
     maven { url "https://maven.minecraftforge.net/" }
@@ -51,6 +52,9 @@ if (isForgeEnabled) {
         inputs.property "mod_description", rootProject.mod_description
         inputs.property "mod_author", rootProject.mod_author
         inputs.property "mod_license", rootProject.mod_license
+        inputs.property "forge_loader_version", rootProject.findProperty("forge_loader_version") ?: "[47,)"
+        inputs.property "minecraft_version_range_forge", rootProject.findProperty("minecraft_version_range_forge") ?: "[1.20.1,1.20.2)"
+        inputs.property "architectury_min_version", rootProject.findProperty("architectury_min_version") ?: "9.0.0"
 
         filesMatching("META-INF/mods.toml") {
             expand(
@@ -59,7 +63,10 @@ if (isForgeEnabled) {
                 "mod_name": rootProject.mod_name,
                 "mod_description": rootProject.mod_description,
                 "mod_author": rootProject.mod_author,
-                "mod_license": rootProject.mod_license
+                "mod_license": rootProject.mod_license,
+                "forge_loader_version": rootProject.findProperty("forge_loader_version") ?: "[47,)",
+                "minecraft_version_range_forge": rootProject.findProperty("minecraft_version_range_forge") ?: "[1.20.1,1.20.2)",
+                "architectury_min_version": rootProject.findProperty("architectury_min_version") ?: "9.0.0"
             )
         }
     }
