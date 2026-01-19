@@ -32,3 +32,7 @@ secrets.json
 
 # Local development
 local.properties
+
+# Build artifacts
+.architectury-transformer/
+*.bak
