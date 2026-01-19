@@ -31,6 +31,11 @@ Instead of building a separate JAR for each MC version, we build **3 JARs** that
 | 1.20.4 | 1.20.2 - 1.20.6 | ✅ | ✅ | N/A | 17 | Old registry API |
 | 1.20.1 | 1.20.1 only | ✅ | N/A | 🔶 | 17 | Different mixin target |
 
+**Forge vs NeoForge**:
+- **NeoForge** is the successor to Forge, starting at MC 1.20.4. Used for 1.20.4+ and all 1.21.x
+- **Forge** (original) only exists for 1.20.1 and earlier. No Forge for 1.21+
+- 1.20.1 Forge support is disabled (🔶) because Architectury Loom 1.13+ dropped old Forge support
+
 **Why version grouping works**:
 - **1.21.x**: Same mixin targets, same registry API, same Java version
 - **1.20.2 - 1.20.6**: Same mixin target (`ReloadableServerRegistries.Holder`), same registry API
