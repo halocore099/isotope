@@ -48,6 +48,63 @@ The mod metadata declares version ranges (e.g., `>=1.21 <1.22` for Fabric) so on
 
 **Releases**: Tag format `vX.X.X`. Published to supported game versions on Modrinth/CurseForge.
 
+### 1.20.x Compatibility Strategy: Helper Mod Approach
+
+**Problem**: Minecraft 1.20.x and 1.21.x have incompatible method signatures that can't be resolved with runtime checks alone:
+
+| API | 1.21.x | 1.20.x |
+|-----|--------|--------|
+| `mouseScrolled` | 4 params (mouseX, mouseY, scrollX, scrollY) | 3 params (mouseX, mouseY, delta) |
+| `renderBackground` | 4 params (graphics, mouseX, mouseY, partialTick) | 1 param (graphics) |
+| Widget position | `getX()`, `getY()`, `setX()` methods | Internal fields `x0`, `y0` only |
+| `ObjectSelectionList` | 5 param constructor | 6 param constructor |
+
+**Solution**: Create a **helper/compatibility mod** for 1.20.x that uses Mixins to add 1.21-style method signatures:
+
+```java
+// Helper mod adds 1.21 signatures to 1.20.x classes
+@Mixin(Screen.class)
+public class ScreenCompatMixin {
+    // Add 4-param method that delegates to 3-param
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        return ((Screen)(Object)this).mouseScrolled(mouseX, mouseY, scrollY);
+    }
+
+    // Add 4-param method that delegates to 1-param
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        ((Screen)(Object)this).renderBackground(graphics);
+    }
+}
+
+@Mixin(AbstractWidget.class)
+public class WidgetCompatMixin {
+    @Shadow protected int x;
+    @Shadow protected int y;
+
+    public int getX() { return this.x; }
+    public int getY() { return this.y; }
+    public void setX(int x) { this.x = x; }
+}
+```
+
+**Benefits**:
+- Main mod stays clean with 1.21-style code everywhere
+- No Stonecutter conditionals needed in UI code
+- Helper mod only required when running on 1.20.x
+- ~200-300 lines of mixins vs 30+ files with conditionals
+
+**Deployment**:
+| MC Version | Main Mod | Helper Mod |
+|------------|----------|------------|
+| 1.21.x | Required | Not needed |
+| 1.20.x | Required | Required (dependency) |
+
+**What stays in main mod** (via VersionHelper/reflection):
+- Registry access differences (return types fundamentally different)
+- World creation APIs (method signatures vary)
+- Conditional mixin loading (classes don't exist)
+- Entity loot table access (return types differ)
+
 ### Stonecutter Configuration
 
 The `settings.gradle.kts` defines 3 version groups:
@@ -62,13 +119,12 @@ stonecutter {
 
 Version-specific properties in `versions/<version>/gradle.properties`:
 - `minecraft_version` - Target MC version (e.g., `1.20.4`)
-- `enabled_platforms` - `fabric,neoforge` or `fabric,forge`
+- `enabled_platforms` - `fabric,neoforge`
 - `java_version` - 17 for 1.20.x, 21 for 1.21.x
-- Loader-specific versions (fabric_api_version, neoforge_version, forge_version)
+- Loader-specific versions (fabric_api_version, neoforge_version)
 - **Version ranges for mod metadata**:
   - `minecraft_version_range_fabric` - Semver range (e.g., `>=1.20.2 <1.21`)
   - `minecraft_version_range_neoforge` - Maven range (e.g., `[1.20.2,1.21)`)
-  - `minecraft_version_range_forge` - Maven range (for 1.20.1 only)
 
 Switch active version: Edit `stonecutter active "X.X.X"` in `stonecutter.gradle.kts`
 
@@ -126,19 +182,16 @@ if (provider instanceof NumberProvider.Constant) {
 
 **Current status**: No Java 21-only features in use. Build verified to compile for 1.20.4 (Java 17).
 
-### Architectury Loom Version Issue
+### Loader Support
 
-**Problem**: Loom 1.13+ dropped support for old Forge (pre-NeoForge split).
+**Supported loaders**: Fabric and NeoForge only.
 
-| MC Version | Loader | Required Loom |
-|------------|--------|---------------|
-| 1.21.x | NeoForge | 1.13+ ✅ |
-| 1.20.4+ | NeoForge | 1.13+ ✅ |
-| 1.20.1 | Forge | 1.6.x ❌ (not currently configured) |
+Traditional MinecraftForge (LexForge) is **not supported** because:
+1. Architectury Loom 1.13+ dropped support for old Forge toolchain
+2. Architectury API stopped publishing Forge builds after 1.19.3
+3. NeoForge is the community-standard "Forge" for 1.21.x (99%+ of Forge users)
 
-**Current workaround**: 1.20.1 builds only support Fabric. Forge support for 1.20.1 would require:
-1. Multi-Loom setup (different Loom versions per MC version)
-2. Or separate build configuration for 1.20.1 Forge
+NeoForge exists for all supported MC versions (1.20.1+), so this is not a limitation in practice.
 
 ## Structure-Loot Linking Architecture
 

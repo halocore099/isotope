@@ -1,4 +1,5 @@
 package dev.isotope.save;
+import dev.isotope.compat.RegistryHelper;
 
 import dev.isotope.analysis.AnalysisEngine.AnalysisConfig;
 import dev.isotope.data.LootTableInfo;
@@ -101,7 +102,7 @@ public record AnalysisSave(
 
         public StructureInfo toStructureInfo() {
             return new StructureInfo(
-                ResourceLocation.parse(id),
+                RegistryHelper.parseLocation(id),
                 namespace,
                 path
             );
@@ -125,7 +126,7 @@ public record AnalysisSave(
 
         public LootTableInfo toLootTableInfo() {
             return new LootTableInfo(
-                ResourceLocation.parse(id),
+                RegistryHelper.parseLocation(id),
                 namespace,
                 path,
                 LootTableInfo.LootTableCategory.valueOf(category)
@@ -150,8 +151,8 @@ public record AnalysisSave(
 
         public dev.isotope.data.StructureLootLink toLink() {
             return new dev.isotope.data.StructureLootLink(
-                ResourceLocation.parse(structureId),
-                ResourceLocation.parse(lootTableId),
+                RegistryHelper.parseLocation(structureId),
+                RegistryHelper.parseLocation(lootTableId),
                 dev.isotope.data.StructureLootLink.Confidence.valueOf(confidence),
                 dev.isotope.data.StructureLootLink.LinkSource.valueOf(source)
             );

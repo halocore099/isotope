@@ -1,4 +1,5 @@
 package dev.isotope.data;
+import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.*;
 import dev.isotope.Isotope;
@@ -293,7 +294,7 @@ public final class TemplateManager {
 
         Optional<ResourceLocation> defaultItem = Optional.empty();
         if (json.has("defaultItem") && !json.get("defaultItem").isJsonNull()) {
-            ResourceLocation itemId = ResourceLocation.tryParse(json.get("defaultItem").getAsString());
+            ResourceLocation itemId = RegistryHelper.tryParseLocation(json.get("defaultItem").getAsString());
             if (itemId != null) {
                 defaultItem = Optional.of(itemId);
             }

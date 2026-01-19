@@ -4,6 +4,28 @@ plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
 }
 
+// Load version-specific properties from Stonecutter active version
+def stonecutterGradle = file("stonecutter.gradle.kts")
+if (stonecutterGradle.exists()) {
+    def activeVersionMatch = stonecutterGradle.text =~ /stonecutter active "([^"]+)"/
+    if (activeVersionMatch.find()) {
+        def activeVersion = activeVersionMatch.group(1)
+        def versionProps = file("versions/${activeVersion}/gradle.properties")
+        if (versionProps.exists()) {
+            def props = new Properties()
+            versionProps.withInputStream { props.load(it) }
+            props.each { key, value ->
+                if (!rootProject.hasProperty(key.toString()) || key.toString().startsWith("minecraft") ||
+                    key.toString().contains("version") || key.toString().contains("platforms") ||
+                    key.toString().contains("java_version") || key.toString().contains("architectury")) {
+                    rootProject.ext.set(key.toString(), value)
+                }
+            }
+            println "Loaded properties for Stonecutter version: ${activeVersion}"
+        }
+    }
+}
+
 architectury {
     minecraft = rootProject.minecraft_version
 }

@@ -1,35 +1,24 @@
 pluginManagement {
     repositories {
+        mavenCentral()
+        gradlePluginPortal()
+        maven("https://maven.kikugie.dev/releases")
         maven("https://maven.fabricmc.net/")
         maven("https://maven.architectury.dev/")
-        maven("https://maven.neoforged.net/releases")
-        maven("https://maven.kikugie.dev/releases")
-        gradlePluginPortal()
+        maven("https://maven.neoforged.net/releases/")
+        maven("https://maven.minecraftforge.net/")
     }
 }
 
-plugins {
-    id("dev.kikugie.stonecutter") version "0.5.1"
-}
-
-stonecutter {
-    kotlinController = true
-    centralScript = "build.gradle"
-
-    // Use shared mode for multi-module projects
-    // 3 version groups, each JAR covers a range:
-    // - 1.20.1: Only 1.20.1 (different mixin target: LootDataManager)
-    // - 1.20.4: Covers 1.20.2-1.20.6 (mixin: ReloadableServerRegistries.Holder, old registry API)
-    // - 1.21.4: Covers 1.21-1.21.4 (mixin: ReloadableServerRegistries.Holder, new registry API)
-    shared {
-        versions("1.20.1", "1.20.4", "1.21.4")
-        vcsVersion = "1.21.4"
-    }
-}
+// Note: We're not using Stonecutter's preprocessing because it doesn't support
+// Architectury's multi-module structure. Instead, we use Gradle-based version
+// selection and runtime reflection for cross-version compatibility.
+//
+// To build for a different version, change the active version in stonecutter.gradle.kts
+// and rebuild. The active version determines which gradle.properties to load from versions/.
 
 rootProject.name = "isotope"
 
 include("common")
 include("fabric")
 include("neoforge")
-include("forge")

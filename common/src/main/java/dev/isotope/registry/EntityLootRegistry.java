@@ -66,7 +66,7 @@ public final class EntityLootRegistry {
                     ? path.substring("entities/".length())
                     : path.substring("entity/".length());
 
-                ResourceLocation entityId = ResourceLocation.fromNamespaceAndPath(
+                ResourceLocation entityId = RegistryHelper.fromNamespaceAndPath(
                     tableInfo.namespace(), entityPath);
                 ResourceLocation lootTableId = tableInfo.id();
 

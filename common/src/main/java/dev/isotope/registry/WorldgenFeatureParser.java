@@ -1,4 +1,5 @@
 package dev.isotope.registry;
+import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -169,7 +170,7 @@ public final class WorldgenFeatureParser {
             featurePath = featurePath.substring(0, featurePath.length() - 5);
         }
 
-        return ResourceLocation.fromNamespaceAndPath(path.getNamespace(), featurePath);
+        return RegistryHelper.fromNamespaceAndPath(path.getNamespace(), featurePath);
     }
 
     /**
@@ -187,7 +188,7 @@ public final class WorldgenFeatureParser {
                 if (lootElement.isJsonPrimitive()) {
                     String lootTableStr = lootElement.getAsString();
                     try {
-                        ResourceLocation lootId = ResourceLocation.parse(lootTableStr);
+                        ResourceLocation lootId = RegistryHelper.parseLocation(lootTableStr);
                         found.add(lootId);
                     } catch (Exception e) {
                         // Invalid ResourceLocation, skip
@@ -201,7 +202,7 @@ public final class WorldgenFeatureParser {
                 if (lootElement.isJsonPrimitive()) {
                     String lootTableStr = lootElement.getAsString();
                     try {
-                        ResourceLocation lootId = ResourceLocation.parse(lootTableStr);
+                        ResourceLocation lootId = RegistryHelper.parseLocation(lootTableStr);
                         found.add(lootId);
                     } catch (Exception e) {
                         // Invalid ResourceLocation, skip

@@ -1,4 +1,5 @@
 package dev.isotope.editing;
+import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.*;
 import dev.isotope.Isotope;
@@ -36,7 +37,7 @@ public final class LootTableParser {
         ResourceManager resourceManager = server.getResourceManager();
 
         // Loot tables are at: data/<namespace>/loot_table/<path>.json
-        ResourceLocation jsonPath = ResourceLocation.fromNamespaceAndPath(
+        ResourceLocation jsonPath = RegistryHelper.fromNamespaceAndPath(
             tableId.getNamespace(),
             "loot_table/" + tableId.getPath() + ".json"
         );
@@ -101,7 +102,7 @@ public final class LootTableParser {
 
         Optional<ResourceLocation> randomSequence = Optional.empty();
         if (json.has("random_sequence")) {
-            randomSequence = Optional.of(ResourceLocation.parse(json.get("random_sequence").getAsString()));
+            randomSequence = Optional.of(RegistryHelper.parseLocation(json.get("random_sequence").getAsString()));
         }
 
         return new LootTableStructure(tableId, type, pools, functions, randomSequence);
@@ -153,7 +154,7 @@ public final class LootTableParser {
 
         Optional<ResourceLocation> name = Optional.empty();
         if (json.has("name")) {
-            name = Optional.of(ResourceLocation.parse(json.get("name").getAsString()));
+            name = Optional.of(RegistryHelper.parseLocation(json.get("name").getAsString()));
         }
 
         int weight = json.has("weight") ? json.get("weight").getAsInt() : 1;

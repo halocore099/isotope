@@ -1,6 +1,7 @@
 package dev.isotope.observation;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -87,58 +88,58 @@ public final class LootObserver {
 
             // Look for known structure patterns
             if (lowerOrigin.contains("village")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "village"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "village"));
             }
             if (lowerOrigin.contains("stronghold")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "stronghold"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "stronghold"));
             }
             if (lowerOrigin.contains("mineshaft")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "mineshaft"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "mineshaft"));
             }
             if (lowerOrigin.contains("dungeon") || lowerOrigin.contains("monster_room")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "monster_room"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "monster_room"));
             }
             if (lowerOrigin.contains("shipwreck")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "shipwreck"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "shipwreck"));
             }
             if (lowerOrigin.contains("ocean_ruin")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "ocean_ruin"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "ocean_ruin"));
             }
             if (lowerOrigin.contains("buried_treasure")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "buried_treasure"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "buried_treasure"));
             }
             if (lowerOrigin.contains("end_city")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "end_city"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "end_city"));
             }
             if (lowerOrigin.contains("bastion")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "bastion_remnant"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "bastion_remnant"));
             }
             if (lowerOrigin.contains("fortress") || lowerOrigin.contains("nether_bridge")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "fortress"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "fortress"));
             }
             if (lowerOrigin.contains("ruined_portal")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "ruined_portal"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "ruined_portal"));
             }
             if (lowerOrigin.contains("desert_pyramid")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "desert_pyramid"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "desert_pyramid"));
             }
             if (lowerOrigin.contains("jungle") && (lowerOrigin.contains("temple") || lowerOrigin.contains("pyramid"))) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "jungle_pyramid"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "jungle_pyramid"));
             }
             if (lowerOrigin.contains("igloo")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "igloo"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "igloo"));
             }
             if (lowerOrigin.contains("pillager") || lowerOrigin.contains("outpost")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "pillager_outpost"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "pillager_outpost"));
             }
             if (lowerOrigin.contains("woodland") || lowerOrigin.contains("mansion")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "woodland_mansion"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "woodland_mansion"));
             }
             if (lowerOrigin.contains("ancient_city")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "ancient_city"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "ancient_city"));
             }
             if (lowerOrigin.contains("trial_chamber")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "trial_chambers"));
+                return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, "trial_chambers"));
             }
 
             // For modded structures, try to extract from class name
@@ -146,7 +147,7 @@ public final class LootObserver {
             if (!callerNamespace.equals("minecraft")) {
                 String structureName = extractStructureNameFromClass(callerOrigin);
                 if (structureName != null) {
-                    return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, structureName));
+                    return Optional.of(RegistryHelper.fromNamespaceAndPath(callerNamespace, structureName));
                 }
             }
 

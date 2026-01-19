@@ -1,4 +1,5 @@
 package dev.isotope.data;
+import dev.isotope.compat.RegistryHelper;
 
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootFunction;
@@ -116,7 +117,7 @@ public record EntryTemplate(
         "Treasure",
         "Rare treasure with weight 1, single item",
         "Valuables",
-        Optional.of(ResourceLocation.parse("minecraft:diamond")),
+        Optional.of(RegistryHelper.parseLocation("minecraft:diamond")),
         1,
         new NumberProvider.Constant(1),
         List.of(createSetCountFunction(1, 1))
@@ -127,7 +128,7 @@ public record EntryTemplate(
         "Emerald Stack",
         "Emeralds for trading, count 1-4",
         "Valuables",
-        Optional.of(ResourceLocation.parse("minecraft:emerald")),
+        Optional.of(RegistryHelper.parseLocation("minecraft:emerald")),
         8,
         new NumberProvider.Uniform(1, 4),
         List.of(createSetCountFunction(1, 4))
@@ -138,7 +139,7 @@ public record EntryTemplate(
         "Arrow Stack",
         "Arrows for combat, count 4-12",
         "Combat",
-        Optional.of(ResourceLocation.parse("minecraft:arrow")),
+        Optional.of(RegistryHelper.parseLocation("minecraft:arrow")),
         10,
         new NumberProvider.Uniform(4, 12),
         List.of(createSetCountFunction(4, 12))
@@ -149,7 +150,7 @@ public record EntryTemplate(
         "Iron Ingots",
         "Iron ingots, count 1-4",
         "Resources",
-        Optional.of(ResourceLocation.parse("minecraft:iron_ingot")),
+        Optional.of(RegistryHelper.parseLocation("minecraft:iron_ingot")),
         10,
         new NumberProvider.Uniform(1, 4),
         List.of(createSetCountFunction(1, 4))
@@ -160,7 +161,7 @@ public record EntryTemplate(
         "Gold Ingots",
         "Gold ingots, count 1-3",
         "Resources",
-        Optional.of(ResourceLocation.parse("minecraft:gold_ingot")),
+        Optional.of(RegistryHelper.parseLocation("minecraft:gold_ingot")),
         5,
         new NumberProvider.Uniform(1, 3),
         List.of(createSetCountFunction(1, 3))

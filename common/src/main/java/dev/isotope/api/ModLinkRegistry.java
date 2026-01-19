@@ -1,4 +1,5 @@
 package dev.isotope.api;
+import dev.isotope.compat.RegistryHelper;
 
 import dev.isotope.Isotope;
 import net.minecraft.resources.ResourceLocation;
@@ -73,7 +74,7 @@ public final class ModLinkRegistry {
      * @param lootTableId The loot table ID (e.g., "mymod:chests/my_structure")
      */
     public static void register(String structureId, String lootTableId) {
-        register(ResourceLocation.parse(structureId), ResourceLocation.parse(lootTableId));
+        register(RegistryHelper.parseLocation(structureId), RegistryHelper.parseLocation(lootTableId));
     }
 
     /**
@@ -93,9 +94,9 @@ public final class ModLinkRegistry {
      * @param lootTableIds List of loot table IDs
      */
     public static void registerAll(String structureId, String... lootTableIds) {
-        ResourceLocation structure = ResourceLocation.parse(structureId);
+        ResourceLocation structure = RegistryHelper.parseLocation(structureId);
         for (String tableId : lootTableIds) {
-            register(structure, ResourceLocation.parse(tableId));
+            register(structure, RegistryHelper.parseLocation(tableId));
         }
     }
 
@@ -135,7 +136,7 @@ public final class ModLinkRegistry {
 
         // Track source (first one wins for logging purposes)
         String linkKey = structureId + "->" + lootTableId;
-        linkSources.putIfAbsent(ResourceLocation.parse(linkKey.replace("->", "_")), source);
+        linkSources.putIfAbsent(RegistryHelper.parseLocation(linkKey.replace("->", "_")), source);
 
         if ("programmatic".equals(source)) {
             programmaticLinks++;

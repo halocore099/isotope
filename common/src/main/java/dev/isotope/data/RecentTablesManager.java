@@ -1,4 +1,5 @@
 package dev.isotope.data;
+import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -184,7 +185,7 @@ public final class RecentTablesManager {
             recentTables.clear();
             if (recentStrings != null) {
                 for (String str : recentStrings) {
-                    ResourceLocation id = ResourceLocation.tryParse(str);
+                    ResourceLocation id = RegistryHelper.tryParseLocation(str);
                     if (id != null) {
                         recentTables.add(id);
                     }

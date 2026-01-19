@@ -365,7 +365,7 @@ public final class StructureTemplateParser {
         if (nbt.contains("LootTable", Tag.TAG_STRING)) {
             String lootTableStr = nbt.getString("LootTable");
             try {
-                ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
+                ResourceLocation lootTableId = RegistryHelper.parseLocation(lootTableStr);
                 lootTables.add(lootTableId);
             } catch (Exception e) {
                 // Invalid resource location
@@ -376,7 +376,7 @@ public final class StructureTemplateParser {
         if (nbt.contains("loot_table", Tag.TAG_STRING)) {
             String lootTableStr = nbt.getString("loot_table");
             try {
-                ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
+                ResourceLocation lootTableId = RegistryHelper.parseLocation(lootTableStr);
                 lootTables.add(lootTableId);
             } catch (Exception e) {
                 // Invalid resource location
@@ -417,7 +417,7 @@ public final class StructureTemplateParser {
         };
 
         for (String pattern : patterns) {
-            ResourceLocation templateLoc = ResourceLocation.fromNamespaceAndPath(
+            ResourceLocation templateLoc = RegistryHelper.fromNamespaceAndPath(
                 structureId.getNamespace(), pattern);
 
             lootTables.addAll(parseTemplate(structureId, templateLoc, templateManager));

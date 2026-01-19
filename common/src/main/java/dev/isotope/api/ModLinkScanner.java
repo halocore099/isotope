@@ -1,4 +1,5 @@
 package dev.isotope.api;
+import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -157,7 +158,7 @@ public final class ModLinkScanner {
                 String structureStr = linkObj.get("structure").getAsString();
                 ResourceLocation structureId;
                 try {
-                    structureId = ResourceLocation.parse(structureStr);
+                    structureId = RegistryHelper.parseLocation(structureStr);
                 } catch (Exception e) {
                     Isotope.LOGGER.warn("[ModLinkScanner] {} has invalid structure ID: {}", path, structureStr);
                     continue;
@@ -171,7 +172,7 @@ public final class ModLinkScanner {
                         for (JsonElement tableElem : tablesElem.getAsJsonArray()) {
                             if (tableElem.isJsonPrimitive()) {
                                 try {
-                                    lootTables.add(ResourceLocation.parse(tableElem.getAsString()));
+                                    lootTables.add(RegistryHelper.parseLocation(tableElem.getAsString()));
                                 } catch (Exception e) {
                                     Isotope.LOGGER.warn("[ModLinkScanner] {} has invalid loot table ID: {}",
                                         path, tableElem.getAsString());
@@ -181,7 +182,7 @@ public final class ModLinkScanner {
                     } else if (tablesElem.isJsonPrimitive()) {
                         // Single loot table as string
                         try {
-                            lootTables.add(ResourceLocation.parse(tablesElem.getAsString()));
+                            lootTables.add(RegistryHelper.parseLocation(tablesElem.getAsString()));
                         } catch (Exception e) {
                             Isotope.LOGGER.warn("[ModLinkScanner] {} has invalid loot table ID: {}",
                                 path, tablesElem.getAsString());
@@ -191,7 +192,7 @@ public final class ModLinkScanner {
                 // Also support singular "loot_table" key
                 if (linkObj.has("loot_table")) {
                     try {
-                        lootTables.add(ResourceLocation.parse(linkObj.get("loot_table").getAsString()));
+                        lootTables.add(RegistryHelper.parseLocation(linkObj.get("loot_table").getAsString()));
                     } catch (Exception e) {
                         // Invalid
                     }

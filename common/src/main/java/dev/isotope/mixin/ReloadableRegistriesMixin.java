@@ -10,8 +10,7 @@ import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.storage.loot.LootDataManager;
 import net.minecraft.world.level.storage.loot.LootDataType;
-*/
-//?}
+*///?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,8 +26,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 //? if >=1.20.2 {
 @Mixin(ReloadableServerRegistries.Holder.class)
 //?} else {
-/*@Mixin(LootDataManager.class)*/
-//?}
+/*@Mixin(LootDataManager.class)
+*///?}
 public class ReloadableRegistriesMixin {
 
     //? if >=1.20.2 {
@@ -45,11 +44,6 @@ public class ReloadableRegistriesMixin {
     }
     //?} else {
     /*
-    /**
-     * Before getElement returns for loot tables, set the current table ID in the tracker.
-     * In 1.20.1, loot tables are retrieved via LootDataManager.getElement(LootDataType.TABLE, id).
-     */
-    /*
     @Inject(
         method = "getElement",
         at = @At("HEAD")
@@ -59,6 +53,5 @@ public class ReloadableRegistriesMixin {
             LootTableTracker.setCurrentTableId(id);
         }
     }
-    */
-    //?}
+    *///?}
 }

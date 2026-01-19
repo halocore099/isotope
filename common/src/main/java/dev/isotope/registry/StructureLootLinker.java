@@ -1,4 +1,5 @@
 package dev.isotope.registry;
+import dev.isotope.compat.RegistryHelper;
 
 import dev.isotope.Isotope;
 import dev.isotope.analysis.LootTableContentAnalyzer;
@@ -455,7 +456,7 @@ public final class StructureLootLinker {
         List<String> mappedTables = VANILLA_MAPPINGS.get(structure.path());
         if (mappedTables != null) {
             for (String tablePath : mappedTables) {
-                ResourceLocation tableId = ResourceLocation.fromNamespaceAndPath("minecraft", tablePath);
+                ResourceLocation tableId = RegistryHelper.fromNamespaceAndPath("minecraft", tablePath);
                 if (lootTables.get(tableId).isPresent()) {
                     links.add(StructureLootLink.heuristic(structure.id(), tableId, Confidence.HIGH));
                 }
@@ -715,7 +716,7 @@ public final class StructureLootLinker {
         // Add persistent user-removed links
         for (UserCorrectionManager.CorrectionKey key : corrections.getUserRemovedLinks()) {
             if (key.structure().equals(structureId.toString())) {
-                ResourceLocation tableId = ResourceLocation.tryParse(key.lootTable());
+                ResourceLocation tableId = RegistryHelper.tryParseLocation(key.lootTable());
                 if (tableId != null) {
                     removed.add(tableId);
                 }

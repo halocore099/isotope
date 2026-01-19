@@ -3,6 +3,7 @@
   "minVersion": "0.8",
   "package": "dev.isotope.mixin",
   "compatibilityLevel": "JAVA_17",
+  "plugin": "dev.isotope.mixin.IsotopeMixinPlugin",
   "mixins": [
     "LootTableMixin",
     "RandomizableContainerMixin",

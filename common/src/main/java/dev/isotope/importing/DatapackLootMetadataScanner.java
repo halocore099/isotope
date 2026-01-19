@@ -1,4 +1,5 @@
 package dev.isotope.importing;
+import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -193,7 +194,7 @@ public final class DatapackLootMetadataScanner {
                 String structureStr = linkObj.get("structure").getAsString();
                 ResourceLocation structureId;
                 try {
-                    structureId = ResourceLocation.parse(structureStr);
+                    structureId = RegistryHelper.parseLocation(structureStr);
                 } catch (Exception e) {
                     Isotope.LOGGER.warn("[DatapackLootMetadataScanner] {} has invalid structure ID: {}", file, structureStr);
                     continue;
@@ -207,7 +208,7 @@ public final class DatapackLootMetadataScanner {
                         for (JsonElement tableElem : tablesElem.getAsJsonArray()) {
                             if (tableElem.isJsonPrimitive()) {
                                 try {
-                                    lootTables.add(ResourceLocation.parse(tableElem.getAsString()));
+                                    lootTables.add(RegistryHelper.parseLocation(tableElem.getAsString()));
                                 } catch (Exception e) {
                                     Isotope.LOGGER.warn("[DatapackLootMetadataScanner] {} has invalid loot table ID: {}",
                                         file, tableElem.getAsString());
@@ -217,7 +218,7 @@ public final class DatapackLootMetadataScanner {
                     } else if (tablesElem.isJsonPrimitive()) {
                         // Single loot table as string
                         try {
-                            lootTables.add(ResourceLocation.parse(tablesElem.getAsString()));
+                            lootTables.add(RegistryHelper.parseLocation(tablesElem.getAsString()));
                         } catch (Exception e) {
                             Isotope.LOGGER.warn("[DatapackLootMetadataScanner] {} has invalid loot table ID: {}",
                                 file, tablesElem.getAsString());
@@ -227,7 +228,7 @@ public final class DatapackLootMetadataScanner {
                 // Also support singular "loot_table" key
                 if (linkObj.has("loot_table")) {
                     try {
-                        lootTables.add(ResourceLocation.parse(linkObj.get("loot_table").getAsString()));
+                        lootTables.add(RegistryHelper.parseLocation(linkObj.get("loot_table").getAsString()));
                     } catch (Exception e) {
                         // Invalid
                     }
