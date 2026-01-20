@@ -1247,7 +1247,6 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         return super.charTyped(chr, modifiers);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (commandPaletteVisible && commandPalette.isMouseOver(mouseX, mouseY)) {
             return commandPalette.mouseScrolled(mouseX, mouseY, scrollX, scrollY);

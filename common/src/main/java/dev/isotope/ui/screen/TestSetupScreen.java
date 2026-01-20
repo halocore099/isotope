@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.VersionHelper;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.StructureLootLinker;
@@ -20,14 +21,14 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -185,8 +186,8 @@ public class TestSetupScreen extends Screen {
         // Create world directly (bypass CreateWorldScreen)
         minecraft.execute(() -> {
             try {
-                // Configure game rules
-                GameRules gameRules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+                // Configure game rules using version-compatible helper
+                GameRules gameRules = VersionHelper.createGameRules();
 
                 LevelSettings levelSettings = new LevelSettings(
                     worldName,
@@ -207,27 +208,8 @@ public class TestSetupScreen extends Screen {
 
                 Isotope.LOGGER.info("Creating test world: {} (type: {})", worldName, selectedWorldType);
 
-                // Create the world directly
-                if (selectedWorldType == TestModeState.WorldType.VOID) {
-                    // Create flat world (superflat) - structures won't generate but
-                    // we can still test loot tables. For a true void, would need custom preset.
-                    minecraft.createWorldOpenFlows().createFreshLevel(
-                        worldName,
-                        levelSettings,
-                        worldOptions,
-                        WorldPresets::createFlatWorldDimensions,
-                        null
-                    );
-                } else {
-                    // Normal generation with structures - best for testing teleport/arena
-                    minecraft.createWorldOpenFlows().createFreshLevel(
-                        worldName,
-                        levelSettings,
-                        worldOptions,
-                        WorldPresets::createNormalWorldDimensions,
-                        null
-                    );
-                }
+                // Create the world - use reflection for version compatibility
+                createWorldVersionCompatible(worldName, levelSettings, worldOptions, selectedWorldType);
 
             } catch (Exception e) {
                 Isotope.LOGGER.error("Failed to create test world", e);
@@ -235,6 +217,87 @@ public class TestSetupScreen extends Screen {
                 TestModeState.getInstance().exitTestMode();
             }
         });
+    }
+
+    /**
+     * Create a world using version-compatible reflection.
+     * The world creation API differs significantly between 1.20.x and 1.21.x.
+     */
+    private void createWorldVersionCompatible(String worldName, LevelSettings levelSettings,
+                                              WorldOptions worldOptions, TestModeState.WorldType worldType) throws Exception {
+        Object worldOpenFlows = minecraft.createWorldOpenFlows();
+
+        // Try 1.21+ API first: createFreshLevel with dimension provider
+        try {
+            Class<?> worldPresetsClass = Class.forName("net.minecraft.world.level.levelgen.presets.WorldPresets");
+            Method dimensionMethod = worldType == TestModeState.WorldType.VOID
+                ? worldPresetsClass.getMethod("createFlatWorldDimensions")
+                : worldPresetsClass.getMethod("createNormalWorldDimensions");
+
+            // Get the method reference equivalent
+            for (Method m : worldOpenFlows.getClass().getMethods()) {
+                if (m.getName().equals("createFreshLevel") && m.getParameterCount() == 5) {
+                    // createFreshLevel(String, LevelSettings, WorldOptions, Function, Path)
+                    // Create a functional interface wrapper using reflection
+                    Object dimensionProvider = createDimensionProvider(worldType);
+                    m.invoke(worldOpenFlows, worldName, levelSettings, worldOptions, dimensionProvider, null);
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("1.21+ world creation failed, trying 1.20.x API: {}", e.getMessage());
+        }
+
+        // Try 1.20.x API: createFreshLevel with WorldStem or similar
+        for (Method m : worldOpenFlows.getClass().getMethods()) {
+            if (m.getName().equals("createFreshLevel")) {
+                Class<?>[] params = m.getParameterTypes();
+                Isotope.LOGGER.debug("Found createFreshLevel with {} params: {}", params.length, java.util.Arrays.toString(params));
+
+                // Try different signatures
+                if (params.length == 3) {
+                    // Simple version: createFreshLevel(String, LevelSettings, WorldOptions)
+                    m.invoke(worldOpenFlows, worldName, levelSettings, worldOptions);
+                    return;
+                }
+            }
+        }
+
+        // Fallback: Try to open a world creation screen instead
+        Isotope.LOGGER.warn("Could not create world programmatically, falling back to world creation screen");
+        IsotopeToast.warning("Manual Creation", "Please create a world manually");
+        TestModeState.getInstance().exitTestMode();
+    }
+
+    /**
+     * Create a dimension provider using reflection for 1.21+ world creation.
+     */
+    private Object createDimensionProvider(TestModeState.WorldType worldType) {
+        try {
+            Class<?> worldPresetsClass = Class.forName("net.minecraft.world.level.levelgen.presets.WorldPresets");
+            String methodName = worldType == TestModeState.WorldType.VOID
+                ? "createFlatWorldDimensions"
+                : "createNormalWorldDimensions";
+
+            // Get the static method
+            Method method = worldPresetsClass.getMethod(methodName, Class.forName("net.minecraft.core.RegistryAccess"));
+
+            // Create a Function wrapper that calls this method
+            Class<?> functionClass = Class.forName("java.util.function.Function");
+            return java.lang.reflect.Proxy.newProxyInstance(
+                functionClass.getClassLoader(),
+                new Class<?>[] { functionClass },
+                (proxy, m, args) -> {
+                    if (m.getName().equals("apply") && args != null && args.length == 1) {
+                        return method.invoke(null, args[0]);
+                    }
+                    return null;
+                }
+            );
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("Failed to create dimension provider: {}", e.getMessage());
+            return null;
+        }
     }
 
     @Override
@@ -327,7 +390,6 @@ public class TestSetupScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;

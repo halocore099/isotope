@@ -218,7 +218,6 @@ public class CompositeChildrenDialog extends DialogScreen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int dialogX = getDialogX();
         int dialogY = getDialogY();

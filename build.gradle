@@ -4,7 +4,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
 }
 
-// Load version-specific properties from Stonecutter active version
+// Load version-specific properties from stonecutter.gradle.kts active version
 def stonecutterGradle = file("stonecutter.gradle.kts")
 if (stonecutterGradle.exists()) {
     def activeVersionMatch = stonecutterGradle.text =~ /stonecutter active "([^"]+)"/
@@ -31,6 +31,11 @@ architectury {
 }
 
 subprojects {
+    // Helper module handles its own configuration
+    if (project.name == "helper") {
+        return
+    }
+
     // Check which platforms are enabled
     def enabledPlatforms = rootProject.findProperty("enabled_platforms") ?: "fabric,neoforge"
     def mcVersion = rootProject.findProperty("minecraft_version") ?: "1.21.4"
@@ -60,7 +65,11 @@ subprojects {
 
 allprojects {
     apply plugin: "java"
-    apply plugin: "architectury-plugin"
+
+    // Helper module doesn't use architectury
+    if (project.name != "helper") {
+        apply plugin: "architectury-plugin"
+    }
 
     base {
         archivesName = rootProject.archives_base_name

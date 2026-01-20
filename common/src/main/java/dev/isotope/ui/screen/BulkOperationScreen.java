@@ -405,7 +405,6 @@ public class BulkOperationScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (previewResult != null) {
             int maxScroll = Math.max(0, previewResult.changesByTable().size() * 14 - 100);

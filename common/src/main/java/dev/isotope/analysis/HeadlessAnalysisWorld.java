@@ -1,17 +1,16 @@
 package dev.isotope.analysis;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.VersionHelper;
 import dev.isotope.observation.ObservationSession;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -89,7 +88,7 @@ public final class HeadlessAnalysisWorld {
         minecraft.execute(() -> {
             try {
                 // Configure world for maximum structure generation
-                GameRules gameRules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+                GameRules gameRules = VersionHelper.createGameRules();
 
                 LevelSettings levelSettings = new LevelSettings(
                     ANALYSIS_WORLD_NAME,
@@ -111,13 +110,8 @@ public final class HeadlessAnalysisWorld {
                 reportProgress("Loading observation world...");
 
                 // Create the world - this will trigger SERVER_STARTED event
-                minecraft.createWorldOpenFlows().createFreshLevel(
-                    ANALYSIS_WORLD_NAME,
-                    levelSettings,
-                    worldOptions,
-                    WorldPresets::createNormalWorldDimensions,
-                    null
-                );
+                // Use reflection for version compatibility
+                createWorldVersionCompatible(minecraft, ANALYSIS_WORLD_NAME, levelSettings, worldOptions);
 
             } catch (Exception e) {
                 Isotope.LOGGER.error("Failed to create analysis world", e);
@@ -127,6 +121,75 @@ public final class HeadlessAnalysisWorld {
                 }
             }
         });
+    }
+
+    /**
+     * Create a world using version-compatible reflection.
+     */
+    private void createWorldVersionCompatible(Minecraft minecraft, String worldName,
+                                              LevelSettings levelSettings, WorldOptions worldOptions) throws Exception {
+        Object worldOpenFlows = minecraft.createWorldOpenFlows();
+
+        // Try 1.21+ API first: createFreshLevel with dimension provider
+        try {
+            Class<?> worldPresetsClass = Class.forName("net.minecraft.world.level.levelgen.presets.WorldPresets");
+
+            // Get the method reference equivalent
+            for (java.lang.reflect.Method m : worldOpenFlows.getClass().getMethods()) {
+                if (m.getName().equals("createFreshLevel") && m.getParameterCount() == 5) {
+                    // createFreshLevel(String, LevelSettings, WorldOptions, Function, Path)
+                    Object dimensionProvider = createDimensionProvider();
+                    if (dimensionProvider != null) {
+                        m.invoke(worldOpenFlows, worldName, levelSettings, worldOptions, dimensionProvider, null);
+                        return;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("1.21+ world creation failed, trying alternative: {}", e.getMessage());
+        }
+
+        // Try other signatures
+        for (java.lang.reflect.Method m : worldOpenFlows.getClass().getMethods()) {
+            if (m.getName().equals("createFreshLevel")) {
+                Class<?>[] params = m.getParameterTypes();
+                if (params.length == 3) {
+                    m.invoke(worldOpenFlows, worldName, levelSettings, worldOptions);
+                    return;
+                }
+            }
+        }
+
+        throw new RuntimeException("Could not find compatible createFreshLevel method");
+    }
+
+    /**
+     * Create a dimension provider using reflection for 1.21+ world creation.
+     */
+    private Object createDimensionProvider() {
+        try {
+            Class<?> worldPresetsClass = Class.forName("net.minecraft.world.level.levelgen.presets.WorldPresets");
+
+            // Get the static method
+            java.lang.reflect.Method method = worldPresetsClass.getMethod("createNormalWorldDimensions",
+                Class.forName("net.minecraft.core.RegistryAccess"));
+
+            // Create a Function wrapper that calls this method
+            Class<?> functionClass = Class.forName("java.util.function.Function");
+            return java.lang.reflect.Proxy.newProxyInstance(
+                functionClass.getClassLoader(),
+                new Class<?>[] { functionClass },
+                (proxy, m, args) -> {
+                    if (m.getName().equals("apply") && args != null && args.length == 1) {
+                        return method.invoke(null, args[0]);
+                    }
+                    return null;
+                }
+            );
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("Failed to create dimension provider: {}", e.getMessage());
+            return null;
+        }
     }
 
     /**

@@ -23,20 +23,22 @@ Uses **Stonecutter** for multi-version builds from a single branch (`main`).
 
 ### Version Groups
 
-Instead of building a separate JAR for each MC version, we build **3 JARs** that each cover a range of compatible versions:
+Instead of building a separate JAR for each MC version, we build **2 JARs** that each cover a range of compatible versions:
 
 | Build | Covers | Fabric | NeoForge | Java | Notes |
 |-------|--------|--------|----------|------|-------|
 | 1.21.4 | 1.21 - 1.21.11+ | ✅ | ✅ | 21 | Primary target |
-| 1.20.4 | 1.20.2 - 1.20.6 | ✅ | ✅ | 17 | Old registry API |
-| 1.20.1 | 1.20.1 only | ✅ | ✅ | 17 | Different mixin target |
+| 1.20.4 | 1.20.1 - 1.20.6 | ✅ | ✅ | 17 | All 1.20.x versions |
 
 All versions support **Fabric + NeoForge**. NeoForge exists for 1.20.1+.
 
 **Why version grouping works**:
 - **1.21.x**: Same mixin targets, same registry API, same Java version
-- **1.20.2 - 1.20.6**: Same mixin target (`ReloadableServerRegistries.Holder`), same registry API
-- **1.20.1**: Requires different mixin target (`LootDataManager.getElement()`)
+- **1.20.x**: Compiled against 1.20.4, compatible with all 1.20.x via:
+  - Helper mod for UI method signature differences (1.20.1-1.20.3)
+  - `LootDataManagerMixin` for 1.20.1 loot table tracking
+  - `ReloadableRegistriesMixin` for 1.20.2+ loot table tracking
+  - Mixin plugin detects version and applies appropriate mixins
 
 The mod metadata declares version ranges (e.g., `>=1.21 <1.22` for Fabric) so one JAR works across multiple MC versions.
 
@@ -107,15 +109,14 @@ public class WidgetCompatMixin {
 
 ### Stonecutter Configuration
 
-The `settings.gradle.kts` defines 3 version groups:
+The `stonecutter.gradle.kts` defines the active version for builds:
 ```kotlin
-stonecutter {
-    shared {
-        versions("1.20.1", "1.20.4", "1.21.4")
-        vcsVersion = "1.21.4"
-    }
-}
+stonecutter active "1.21.4" /* [SC] DO NOT EDIT */
 ```
+
+Version folders in `versions/`:
+- `versions/1.20.4/` - Properties for 1.20.x build (covers 1.20.1-1.20.6)
+- `versions/1.21.4/` - Properties for 1.21.x build (covers 1.21+)
 
 Version-specific properties in `versions/<version>/gradle.properties`:
 - `minecraft_version` - Target MC version (e.g., `1.20.4`)
@@ -1694,7 +1695,7 @@ Import loot tables directly from JSON in the clipboard.
 
 ## Mixin Architecture
 
-Three critical mixins enable runtime observation and test mode without modifying core game behavior.
+Four critical mixins enable runtime observation and test mode without modifying core game behavior. A mixin plugin (`IsotopeMixinPlugin`) conditionally loads version-specific mixins.
 
 ### LootTableMixin
 
@@ -1746,11 +1747,13 @@ Three critical mixins enable runtime observation and test mode without modifying
 - `getBoundingBox()` - Structure bounds
 - `getChunkPos()` - Chunk position
 
-### ReloadableRegistriesMixin
+### ReloadableRegistriesMixin (1.20.2+)
 
 **Target:** `net.minecraft.server.ReloadableServerRegistries.Holder`
 
 **Purpose:** Track which loot table is being looked up (bridges registry to LootTableMixin).
+
+**Availability:** Only applied on 1.20.2+ where `ReloadableServerRegistries.Holder` exists. Skipped on 1.20.1 (uses `LootDataManagerMixin` instead).
 
 **Injected Methods:**
 
@@ -1759,15 +1762,37 @@ Three critical mixins enable runtime observation and test mode without modifying
 | `getLootTable(ResourceKey)` | HEAD | Set current table ID in tracker |
 
 **Behavior:**
-1. Only tracks if recording OR test mode is active
-2. Sets `LootTableTracker.setCurrentTableId(key.location())`
-3. LootTableMixin reads this value to know which table is generating
+1. Sets `LootTableTracker.setCurrentTableId(key.location())`
+2. LootTableMixin reads this value to know which table is generating
+
+### LootDataManagerMixin (1.20.1 only)
+
+**Target:** `net.minecraft.world.level.storage.loot.LootDataManager`
+
+**Purpose:** Track which loot table is being looked up on Minecraft 1.20.1.
+
+**Availability:** Only applied on 1.20.1 where loot tables are accessed via `LootDataManager` instead of `ReloadableServerRegistries.Holder`.
+
+**Injected Methods:**
+
+| Method | Injection | Purpose |
+|--------|-----------|---------|
+| `getElement(LootDataId)` | HEAD | Set current table ID in tracker if it's a loot table lookup |
+
+**Behavior:**
+1. Checks if the `LootDataId` is for a loot table (vs predicates, functions, etc.)
+2. Extracts the `ResourceLocation` from the id
+3. Sets `LootTableTracker.setCurrentTableId(location)`
+4. Uses reflection to handle API differences gracefully
 
 ### Data Flow
 
 ```
-Registry Lookup → ReloadableRegistriesMixin → LootTableTracker
-                                                    ↓
+                          1.20.2+                           1.20.1
+Registry Lookup → ReloadableRegistriesMixin    OR    LootDataManagerMixin
+                              ↓                              ↓
+                        LootTableTracker  ←──────────────────┘
+                              ↓
 LootTable.fill() → LootTableMixin ← reads table ID
                          ↓
               [Test Mode?] → LootGenerator (edited structure)
@@ -1779,7 +1804,9 @@ Structure Generation → StructureStartMixin → StructureObserver
 **Key Classes:**
 - `LootTableMixin` - Loot interception and replacement
 - `StructureStartMixin` - Structure placement observation
-- `ReloadableRegistriesMixin` - Table ID tracking bridge
+- `ReloadableRegistriesMixin` - Table ID tracking bridge (1.20.2+)
+- `LootDataManagerMixin` - Table ID tracking bridge (1.20.1)
+- `IsotopeMixinPlugin` - Conditional mixin loading based on version
 
 ## Search Index
 

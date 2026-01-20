@@ -4,13 +4,11 @@ import dev.isotope.Isotope;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -93,8 +91,8 @@ public final class RegistryLoader {
 
             Minecraft minecraft = Minecraft.getInstance();
 
-            // Minimal world settings - we just need registry access
-            GameRules gameRules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+            // Create GameRules - version specific
+            GameRules gameRules = createGameRules();
 
             LevelSettings levelSettings = new LevelSettings(
                 TEMP_WORLD_NAME,
@@ -113,14 +111,8 @@ public final class RegistryLoader {
                 false  // No bonus chest
             );
 
-            // Create the world - RegistryScanner.onServerStarted will be triggered
-            minecraft.createWorldOpenFlows().createFreshLevel(
-                TEMP_WORLD_NAME,
-                levelSettings,
-                worldOptions,
-                WorldPresets::createNormalWorldDimensions,
-                null
-            );
+            // Create the world - version specific
+            createFreshLevel(minecraft, levelSettings, worldOptions);
 
         } catch (Exception e) {
             Isotope.LOGGER.error("Failed to create temp world for registry scan", e);
@@ -130,6 +122,116 @@ public final class RegistryLoader {
                 completionCallback.accept(false);
             }
         }
+    }
+
+    /**
+     * Create GameRules - version specific.
+     * 1.21+ requires FeatureFlags, 1.20.x uses no-arg constructor.
+     */
+    private GameRules createGameRules() {
+        try {
+            // Try 1.21+ API first
+            Class<?> featureFlagsClass = Class.forName("net.minecraft.world.flag.FeatureFlags");
+            Object defaultFlags = featureFlagsClass.getField("DEFAULT_FLAGS").get(null);
+            return GameRules.class.getConstructor(Class.forName("net.minecraft.world.flag.FeatureFlagSet"))
+                .newInstance(defaultFlags);
+        } catch (Exception e) {
+            // Fall back to 1.20.x no-arg constructor
+            try {
+                return GameRules.class.getConstructor().newInstance();
+            } catch (Exception e2) {
+                Isotope.LOGGER.error("Failed to create GameRules", e2);
+                throw new RuntimeException("Cannot create GameRules", e2);
+            }
+        }
+    }
+
+    /**
+     * Create a fresh level - version specific.
+     * 1.21+ uses 5-param method, 1.20.x uses 4-param method.
+     */
+    private void createFreshLevel(Minecraft minecraft, LevelSettings levelSettings, WorldOptions worldOptions) throws Exception {
+        Object worldOpenFlows = minecraft.createWorldOpenFlows();
+
+        // Try 1.21+ API first (5 params with WorldPresets::createNormalWorldDimensions)
+        try {
+            Class<?> worldPresetsClass = Class.forName("net.minecraft.world.level.levelgen.presets.WorldPresets");
+
+            // Find createNormalWorldDimensions method
+            java.lang.reflect.Method createNormalMethod = null;
+            for (java.lang.reflect.Method m : worldPresetsClass.getMethods()) {
+                if (m.getName().equals("createNormalWorldDimensions")) {
+                    createNormalMethod = m;
+                    break;
+                }
+            }
+
+            if (createNormalMethod != null) {
+                final java.lang.reflect.Method finalMethod = createNormalMethod;
+
+                // Create a Function proxy for WorldPresets::createNormalWorldDimensions
+                java.util.function.Function<Object, Object> dimensionFactory = registryAccess -> {
+                    try {
+                        return finalMethod.invoke(null, registryAccess);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                };
+
+                // Find the 5-param createFreshLevel
+                for (java.lang.reflect.Method m : worldOpenFlows.getClass().getMethods()) {
+                    if (m.getName().equals("createFreshLevel") && m.getParameterCount() == 5) {
+                        Class<?>[] params = m.getParameterTypes();
+                        if (params[3].getName().contains("Function")) {
+                            m.invoke(worldOpenFlows, TEMP_WORLD_NAME, levelSettings, worldOptions, dimensionFactory, null);
+                            Isotope.LOGGER.info("Created temp world using 1.21+ API");
+                            return;
+                        }
+                    }
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            Isotope.LOGGER.debug("WorldPresets class not found: {}", e.getMessage());
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("1.21+ world creation failed: {}", e.getMessage());
+        }
+
+        // Try 1.20.x API (4 params)
+        try {
+            Class<?> worldPresetsClass = Class.forName("net.minecraft.world.level.levelgen.presets.WorldPresets");
+
+            java.lang.reflect.Method createNormalMethod = null;
+            for (java.lang.reflect.Method m : worldPresetsClass.getMethods()) {
+                if (m.getName().equals("createNormalWorldDimensions")) {
+                    createNormalMethod = m;
+                    break;
+                }
+            }
+
+            if (createNormalMethod != null) {
+                final java.lang.reflect.Method finalMethod = createNormalMethod;
+
+                java.util.function.Function<Object, Object> dimensionFactory = registryAccess -> {
+                    try {
+                        return finalMethod.invoke(null, registryAccess);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                };
+
+                for (java.lang.reflect.Method m : worldOpenFlows.getClass().getMethods()) {
+                    if (m.getName().equals("createFreshLevel") && m.getParameterCount() == 4) {
+                        m.invoke(worldOpenFlows, TEMP_WORLD_NAME, levelSettings, worldOptions, dimensionFactory);
+                        Isotope.LOGGER.info("Created temp world using 1.20.x API");
+                        return;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("1.20.x world creation failed: {}", e.getMessage());
+        }
+
+        throw new RuntimeException("Could not find compatible createFreshLevel method");
     }
 
     /**

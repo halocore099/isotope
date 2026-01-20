@@ -2199,7 +2199,6 @@ public class LootTableEditPanel extends AbstractWidget {
         return multiSelection.contains(new EntryKey(poolIdx, entryIdx));
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (isMouseOver(mouseX, mouseY)) {
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));

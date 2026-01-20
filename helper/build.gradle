@@ -1,0 +1,45 @@
+// Isotope Compat Helper - Backports 1.21 method signatures to 1.20.x
+// This mod is ONLY needed when running Isotope on Minecraft 1.20.x
+
+def mcVersion = rootProject.findProperty("minecraft_version") ?: "1.21.4"
+def is120x = mcVersion.startsWith("1.20")
+
+// Only apply plugins and configure for 1.20.x
+if (is120x) {
+    apply plugin: "dev.architectury.loom"
+
+    archivesBaseName = "isotope-compat"
+
+    loom {
+        silentMojangMappingsLicense()
+    }
+
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    }
+
+    processResources {
+        inputs.property "version", project.version
+        inputs.property "minecraft_version_range", rootProject.findProperty("minecraft_version_range_fabric") ?: ">=1.20 <1.21"
+
+        filesMatching("fabric.mod.json") {
+            expand(
+                "version": project.version,
+                "minecraft_version_range": rootProject.findProperty("minecraft_version_range_fabric") ?: ">=1.20 <1.21"
+            )
+        }
+    }
+
+    jar {
+        from(rootProject.file("LICENSE")) {
+            rename { "${it}_isotope-compat" }
+        }
+    }
+} else {
+    // For 1.21.x, disable all tasks
+    tasks.configureEach {
+        enabled = false
+    }
+}

@@ -2,6 +2,7 @@ package dev.isotope.testing;
 
 import dev.isotope.Isotope;
 import dev.isotope.compat.RegistryHelper;
+import dev.isotope.compat.VersionHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -21,6 +22,7 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -122,18 +124,18 @@ public final class TestArenaManager {
             return;
         }
 
-        // Get structure from registry
+        // Get structure from registry using version-compatible method
         Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(level.registryAccess());
 
         ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);
-        Optional<Holder.Reference<Structure>> structureHolder = structureRegistry.get(structureKey);
+        Holder<Structure> structureHolder = getStructureHolder(structureRegistry, structureKey);
 
-        if (structureHolder.isEmpty()) {
+        if (structureHolder == null) {
             notifyClient(progressCallback, "Error: Unknown structure " + structureId);
             return;
         }
 
-        Structure structure = structureHolder.get().value();
+        Structure structure = structureHolder.value();
 
         // Calculate grid dimensions
         int gridSize = (int) Math.ceil(Math.sqrt(structureCount));
@@ -168,7 +170,7 @@ public final class TestArenaManager {
                 BlockPos pos = new BlockPos(x, PLATFORM_Y + 1, z);
 
                 try {
-                    boolean success = spawnStructure(level, structure, structureHolder.get(), pos, random);
+                    boolean success = spawnStructure(level, structure, structureHolder, pos, random);
                     if (success) {
                         spawned++;
                         final int count = spawned;
@@ -188,8 +190,8 @@ public final class TestArenaManager {
             int centerX = startX + (gridSize * STRUCTURE_SPACING) / 2;
             int centerZ = startZ + (gridSize * STRUCTURE_SPACING) / 2;
 
-            player.teleportTo(level, centerX, PLATFORM_Y + 10, centerZ,
-                Set.of(), 0, 0, true);
+            VersionHelper.teleportPlayer(player, level, centerX, PLATFORM_Y + 10, centerZ,
+                Set.of(), 0f, 0f);
             player.setGameMode(GameType.CREATIVE);
         }
 
@@ -210,20 +212,9 @@ public final class TestArenaManager {
         try {
             ChunkPos chunkPos = new ChunkPos(pos);
 
-            // Create structure start
-            StructureStart start = structure.generate(
-                structureHolder,
-                level.dimension(),
-                level.registryAccess(),
-                level.getChunkSource().getGenerator(),
-                level.getChunkSource().getGenerator().getBiomeSource(),
-                level.getChunkSource().randomState(),
-                level.getStructureManager(),
-                level.getSeed() + pos.hashCode(), // Unique seed per position
-                chunkPos,
-                0, // References
-                level,
-                biome -> true // Accept all biomes
+            // Create structure start using version-compatible method
+            StructureStart start = generateStructureVersionCompatible(
+                structure, structureHolder, level, chunkPos, pos.hashCode()
             );
 
             if (start == null || !start.isValid()) {
@@ -286,5 +277,134 @@ public final class TestArenaManager {
     public void exitArena() {
         isArenaActive = false;
         currentStructure = null;
+    }
+
+    /**
+     * Get a structure holder using version-compatible reflection.
+     *
+     * 1.21+: Registry.get(key) returns Optional<Holder.Reference<T>>
+     * 1.20.x: Registry.get(key) returns T directly (nullable)
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable
+    private Holder<Structure> getStructureHolder(Registry<Structure> registry, ResourceKey<Structure> key) {
+        try {
+            Object result = registry.get(key);
+
+            if (result == null) {
+                return null;
+            }
+
+            // Check if it's an Optional (1.21+)
+            if (result instanceof Optional) {
+                Optional<?> optional = (Optional<?>) result;
+                if (optional.isEmpty()) {
+                    return null;
+                }
+                return (Holder<Structure>) optional.get();
+            }
+
+            // 1.20.x: Direct structure returned, wrap in a Holder
+            if (result instanceof Structure) {
+                Structure structure = (Structure) result;
+                return Holder.direct(structure);
+            }
+
+            // If it's already a Holder
+            if (result instanceof Holder) {
+                return (Holder<Structure>) result;
+            }
+
+            return null;
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("Failed to get structure holder: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Generate a structure using version-compatible reflection.
+     *
+     * 1.21+: Structure.generate(Holder, ResourceKey, RegistryAccess, ...)
+     * 1.20.x: Structure.generate(RegistryAccess, ...)
+     */
+    @Nullable
+    private StructureStart generateStructureVersionCompatible(Structure structure,
+                                                              Holder<Structure> structureHolder,
+                                                              ServerLevel level,
+                                                              ChunkPos chunkPos,
+                                                              long seedOffset) {
+        try {
+            // Get common parameters
+            var registryAccess = level.registryAccess();
+            var generator = level.getChunkSource().getGenerator();
+            var biomeSource = generator.getBiomeSource();
+            var structureManager = level.getStructureManager();
+            long seed = level.getSeed() + seedOffset;
+
+            // Try to get randomState if it exists (1.20.4+)
+            Object randomState = null;
+            try {
+                Method randomStateMethod = level.getChunkSource().getClass().getMethod("randomState");
+                randomState = randomStateMethod.invoke(level.getChunkSource());
+            } catch (NoSuchMethodException e) {
+                // randomState doesn't exist in this version
+            }
+
+            // Find the generate method
+            for (Method method : Structure.class.getMethods()) {
+                if (!method.getName().equals("generate")) continue;
+
+                Class<?>[] params = method.getParameterTypes();
+
+                // Try 1.21+ signature (with Holder and ResourceKey first)
+                if (params.length >= 11 && params[0].getName().contains("Holder")) {
+                    try {
+                        return (StructureStart) method.invoke(structure,
+                            structureHolder,
+                            level.dimension(),
+                            registryAccess,
+                            generator,
+                            biomeSource,
+                            randomState,
+                            structureManager,
+                            seed,
+                            chunkPos,
+                            0,
+                            level,
+                            (java.util.function.Predicate<?>) biome -> true
+                        );
+                    } catch (Exception e) {
+                        Isotope.LOGGER.debug("1.21+ generate failed: {}", e.getMessage());
+                    }
+                }
+
+                // Try 1.20.x signature (without Holder and ResourceKey)
+                if (params.length >= 10 && params[0].getName().contains("RegistryAccess")) {
+                    try {
+                        return (StructureStart) method.invoke(structure,
+                            registryAccess,
+                            generator,
+                            biomeSource,
+                            randomState,
+                            structureManager,
+                            seed,
+                            chunkPos,
+                            0,
+                            level,
+                            (java.util.function.Predicate<?>) biome -> true
+                        );
+                    } catch (Exception e) {
+                        Isotope.LOGGER.debug("1.20.x generate failed: {}", e.getMessage());
+                    }
+                }
+            }
+
+            Isotope.LOGGER.warn("Could not find compatible Structure.generate() method");
+            return null;
+        } catch (Exception e) {
+            Isotope.LOGGER.error("Structure generation failed: {}", e.getMessage());
+            return null;
+        }
     }
 }

@@ -497,7 +497,6 @@ public class CompareScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));
         return true;

@@ -332,7 +332,6 @@ public class CompareStatisticsDialog extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));
         return true;

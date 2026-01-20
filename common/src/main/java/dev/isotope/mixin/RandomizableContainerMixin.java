@@ -1,9 +1,10 @@
 package dev.isotope.mixin;
 
+import dev.isotope.compat.VersionHelper;
 import dev.isotope.observation.LootObserver;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.RandomizableContainer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.storage.loot.LootTable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -31,21 +32,37 @@ public abstract class RandomizableContainerMixin {
      * Intercept loot table assignment to capture the caller context.
      * This is called when structures/features place containers with loot.
      *
-     * Using remap=false since the method is defined in the RandomizableContainer interface
-     * and may have different names in different mapping sets.
+     * 1.21+ signature: setLootTable(ResourceKey<LootTable>)
+     * Uses require=0 so it doesn't fail on 1.20 where this signature doesn't exist.
      */
     @Inject(
         method = "setLootTable(Lnet/minecraft/resources/ResourceKey;)V",
         at = @At("HEAD"),
-        remap = false
+        remap = false,
+        require = 0
     )
-    private void isotope$onSetLootTable(ResourceKey<LootTable> lootTableKey, CallbackInfo ci) {
+    private void isotope$onSetLootTable121(ResourceKey<LootTable> lootTableKey, CallbackInfo ci) {
         if (!LootObserver.getInstance().isRecording()) {
             return;
         }
 
-        // Get the loot table ID
-        var tableId = lootTableKey.location();
+        // Get the loot table ID from ResourceKey
+        ResourceLocation tableId = lootTableKey.location();
+        if (tableId == null) return;
+
+        recordLootAssignment(tableId);
+    }
+
+    // NOTE: The 1.20.x signature setLootTable(ResourceLocation) is handled differently.
+    // In 1.20.x, we need to use a version-specific mixin or reflection approach because
+    // Mixin validates method descriptors at load time, and the method doesn't exist in 1.21+.
+    // For 1.20.x support, this is handled via the helper mod's mixins.
+
+    /**
+     * Common logic for recording loot table assignment.
+     */
+    private void recordLootAssignment(ResourceLocation tableId) {
+        if (tableId == null) return;
 
         // Get the block position - cast this to access the method
         BlockPos pos = BlockPos.ZERO;

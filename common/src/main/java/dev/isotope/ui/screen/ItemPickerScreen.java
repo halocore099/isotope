@@ -332,7 +332,6 @@ public class ItemPickerScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         // Mod dropdown scroll
         if (modDropdownOpen && mouseX >= modDropdownX && mouseX < modDropdownX + modDropdownWidth) {

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "isotope-compat",
+  "version": "${version}",
+  "name": "Isotope Compat",
+  "description": "Compatibility helper for Isotope on Minecraft 1.20.x. Adds 1.21-style method signatures via mixins.",
+  "authors": ["Isotope Team"],
+  "contact": {
+    "homepage": "https://github.com/dmntk/isotope",
+    "sources": "https://github.com/dmntk/isotope"
+  },
+  "license": "MIT",
+  "icon": "assets/isotope-compat/icon.png",
+  "environment": "client",
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": "${minecraft_version_range}"
+  },
+  "mixins": [
+    "isotope-compat.mixins.json"
+  ]
+}

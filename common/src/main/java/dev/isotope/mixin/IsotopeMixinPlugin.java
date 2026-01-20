@@ -29,16 +29,31 @@ public class IsotopeMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        // ReloadableRegistriesMixin targets ReloadableServerRegistries.Holder which only exists in 1.21+
-        // On 1.20.x we need to skip it (the LootTableRegistry uses reflection for 1.20.x anyway)
+        // ReloadableRegistriesMixin targets ReloadableServerRegistries.Holder which only exists in 1.20.2+
+        // On 1.20.1 we need to skip it (use LootDataManagerMixin instead)
         if (mixinClassName.endsWith("ReloadableRegistriesMixin")) {
             // Check if target class exists by trying to find it via class loader
             try {
                 Class.forName("net.minecraft.server.ReloadableServerRegistries$Holder", false,
                     Thread.currentThread().getContextClassLoader());
             } catch (ClassNotFoundException e) {
-                System.out.println("[ISOTOPE] Skipping ReloadableRegistriesMixin - target class not found (1.20.x)");
+                System.out.println("[ISOTOPE] Skipping ReloadableRegistriesMixin - target class not found (1.20.1)");
                 return false;
+            }
+        }
+
+        // LootDataManagerMixin targets LootDataManager which is used differently in 1.20.1 vs 1.20.2+
+        // On 1.20.2+, ReloadableServerRegistries.Holder is used instead, so skip this mixin
+        if (mixinClassName.endsWith("LootDataManagerMixin")) {
+            // Check if ReloadableServerRegistries.Holder exists - if so, we're on 1.20.2+
+            try {
+                Class.forName("net.minecraft.server.ReloadableServerRegistries$Holder", false,
+                    Thread.currentThread().getContextClassLoader());
+                System.out.println("[ISOTOPE] Skipping LootDataManagerMixin - using ReloadableRegistriesMixin instead (1.20.2+)");
+                return false;
+            } catch (ClassNotFoundException e) {
+                // On 1.20.1, use LootDataManagerMixin
+                System.out.println("[ISOTOPE] Applying LootDataManagerMixin for 1.20.1 loot table tracking");
             }
         }
 

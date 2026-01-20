@@ -333,7 +333,6 @@ public class TemplateManagerScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (confirmingDelete) return true;
 

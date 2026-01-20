@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.StructureLootLinker;
@@ -316,7 +317,7 @@ public class TestingScreen extends Screen {
                     entryButtons.add(addRenderableWidget(statsBtn));
 
                     // Compare button - only show if edits exist
-                    ResourceLocation lootTableId = ResourceLocation.fromNamespaceAndPath(
+                    ResourceLocation lootTableId = RegistryHelper.fromNamespaceAndPath(
                         entityId.getNamespace(), "entities/" + entityId.getPath());
                     if (LootEditManager.getInstance().hasEdits(lootTableId)) {
                         Button compareBtn = Button.builder(
@@ -846,7 +847,6 @@ public class TestingScreen extends Screen {
         }
     }
 
-    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int oldOffset = scrollOffset;
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));

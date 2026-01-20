@@ -2,6 +2,7 @@ package dev.isotope.testing;
 
 import dev.isotope.Isotope;
 import dev.isotope.compat.RegistryHelper;
+import dev.isotope.compat.VersionHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -15,6 +16,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,9 +122,8 @@ public final class TestMobTools {
             BlockPos playerPos = player.blockPosition();
             BlockPos spawnPos = playerPos.offset(offset.getX(), offset.getY(), offset.getZ());
 
-            // Spawn the entity
-            Entity entity = entityType.create(level, null, spawnPos,
-                net.minecraft.world.entity.EntitySpawnReason.COMMAND, false, false);
+            // Spawn the entity using version-compatible method
+            Entity entity = createEntityVersionCompatible(entityType, level, spawnPos);
 
             if (entity == null) {
                 return SpawnResult.error("Failed to create entity");
@@ -145,6 +147,62 @@ public final class TestMobTools {
         } catch (Exception e) {
             Isotope.LOGGER.error("Failed to spawn {}: {}", entityId, e.getMessage());
             return SpawnResult.error("Spawn failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Create an entity using version-compatible reflection.
+     *
+     * 1.21+: EntityType.create(ServerLevel, CompoundTag, BlockPos, EntitySpawnReason, boolean, boolean)
+     * 1.20.x: EntityType.create(ServerLevel, CompoundTag, Consumer, BlockPos, MobSpawnType, boolean, boolean)
+     */
+    @SuppressWarnings("unchecked")
+    private static <T extends Entity> T createEntityVersionCompatible(EntityType<T> entityType,
+                                                                       ServerLevel level, BlockPos pos) {
+        try {
+            // Try 1.20.x version first (has Consumer parameter)
+            try {
+                Class<?> mobSpawnTypeClass = Class.forName("net.minecraft.world.entity.MobSpawnType");
+                Object commandType = mobSpawnTypeClass.getField("COMMAND").get(null);
+
+                for (Method method : entityType.getClass().getMethods()) {
+                    if (method.getName().equals("create") && method.getParameterCount() == 7) {
+                        Class<?>[] params = method.getParameterTypes();
+                        // Check if this is the 1.20.x signature (has Consumer parameter)
+                        if (params[2].getName().contains("Consumer")) {
+                            return (T) method.invoke(entityType, level, null, null, pos, commandType, false, false);
+                        }
+                    }
+                }
+            } catch (ClassNotFoundException e) {
+                // MobSpawnType doesn't exist, try EntitySpawnReason
+            }
+
+            // Try 1.21+ version (no Consumer parameter)
+            try {
+                Class<?> spawnReasonClass = Class.forName("net.minecraft.world.entity.EntitySpawnReason");
+                Object commandReason = spawnReasonClass.getField("COMMAND").get(null);
+
+                for (Method method : entityType.getClass().getMethods()) {
+                    if (method.getName().equals("create") && method.getParameterCount() == 6) {
+                        return (T) method.invoke(entityType, level, null, pos, commandReason, false, false);
+                    }
+                }
+            } catch (ClassNotFoundException e) {
+                // EntitySpawnReason doesn't exist either
+            }
+
+            // Fallback: simple create
+            for (Method method : entityType.getClass().getMethods()) {
+                if (method.getName().equals("create") && method.getParameterCount() == 1) {
+                    return (T) method.invoke(entityType, level);
+                }
+            }
+
+            return null;
+        } catch (Exception e) {
+            Isotope.LOGGER.error("Failed to create entity via reflection: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -223,7 +281,7 @@ public final class TestMobTools {
 
             // If still alive, force death
             if (living.isAlive()) {
-                living.kill(level);
+                VersionHelper.killEntity(living, level);
             }
 
             String lootingInfo = lootingLevel > 0 && condition.isPlayerKill() ? " (Looting " + lootingLevel + ")" : "";
