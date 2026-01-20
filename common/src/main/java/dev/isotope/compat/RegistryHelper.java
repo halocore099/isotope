@@ -174,20 +174,37 @@ public final class RegistryHelper {
      * Get the structure registry from a RegistryAccess.
      * Works across all supported MC versions.
      */
+    @SuppressWarnings("unchecked")
     public static Registry<Structure> getStructureRegistry(RegistryAccess registryAccess) {
         try {
             // Get Registries.STRUCTURE via reflection
             Class<?> registriesClass = Class.forName("net.minecraft.core.registries.Registries");
             Object structureKey = registriesClass.getField("STRUCTURE").get(null);
 
-            // Try 1.21+ method first: lookupOrThrow
+            // Try 1.20.x method first: registryOrThrow (returns Registry directly)
+            try {
+                Method registry = RegistryAccess.class.getMethod("registryOrThrow", ResourceKey.class);
+                Object result = registry.invoke(registryAccess, structureKey);
+                if (result instanceof Registry<?>) {
+                    return (Registry<Structure>) result;
+                }
+            } catch (NoSuchMethodException e) {
+                // Method doesn't exist, continue to 1.21+ method
+            }
+
+            // Try 1.21+ method: lookupOrThrow (returns HolderLookup.RegistryLookup which IS-A Registry)
             try {
                 Method lookup = RegistryAccess.class.getMethod("lookupOrThrow", ResourceKey.class);
-                return (Registry<Structure>) lookup.invoke(registryAccess, structureKey);
+                Object result = lookup.invoke(registryAccess, structureKey);
+                if (result instanceof Registry<?>) {
+                    return (Registry<Structure>) result;
+                }
+                // In 1.21+, the result might be a RegistryLookup - try to cast it
+                // RegistryLookup extends HolderLookup which can iterate entries
+                throw new RuntimeException("lookupOrThrow returned unexpected type: " + result.getClass().getName());
             } catch (NoSuchMethodException e) {
-                // Try 1.20.x method: registryOrThrow
-                Method registry = RegistryAccess.class.getMethod("registryOrThrow", ResourceKey.class);
-                return (Registry<Structure>) registry.invoke(registryAccess, structureKey);
+                // Neither method exists
+                throw new RuntimeException("Neither registryOrThrow nor lookupOrThrow found");
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to get structure registry", e);

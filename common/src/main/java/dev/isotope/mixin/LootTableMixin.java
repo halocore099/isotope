@@ -8,7 +8,6 @@ import dev.isotope.observation.LootObserver;
 import dev.isotope.observation.LootTableTracker;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -17,7 +16,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -29,12 +27,15 @@ import java.util.function.Consumer;
  * This mixin serves two purposes:
  * 1. Observation - Records loot table invocations during analysis
  * 2. Test mode - Replaces loot generation with edited structures when test mode is active
+ *
+ * Only targets methods that exist in both 1.20.x and 1.21+ for cross-version compatibility.
  */
 @Mixin(LootTable.class)
 public class LootTableMixin {
 
     /**
      * Intercept loot generation for observation and test mode.
+     * This is the core method that exists in both 1.20.x and 1.21+.
      *
      * When ISOTOPE test mode is active and we have edits for the current table,
      * we generate loot from our edited structure instead of the vanilla table.
@@ -42,26 +43,11 @@ public class LootTableMixin {
     @Inject(
         method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;JLjava/util/function/Consumer;)V",
         at = @At("HEAD"),
-        cancellable = true
+        cancellable = true,
+        require = 0
     )
     private void isotope$onGetRandomItems(LootParams params, long seed, Consumer<ItemStack> consumer, CallbackInfo ci) {
         if (isotope$tryGenerateEdited(params, seed, consumer)) {
-            ci.cancel();
-        }
-    }
-
-    /**
-     * Also intercept the 2-parameter version (LootParams, Consumer) without explicit seed.
-     * This is the method called by LootTestRunner.generateChestLoot().
-     */
-    @Inject(
-        method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;Ljava/util/function/Consumer;)V",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void isotope$onGetRandomItemsNoSeed(LootParams params, Consumer<ItemStack> consumer, CallbackInfo ci) {
-        // Use nanoTime as seed, same as vanilla fallback
-        if (isotope$tryGenerateEdited(params, System.nanoTime(), consumer)) {
             ci.cancel();
         }
     }
@@ -101,77 +87,15 @@ public class LootTableMixin {
     }
 
     /**
-     * Also intercept the overload with LootParams and RandomSource.
-     * This may be called instead of the seed-based version.
-     */
-    @Inject(
-        method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;Lnet/minecraft/util/RandomSource;)Lit/unimi/dsi/fastutil/objects/ObjectArrayList;",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void isotope$onGetRandomItemsWithRandom(LootParams params, RandomSource random, CallbackInfoReturnable<ObjectArrayList<ItemStack>> cir) {
-        ResourceLocation tableId = LootTableTracker.getCurrentTableId();
-
-        if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
-            Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);
-            if (editedStructure.isPresent()) {
-                ObjectArrayList<ItemStack> items = new ObjectArrayList<>();
-                LootGenerator.generateFromStructure(editedStructure.get(), params, random.nextLong(), items::add);
-                cir.setReturnValue(items);
-            }
-        }
-    }
-
-    /**
-     * Also intercept the overload with just LootParams (no seed/random).
-     */
-    @Inject(
-        method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;)Lit/unimi/dsi/fastutil/objects/ObjectArrayList;",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void isotope$onGetRandomItemsSimple(LootParams params, CallbackInfoReturnable<ObjectArrayList<ItemStack>> cir) {
-        ResourceLocation tableId = LootTableTracker.getCurrentTableId();
-
-        if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
-            Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);
-            if (editedStructure.isPresent()) {
-                ObjectArrayList<ItemStack> items = new ObjectArrayList<>();
-                LootGenerator.generateFromStructure(editedStructure.get(), params, System.nanoTime(), items::add);
-                cir.setReturnValue(items);
-            }
-        }
-    }
-
-    /**
-     * Also intercept the overload with LootParams and long seed returning ObjectArrayList.
-     */
-    @Inject(
-        method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;J)Lit/unimi/dsi/fastutil/objects/ObjectArrayList;",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void isotope$onGetRandomItemsWithSeed(LootParams params, long seed, CallbackInfoReturnable<ObjectArrayList<ItemStack>> cir) {
-        ResourceLocation tableId = LootTableTracker.getCurrentTableId();
-
-        if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
-            Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);
-            if (editedStructure.isPresent()) {
-                ObjectArrayList<ItemStack> items = new ObjectArrayList<>();
-                LootGenerator.generateFromStructure(editedStructure.get(), params, seed, items::add);
-                cir.setReturnValue(items);
-            }
-        }
-    }
-
-    /**
      * CRITICAL: Intercept the fill method - this is what actually fills containers (chests) with loot!
      * This is the method called by RandomizableContainerBlockEntity.unpackLootTable()
+     * This method exists in both 1.20.x and 1.21+.
      */
     @Inject(
         method = "fill",
         at = @At("HEAD"),
-        cancellable = true
+        cancellable = true,
+        require = 0
     )
     private void isotope$onFill(Container container, LootParams params, long seed, CallbackInfo ci) {
         ResourceLocation tableId = LootTableTracker.getCurrentTableId();
