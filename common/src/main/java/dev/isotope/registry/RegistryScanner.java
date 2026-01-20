@@ -10,16 +10,58 @@ import dev.isotope.editing.LootEditManager;
 import dev.isotope.importing.DatapackLootMetadataScanner;
 import net.minecraft.server.MinecraftServer;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
 /**
  * Hooks into server lifecycle to scan registries.
  *
- * This is the foundation of ISOTOPE's discovery system.
- * We scan all structures and loot tables immediately when a world loads,
- * then run heuristic linking to establish relationships.
+ * <h2>Overview</h2>
+ * This is the foundation of ISOTOPE's discovery system. We scan all structures
+ * and loot tables immediately when a world loads, then run heuristic linking
+ * to establish relationships.
+ *
+ * <h2>Version Compatibility Strategy</h2>
+ * ISOTOPE supports Minecraft 1.20.1 through 1.21.4+ using a multi-layer approach:
+ *
+ * <ul>
+ *   <li><b>Compile-time:</b> Stonecutter handles API differences via conditionals</li>
+ *   <li><b>Runtime:</b> Each registry uses reflection to detect and use the appropriate API:
+ *     <ul>
+ *       <li>1.21+: {@code server.reloadableRegistries().getLootTable(ResourceKey)}</li>
+ *       <li>1.20.x: {@code server.getLootData().getLootTable(ResourceLocation)}</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Mixins:</b> Version-specific mixins are loaded conditionally via {@code IsotopeMixinPlugin}</li>
+ * </ul>
+ *
+ * <h2>Scan Layers</h2>
+ * The scan runs in ordered layers, each building on the previous:
+ * <ol>
+ *   <li><b>Layer 1 - Registry Scan:</b> Authoritative data from MC registries (structures, loot tables, entities)</li>
+ *   <li><b>Layer 1.5 - Feature Discovery:</b> Fire-and-forget worldgen features (dungeons, bonus chests)</li>
+ *   <li><b>Layer 2 - Template Parsing:</b> NBT structure templates for loot table references</li>
+ *   <li><b>Layer 2.2-2.5 - JSON Parsing:</b> Template pools, processor lists, structure configs, mod links</li>
+ *   <li><b>Layer 3 - Linking:</b> Multi-source heuristic linking with confidence scoring</li>
+ *   <li><b>Layer 4 - Orphan Detection:</b> Surface unlinked loot tables and structures</li>
+ *   <li><b>Layer 5 - Compilation:</b> Build unified source registry for UI</li>
+ * </ol>
+ *
+ * <h2>Error Handling</h2>
+ * Each layer is wrapped in its own try-catch to allow partial failures without
+ * stopping the entire scan. Failed steps are logged and counted in the summary.
+ *
+ * @see StructureRegistry
+ * @see LootTableRegistry
+ * @see StructureLootLinker
  */
 public final class RegistryScanner {
     private static boolean initialized = false;
     private static MinecraftServer currentServer = null;
+
+    /** Tracks failed scan steps for summary logging */
+    private static final List<String> failedSteps = new ArrayList<>();
 
     private RegistryScanner() {}
 
@@ -38,89 +80,25 @@ public final class RegistryScanner {
 
     private static void onServerStarted(MinecraftServer server) {
         currentServer = server;
+        failedSteps.clear();
 
-        // Always scan registries - this is the core of ISOTOPE
-        Isotope.LOGGER.info("Scanning registries for structures, loot tables, and entities...");
+        long totalStartTime = System.currentTimeMillis();
+        Isotope.LOGGER.info("=== ISOTOPE Registry Scan Starting ===");
 
-        // Layer 1: Registry scan (authoritative)
-        StructureRegistry.getInstance().scan(server);
-        LootTableRegistry.getInstance().scan(server);
-        StructureClassRegistry.getInstance().scan(server);
+        // Build the scan steps - each step is isolated for error handling
+        List<ScanStep> steps = buildScanSteps(server);
 
-        // Layer 1.5: Feature discovery
-        FeatureRegistry.getInstance().initialize();
-        WorldgenFeatureParser.getInstance().parse(server);
-        FeatureRegistry.getInstance().addFromWorldgen(WorldgenFeatureParser.getInstance());
-        EntityLootRegistry.getInstance().initialize();
-
-        // Layer 2: Template parsing (deterministic)
-        Isotope.LOGGER.info("Parsing structure templates for loot table references...");
-        StructureTemplateParser.getInstance().parse(server);
-
-        // Layer 2.2: Template pool parsing (jigsaw structure loot from JSON)
-        TemplatePoolParser.getInstance().parse(server);
-
-        // Layer 2.25: Processor list parsing (loot tables set by structure processors)
-        ProcessorListParser.getInstance().parse(server);
-
-        // Layer 2.3: Structure config parsing (structure definitions with start_pool and type-based loot)
-        StructureConfigParser.getInstance().parse(server);
-
-        // Layer 2.4: Mod-declared links (from isotope_links.json and loot_metadata.json files)
-        ModLinkScanner.getInstance().scan(server);
-
-        // Layer 2.5: Datapack metadata (direct folder scan for unloaded datapacks)
-        DatapackLootMetadataScanner.getInstance().scanAll();
-
-        // Layer 3: Multi-layer linking (heuristics + templates + observations + content analysis)
-        StructureLootLinker.getInstance().link(server);
-
-        // Layer 4: Orphan detection (surface gaps)
-        OrphanDetector.OrphanReport orphanReport = OrphanDetector.getInstance().detect();
-
-        // Layer 5: Compile unified source registry (structures + features)
-        LootSourceRegistry.getInstance().compile();
-
-        // Debug dump: output all loot table → source mappings to log
-        LootSourceRegistry.getInstance().dumpDebugInfo();
-
-        // Pre-parse loot tables for the editor (while server is available)
-        LootEditManager.getInstance().preParseLootTables(server);
+        // Execute each step with timing and error handling
+        int completedSteps = 0;
+        for (ScanStep step : steps) {
+            if (runStep(step, server)) {
+                completedSteps++;
+            }
+        }
 
         // Summary logging
-        var templateStats = StructureTemplateParser.getInstance().getStats();
-        var poolStats = TemplatePoolParser.getInstance().getStats();
-        var processorStats = ProcessorListParser.getInstance().getStats();
-        Isotope.LOGGER.info("Registry scan complete: {} structures, {} loot tables, {} entities, {} links",
-            StructureRegistry.getInstance().size(),
-            LootTableRegistry.getInstance().size(),
-            EntityLootRegistry.getInstance().size(),
-            StructureLootLinker.getInstance().getLinkCount());
-        Isotope.LOGGER.info("Template parsing: {} templates scanned, {} loot references found",
-            templateStats.templatesScanned(), templateStats.lootReferencesFound());
-        Isotope.LOGGER.info("Pool parsing: {} pools scanned, {} with loot, {} loot references",
-            poolStats.filesParsed(), poolStats.poolsWithLoot(), poolStats.lootReferences());
-        Isotope.LOGGER.info("Processor parsing: {} processors scanned, {} with loot, {} loot references",
-            processorStats.filesParsed(), processorStats.processorsWithLoot(), processorStats.lootReferences());
-        var structureConfigStats = StructureConfigParser.getInstance().getStats();
-        Isotope.LOGGER.info("Structure config parsing: {} structures, {} jigsaw, {} with loot ({} refs)",
-            structureConfigStats.filesParsed(), structureConfigStats.jigsawStructures(),
-            structureConfigStats.structuresWithLoot(), structureConfigStats.lootReferences());
-        var modLinkStats = ModLinkRegistry.getInstance().getStats();
-        if (modLinkStats.totalLinks() > 0) {
-            Isotope.LOGGER.info("Mod-declared links: {} structures, {} links ({} programmatic, {} from JSON)",
-                modLinkStats.structures(), modLinkStats.totalLinks(),
-                modLinkStats.programmaticLinks(), modLinkStats.jsonLinks());
-        }
-        var datapackMetaStats = DatapackLootMetadataScanner.getInstance().getStats();
-        if (datapackMetaStats.linksRegistered() > 0) {
-            Isotope.LOGGER.info("Datapack metadata: {} datapacks scanned, {} metadata files, {} links",
-                datapackMetaStats.datapacksScanned(), datapackMetaStats.metadataFilesFound(),
-                datapackMetaStats.linksRegistered());
-        }
-        if (orphanReport.hasOrphans()) {
-            Isotope.LOGGER.info("Orphan detection: {}", orphanReport.summary());
-        }
+        long totalTime = System.currentTimeMillis() - totalStartTime;
+        logSummary(totalTime, completedSteps, steps.size());
 
         // Check if this is the temporary registry loading world (main menu flow)
         if (RegistryLoader.getInstance().isTempWorld(server)) {
@@ -135,6 +113,160 @@ public final class RegistryScanner {
             HeadlessAnalysisWorld.getInstance().onServerReady(server);
         }
     }
+
+    /**
+     * Build the ordered list of scan steps.
+     * Each step is a named operation that can fail independently.
+     */
+    private static List<ScanStep> buildScanSteps(MinecraftServer server) {
+        List<ScanStep> steps = new ArrayList<>();
+
+        // Layer 1: Registry scan (authoritative)
+        steps.add(new ScanStep("Layer 1: Structure Registry",
+            s -> StructureRegistry.getInstance().scan(s)));
+        steps.add(new ScanStep("Layer 1: Loot Table Registry",
+            s -> LootTableRegistry.getInstance().scan(s)));
+        steps.add(new ScanStep("Layer 1: Structure Class Registry",
+            s -> StructureClassRegistry.getInstance().scan(s)));
+
+        // Layer 1.5: Feature discovery
+        steps.add(new ScanStep("Layer 1.5: Feature Registry",
+            s -> {
+                FeatureRegistry.getInstance().initialize();
+                WorldgenFeatureParser.getInstance().parse(s);
+                FeatureRegistry.getInstance().addFromWorldgen(WorldgenFeatureParser.getInstance());
+            }));
+        steps.add(new ScanStep("Layer 1.5: Entity Loot Registry",
+            s -> EntityLootRegistry.getInstance().initialize()));
+
+        // Layer 2: Template parsing (deterministic)
+        steps.add(new ScanStep("Layer 2: Structure Template Parser",
+            s -> StructureTemplateParser.getInstance().parse(s)));
+
+        // Layer 2.2: Template pool parsing (jigsaw structure loot from JSON)
+        steps.add(new ScanStep("Layer 2.2: Template Pool Parser",
+            s -> TemplatePoolParser.getInstance().parse(s)));
+
+        // Layer 2.25: Processor list parsing
+        steps.add(new ScanStep("Layer 2.25: Processor List Parser",
+            s -> ProcessorListParser.getInstance().parse(s)));
+
+        // Layer 2.3: Structure config parsing
+        steps.add(new ScanStep("Layer 2.3: Structure Config Parser",
+            s -> StructureConfigParser.getInstance().parse(s)));
+
+        // Layer 2.4: Mod-declared links
+        steps.add(new ScanStep("Layer 2.4: Mod Link Scanner",
+            s -> ModLinkScanner.getInstance().scan(s)));
+
+        // Layer 2.5: Datapack metadata
+        steps.add(new ScanStep("Layer 2.5: Datapack Metadata Scanner",
+            s -> DatapackLootMetadataScanner.getInstance().scanAll()));
+
+        // Layer 3: Multi-layer linking
+        steps.add(new ScanStep("Layer 3: Structure-Loot Linker",
+            s -> StructureLootLinker.getInstance().link(s)));
+
+        // Layer 4: Orphan detection
+        steps.add(new ScanStep("Layer 4: Orphan Detection",
+            s -> OrphanDetector.getInstance().detect()));
+
+        // Layer 5: Compile unified source registry
+        steps.add(new ScanStep("Layer 5: Loot Source Registry",
+            s -> {
+                LootSourceRegistry.getInstance().compile();
+                LootSourceRegistry.getInstance().dumpDebugInfo();
+            }));
+
+        // Pre-parse loot tables for the editor
+        steps.add(new ScanStep("Pre-parse Loot Tables",
+            s -> LootEditManager.getInstance().preParseLootTables(s)));
+
+        return steps;
+    }
+
+    /**
+     * Execute a single scan step with timing and error handling.
+     * @return true if step completed successfully, false if it failed
+     */
+    private static boolean runStep(ScanStep step, MinecraftServer server) {
+        long startTime = System.currentTimeMillis();
+        try {
+            step.action.accept(server);
+            long elapsed = System.currentTimeMillis() - startTime;
+            Isotope.LOGGER.debug("{} completed in {}ms", step.name, elapsed);
+            return true;
+        } catch (Exception e) {
+            long elapsed = System.currentTimeMillis() - startTime;
+            failedSteps.add(step.name);
+            Isotope.LOGGER.error("{} FAILED after {}ms: {}", step.name, elapsed, e.getMessage());
+            Isotope.LOGGER.debug("Stack trace for {} failure:", step.name, e);
+            return false;
+        }
+    }
+
+    /**
+     * Log the scan summary with statistics from each registry.
+     */
+    private static void logSummary(long totalTime, int completedSteps, int totalSteps) {
+        Isotope.LOGGER.info("=== ISOTOPE Registry Scan Complete ===");
+        Isotope.LOGGER.info("Total time: {}ms ({}/{} steps succeeded)",
+            totalTime, completedSteps, totalSteps);
+
+        if (!failedSteps.isEmpty()) {
+            Isotope.LOGGER.warn("Failed steps: {}", String.join(", ", failedSteps));
+        }
+
+        // Core registry stats
+        Isotope.LOGGER.info("Registries: {} structures, {} loot tables, {} entities, {} links",
+            StructureRegistry.getInstance().size(),
+            LootTableRegistry.getInstance().size(),
+            EntityLootRegistry.getInstance().size(),
+            StructureLootLinker.getInstance().getLinkCount());
+
+        // Parsing stats
+        var templateStats = StructureTemplateParser.getInstance().getStats();
+        Isotope.LOGGER.info("Templates: {} scanned, {} loot refs",
+            templateStats.templatesScanned(), templateStats.lootReferencesFound());
+
+        var poolStats = TemplatePoolParser.getInstance().getStats();
+        Isotope.LOGGER.info("Pools: {} parsed, {} with loot, {} refs",
+            poolStats.filesParsed(), poolStats.poolsWithLoot(), poolStats.lootReferences());
+
+        var processorStats = ProcessorListParser.getInstance().getStats();
+        Isotope.LOGGER.info("Processors: {} parsed, {} with loot, {} refs",
+            processorStats.filesParsed(), processorStats.processorsWithLoot(), processorStats.lootReferences());
+
+        var structureConfigStats = StructureConfigParser.getInstance().getStats();
+        Isotope.LOGGER.info("Structure configs: {} parsed, {} jigsaw, {} with loot ({} refs)",
+            structureConfigStats.filesParsed(), structureConfigStats.jigsawStructures(),
+            structureConfigStats.structuresWithLoot(), structureConfigStats.lootReferences());
+
+        // Optional stats (only log if non-zero)
+        var modLinkStats = ModLinkRegistry.getInstance().getStats();
+        if (modLinkStats.totalLinks() > 0) {
+            Isotope.LOGGER.info("Mod links: {} structures, {} links ({} programmatic, {} JSON)",
+                modLinkStats.structures(), modLinkStats.totalLinks(),
+                modLinkStats.programmaticLinks(), modLinkStats.jsonLinks());
+        }
+
+        var datapackMetaStats = DatapackLootMetadataScanner.getInstance().getStats();
+        if (datapackMetaStats.linksRegistered() > 0) {
+            Isotope.LOGGER.info("Datapack metadata: {} datapacks, {} files, {} links",
+                datapackMetaStats.datapacksScanned(), datapackMetaStats.metadataFilesFound(),
+                datapackMetaStats.linksRegistered());
+        }
+
+        var orphanReport = OrphanDetector.getInstance().getLastReport();
+        if (orphanReport != null && orphanReport.hasOrphans()) {
+            Isotope.LOGGER.info("Orphans: {}", orphanReport.summary());
+        }
+    }
+
+    /**
+     * A named scan step with its action.
+     */
+    private record ScanStep(String name, Consumer<MinecraftServer> action) {}
 
     private static void onServerStopping(MinecraftServer server) {
         // Check if this is the analysis world

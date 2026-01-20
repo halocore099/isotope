@@ -39,17 +39,26 @@ public final class LootTableRegistry {
         lootTables.clear();
 
         int contentAnalyzed = 0;
+        int contentAnalysisFailed = 0;
         int pathFallback = 0;
         int stubsSkipped = 0;
+        Map<String, Integer> stubsByNamespace = new LinkedHashMap<>();
+        String apiUsed = "unknown";
 
         try {
             // Collect all IDs first
             List<ResourceLocation> tableIds = new ArrayList<>();
 
             // Try 1.21+ API first, fall back to 1.20.x if not available
-            if (!scan1_21Plus(server, tableIds)) {
+            boolean used121 = scan1_21Plus(server, tableIds);
+            if (used121) {
+                apiUsed = "1.21+ (reloadableRegistries)";
+            } else {
                 scan1_20x(server, tableIds);
+                apiUsed = "1.20.x (getLootData)";
             }
+
+            Isotope.LOGGER.info("LootTableRegistry: using {} API, found {} candidates", apiUsed, tableIds.size());
 
             // Now analyze each table with content-based detection
             for (ResourceLocation id : tableIds) {
@@ -57,6 +66,7 @@ public final class LootTableRegistry {
                 // (e.g., trial_chambers stubs in 1.20.4 before the feature was released)
                 if (isStubLootTable(server, id)) {
                     stubsSkipped++;
+                    stubsByNamespace.merge(id.getNamespace(), 1, Integer::sum);
                     Isotope.LOGGER.debug("Skipping stub loot table: {}", id);
                     continue;
                 }
@@ -76,8 +86,11 @@ public final class LootTableRegistry {
                         category = LootTableContentAnalyzer.analyze(server, id);
                         if (category != null) {
                             contentAnalyzed++;
+                        } else {
+                            contentAnalysisFailed++;
                         }
                     } catch (Exception e) {
+                        contentAnalysisFailed++;
                         Isotope.LOGGER.debug("Content analysis failed for {}: {}", id, e.getMessage());
                     }
 
@@ -92,8 +105,16 @@ public final class LootTableRegistry {
             }
 
             scanned = true;
-            Isotope.LOGGER.info("LootTableRegistry: scanned {} loot tables ({} content-analyzed, {} path-fallback, {} stubs skipped)",
-                lootTables.size(), contentAnalyzed, pathFallback, stubsSkipped);
+
+            // Summary logging
+            Isotope.LOGGER.info("LootTableRegistry: scanned {} loot tables ({} path-categorized, {} content-analyzed, {} analysis-failed, {} stubs skipped)",
+                lootTables.size(), pathFallback, contentAnalyzed, contentAnalysisFailed, stubsSkipped);
+
+            // Log stubs breakdown by namespace if any were skipped
+            if (!stubsByNamespace.isEmpty()) {
+                stubsByNamespace.forEach((ns, count) ->
+                    Isotope.LOGGER.debug("  Skipped {} stubs from {}", count, ns));
+            }
 
             // Log category breakdown
             Map<LootTableCategory, Long> byCategory = lootTables.values().stream()
@@ -285,19 +306,28 @@ public final class LootTableRegistry {
             }
 
             // Check if the loot table has pools
-            // LootTable.pools is a List<LootPool>
-            java.lang.reflect.Field poolsField = null;
+            // First try to find the field by name (more precise)
+            java.lang.reflect.Field poolsField = findPoolsField(lootTable.getClass());
+
+            if (poolsField != null) {
+                poolsField.setAccessible(true);
+                Object value = poolsField.get(lootTable);
+                if (value instanceof java.util.List<?> list) {
+                    return list.isEmpty();
+                }
+            }
+
+            // Fallback: scan all List fields if "pools" not found by name
             for (java.lang.reflect.Field f : lootTable.getClass().getDeclaredFields()) {
                 if (java.util.List.class.isAssignableFrom(f.getType())) {
                     f.setAccessible(true);
                     Object value = f.get(lootTable);
                     if (value instanceof java.util.List<?> list) {
-                        // Found a List field - check if it's the pools field
-                        // Pools field should contain LootPool instances
+                        // Found a List field - check if it contains LootPool instances
                         if (list.isEmpty()) {
-                            // Empty list - this is likely the pools field and it's a stub
+                            // Empty list - likely the pools field, it's a stub
                             return true;
-                        } else if (!list.isEmpty()) {
+                        } else {
                             Object first = list.get(0);
                             if (first != null && first.getClass().getSimpleName().contains("LootPool")) {
                                 // Has pools - not a stub
@@ -314,6 +344,37 @@ public final class LootTableRegistry {
             Isotope.LOGGER.debug("Failed to check if {} is stub: {}", id, e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Find the "pools" field by name, checking common obfuscated names.
+     * Returns null if not found.
+     */
+    private java.lang.reflect.Field findPoolsField(Class<?> clazz) {
+        // Common field names for pools (vanilla and various mappings)
+        String[] possibleNames = {"pools", "field_186466_e", "f_79109_", "c"};
+
+        for (String name : possibleNames) {
+            try {
+                return clazz.getDeclaredField(name);
+            } catch (NoSuchFieldException ignored) {
+                // Try next name
+            }
+        }
+
+        // Also try superclass in case it's inherited
+        Class<?> superClass = clazz.getSuperclass();
+        if (superClass != null && !superClass.equals(Object.class)) {
+            for (String name : possibleNames) {
+                try {
+                    return superClass.getDeclaredField(name);
+                } catch (NoSuchFieldException ignored) {
+                    // Try next name
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -397,6 +458,32 @@ public final class LootTableRegistry {
         }
         return lootTables.values().stream()
             .filter(lt -> lt.namespace().equals(namespace))
+            .toList();
+    }
+
+    /**
+     * Get loot tables filtered by path prefix.
+     * Useful for structure-focused filtering (e.g., "chests/", "entities/zombie").
+     *
+     * @param prefix The path prefix to match (e.g., "chests/village/", "entities/")
+     * @return List of loot tables whose path starts with the prefix
+     */
+    public List<LootTableInfo> getByPathPrefix(String prefix) {
+        return lootTables.values().stream()
+            .filter(lt -> lt.path().startsWith(prefix))
+            .toList();
+    }
+
+    /**
+     * Get loot tables filtered by path containing a substring.
+     * Useful for finding related loot tables (e.g., "trial_chambers", "ancient_city").
+     *
+     * @param substring The substring to search for in paths
+     * @return List of loot tables whose path contains the substring
+     */
+    public List<LootTableInfo> getByPathContaining(String substring) {
+        return lootTables.values().stream()
+            .filter(lt -> lt.path().contains(substring))
             .toList();
     }
 

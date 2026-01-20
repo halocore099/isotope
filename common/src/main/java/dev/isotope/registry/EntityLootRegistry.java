@@ -4,8 +4,13 @@ import dev.isotope.Isotope;
 import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.LootSource;
 import dev.isotope.data.LootTableInfo;
+import dev.isotope.data.loot.LootCondition;
+import dev.isotope.data.loot.LootEntry;
+import dev.isotope.data.loot.LootPool;
+import dev.isotope.data.loot.LootTableStructure;
+import dev.isotope.editing.LootTableParser;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,11 +40,28 @@ public final class EntityLootRegistry {
     private final Map<ResourceLocation, ResourceLocation> lootTableToEntity = new LinkedHashMap<>();
 
     private boolean initialized = false;
+    private MinecraftServer cachedServer = null;
 
     private EntityLootRegistry() {}
 
     public static EntityLootRegistry getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * Kill requirement for entity loot drops.
+     */
+    public enum KillRequirement {
+        /** At least one entry requires player kill (killed_by_player condition) */
+        PLAYER_KILL,
+        /** At least one entry benefits from looting enchant (random_chance_with_looting or looting_enchant) */
+        LOOTING_DEPENDENT,
+        /** Has both player kill requirements and looting bonuses */
+        PLAYER_KILL_WITH_LOOTING,
+        /** No special kill conditions detected */
+        NONE,
+        /** Could not analyze (table not parseable) */
+        UNKNOWN
     }
 
     /**
@@ -51,11 +73,16 @@ public final class EntityLootRegistry {
         entities.clear();
         lootTableToEntity.clear();
 
+        // Get server for parsing loot tables
+        cachedServer = RegistryScanner.getCurrentServer();
+
         LootTableRegistry lootTables = LootTableRegistry.getInstance();
         if (!lootTables.isScanned()) {
-            Isotope.LOGGER.warn("EntityLootRegistry: LootTableRegistry not scanned yet");
-            return;
+            Isotope.LOGGER.warn("EntityLootRegistry: LootTableRegistry not scanned yet - will initialize with limited data");
         }
+
+        int analyzedCount = 0;
+        int fallbackCount = 0;
 
         // Find all entity loot tables (path starts with "entities/")
         for (LootTableInfo tableInfo : lootTables.getAll()) {
@@ -73,14 +100,19 @@ public final class EntityLootRegistry {
                 // Get display name from entity registry if available
                 String displayName = getEntityDisplayName(entityId);
 
-                // Determine if this entity requires player kill for rare drops
-                boolean requiresPlayerKill = checkRequiresPlayerKill(tableInfo);
+                // Analyze kill requirements by parsing actual loot table JSON
+                KillRequirement killReq = analyzeKillRequirements(lootTableId);
+                if (killReq != KillRequirement.UNKNOWN) {
+                    analyzedCount++;
+                } else {
+                    fallbackCount++;
+                }
 
                 EntityLootInfo info = new EntityLootInfo(
                     entityId,
                     lootTableId,
                     displayName,
-                    requiresPlayerKill
+                    killReq
                 );
 
                 entities.put(entityId, info);
@@ -89,7 +121,14 @@ public final class EntityLootRegistry {
         }
 
         initialized = true;
-        Isotope.LOGGER.info("EntityLootRegistry: initialized {} entity loot tables", entities.size());
+        Isotope.LOGGER.info("EntityLootRegistry: initialized {} entity loot tables ({} analyzed, {} fallback)",
+            entities.size(), analyzedCount, fallbackCount);
+
+        // Log breakdown by kill requirement
+        Map<KillRequirement, Long> byReq = entities.values().stream()
+            .collect(Collectors.groupingBy(EntityLootInfo::killRequirement, Collectors.counting()));
+        byReq.forEach((req, count) ->
+            Isotope.LOGGER.debug("  {} entities with {}", count, req));
 
         // Log breakdown by namespace
         Map<String, Long> byNamespace = entities.values().stream()
@@ -115,7 +154,7 @@ public final class EntityLootRegistry {
                 }
             }
         } catch (Exception e) {
-            // Fallback to path-based name
+            Isotope.LOGGER.debug("Failed to get display name for {}: {}", entityId, e.getMessage());
         }
         return formatDisplayName(entityId.getPath());
     }
@@ -132,18 +171,129 @@ public final class EntityLootRegistry {
     }
 
     /**
-     * Check if a loot table has killed_by_player conditions.
-     * This is a heuristic - actual analysis would require parsing the JSON.
+     * Analyze a loot table to determine kill requirements.
+     * Parses the actual JSON to look for killed_by_player, random_chance_with_looting,
+     * and looting_enchant conditions/functions.
+     *
+     * @param lootTableId The loot table to analyze
+     * @return The determined kill requirement
      */
-    private boolean checkRequiresPlayerKill(LootTableInfo tableInfo) {
-        // For now, assume common mobs with rare drops need player kills
-        // This could be enhanced with actual loot table JSON parsing
-        String path = tableInfo.path();
-        return path.contains("zombie") ||
-               path.contains("skeleton") ||
-               path.contains("creeper") ||
-               path.contains("witch") ||
-               path.contains("wither");
+    private KillRequirement analyzeKillRequirements(ResourceLocation lootTableId) {
+        if (cachedServer == null) {
+            Isotope.LOGGER.debug("No server available, cannot analyze {}", lootTableId);
+            return KillRequirement.UNKNOWN;
+        }
+
+        try {
+            Optional<LootTableStructure> structureOpt = LootTableParser.parse(cachedServer, lootTableId);
+            if (structureOpt.isEmpty()) {
+                Isotope.LOGGER.debug("Could not parse loot table for analysis: {}", lootTableId);
+                return KillRequirement.UNKNOWN;
+            }
+
+            LootTableStructure structure = structureOpt.get();
+            boolean hasPlayerKill = false;
+            boolean hasLootingBonus = false;
+
+            // Check all pools and entries for conditions
+            for (LootPool pool : structure.pools()) {
+                // Check pool-level conditions
+                for (LootCondition cond : pool.conditions()) {
+                    if (isPlayerKillCondition(cond)) hasPlayerKill = true;
+                    if (isLootingCondition(cond)) hasLootingBonus = true;
+                }
+
+                // Check entry-level conditions and functions
+                for (LootEntry entry : pool.entries()) {
+                    for (LootCondition cond : entry.conditions()) {
+                        if (isPlayerKillCondition(cond)) hasPlayerKill = true;
+                        if (isLootingCondition(cond)) hasLootingBonus = true;
+                    }
+
+                    // Check for looting_enchant function
+                    for (var func : entry.functions()) {
+                        if (isLootingFunction(func)) hasLootingBonus = true;
+                    }
+
+                    // Recursively check children for composite entries
+                    if (entry.isComposite()) {
+                        var childResult = analyzeEntryChildren(entry.children());
+                        if (childResult.playerKill) hasPlayerKill = true;
+                        if (childResult.looting) hasLootingBonus = true;
+                    }
+                }
+            }
+
+            // Determine the combined result
+            if (hasPlayerKill && hasLootingBonus) {
+                return KillRequirement.PLAYER_KILL_WITH_LOOTING;
+            } else if (hasPlayerKill) {
+                return KillRequirement.PLAYER_KILL;
+            } else if (hasLootingBonus) {
+                return KillRequirement.LOOTING_DEPENDENT;
+            } else {
+                return KillRequirement.NONE;
+            }
+
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("Error analyzing loot table {}: {}", lootTableId, e.getMessage());
+            return KillRequirement.UNKNOWN;
+        }
+    }
+
+    /**
+     * Helper record for tracking analysis results.
+     */
+    private record AnalysisResult(boolean playerKill, boolean looting) {}
+
+    /**
+     * Recursively analyze children of composite entries.
+     */
+    private AnalysisResult analyzeEntryChildren(List<LootEntry> children) {
+        boolean hasPlayerKill = false;
+        boolean hasLooting = false;
+
+        for (LootEntry child : children) {
+            for (LootCondition cond : child.conditions()) {
+                if (isPlayerKillCondition(cond)) hasPlayerKill = true;
+                if (isLootingCondition(cond)) hasLooting = true;
+            }
+            for (var func : child.functions()) {
+                if (isLootingFunction(func)) hasLooting = true;
+            }
+            if (child.isComposite()) {
+                var nested = analyzeEntryChildren(child.children());
+                if (nested.playerKill) hasPlayerKill = true;
+                if (nested.looting) hasLooting = true;
+            }
+        }
+
+        return new AnalysisResult(hasPlayerKill, hasLooting);
+    }
+
+    /**
+     * Check if a condition is a player kill requirement.
+     */
+    private boolean isPlayerKillCondition(LootCondition cond) {
+        String type = cond.condition();
+        return "minecraft:killed_by_player".equals(type) || "killed_by_player".equals(type);
+    }
+
+    /**
+     * Check if a condition provides looting bonuses.
+     */
+    private boolean isLootingCondition(LootCondition cond) {
+        String type = cond.condition();
+        return "minecraft:random_chance_with_looting".equals(type) ||
+               "random_chance_with_looting".equals(type);
+    }
+
+    /**
+     * Check if a function provides looting bonuses.
+     */
+    private boolean isLootingFunction(dev.isotope.data.loot.LootFunction func) {
+        String type = func.function();
+        return "minecraft:looting_enchant".equals(type) || "looting_enchant".equals(type);
     }
 
     /**
@@ -198,6 +348,39 @@ public final class EntityLootRegistry {
     }
 
     /**
+     * Get entities by loot table ID prefix.
+     * Useful for mod-specific filtering (e.g., "alexsmobs:" to find all Alex's Mobs entities).
+     *
+     * @param prefix The loot table ID prefix to match (e.g., "alexsmobs:", "minecraft:entities/")
+     * @return List of matching EntityLootInfo
+     */
+    public List<EntityLootInfo> getByLootTableIdPrefix(String prefix) {
+        return entities.values().stream()
+            .filter(e -> e.lootTableId().toString().startsWith(prefix))
+            .toList();
+    }
+
+    /**
+     * Get entities filtered by kill requirement.
+     */
+    public List<EntityLootInfo> getByKillRequirement(KillRequirement requirement) {
+        return entities.values().stream()
+            .filter(e -> e.killRequirement() == requirement)
+            .toList();
+    }
+
+    /**
+     * Get all entities that require or benefit from player kills.
+     * Includes PLAYER_KILL, LOOTING_DEPENDENT, and PLAYER_KILL_WITH_LOOTING.
+     */
+    public List<EntityLootInfo> getEntitiesWithSpecialDrops() {
+        return entities.values().stream()
+            .filter(e -> e.killRequirement() != KillRequirement.NONE &&
+                         e.killRequirement() != KillRequirement.UNKNOWN)
+            .toList();
+    }
+
+    /**
      * Convert all entities to LootSource objects.
      */
     public List<LootSource> getAllAsLootSources() {
@@ -235,6 +418,7 @@ public final class EntityLootRegistry {
     public void reset() {
         entities.clear();
         lootTableToEntity.clear();
+        cachedServer = null;
         initialized = false;
     }
 
@@ -245,15 +429,34 @@ public final class EntityLootRegistry {
         ResourceLocation entityId,
         ResourceLocation lootTableId,
         String displayName,
-        boolean requiresPlayerKill
+        KillRequirement killRequirement
     ) {
+        /**
+         * Check if this entity requires player kill for some drops.
+         */
+        public boolean requiresPlayerKill() {
+            return killRequirement == KillRequirement.PLAYER_KILL ||
+                   killRequirement == KillRequirement.PLAYER_KILL_WITH_LOOTING;
+        }
+
+        /**
+         * Check if this entity benefits from looting enchant.
+         */
+        public boolean benefitsFromLooting() {
+            return killRequirement == KillRequirement.LOOTING_DEPENDENT ||
+                   killRequirement == KillRequirement.PLAYER_KILL_WITH_LOOTING;
+        }
+
         /**
          * Convert to a LootSource for unified handling.
          */
         public LootSource toLootSource() {
-            String description = requiresPlayerKill
-                ? "Mob drops (player kill may be required for rare items)"
-                : "Mob drops";
+            String description = switch (killRequirement) {
+                case PLAYER_KILL -> "Mob drops (player kill required for rare items)";
+                case LOOTING_DEPENDENT -> "Mob drops (looting enchant increases drops)";
+                case PLAYER_KILL_WITH_LOOTING -> "Mob drops (player kill + looting for best drops)";
+                case NONE, UNKNOWN -> "Mob drops";
+            };
             return LootSource.mob(entityId, displayName, description);
         }
     }
