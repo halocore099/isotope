@@ -40,6 +40,7 @@ public final class LootTableRegistry {
 
         int contentAnalyzed = 0;
         int pathFallback = 0;
+        int stubsSkipped = 0;
 
         try {
             // Collect all IDs first
@@ -52,6 +53,13 @@ public final class LootTableRegistry {
 
             // Now analyze each table with content-based detection
             for (ResourceLocation id : tableIds) {
+                // Skip stub/placeholder loot tables that have no pools
+                // (e.g., trial_chambers stubs in 1.20.4 before the feature was released)
+                if (isStubLootTable(server, id)) {
+                    stubsSkipped++;
+                    Isotope.LOGGER.debug("Skipping stub loot table: {}", id);
+                    continue;
+                }
                 LootTableCategory category = null;
                 String path = id.getPath();
 
@@ -84,8 +92,8 @@ public final class LootTableRegistry {
             }
 
             scanned = true;
-            Isotope.LOGGER.info("LootTableRegistry: scanned {} loot tables ({} content-analyzed, {} path-fallback)",
-                lootTables.size(), contentAnalyzed, pathFallback);
+            Isotope.LOGGER.info("LootTableRegistry: scanned {} loot tables ({} content-analyzed, {} path-fallback, {} stubs skipped)",
+                lootTables.size(), contentAnalyzed, pathFallback, stubsSkipped);
 
             // Log category breakdown
             Map<LootTableCategory, Long> byCategory = lootTables.values().stream()
@@ -252,6 +260,109 @@ public final class LootTableRegistry {
         } catch (Exception e) {
             Isotope.LOGGER.error("1.20.x API scan failed: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Check if a loot table is a stub (placeholder with no pools).
+     * Minecraft 1.20.4 includes stub loot tables for experimental features like trial_chambers
+     * that have no actual content - just a type and random_sequence.
+     *
+     * @param server The server to look up the loot table
+     * @param id The loot table ID to check
+     * @return true if the table is a stub with no pools
+     */
+    private boolean isStubLootTable(MinecraftServer server, ResourceLocation id) {
+        try {
+            // Try 1.21+ API first
+            Object lootTable = getLootTable1_21Plus(server, id);
+            if (lootTable == null) {
+                // Fall back to 1.20.x API
+                lootTable = getLootTable1_20x(server, id);
+            }
+
+            if (lootTable == null) {
+                return false; // Can't determine, assume not a stub
+            }
+
+            // Check if the loot table has pools
+            // LootTable.pools is a List<LootPool>
+            java.lang.reflect.Field poolsField = null;
+            for (java.lang.reflect.Field f : lootTable.getClass().getDeclaredFields()) {
+                if (java.util.List.class.isAssignableFrom(f.getType())) {
+                    f.setAccessible(true);
+                    Object value = f.get(lootTable);
+                    if (value instanceof java.util.List<?> list) {
+                        // Found a List field - check if it's the pools field
+                        // Pools field should contain LootPool instances
+                        if (list.isEmpty()) {
+                            // Empty list - this is likely the pools field and it's a stub
+                            return true;
+                        } else if (!list.isEmpty()) {
+                            Object first = list.get(0);
+                            if (first != null && first.getClass().getSimpleName().contains("LootPool")) {
+                                // Has pools - not a stub
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Couldn't determine, assume not a stub
+            return false;
+        } catch (Exception e) {
+            Isotope.LOGGER.debug("Failed to check if {} is stub: {}", id, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get a LootTable using 1.21+ API.
+     */
+    private Object getLootTable1_21Plus(MinecraftServer server, ResourceLocation id) {
+        try {
+            java.lang.reflect.Method reloadableRegistries = MinecraftServer.class.getMethod("reloadableRegistries");
+            Object holder = reloadableRegistries.invoke(server);
+
+            // Find getLootTable method
+            for (java.lang.reflect.Method m : holder.getClass().getMethods()) {
+                if (m.getName().equals("getLootTable") && m.getParameterCount() == 1) {
+                    // Could take ResourceKey or ResourceLocation
+                    Class<?> paramType = m.getParameterTypes()[0];
+                    if (paramType.getSimpleName().contains("ResourceKey")) {
+                        // Create ResourceKey<LootTable>
+                        Class<?> registriesClass = Class.forName("net.minecraft.core.registries.Registries");
+                        Object lootTableRegistry = registriesClass.getField("LOOT_TABLE").get(null);
+
+                        Class<?> resourceKeyClass = Class.forName("net.minecraft.resources.ResourceKey");
+                        java.lang.reflect.Method create = resourceKeyClass.getMethod("create", resourceKeyClass, ResourceLocation.class);
+                        Object resourceKey = create.invoke(null, lootTableRegistry, id);
+
+                        return m.invoke(holder, resourceKey);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Expected on 1.20.x
+        }
+        return null;
+    }
+
+    /**
+     * Get a LootTable using 1.20.x API.
+     */
+    private Object getLootTable1_20x(MinecraftServer server, ResourceLocation id) {
+        try {
+            java.lang.reflect.Method getLootData = MinecraftServer.class.getMethod("getLootData");
+            Object lootData = getLootData.invoke(server);
+
+            // getLootTable(ResourceLocation)
+            java.lang.reflect.Method getLootTable = lootData.getClass().getMethod("getLootTable", ResourceLocation.class);
+            return getLootTable.invoke(lootData, id);
+        } catch (Exception e) {
+            // Expected on 1.21+
+        }
+        return null;
     }
 
     /**

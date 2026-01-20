@@ -36,14 +36,27 @@ public final class LootTableParser {
     public static Optional<LootTableStructure> parse(MinecraftServer server, ResourceLocation tableId) {
         ResourceManager resourceManager = server.getResourceManager();
 
-        // Loot tables are at: data/<namespace>/loot_table/<path>.json
+        // Loot tables path differs by version:
+        // 1.21+: data/<namespace>/loot_table/<path>.json (singular)
+        // 1.20.x: data/<namespace>/loot_tables/<path>.json (plural)
+        // Try both paths for compatibility
         ResourceLocation jsonPath = RegistryHelper.fromNamespaceAndPath(
             tableId.getNamespace(),
             "loot_table/" + tableId.getPath() + ".json"
         );
 
+        Optional<Resource> resource = resourceManager.getResource(jsonPath);
+
+        // If not found, try the 1.20.x plural path
+        if (resource.isEmpty()) {
+            jsonPath = RegistryHelper.fromNamespaceAndPath(
+                tableId.getNamespace(),
+                "loot_tables/" + tableId.getPath() + ".json"
+            );
+            resource = resourceManager.getResource(jsonPath);
+        }
+
         try {
-            Optional<Resource> resource = resourceManager.getResource(jsonPath);
             if (resource.isEmpty()) {
                 Isotope.LOGGER.debug("Loot table not found: {}", tableId);
                 return Optional.empty();
