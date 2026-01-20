@@ -2,41 +2,11 @@ architectury {
     common(rootProject.enabled_platforms.split(","))
 }
 
-// Determine MC version for conditional compilation
-def mcVersion = rootProject.findProperty("minecraft_version") ?: "1.21.4"
-def is1_21Plus = mcVersion.startsWith("1.21")
-
-// Exclude version-specific files that won't compile on certain versions
-sourceSets {
-    main {
-        java {
-            if (!is1_21Plus) {
-                // 1.20.x: Exclude only the mixin that targets a class that doesn't exist
-                exclude '**/mixin/ReloadableRegistriesMixin.java'
-                // Exclude MixinPlugin that references the mixin
-                exclude '**/mixin/IsotopeMixinPlugin.java'
-            }
-        }
-        resources {
-            if (!is1_21Plus) {
-                // 1.20.x: Exclude the 1.21+ mixin config
-                exclude 'isotope-common.mixins.json'
-            } else {
-                // 1.21+: Exclude the 1.20.x mixin config
-                exclude 'isotope-common-1.20.mixins.json'
-            }
-        }
-    }
-}
-
-// For 1.20.x, rename the mixin config after processing
-if (!is1_21Plus) {
-    processResources {
-        filesMatching('isotope-common-1.20.mixins.json') {
-            rename { 'isotope-common.mixins.json' }
-        }
-    }
-}
+// All mixin classes compile for all versions because:
+// - ReloadableRegistriesMixin uses string-based target (compiles without the target class)
+// - LootDataManagerMixin uses string-based target
+// - IsotopeMixinPlugin handles conditional loading at runtime
+// No source exclusions needed - the mixin plugin filters at runtime
 
 dependencies {
     // Fabric loader for annotations - do NOT use other fabric classes here
