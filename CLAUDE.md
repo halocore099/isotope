@@ -23,115 +23,94 @@ Uses **Stonecutter** for multi-version builds from a single branch (`main`).
 
 ### Version Groups
 
-Instead of building a separate JAR for each MC version, we build **2 JARs** that each cover a range of compatible versions:
+We build **2 JARs** that each cover a range of compatible Minecraft versions:
 
 | Build | Covers | Fabric | NeoForge | Java | Notes |
 |-------|--------|--------|----------|------|-------|
-| 1.21.4 | 1.21 - 1.21.11+ | ✅ | ✅ | 21 | Primary target |
-| 1.20.4 | 1.20.1 - 1.20.6 | ✅ | ✅ | 17 | All 1.20.x versions |
+| 1.21.4 | 1.21 - 1.22 | ✅ | ✅ | 21 | Primary target |
+| 1.20.4 | 1.20.1 - 1.20.6 | ✅ | ✅ | 17 | Requires helper mod |
 
-All versions support **Fabric + NeoForge**. NeoForge exists for 1.20.1+.
+Both loaders (Fabric + NeoForge) are supported for all versions.
 
 **Why version grouping works**:
 - **1.21.x**: Same mixin targets, same registry API, same Java version
-- **1.20.x**: Compiled against 1.20.4, compatible with all 1.20.x via:
-  - Helper mod for UI method signature differences (1.20.1-1.20.3)
-  - `LootDataManagerMixin` for 1.20.1 loot table tracking
-  - `ReloadableRegistriesMixin` for 1.20.2+ loot table tracking
-  - Mixin plugin detects version and applies appropriate mixins
-
-The mod metadata declares version ranges (e.g., `>=1.21 <1.22` for Fabric) so one JAR works across multiple MC versions.
+- **1.20.x**: Compiled against 1.20.4, compatible with 1.20.1-1.20.6 via:
+  - **Helper mod** adds 1.21-style method signatures to 1.20.x classes
+  - `IsotopeMixinPlugin` conditionally loads version-appropriate mixins
+  - Version range metadata (`>=1.20.1 <1.21`) allows one JAR for all 1.20.x
 
 **Why multi-version works**:
 - Architectury insulates from loader quirks
 - Data models use `String` types + raw `JsonObject` (tolerates unknown loot features)
-- Mixins use safe patterns (`@Inject` at `HEAD`/`TAIL` only, no bytecode manipulation)
-- Stonecutter conditionals handle API differences at build time
+- Mixins use safe patterns (`@Inject` at `HEAD`/`TAIL` only)
+- Reflection handles registry API differences at runtime
 
-**Releases**: Tag format `vX.X.X`. Published to supported game versions on Modrinth/CurseForge.
+**Releases**: Tag format `vX.X.X`. Published to Modrinth/CurseForge.
 
-### 1.20.x Compatibility Strategy: Helper Mod Approach
+### Helper Mod (1.20.x Compatibility)
 
-**Problem**: Minecraft 1.20.x and 1.21.x have incompatible method signatures that can't be resolved with runtime checks alone:
+**Problem**: Minecraft 1.20.x and 1.21.x have incompatible method signatures:
 
 | API | 1.21.x | 1.20.x |
 |-----|--------|--------|
 | `mouseScrolled` | 4 params (mouseX, mouseY, scrollX, scrollY) | 3 params (mouseX, mouseY, delta) |
 | `renderBackground` | 4 params (graphics, mouseX, mouseY, partialTick) | 1 param (graphics) |
-| Widget position | `getX()`, `getY()`, `setX()` methods | Internal fields `x0`, `y0` only |
-| `ObjectSelectionList` | 5 param constructor | 6 param constructor |
+| Widget position | `getX()`, `getY()`, `setX()` methods | Direct field access only |
 
-**Solution**: Create a **helper/compatibility mod** for 1.20.x that uses Mixins to add 1.21-style method signatures:
+**Solution**: The `helper/` module contains mixins that add 1.21-style signatures to 1.20.x classes:
 
-```java
-// Helper mod adds 1.21 signatures to 1.20.x classes
-@Mixin(Screen.class)
-public class ScreenCompatMixin {
-    // Add 4-param method that delegates to 3-param
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        return ((Screen)(Object)this).mouseScrolled(mouseX, mouseY, scrollY);
-    }
-
-    // Add 4-param method that delegates to 1-param
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        ((Screen)(Object)this).renderBackground(graphics);
-    }
-}
-
-@Mixin(AbstractWidget.class)
-public class WidgetCompatMixin {
-    @Shadow protected int x;
-    @Shadow protected int y;
-
-    public int getX() { return this.x; }
-    public int getY() { return this.y; }
-    public void setX(int x) { this.x = x; }
-}
-```
-
-**Benefits**:
-- Main mod stays clean with 1.21-style code everywhere
-- No Stonecutter conditionals needed in UI code
-- Helper mod only required when running on 1.20.x
-- ~200-300 lines of mixins vs 30+ files with conditionals
+| Mixin | Purpose |
+|-------|---------|
+| `ScreenCompatMixin` | Adds 4-param `mouseScrolled` and `renderBackground` |
+| `AbstractWidgetCompatMixin` | Adds `getX()`, `getY()`, `setX()`, `setY()` |
+| `ObjectSelectionListCompatMixin` | Adapts constructor differences |
+| `MinecraftCompatMixin` | Adds missing utility methods |
+| `RandomizableContainerCompatMixin` | Loot table API compatibility |
 
 **Deployment**:
 | MC Version | Main Mod | Helper Mod |
 |------------|----------|------------|
-| 1.21.x | Required | Not needed |
+| 1.21.x | Required | Not needed (disabled) |
 | 1.20.x | Required | Required (dependency) |
 
-**What stays in main mod** (via VersionHelper/reflection):
-- Registry access differences (return types fundamentally different)
-- World creation APIs (method signatures vary)
-- Conditional mixin loading (classes don't exist)
-- Entity loot table access (return types differ)
+The helper mod build is automatically disabled when building for 1.21.x.
+
+**What stays in main mod** (via reflection in `compat/` package):
+- Registry access differences (return types differ)
+- World creation APIs (method counts vary)
+- Conditional mixin loading (target classes don't exist in all versions)
 
 ### Stonecutter Configuration
 
-The `stonecutter.gradle.kts` defines the active version for builds:
-```kotlin
-stonecutter active "1.21.4" /* [SC] DO NOT EDIT */
+**Modules**: `common/`, `fabric/`, `neoforge/`, `helper/`
+
+**Version folders** in `versions/`:
+```
+versions/
+├── 1.20.4/gradle.properties  # Covers 1.20.1-1.20.6
+└── 1.21.4/gradle.properties  # Covers 1.21-1.22
 ```
 
-Version folders in `versions/`:
-- `versions/1.20.4/` - Properties for 1.20.x build (covers 1.20.1-1.20.6)
-- `versions/1.21.4/` - Properties for 1.21.x build (covers 1.21+)
+**Active version** in `stonecutter.gradle.kts`:
+```kotlin
+stonecutter active "1.20.4" /* [SC] DO NOT EDIT */
+```
 
-Version-specific properties in `versions/<version>/gradle.properties`:
-- `minecraft_version` - Target MC version (e.g., `1.20.4`)
-- `enabled_platforms` - `fabric,neoforge`
+**Version properties** (`versions/<version>/gradle.properties`):
+- `minecraft_version` - Build target (1.20.4 or 1.21.4)
+- `minecraft_version_label` - Display label (1.20.x or 1.21.x)
 - `java_version` - 17 for 1.20.x, 21 for 1.21.x
-- Loader-specific versions (fabric_api_version, neoforge_version)
-- **Version ranges for mod metadata**:
-  - `minecraft_version_range_fabric` - Semver range (e.g., `>=1.20.2 <1.21`)
-  - `minecraft_version_range_neoforge` - Maven range (e.g., `[1.20.2,1.21)`)
+- `minecraft_version_range_fabric` - e.g., `>=1.20.1 <1.21`
+- `minecraft_version_range_neoforge` - e.g., `[1.20.1,1.21)`
 
-Switch active version: Edit `stonecutter active "X.X.X"` in `stonecutter.gradle.kts`
+**Build commands**:
+```bash
+./gradlew chiseledBuild              # Build all versions
+./gradlew :fabric:build              # Build current version for Fabric
+./gradlew :neoforge:build            # Build current version for NeoForge
+```
 
-Build all versions: `./gradlew chiseledBuild`
-
-Build single version: `./gradlew :fabric:build` or `./gradlew :neoforge:build`
+Switch active version by editing `stonecutter active "X.X.X"` line.
 
 ### Version Compatibility Layer (`compat/` package)
 
@@ -242,90 +221,74 @@ LootSourceType.MOB        // Purple - entity drops on death
 
 ### Layer Flow
 
+Orchestrated by `RegistryScanner.buildScanSteps()` on server start:
+
 ```
 Server Start
     ↓
 Layer 1: Registry Scan
-         - StructureRegistry (real structures from Registries.STRUCTURE)
-         - LootTableRegistry (all loot tables)
-         - StructureClassRegistry (class -> structure ID mapping)
-         - FeatureRegistry (known features with loot)
-         - WorldgenFeatureParser (dynamic feature discovery from JSON)
-         - EntityLootRegistry (mob loot from entities/*.json)
+    ├─ StructureRegistry (structures from Registries.STRUCTURE)
+    ├─ LootTableRegistry (all loot tables)
+    └─ StructureClassRegistry (class → structure ID mapping)
     ↓
-Layer 1.5: Content Analysis (LootTableContentAnalyzer)
-         - Analyzes loot table JSON for signature items
-         - Signature items hint at specific structure origin
-         - Example: heart_of_the_sea → buried_treasure (95% confidence)
-         - Example: echo_shard → ancient_city (90% confidence)
+Layer 1.5: Feature & Entity Discovery
+    ├─ FeatureRegistry + WorldgenFeatureParser (dungeons, bonus chests)
+    └─ EntityLootRegistry (mob loot from entities/*.json)
     ↓
 Layer 2: Template Parsing (StructureTemplateParser)
-         - Parses .nbt files for loot table references
-         - Handles jigsaw structures recursively
-    ↓
-Layer 2.1: Spawner Entity Analysis (SpawnerEntityExtractor)
-         - Extracts entity types from spawner blocks in templates
-         - Links spawned entity's loot table to the structure
-         - Example: dungeon with zombie spawner → minecraft:entities/zombie
+    ├─ Parses .nbt files for loot table references
+    ├─ Handles jigsaw structures recursively
+    └─ Internally calls SpawnerEntityExtractor for spawner blocks
     ↓
 Layer 2.2: Template Pool Parsing (TemplatePoolParser)
-         - Parses worldgen/template_pool/*.json for jigsaw loot
-         - Resolves pool hierarchy (fallback pools, nested pools)
-         - Matches pools to structures by naming conventions
+    └─ Parses worldgen/template_pool/*.json for jigsaw loot
     ↓
 Layer 2.25: Processor List Parsing (ProcessorListParser)
-         - Parses worldgen/processor_list/*.json for loot tables
-         - Cross-references with template pools (pool → processor → loot)
-         - Extracts loot from rule processor output_nbt
+    └─ Parses worldgen/processor_list/*.json for loot tables
     ↓
-Layer 2.27: Structure Config Parsing (StructureConfigParser)
-         - Parses worldgen/structure/*.json for structure definitions
-         - Maps jigsaw structures to their start_pool
-         - Extracts type-based loot (buried_treasure, shipwreck, etc.)
+Layer 2.3: Structure Config Parsing (StructureConfigParser)
+    └─ Parses worldgen/structure/*.json for structure definitions
     ↓
-Layer 2.28: Mod-Declared Links (ModLinkScanner, ModLinkRegistry)
-         - Scans for isotope_links.json and loot_metadata.json via ResourceManager
-         - Public API for mods to register links programmatically
-         - MOD_DECLARED confidence (95) - very high trust
+Layer 2.4: Mod-Declared Links (ModLinkScanner)
+    └─ Scans for isotope_links.json via ResourceManager
     ↓
-Layer 2.29: Datapack Metadata (DatapackLootMetadataScanner)
-         - Direct folder scan for loot_metadata.json in datapacks
-         - Catches unloaded datapacks not in ResourceManager
-         - Same format as isotope_links.json
+Layer 2.5: Datapack Metadata (DatapackLootMetadataScanner)
+    └─ Direct folder scan for loot_metadata.json in datapacks
     ↓
-Layer 2.3: Learned Links (LearnedLinksManager)
-         - Pre-populates from persistent learned_links.json
-         - Previously verified links from past sessions
+Layer 3: Structure-Loot Linking (StructureLootLinker)
+    │   Combines all sources with confidence scoring:
+    │
+    ├─ 3a. Content Analysis (LootTableContentAnalyzer)
+    │      Signature items hint at structure origin
+    │
+    ├─ 3b. Learned Links (LearnedLinksManager)
+    │      Pre-populated from past sessions
+    │
+    ├─ 3c. Runtime Data (ObservationCorrelator, LootObserver)
+    │      Spatial correlation from actual gameplay
+    │
+    ├─ 3d. Confirmation Scoring (ConfirmationScorer)
+    │      Boosts confidence when multiple sources agree
+    │
+    ├─ 3e. Namespace Validation (NamespaceValidator)
+    │      Flags suspicious cross-namespace links
+    │
+    └─ 3f. Author Overrides (UserCorrectionManager)
+           Manual corrections have final authority
     ↓
-Layer 2.5: Runtime Assignment (LootObserver)
-         - setLootTable() hook captures direct causation
-         - Uses StructureClassRegistry for 100% accurate caller ID
+Layer 4: Orphan Detection (OrphanDetector)
+    ├─ Flags unlinked loot tables
+    └─ Flags structures without loot
     ↓
-Layer 3: Runtime Observation (ObservationCorrelator)
-         - Spatial correlation during gameplay
-         - Ground truth from actual loot generation
-    ↓
-Layer 3.5: Confirmation Scoring (ConfirmationScorer)
-         - Boosts confidence when 2+ source categories agree
-         - Categories: STATIC_ANALYSIS, DYNAMIC_ANALYSIS, HISTORICAL, AUTHOR
-    ↓
-Layer 4: Namespace Validation (NamespaceValidator)
-         - Flags suspicious cross-namespace links
-         - Warns on cross-mod links
-    ↓
-Layer 5: Author Overrides
-         - Manual links have final authority
-    ↓
-Layer 6: Orphan Detection (OrphanDetector)
-         - Flags unlinked loot tables
-         - Flags structures without loot
-    ↓
-Layer 7: Compile Unified Registry (LootSourceRegistry)
-         - Combines structures + features + mobs into single view
-         - Used by UI for consistent display
+Layer 5: Compile Unified Registry (LootSourceRegistry)
+    └─ Combines structures + features + mobs for UI
     ↓
 Ready
 ```
+
+**Runtime-only** (not part of server start):
+- `LootObserver` captures setLootTable() calls during gameplay
+- `ObservationCorrelator` correlates structures with loot generation
 
 ### Key Classes
 
@@ -471,37 +434,6 @@ When multiple signature items for the same structure are found in a single loot 
 
 **Statistics available via:**
 - `LootTableContentAnalyzer.getStats()` - tables analyzed, tables with hints, signature item count
-
-### Future Linking Improvements (TODO)
-
-Potential additions to further improve linking accuracy:
-
-**High Value / Low Effort:**
-| Suggestion | Description | Files to Create/Modify |
-|------------|-------------|------------------------|
-| ~~Template Pool JSON Parsing~~ | ✅ DONE - Parse `worldgen/template_pool/*.json` for jigsaw loot refs | `TemplatePoolParser.java` |
-| ~~Processor List Parsing~~ | ✅ DONE - Parse `worldgen/processor_list/*.json` for processor loot mods | `ProcessorListParser.java` |
-| ~~Structure Feature Registry~~ | ✅ DONE - Parse `worldgen/structure/*.json` for structure definitions | `StructureConfigParser.java` |
-
-**Medium Value / Medium Effort:**
-| Suggestion | Description | Files to Create/Modify |
-|------------|-------------|------------------------|
-| ~~Mod Integration API~~ | ✅ DONE - Mods declare links via isotope_links.json or API | `ModLinkRegistry.java`, `ModLinkScanner.java` |
-| ~~NBT Spawner Entity Analysis~~ | ✅ DONE - Extract entity types from spawners → link to mob loot | `SpawnerEntityExtractor.java` |
-| ~~Loot Table Content Analysis~~ | ✅ DONE - Analyze loot JSON for signature items → infer structure | `LootTableContentAnalyzer.java` |
-
-**High Value / Higher Effort:**
-| Suggestion | Description | Files to Create/Modify |
-|------------|-------------|------------------------|
-| ~~Confidence Decay~~ | ✅ DONE - Learned links older than 2+ MC versions get demoted | `LearnedLinksManager.java` |
-| ~~User Correction Feedback~~ | ✅ DONE - Learn from manual user corrections | `UserCorrectionManager.java` |
-| ~~Datapack Loot Metadata~~ | ✅ DONE - Support `loot_metadata.json` in datapacks | `DatapackLootMetadataScanner.java` |
-
-**Priority order for implementation:**
-1. ~~Template Pool JSON Parsing~~ ✅ DONE
-2. ~~Mod Integration API~~ ✅ DONE (100% accuracy for adopting mods)
-3. ~~Datapack Loot Metadata~~ ✅ DONE (explicit is better than inferred)
-4. ~~Confidence Decay~~ ✅ DONE (accuracy maintenance over time)
 
 ### UI Indicators for Loot Sources
 
