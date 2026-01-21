@@ -1,16 +1,11 @@
 architectury {
-    common(rootProject.enabled_platforms.split(","))
+    common("neoforge")
 }
 
-// All mixin classes compile for all versions because:
-// - ReloadableRegistriesMixin uses string-based target (compiles without the target class)
-// - LootDataManagerMixin uses string-based target
-// - IsotopeMixinPlugin handles conditional loading at runtime
-// No source exclusions needed - the mixin plugin filters at runtime
-
 dependencies {
-    // Fabric loader for annotations - do NOT use other fabric classes here
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    // Fabric loader for annotations (EnvType, Environment)
+    modCompileOnly "net.fabricmc:fabric-loader:0.16.9"
+
     // Architectury API
     modApi "dev.architectury:architectury:${rootProject.architectury_version}"
 

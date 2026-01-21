@@ -168,18 +168,9 @@ public class LootTablePickerScreen extends IsotopeScreen {
     @Environment(EnvType.CLIENT)
     class LootTableList extends ObjectSelectionList<LootTableEntry> {
 
-        //? if >=1.21 {
         public LootTableList(Minecraft minecraft, int width, int height, int y, int itemHeight) {
             super(minecraft, width, height, y, itemHeight);
         }
-        //?} else {
-        /*
-        public LootTableList(Minecraft minecraft, int width, int height, int y, int itemHeight) {
-            // 1.20.x constructor has 6 params: minecraft, width, height, top, bottom, itemHeight
-            super(minecraft, width, height, y, y + height, itemHeight);
-        }
-        */
-        //?}
 
         @Override
         public int getRowWidth() {

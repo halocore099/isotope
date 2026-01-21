@@ -4,72 +4,26 @@ plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
 }
 
-// Load version-specific properties from stonecutter.gradle.kts active version
-def stonecutterGradle = file("stonecutter.gradle.kts")
-if (stonecutterGradle.exists()) {
-    def activeVersionMatch = stonecutterGradle.text =~ /stonecutter active "([^"]+)"/
-    if (activeVersionMatch.find()) {
-        def activeVersion = activeVersionMatch.group(1)
-        def versionProps = file("versions/${activeVersion}/gradle.properties")
-        if (versionProps.exists()) {
-            def props = new Properties()
-            versionProps.withInputStream { props.load(it) }
-            props.each { key, value ->
-                if (!rootProject.hasProperty(key.toString()) || key.toString().startsWith("minecraft") ||
-                    key.toString().contains("version") || key.toString().contains("platforms") ||
-                    key.toString().contains("java_version") || key.toString().contains("architectury")) {
-                    rootProject.ext.set(key.toString(), value)
-                }
-            }
-            println "Loaded properties for Stonecutter version: ${activeVersion}"
-        }
-    }
-}
-
 architectury {
     minecraft = rootProject.minecraft_version
 }
 
 subprojects {
-    // Helper module handles its own configuration
-    if (project.name == "helper") {
-        return
+    apply plugin: "dev.architectury.loom"
+
+    loom {
+        silentMojangMappingsLicense()
     }
 
-    // Check which platforms are enabled
-    def enabledPlatforms = rootProject.findProperty("enabled_platforms") ?: "fabric,neoforge"
-    def mcVersion = rootProject.findProperty("minecraft_version") ?: "1.21.4"
-
-    // Determine if this subproject should have Loom applied
-    def shouldApplyLoom = true
-    if (project.name == "neoforge") {
-        def isNeoForgeVersion = mcVersion.startsWith("1.21") || mcVersion.startsWith("1.20.4") || mcVersion.startsWith("1.20.5") || mcVersion.startsWith("1.20.6")
-        shouldApplyLoom = enabledPlatforms.contains("neoforge") && isNeoForgeVersion
-    } else if (project.name == "forge") {
-        shouldApplyLoom = enabledPlatforms.contains("forge")
-    }
-
-    if (shouldApplyLoom) {
-        apply plugin: "dev.architectury.loom"
-
-        loom {
-            silentMojangMappingsLicense()
-        }
-
-        dependencies {
-            minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-            mappings loom.officialMojangMappings()
-        }
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings loom.officialMojangMappings()
     }
 }
 
 allprojects {
     apply plugin: "java"
-
-    // Helper module doesn't use architectury
-    if (project.name != "helper") {
-        apply plugin: "architectury-plugin"
-    }
+    apply plugin: "architectury-plugin"
 
     base {
         archivesName = rootProject.archives_base_name
@@ -86,12 +40,13 @@ allprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
-        // Java version set by version-specific gradle.properties (17 for 1.20.x, 21 for 1.21.x)
-        def javaVersion = rootProject.hasProperty('java_version') ? rootProject.java_version.toInteger() : 21
-        options.release = javaVersion
+        options.release = 21
     }
 
     java {
         withSourcesJar()
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
     }
 }
