@@ -3,14 +3,14 @@
   "minVersion": "0.8",
   "package": "dev.isotope.mixin",
   "compatibilityLevel": "JAVA_21",
-  "plugin": "dev.isotope.mixin.IsotopeMixinPlugin",
   "mixins": [
     "LootTableMixin",
-    "StructureStartMixin",
-    "ReloadableRegistriesMixin"
+    "RandomizableContainerMixin",
+    "ReloadableRegistriesMixin",
+    "StructureStartMixin"
   ],
   "client": [],
   "injectors": {
-    "defaultRequire": 0
+    "defaultRequire": 1
   }
 }
