@@ -131,8 +131,6 @@ public final class StructurePlacementEngine {
             var chunkPos = level.getChunk(targetPos).getPos();
 
             StructureStart start = structure.generate(
-                holder,
-                level.dimension(),
                 level.registryAccess(),
                 level.getChunkSource().getGenerator(),
                 level.getChunkSource().getGenerator().getBiomeSource(),

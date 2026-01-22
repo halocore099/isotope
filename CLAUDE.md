@@ -2,12 +2,13 @@
 
 ## Branch Info
 
-**Branch**: `neo-1.21.4`
-**Target**: Minecraft 1.21.4, NeoForge only
+**Branch**: `neo-1.21.2-.3`
+**Target**: Minecraft 1.21.2 and 1.21.3, NeoForge only
 **Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
 
-This is a single-version, single-loader branch. For other versions/loaders, see:
-- `fab-1.21.4` - Fabric 1.21.4
+This is a multi-version, single-loader branch. For other versions/loaders, see:
+- `fab-1.21.2-.3` - Fabric 1.21.2/1.21.3
+- `neo-1.21.4` / `fab-1.21.4` - Minecraft 1.21.4
 - `main` - Documentation only
 
 ## Critical Rules
@@ -45,9 +46,9 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 
 | Dependency | Version |
 |------------|---------|
-| Minecraft | 1.21.4 |
-| NeoForge | 21.4.156 |
-| Architectury | 15.0.3 |
+| Minecraft | 1.21.2 (supports 1.21.2, 1.21.3) |
+| NeoForge | 21.2.1-beta |
+| Architectury | 14.0.4 |
 | Java | 21 |
 
 ## Structure-Loot Linking Architecture
