@@ -212,8 +212,6 @@ public final class TestArenaManager {
 
             // Create structure start
             StructureStart start = structure.generate(
-                structureHolder,
-                level.dimension(),
                 level.registryAccess(),
                 level.getChunkSource().getGenerator(),
                 level.getChunkSource().getGenerator().getBiomeSource(),
