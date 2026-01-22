@@ -274,7 +274,16 @@ public class ItemPickerScreen extends Screen {
                 if (hovered) {
                     Item item = filteredItems.get(i);
                     ItemStack stack = new ItemStack(item);
-                    graphics.renderTooltip(font, stack, mouseX, mouseY);
+                    // MC 1.21.6+ tooltip API changed - draw simple name label instead
+                    String itemName = stack.getHoverName().getString();
+                    int textWidth = font.width(itemName);
+                    int tooltipX = mouseX + 8;
+                    int tooltipY = mouseY - 12;
+                    // Background
+                    graphics.fill(tooltipX - 2, tooltipY - 2, tooltipX + textWidth + 2, tooltipY + 10, 0xF0100010);
+                    graphics.fill(tooltipX - 1, tooltipY - 1, tooltipX + textWidth + 1, tooltipY + 9, 0xF0250070);
+                    // Text
+                    graphics.drawString(font, itemName, tooltipX, tooltipY, 0xFFFFFFFF, false);
                     break;
                 }
             }

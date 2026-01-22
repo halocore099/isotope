@@ -143,7 +143,7 @@ public final class TestingTools {
             double y = position.getY() + 1;
             double z = position.getZ() + 0.5;
 
-            player.teleportTo(player.serverLevel(), x, y, z,
+            player.teleportTo((net.minecraft.server.level.ServerLevel) player.level(), x, y, z,
                 Set.of(), player.getYRot(), player.getXRot(), true);
 
             Isotope.LOGGER.info("Teleported player to {}, {}, {}", x, y, z);

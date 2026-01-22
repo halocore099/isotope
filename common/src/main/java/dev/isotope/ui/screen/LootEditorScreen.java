@@ -1150,12 +1150,9 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }
 
         // Command palette (rendered after widgets so it's on top)
+        // Note: MC 1.21.6+ uses 2D Matrix3x2fStack - z-ordering is handled by render order
         if (commandPaletteVisible && commandPalette != null) {
-            // Push to higher z-level to render above loot table items
-            graphics.pose().pushPose();
-            graphics.pose().translate(0, 0, 400);
             commandPalette.render(graphics, mouseX, mouseY, partialTick);
-            graphics.pose().popPose();
         }
 
         // Context menu (rendered last, on top of everything including command palette)

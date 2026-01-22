@@ -504,7 +504,7 @@ public class TestingScreen extends Screen {
             var player = server.getPlayerList().getPlayers().stream().findFirst().orElse(null);
             if (player == null) return;
 
-            var level = player.serverLevel();
+            var level = (net.minecraft.server.level.ServerLevel) player.level();
             var pos = player.position();
             int radius = 100;
 

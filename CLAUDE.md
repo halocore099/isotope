@@ -1,5 +1,15 @@
 # ISOTOPE - Claude Memory
 
+## Branch Info
+
+**Branch**: `fab-1.21.6-.8`
+**Target**: Minecraft 1.21.6-1.21.8, Fabric only
+**Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
+
+This is a multi-version, single-loader branch. For other versions/loaders, see:
+- `neo-1.21.6-.8` - NeoForge 1.21.6-1.21.8
+- `main` - Documentation only
+
 ## Critical Rules
 
 1. **UI style changes require user approval** - The current vanilla-styled UI with the 3-panel layout, tabs, and editor features should not be changed without explicit user authorization first. Always ask before redesigning or restyling.
@@ -27,7 +37,31 @@ Single branch (`main`) supports the entire 1.21.x line. No per-patch branches ne
 - Mixins use safe patterns (`@Inject` at `HEAD`/`TAIL` only, no bytecode manipulation)
 - MC 1.21.x has no breaking API changes between patches
 
-**Releases**: Tag format `vX.X.X`. Published to all 1.21.x game versions on Modrinth/CurseForge.
+## Build Commands
+
+```bash
+# Set Java 21 (macOS with Homebrew)
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21
+
+# Build
+./gradlew build
+
+# Run client
+./gradlew :fabric:runClient
+
+# Clean
+./gradlew clean
+```
+
+## Key Dependencies
+
+| Dependency | Version |
+|------------|---------|
+| Minecraft | 1.21.6-1.21.8 |
+| Fabric Loader | 0.16.14 |
+| Fabric API | 0.130.0+1.21.8 |
+| Architectury | 17.0.8 |
+| Java | 21 |
 
 ## Structure-Loot Linking Architecture
 
