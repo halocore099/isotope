@@ -6,6 +6,9 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
@@ -281,7 +284,10 @@ public class CommandPalette extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         // Check if click is outside palette
         if (!isMouseOver(mouseX, mouseY)) {
             close();
@@ -290,7 +296,7 @@ public class CommandPalette extends AbstractWidget {
 
         // Handle search box click
         if (searchBox.isMouseOver(mouseX, mouseY)) {
-            searchBox.mouseClicked(mouseX, mouseY, button);
+            searchBox.mouseClicked(event, focused);
             return true;
         }
 
@@ -309,7 +315,10 @@ public class CommandPalette extends AbstractWidget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         // Escape to close
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             close();
@@ -341,12 +350,14 @@ public class CommandPalette extends AbstractWidget {
         }
 
         // Let search box handle other keys
-        return searchBox.keyPressed(keyCode, scanCode, modifiers);
+        return searchBox.keyPressed(event);
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
-        return searchBox.charTyped(chr, modifiers);
+    public boolean charTyped(CharacterEvent event) {
+        char c = (char) event.codepoint();
+        int modifiers = event.modifiers();
+        return searchBox.charTyped(event);
     }
 
     @Override

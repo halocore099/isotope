@@ -13,6 +13,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -204,8 +207,12 @@ public class LootTablePickerScreen extends IsotopeScreen {
         }
 
         @Override
-        public void render(GuiGraphics graphics, int index, int top, int left, int width, int height,
-                          int mouseX, int mouseY, boolean hovering, float partialTick) {
+        public void renderContent(GuiGraphics graphics, int mouseX, int mouseY, boolean hovering, float partialTick) {
+            int left = getContentX();
+            int top = getContentY();
+            int width = getContentWidth();
+            int height = getContentHeight();
+
             int bgColor = hovering ? IsotopeColors.LIST_ITEM_HOVER : IsotopeColors.LIST_ITEM_BG;
             if (lootTableList.getSelected() == this) {
                 bgColor = IsotopeColors.LIST_ITEM_SELECTED;
@@ -235,8 +242,8 @@ public class LootTablePickerScreen extends IsotopeScreen {
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (button == 0) {
+        public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean focused) {
+            if (event.button() == 0) {
                 lootTableList.setSelected(this);
                 return true;
             }

@@ -160,7 +160,8 @@ public final class RegistryLoader {
                 minecraft.getSingleplayerServer().halt(false);
             }
 
-            minecraft.disconnect();
+            // MC 1.21.6+ disconnect requires (Screen returnScreen, boolean saveWorld)
+            minecraft.disconnect(null, false);
             Isotope.LOGGER.info("Disconnected from temp world");
 
             // Wait for world to fully close, then cleanup and open MainScreen

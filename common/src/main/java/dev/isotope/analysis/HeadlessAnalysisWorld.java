@@ -210,7 +210,8 @@ public final class HeadlessAnalysisWorld {
 
         if (minecraft.level != null || minecraft.getSingleplayerServer() != null) {
             reportProgress("Disconnecting from observation world...");
-            minecraft.disconnect();
+            // MC 1.21.6+ disconnect requires (Screen returnScreen, boolean saveWorld)
+            minecraft.disconnect(null, false);
         }
 
         serverRef.set(null);

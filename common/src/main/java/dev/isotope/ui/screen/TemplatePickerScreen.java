@@ -4,12 +4,16 @@ import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -156,13 +160,13 @@ public class TemplatePickerScreen extends Screen {
                     hoveredTemplate = i;
                     // Highlighted background
                     graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, IsotopeColors.SYNTAX_BLUE_DARK);
-                    graphics.renderOutline(entryX, y, entryWidth, entryHeight, IsotopeColors.SYNTAX_BLUE);
+                    ScreenUtils.renderOutline(graphics, entryX, y, entryWidth, entryHeight, IsotopeColors.SYNTAX_BLUE);
                 } else {
                     // Normal background
                     int bgColor = isCustom ? IsotopeColors.CUSTOM_TEMPLATE_BG : IsotopeColors.ENTRY_BACKGROUND;
                     graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, bgColor);
                     int outlineColor = isCustom ? IsotopeColors.CUSTOM_TEMPLATE_BORDER : IsotopeColors.POOL_HEADER_HOVER;
-                    graphics.renderOutline(entryX, y, entryWidth, entryHeight, outlineColor);
+                    ScreenUtils.renderOutline(graphics, entryX, y, entryWidth, entryHeight, outlineColor);
                 }
 
                 int textX = entryX + 8;
@@ -183,7 +187,7 @@ public class TemplatePickerScreen extends Screen {
                 if (isCustom) {
                     int badgeX = textX + font.width(template.name()) + 6;
                     graphics.fill(badgeX, y + 3, badgeX + 44, y + 14, IsotopeColors.CUSTOM_BADGE_BG);
-                    graphics.renderOutline(badgeX, y + 3, 44, 11, IsotopeColors.CUSTOM_BADGE_BORDER);
+                    ScreenUtils.renderOutline(graphics, badgeX, y + 3, 44, 11, IsotopeColors.CUSTOM_BADGE_BORDER);
                     graphics.drawString(font, "CUSTOM", badgeX + 4, y + 5, IsotopeColors.ACCENT_GOLD, false);
                 }
 
@@ -203,7 +207,7 @@ public class TemplatePickerScreen extends Screen {
                 int weightWidth = font.width(weightText) + 10;
                 int wBadgeX = entryX + entryWidth - weightWidth - 6;
                 graphics.fill(wBadgeX, y + 4, wBadgeX + weightWidth, y + 16, IsotopeColors.BORDER_INNER);
-                graphics.renderOutline(wBadgeX, y + 4, weightWidth, 12, IsotopeColors.WEIGHT_BADGE_OUTLINE);
+                ScreenUtils.renderOutline(graphics, wBadgeX, y + 4, weightWidth, 12, IsotopeColors.WEIGHT_BADGE_OUTLINE);
                 graphics.drawString(font, weightText, wBadgeX + 5, y + 6, IsotopeColors.TEXT_SECONDARY, false);
             }
 
@@ -247,14 +251,15 @@ public class TemplatePickerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x(); double mouseY = event.y(); int button = event.button();
         if (hoveredTemplate >= 0 && hoveredTemplate < templates.size()) {
             EntryTemplate template = templates.get(hoveredTemplate);
             onSelect.accept(template);
             onClose();
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, focused);
     }
 
     @Override
@@ -277,12 +282,13 @@ public class TemplatePickerScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key(); int scanCode = event.scancode(); int modifiers = event.modifiers();
         if (keyCode == UIConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override

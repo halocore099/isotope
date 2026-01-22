@@ -9,6 +9,9 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -259,7 +262,7 @@ public class AddFunctionDialog extends Screen {
 
             if (selected) {
                 graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, IsotopeColors.SINGLE_SELECT_BACKGROUND);
-                graphics.renderOutline(dialogX + 10, itemY, DIALOG_WIDTH - 20, itemHeight, IsotopeColors.ACCENT_GOLD);
+                ScreenUtils.renderOutline(graphics, dialogX + 10, itemY, DIALOG_WIDTH - 20, itemHeight, IsotopeColors.ACCENT_GOLD);
             } else if (hovered) {
                 graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, IsotopeColors.INPUT_BACKGROUND);
             }
@@ -329,8 +332,9 @@ public class AddFunctionDialog extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x(); double mouseY = event.y(); int button = event.button();
+        if (button != 0) return super.mouseClicked(event, focused);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
@@ -396,15 +400,15 @@ public class AddFunctionDialog extends Screen {
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, focused);
     }
 
     private String cycleNumber(String current, String defaultVal) {
         int val = ScreenUtils.parseIntSafe(current.isEmpty() ? defaultVal : current, 1);
         // Cycle: +1, or +5 if shift, or +10 if ctrl
-        if (hasShiftDown()) {
+        if (ScreenUtils.hasShiftDown()) {
             val += 5;
-        } else if (hasControlDown()) {
+        } else if (ScreenUtils.hasControlDown()) {
             val += 10;
         } else {
             val += 1;
@@ -414,12 +418,13 @@ public class AddFunctionDialog extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key(); int scanCode = event.scancode(); int modifiers = event.modifiers();
         // Number keys to directly set values when a preset is selected
         if (selectedPreset >= 0 && keyCode >= 48 && keyCode <= 57) {
             // 0-9 keys
             char digit = (char) keyCode;
-            if (hasShiftDown()) {
+            if (ScreenUtils.hasShiftDown()) {
                 param2 = param2 + digit;
                 if (param2.length() > 4) param2 = String.valueOf(digit);
             } else {
@@ -429,7 +434,7 @@ public class AddFunctionDialog extends Screen {
             return true;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override

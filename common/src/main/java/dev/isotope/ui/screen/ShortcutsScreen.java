@@ -1,12 +1,16 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -145,7 +149,7 @@ public class ShortcutsScreen extends Screen {
         // Key badge
         int keyWidth = font.width(key) + 8;
         graphics.fill(x, y - 1, x + keyWidth, y + 10, IsotopeColors.ENTRY_BACKGROUND);
-        graphics.renderOutline(x, y - 1, keyWidth, 11, IsotopeColors.BUTTON_PRESSED);
+        ScreenUtils.renderOutline(graphics, x, y - 1, keyWidth, 11, IsotopeColors.BUTTON_PRESSED);
         graphics.drawString(font, key, x + 4, y + 1, IsotopeColors.TEXT_SECONDARY, false);
 
         // Description
@@ -153,13 +157,14 @@ public class ShortcutsScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key(); int scanCode = event.scancode(); int modifiers = event.modifiers();
         // Any key closes the overlay
         if (keyCode == UIConstants.KEY_ESCAPE || keyCode == UIConstants.KEY_F1) {
             onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override

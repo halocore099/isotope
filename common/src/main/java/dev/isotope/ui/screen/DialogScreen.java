@@ -1,11 +1,15 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -136,7 +140,7 @@ public abstract class DialogScreen extends Screen {
         graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, getBackgroundColor());
 
         // Border
-        graphics.renderOutline(dialogX, dialogY, dialogWidth, dialogHeight, getBorderColor());
+        ScreenUtils.renderOutline(graphics, dialogX, dialogY, dialogWidth, dialogHeight, getBorderColor());
 
         // Title
         graphics.drawCenteredString(font, dialogTitle, dialogX + dialogWidth / 2, dialogY + 8, getTitleColor());
@@ -163,12 +167,13 @@ public abstract class DialogScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key(); int scanCode = event.scancode(); int modifiers = event.modifiers();
         if (keyCode == UIConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override

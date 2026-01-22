@@ -16,6 +16,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -174,7 +177,7 @@ public class SimulationScreen extends Screen {
             graphics.fill(barX, barY, barX + barWidth, barY + 20, IsotopeColors.BORDER_DEFAULT);
             int fillWidth = (int) (barWidth * progress / 100f);
             graphics.fill(barX, barY, barX + fillWidth, barY + 20, IsotopeColors.ACCENT_GOLD);
-            graphics.renderOutline(barX, barY, barWidth, 20, IsotopeColors.BUTTON_BACKGROUND);
+            ScreenUtils.renderOutline(graphics, barX, barY, barWidth, 20, IsotopeColors.BUTTON_BACKGROUND);
 
             String progressText = "Simulating... " + progress + "%";
             graphics.drawCenteredString(font, progressText, width / 2, barY + 6, IsotopeColors.TEXT_PRIMARY);

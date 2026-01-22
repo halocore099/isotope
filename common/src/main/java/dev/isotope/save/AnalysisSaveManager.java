@@ -112,8 +112,8 @@ public final class AnalysisSaveManager {
             name = "Analysis " + FILENAME_DATE_FORMAT.format(new Date());
         }
 
-        // Get minecraft version
-        String mcVersion = SharedConstants.getCurrentVersion().getName();
+        // Get minecraft version (MC 1.21.6+ uses id() instead of getName())
+        String mcVersion = SharedConstants.getCurrentVersion().id();
 
         // Convert structures
         List<SavedStructure> structures = StructureRegistry.getInstance().getAll().stream()

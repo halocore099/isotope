@@ -610,7 +610,8 @@ public final class LearnedLinksManager {
 
     private String getMinecraftVersion() {
         try {
-            return net.minecraft.SharedConstants.getCurrentVersion().getName();
+            // MC 1.21.6+ uses id() instead of getName()
+            return net.minecraft.SharedConstants.getCurrentVersion().id();
         } catch (Exception e) {
             return "unknown";
         }

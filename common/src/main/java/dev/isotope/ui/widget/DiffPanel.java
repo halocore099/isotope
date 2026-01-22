@@ -13,6 +13,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -99,7 +102,7 @@ public class DiffPanel extends AbstractWidget {
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(getX(), getY(), width, height, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, getX(), getY(), width, height, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawString(font, "Changes", getX() + PADDING, getY() + 7, IsotopeColors.ACCENT_GOLD, false);

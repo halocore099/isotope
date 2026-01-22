@@ -91,7 +91,7 @@ public class IsotopeToast implements Toast {
         graphics.fill(0, 0, 3, height() - 2, IsotopeColors.withAlpha(type.color, textAlpha));
 
         // Border
-        graphics.renderOutline(0, 0, width() - 2, height() - 2, IsotopeColors.withAlpha(IsotopeColors.TOAST_BORDER, (int)(alpha * 0x50)));
+        ScreenUtils.renderOutline(graphics, 0, 0, width() - 2, height() - 2, IsotopeColors.withAlpha(IsotopeColors.TOAST_BORDER, (int)(alpha * 0x50)));
 
         // Icon
         graphics.drawString(font, type.icon, 8, 7, IsotopeColors.withAlpha(type.color, textAlpha), false);

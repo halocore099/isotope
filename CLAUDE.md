@@ -1,33 +1,56 @@
 # ISOTOPE - Claude Memory
 
+## Branch Info
+
+**Branch**: `fab-1.21.9-.10`
+**Target**: Minecraft 1.21.9-1.21.10, Fabric only
+**Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
+
+This is a multi-version, single-loader branch. For other versions/loaders, see:
+- `neo-1.21.9-.10` - NeoForge 1.21.9-1.21.10
+- `fab-1.21.11` - Fabric 1.21.11 (separate due to major API changes)
+- `main` - Documentation only
+
 ## Critical Rules
 
 1. **UI style changes require user approval** - The current vanilla-styled UI with the 3-panel layout, tabs, and editor features should not be changed without explicit user authorization first. Always ask before redesigning or restyling.
 
-2. **Features should be DISABLED, never REMOVED** - When adding multi-version support or making compatibility changes:
-   - Use conditional checks or reflection to disable features on incompatible versions
-   - Never delete or gut feature code
-   - Keep all IDE features intact for versions that support them (1.21+)
-   - Only gracefully degrade on older versions (1.20.x)
-
 ## Project Structure
 
-- Uses Architectury for cross-loader (Fabric/NeoForge) support
-- Multi-project: `common/`, `fabric/`, `neoforge/`
+```
+isotope/
+├── common/          # Shared code (Architectury common)
+├── fabric/          # Fabric-specific code
+├── build.gradle     # Root build config
+├── gradle.properties # Version properties
+└── settings.gradle.kts
+```
 
-## Version Support
+## Build Commands
 
-**Supported**: Minecraft 1.21.x (all patch versions from 1.21 to 1.21.4+)
+```bash
+# Set Java 21 (macOS with Homebrew)
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 
-Single branch (`main`) supports the entire 1.21.x line. No per-patch branches needed.
+# Build
+./gradlew build
 
-**Why this works**:
-- Architectury insulates from loader quirks
-- Data models use `String` types + raw `JsonObject` (tolerates unknown loot features)
-- Mixins use safe patterns (`@Inject` at `HEAD`/`TAIL` only, no bytecode manipulation)
-- MC 1.21.x has no breaking API changes between patches
+# Run client
+./gradlew :fabric:runClient
 
-**Releases**: Tag format `vX.X.X`. Published to all 1.21.x game versions on Modrinth/CurseForge.
+# Clean
+./gradlew clean
+```
+
+## Key Dependencies
+
+| Dependency | Version |
+|------------|---------|
+| Minecraft | 1.21.9-1.21.10 |
+| Fabric Loader | 0.17.2 |
+| Fabric API | 0.138.4+1.21.10 |
+| Architectury | 18.0.8 |
+| Java | 21 |
 
 ## Structure-Loot Linking Architecture
 
