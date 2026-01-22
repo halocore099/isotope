@@ -57,19 +57,61 @@ public final class LootTableRegistry {
             // Collect all IDs first
             List<ResourceLocation> tableIds = new ArrayList<>();
 
-            // The lookup should implement HolderLookup.Provider
-            if (lookup instanceof net.minecraft.core.HolderLookup.Provider provider) {
-                // Now we can look up the loot table registry
-                var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
+            // Try to get loot table IDs - handle different API patterns across MC versions
+            boolean found = false;
 
+            // Method 1: Direct instanceof check (works for most versions)
+            if (lookup instanceof net.minecraft.core.HolderLookup.Provider provider) {
+                var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
                 lootLookup.listElementIds().forEach(key -> {
                     ResourceLocation id = key.location();
                     if (!id.getPath().equals("empty")) {
                         tableIds.add(id);
                     }
                 });
-            } else {
-                Isotope.LOGGER.warn("Lookup is not a HolderLookup.Provider: {}", lookup.getClass());
+                found = true;
+            }
+
+            // Method 2: Check if class implements Provider interface (handles anonymous classes in 1.21.1)
+            if (!found) {
+                for (Class<?> iface : lookup.getClass().getInterfaces()) {
+                    if (iface.getName().contains("HolderLookup$Provider") ||
+                        iface.getName().equals("net.minecraft.core.HolderLookup$Provider")) {
+                        try {
+                            // Cast and use - the interface is there, just not matching instanceof
+                            var provider = (net.minecraft.core.HolderLookup.Provider) lookup;
+                            var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
+                            lootLookup.listElementIds().forEach(key -> {
+                                ResourceLocation id = key.location();
+                                if (!id.getPath().equals("empty")) {
+                                    tableIds.add(id);
+                                }
+                            });
+                            found = true;
+                            break;
+                        } catch (ClassCastException e) {
+                            Isotope.LOGGER.debug("Cast failed for interface {}: {}", iface.getName(), e.getMessage());
+                        }
+                    }
+                }
+            }
+
+            // Method 3: Try direct cast anyway (last resort)
+            if (!found) {
+                try {
+                    var provider = (net.minecraft.core.HolderLookup.Provider) lookup;
+                    var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
+                    lootLookup.listElementIds().forEach(key -> {
+                        ResourceLocation id = key.location();
+                        if (!id.getPath().equals("empty")) {
+                            tableIds.add(id);
+                        }
+                    });
+                    found = true;
+                } catch (ClassCastException e) {
+                    Isotope.LOGGER.warn("Lookup is not a HolderLookup.Provider: {} (interfaces: {})",
+                        lookup.getClass(), Arrays.toString(lookup.getClass().getInterfaces()));
+                }
             }
 
             // Now analyze each table with content-based detection
