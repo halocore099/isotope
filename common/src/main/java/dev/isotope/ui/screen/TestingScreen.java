@@ -884,7 +884,7 @@ public class TestingScreen extends Screen {
         int presetButtonY = panelY + PANEL_HEIGHT - UIConstants.TEST_FOOTER_HEIGHT;
         for (int preset : presets) {
             if (preset == selectedArenaCount) {
-                graphics.renderOutline(presetX - 1, presetButtonY - 1, 30, 22, IsotopeColors.ACCENT_GOLD);
+                ScreenUtils.renderOutline(graphics, presetX - 1, presetButtonY - 1, 30, 22, IsotopeColors.ACCENT_GOLD);
             }
             presetX += 30;
         }
@@ -895,7 +895,7 @@ public class TestingScreen extends Screen {
         int testButtonY = panelY + UIConstants.TEST_HEADER_HEIGHT;
         for (int preset : testPresets) {
             if (preset == selectedTestCount) {
-                graphics.renderOutline(testX - 1, testButtonY - 1, 32, 22, IsotopeColors.ACCENT_AQUA);
+                ScreenUtils.renderOutline(graphics, testX - 1, testButtonY - 1, 32, 22, IsotopeColors.ACCENT_AQUA);
             }
             testX += 32;
         }
@@ -906,7 +906,7 @@ public class TestingScreen extends Screen {
         int luckButtonY = row2Y;
         for (int preset : luckPresets) {
             if (preset == selectedLuck) {
-                graphics.renderOutline(luckX - 1, luckButtonY - 1, 22, 20, IsotopeColors.ACCENT_GREEN);
+                ScreenUtils.renderOutline(graphics, luckX - 1, luckButtonY - 1, 22, 20, IsotopeColors.ACCENT_GREEN);
             }
             luckX += 22;
         }
@@ -917,7 +917,7 @@ public class TestingScreen extends Screen {
         int lootingButtonY = row2Y;
         for (int preset : lootingPresets) {
             if (preset == selectedLootingLevel) {
-                graphics.renderOutline(lootingX - 1, lootingButtonY - 1, 22, 20, IsotopeColors.SOURCE_MOB);
+                ScreenUtils.renderOutline(graphics, lootingX - 1, lootingButtonY - 1, 22, 20, IsotopeColors.SOURCE_MOB);
             }
             lootingX += 22;
         }
@@ -930,7 +930,7 @@ public class TestingScreen extends Screen {
         int bgColor = entry.isMobLoot() ? IsotopeColors.MOB_LOOT_BG : IsotopeColors.BACKGROUND_DARK;
         int borderColor = entry.isMobLoot() ? IsotopeColors.MOB_LOOT_BORDER : IsotopeColors.BORDER_INNER;
         graphics.fill(x, y, x + entryWidth, y + entryHeight, bgColor);
-        graphics.renderOutline(x, y, entryWidth, entryHeight, borderColor);
+        ScreenUtils.renderOutline(graphics, x, y, entryWidth, entryHeight, borderColor);
 
         if (entry.isMobLoot()) {
             // Mob loot entry

@@ -93,7 +93,7 @@ public class InlineEditField extends AbstractWidget {
         int borderColor = editing ? IsotopeColors.ACCENT_GOLD : (hovered ? IsotopeColors.INPUT_BORDER : IsotopeColors.BORDER_DEFAULT);
 
         graphics.fill(getX(), getY(), getX() + width, getY() + height, bgColor);
-        graphics.renderOutline(getX(), getY(), width, height, borderColor);
+        ScreenUtils.renderOutline(graphics, getX(), getY(), width, height, borderColor);
 
         // Text
         String displayText = editing ? editText : String.valueOf(value);

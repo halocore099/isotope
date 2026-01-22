@@ -259,7 +259,7 @@ public class AddFunctionDialog extends Screen {
 
             if (selected) {
                 graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, IsotopeColors.SINGLE_SELECT_BACKGROUND);
-                graphics.renderOutline(dialogX + 10, itemY, DIALOG_WIDTH - 20, itemHeight, IsotopeColors.ACCENT_GOLD);
+                ScreenUtils.renderOutline(graphics, dialogX + 10, itemY, DIALOG_WIDTH - 20, itemHeight, IsotopeColors.ACCENT_GOLD);
             } else if (hovered) {
                 graphics.fill(dialogX + 10, itemY, dialogX + DIALOG_WIDTH - 10, itemY + itemHeight, IsotopeColors.INPUT_BACKGROUND);
             }
@@ -402,9 +402,9 @@ public class AddFunctionDialog extends Screen {
     private String cycleNumber(String current, String defaultVal) {
         int val = ScreenUtils.parseIntSafe(current.isEmpty() ? defaultVal : current, 1);
         // Cycle: +1, or +5 if shift, or +10 if ctrl
-        if (hasShiftDown()) {
+        if (ScreenUtils.hasShiftDown()) {
             val += 5;
-        } else if (hasControlDown()) {
+        } else if (ScreenUtils.hasControlDown()) {
             val += 10;
         } else {
             val += 1;
@@ -419,7 +419,7 @@ public class AddFunctionDialog extends Screen {
         if (selectedPreset >= 0 && keyCode >= 48 && keyCode <= 57) {
             // 0-9 keys
             char digit = (char) keyCode;
-            if (hasShiftDown()) {
+            if (ScreenUtils.hasShiftDown()) {
                 param2 = param2 + digit;
                 if (param2.length() > 4) param2 = String.valueOf(digit);
             } else {

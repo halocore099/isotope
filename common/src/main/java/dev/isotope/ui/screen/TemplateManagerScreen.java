@@ -104,7 +104,7 @@ public class TemplateManagerScreen extends Screen {
 
         // List background
         graphics.fill(listX, listY, listX + listWidth, listY + listHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
-        graphics.renderOutline(listX, listY, listWidth, listHeight, IsotopeColors.ENTRY_BACKGROUND_HOVER);
+        ScreenUtils.renderOutline(graphics, listX, listY, listWidth, listHeight, IsotopeColors.ENTRY_BACKGROUND_HOVER);
 
         // Template list
         graphics.enableScissor(listX, listY, listX + listWidth, listY + listHeight);
@@ -134,7 +134,7 @@ public class TemplateManagerScreen extends Screen {
                     // Background
                     int bgColor = selected ? IsotopeColors.SINGLE_SELECT_BACKGROUND : (hovered ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND);
                     graphics.fill(listX + 2, y, listX + listWidth - 10, y + TEMPLATE_HEIGHT - 4, bgColor);
-                    graphics.renderOutline(listX + 2, y, listWidth - 12, TEMPLATE_HEIGHT - 4,
+                    ScreenUtils.renderOutline(graphics, listX + 2, y, listWidth - 12, TEMPLATE_HEIGHT - 4,
                         selected ? IsotopeColors.SELECTED_BORDER : IsotopeColors.BORDER_DEFAULT);
 
                     // Item icon (if has default item)

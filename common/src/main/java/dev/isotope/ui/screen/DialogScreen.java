@@ -136,7 +136,7 @@ public abstract class DialogScreen extends Screen {
         graphics.fill(dialogX, dialogY, dialogX + dialogWidth, dialogY + dialogHeight, getBackgroundColor());
 
         // Border
-        graphics.renderOutline(dialogX, dialogY, dialogWidth, dialogHeight, getBorderColor());
+        ScreenUtils.renderOutline(graphics, dialogX, dialogY, dialogWidth, dialogHeight, getBorderColor());
 
         // Title
         graphics.drawCenteredString(font, dialogTitle, dialogX + dialogWidth / 2, dialogY + 8, getTitleColor());

@@ -98,7 +98,7 @@ public class BatchWeightScreen extends Screen {
 
         // Dialog background
         graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, 0xEE1a1a1a);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawCenteredString(font, "Set Weight for Selected Entries", centerX, dialogY + 10, IsotopeColors.ACCENT_GOLD);

@@ -145,7 +145,7 @@ public class ShortcutsScreen extends Screen {
         // Key badge
         int keyWidth = font.width(key) + 8;
         graphics.fill(x, y - 1, x + keyWidth, y + 10, IsotopeColors.ENTRY_BACKGROUND);
-        graphics.renderOutline(x, y - 1, keyWidth, 11, IsotopeColors.BUTTON_PRESSED);
+        ScreenUtils.renderOutline(graphics, x, y - 1, keyWidth, 11, IsotopeColors.BUTTON_PRESSED);
         graphics.drawString(font, key, x + 4, y + 1, IsotopeColors.TEXT_SECONDARY, false);
 
         // Description

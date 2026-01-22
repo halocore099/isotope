@@ -63,7 +63,7 @@ public class GlobalSearchWidget extends AbstractWidget {
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(getX(), getY(), width, height, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, getX(), getY(), width, height, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawString(font, "Global Search", getX() + 8, getY() + 8, IsotopeColors.ACCENT_GOLD, false);
@@ -91,7 +91,7 @@ public class GlobalSearchWidget extends AbstractWidget {
 
         graphics.fill(getX() + 8, filterY, getX() + 8 + filterWidth, filterY + FILTER_HEIGHT,
             filterHovered ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND);
-        graphics.renderOutline(getX() + 8, filterY, filterWidth, FILTER_HEIGHT, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, getX() + 8, filterY, filterWidth, FILTER_HEIGHT, IsotopeColors.BORDER_DEFAULT);
         graphics.drawString(font, filterLabel, getX() + 12, filterY + 4, IsotopeColors.TEXT_PRIMARY, false);
         graphics.drawString(font, "▼", getX() + 8 + filterWidth - 10, filterY + 4, IsotopeColors.TEXT_MUTED, false);
 
@@ -193,7 +193,7 @@ public class GlobalSearchWidget extends AbstractWidget {
 
         // Dropdown background
         graphics.fill(getX() + 8, startY, getX() + 8 + dropdownWidth, startY + dropdownHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
-        graphics.renderOutline(getX() + 8, startY, dropdownWidth, dropdownHeight, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, getX() + 8, startY, dropdownWidth, dropdownHeight, IsotopeColors.BORDER_DEFAULT);
 
         hoveredNamespace = -1;
         int y = startY + 2;

@@ -92,7 +92,7 @@ public class CompositeChildrenDialog extends DialogScreen {
         int listHeight = DIALOG_HEIGHT - HEADER_HEIGHT - BUTTON_HEIGHT - 16;
 
         graphics.fill(listX, listY, listX + listWidth, listY + listHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
-        graphics.renderOutline(listX, listY, listWidth, listHeight, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, listX, listY, listWidth, listHeight, IsotopeColors.BORDER_DEFAULT);
 
         // Render visible children
         int maxVisible = listHeight / CHILD_HEIGHT;

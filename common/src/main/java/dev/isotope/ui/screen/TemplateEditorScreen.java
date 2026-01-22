@@ -248,7 +248,7 @@ public class TemplateEditorScreen extends Screen {
 
         // Section: Basic Info
         graphics.fill(panelX + 8, y - 4, panelX + PANEL_WIDTH - 8, y + 68, IsotopeColors.BACKGROUND_DARKER);
-        graphics.renderOutline(panelX + 8, y - 4, PANEL_WIDTH - 16, 72, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, panelX + 8, y - 4, PANEL_WIDTH - 16, 72, IsotopeColors.BORDER_DEFAULT);
 
         // Name field
         graphics.drawString(font, "Name", panelX + 14, y + 2, IsotopeColors.TEXT_PRIMARY, false);
@@ -264,7 +264,7 @@ public class TemplateEditorScreen extends Screen {
 
         // Section: Item & Values
         graphics.fill(panelX + 8, y, panelX + PANEL_WIDTH - 8, y + 92, IsotopeColors.BACKGROUND_DARKER);
-        graphics.renderOutline(panelX + 8, y, PANEL_WIDTH - 16, 92, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, panelX + 8, y, PANEL_WIDTH - 16, 92, IsotopeColors.BORDER_DEFAULT);
 
         y += 6;
 
@@ -278,7 +278,7 @@ public class TemplateEditorScreen extends Screen {
 
         graphics.fill(itemBtnX, y - 2, itemBtnX + itemBtnWidth, y + 18,
             itemHovered ? IsotopeColors.SYNTAX_BLUE_DARK : IsotopeColors.ENTRY_BACKGROUND);
-        graphics.renderOutline(itemBtnX, y - 2, itemBtnWidth, 20, itemHovered ? IsotopeColors.SYNTAX_BLUE : IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, itemBtnX, y - 2, itemBtnWidth, 20, itemHovered ? IsotopeColors.SYNTAX_BLUE : IsotopeColors.BORDER_DEFAULT);
 
         if (selectedItem != null) {
             // Render item icon
@@ -318,7 +318,7 @@ public class TemplateEditorScreen extends Screen {
         boolean toggleHovered = ScreenUtils.isMouseOver(mouseX, mouseY, toggleBtnX, y - 2, 66, 16);
         int toggleBg = useRange ? IsotopeColors.SUCCESS_TINT : IsotopeColors.TOGGLE_OFF_BG;
         graphics.fill(toggleBtnX, y - 2, toggleBtnX + 66, y + 14, toggleHovered ? IsotopeColors.BORDER_DEFAULT : toggleBg);
-        graphics.renderOutline(toggleBtnX, y - 2, 66, 16, toggleHovered ? IsotopeColors.BORDER_HIGHLIGHT : IsotopeColors.INPUT_BORDER);
+        ScreenUtils.renderOutline(graphics, toggleBtnX, y - 2, 66, 16, toggleHovered ? IsotopeColors.BORDER_HIGHLIGHT : IsotopeColors.INPUT_BORDER);
         graphics.drawCenteredString(font, useRange ? "Range" : "Fixed", toggleBtnX + 33, y + 1,
             useRange ? IsotopeColors.TOGGLE_ON_TEXT : IsotopeColors.TOGGLE_OFF_TEXT);
 
@@ -328,7 +328,7 @@ public class TemplateEditorScreen extends Screen {
 
         // Section: Functions
         graphics.fill(panelX + 8, y, panelX + PANEL_WIDTH - 8, y + functionsHeight + 24, IsotopeColors.BACKGROUND_DARKER);
-        graphics.renderOutline(panelX + 8, y, PANEL_WIDTH - 16, functionsHeight + 24, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, panelX + 8, y, PANEL_WIDTH - 16, functionsHeight + 24, IsotopeColors.BORDER_DEFAULT);
 
         y += 6;
 
@@ -340,7 +340,7 @@ public class TemplateEditorScreen extends Screen {
             mouseY >= y - 4 && mouseY < y + 12;
         graphics.fill(addFuncBtnX, y - 4, addFuncBtnX + 86, y + 12,
             addFuncHovered ? IsotopeColors.FUNC_ADD_HOVER : IsotopeColors.SUCCESS_TINT);
-        graphics.renderOutline(addFuncBtnX, y - 4, 86, 16, addFuncHovered ? IsotopeColors.FUNC_ADD_BORDER : IsotopeColors.FUNC_ADD_BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, addFuncBtnX, y - 4, 86, 16, addFuncHovered ? IsotopeColors.FUNC_ADD_BORDER : IsotopeColors.FUNC_ADD_BORDER_DEFAULT);
         graphics.drawCenteredString(font, "+ Add Function", addFuncBtnX + 43, y - 1, addFuncHovered ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.SUCCESS_MUTED);
 
         y += 16;
@@ -369,10 +369,10 @@ public class TemplateEditorScreen extends Screen {
                 if (funcHovered) {
                     hoveredFunctionIdx = i;
                     graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 22, IsotopeColors.SYNTAX_BLUE_DARK);
-                    graphics.renderOutline(listX + 2, funcY, listWidth - 4, 22, IsotopeColors.SYNTAX_BLUE);
+                    ScreenUtils.renderOutline(graphics, listX + 2, funcY, listWidth - 4, 22, IsotopeColors.SYNTAX_BLUE);
                 } else {
                     graphics.fill(listX + 2, funcY, listX + listWidth - 2, funcY + 22, IsotopeColors.ENTRY_BACKGROUND);
-                    graphics.renderOutline(listX + 2, funcY, listWidth - 4, 22, IsotopeColors.POOL_HEADER_HOVER);
+                    ScreenUtils.renderOutline(graphics, listX + 2, funcY, listWidth - 4, 22, IsotopeColors.POOL_HEADER_HOVER);
                 }
 
                 // Function icon placeholder

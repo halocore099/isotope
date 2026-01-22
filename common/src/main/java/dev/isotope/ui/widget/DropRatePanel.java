@@ -87,7 +87,7 @@ public class DropRatePanel extends AbstractWidget {
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(getX(), getY(), width, height, IsotopeColors.BORDER_INNER);
+        ScreenUtils.renderOutline(graphics, getX(), getY(), width, height, IsotopeColors.BORDER_INNER);
 
         // Title
         graphics.drawString(font, "Drop Rates", getX() + PADDING, getY() + 7, IsotopeColors.ACCENT_GOLD, false);

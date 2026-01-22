@@ -99,7 +99,7 @@ public class DiffPanel extends AbstractWidget {
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(getX(), getY(), width, height, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, getX(), getY(), width, height, IsotopeColors.BORDER_DEFAULT);
 
         // Title
         graphics.drawString(font, "Changes", getX() + PADDING, getY() + 7, IsotopeColors.ACCENT_GOLD, false);

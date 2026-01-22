@@ -323,7 +323,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
         graphics.fill(dropdownX, y + 2, dropdownX + dropdownWidth, y + MOD_FILTER_HEIGHT + 2,
             dropdownHovered ? IsotopeColors.BORDER_DEFAULT : IsotopeColors.INPUT_BACKGROUND);
-        graphics.renderOutline(dropdownX, y + 2, dropdownWidth, MOD_FILTER_HEIGHT, IsotopeColors.INPUT_BORDER);
+        ScreenUtils.renderOutline(graphics, dropdownX, y + 2, dropdownWidth, MOD_FILTER_HEIGHT, IsotopeColors.INPUT_BORDER);
 
         String modDisplay = selectedMod.length() > 18 ? selectedMod.substring(0, 16) + "..." : selectedMod;
         graphics.drawString(font, modDisplay, dropdownX + 4, y + 6, IsotopeColors.TEXT_PRIMARY, false);

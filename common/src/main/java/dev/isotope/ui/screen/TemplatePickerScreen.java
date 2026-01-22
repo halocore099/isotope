@@ -156,13 +156,13 @@ public class TemplatePickerScreen extends Screen {
                     hoveredTemplate = i;
                     // Highlighted background
                     graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, IsotopeColors.SYNTAX_BLUE_DARK);
-                    graphics.renderOutline(entryX, y, entryWidth, entryHeight, IsotopeColors.SYNTAX_BLUE);
+                    ScreenUtils.renderOutline(graphics, entryX, y, entryWidth, entryHeight, IsotopeColors.SYNTAX_BLUE);
                 } else {
                     // Normal background
                     int bgColor = isCustom ? IsotopeColors.CUSTOM_TEMPLATE_BG : IsotopeColors.ENTRY_BACKGROUND;
                     graphics.fill(entryX, y, entryX + entryWidth, y + entryHeight, bgColor);
                     int outlineColor = isCustom ? IsotopeColors.CUSTOM_TEMPLATE_BORDER : IsotopeColors.POOL_HEADER_HOVER;
-                    graphics.renderOutline(entryX, y, entryWidth, entryHeight, outlineColor);
+                    ScreenUtils.renderOutline(graphics, entryX, y, entryWidth, entryHeight, outlineColor);
                 }
 
                 int textX = entryX + 8;
@@ -183,7 +183,7 @@ public class TemplatePickerScreen extends Screen {
                 if (isCustom) {
                     int badgeX = textX + font.width(template.name()) + 6;
                     graphics.fill(badgeX, y + 3, badgeX + 44, y + 14, IsotopeColors.CUSTOM_BADGE_BG);
-                    graphics.renderOutline(badgeX, y + 3, 44, 11, IsotopeColors.CUSTOM_BADGE_BORDER);
+                    ScreenUtils.renderOutline(graphics, badgeX, y + 3, 44, 11, IsotopeColors.CUSTOM_BADGE_BORDER);
                     graphics.drawString(font, "CUSTOM", badgeX + 4, y + 5, IsotopeColors.ACCENT_GOLD, false);
                 }
 
@@ -203,7 +203,7 @@ public class TemplatePickerScreen extends Screen {
                 int weightWidth = font.width(weightText) + 10;
                 int wBadgeX = entryX + entryWidth - weightWidth - 6;
                 graphics.fill(wBadgeX, y + 4, wBadgeX + weightWidth, y + 16, IsotopeColors.BORDER_INNER);
-                graphics.renderOutline(wBadgeX, y + 4, weightWidth, 12, IsotopeColors.WEIGHT_BADGE_OUTLINE);
+                ScreenUtils.renderOutline(graphics, wBadgeX, y + 4, weightWidth, 12, IsotopeColors.WEIGHT_BADGE_OUTLINE);
                 graphics.drawString(font, weightText, wBadgeX + 5, y + 6, IsotopeColors.TEXT_SECONDARY, false);
             }
 

@@ -171,7 +171,7 @@ public class ItemPickerScreen extends Screen {
 
         graphics.fill(modDropdownX, modDropdownY, modDropdownX + modDropdownWidth, modDropdownY + 18,
             dropdownHovered ? IsotopeColors.BORDER_DEFAULT : IsotopeColors.INPUT_BACKGROUND);
-        graphics.renderOutline(modDropdownX, modDropdownY, modDropdownWidth, 18, IsotopeColors.INPUT_BORDER);
+        ScreenUtils.renderOutline(graphics, modDropdownX, modDropdownY, modDropdownWidth, 18, IsotopeColors.INPUT_BORDER);
 
         String modDisplay = selectedMod;
         if (font.width(modDisplay) > modDropdownWidth - 20) {

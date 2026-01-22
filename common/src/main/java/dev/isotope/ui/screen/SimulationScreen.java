@@ -174,7 +174,7 @@ public class SimulationScreen extends Screen {
             graphics.fill(barX, barY, barX + barWidth, barY + 20, IsotopeColors.BORDER_DEFAULT);
             int fillWidth = (int) (barWidth * progress / 100f);
             graphics.fill(barX, barY, barX + fillWidth, barY + 20, IsotopeColors.ACCENT_GOLD);
-            graphics.renderOutline(barX, barY, barWidth, 20, IsotopeColors.BUTTON_BACKGROUND);
+            ScreenUtils.renderOutline(graphics, barX, barY, barWidth, 20, IsotopeColors.BUTTON_BACKGROUND);
 
             String progressText = "Simulating... " + progress + "%";
             graphics.drawCenteredString(font, progressText, width / 2, barY + 6, IsotopeColors.TEXT_PRIMARY);

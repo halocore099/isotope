@@ -148,7 +148,7 @@ public class LootFlowPanel extends AbstractWidget {
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + height, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(getX(), getY(), width, height, IsotopeColors.BORDER_INNER);
+        ScreenUtils.renderOutline(graphics, getX(), getY(), width, height, IsotopeColors.BORDER_INNER);
 
         // Header
         renderHeader(graphics, font, mouseX, mouseY);
@@ -286,7 +286,7 @@ public class LootFlowPanel extends AbstractWidget {
         } else {
             borderColor = hovered ? IsotopeColors.BORDER_SELECTED : IsotopeColors.BORDER_DEFAULT;
         }
-        graphics.renderOutline(x, y, w, h, borderColor);
+        ScreenUtils.renderOutline(graphics, x, y, w, h, borderColor);
 
         // Text label
         String label = node.displayName();

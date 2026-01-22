@@ -15,6 +15,52 @@ public final class ScreenUtils {
     private ScreenUtils() {}
 
     /**
+     * Render an outline around a rectangle.
+     * Replacement for GuiGraphics.renderOutline() which was removed in MC 1.21.9+.
+     *
+     * @param graphics The GuiGraphics context
+     * @param x        X position
+     * @param y        Y position
+     * @param width    Width of the rectangle
+     * @param height   Height of the rectangle
+     * @param color    Color of the outline (ARGB)
+     */
+    public static void renderOutline(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+        // Top edge
+        graphics.fill(x, y, x + width, y + 1, color);
+        // Bottom edge
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        // Left edge
+        graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+        // Right edge
+        graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
+    }
+
+    /**
+     * Check if Control key is currently held down.
+     * Replacement for Screen.hasControlDown() which was removed in MC 1.21.9+.
+     */
+    public static boolean hasControlDown() {
+        long window = net.minecraft.client.Minecraft.getInstance().getWindow().getWindow();
+        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
+            com.mojang.blaze3d.platform.InputConstants.KEY_LCONTROL) ||
+            com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
+            com.mojang.blaze3d.platform.InputConstants.KEY_RCONTROL);
+    }
+
+    /**
+     * Check if Shift key is currently held down.
+     * Replacement for Screen.hasShiftDown() which was removed in MC 1.21.9+.
+     */
+    public static boolean hasShiftDown() {
+        long window = net.minecraft.client.Minecraft.getInstance().getWindow().getWindow();
+        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
+            com.mojang.blaze3d.platform.InputConstants.KEY_LSHIFT) ||
+            com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
+            com.mojang.blaze3d.platform.InputConstants.KEY_RSHIFT);
+    }
+
+    /**
      * Safely parse an integer from a string, returning a default value on failure.
      *
      * @param s          The string to parse
@@ -288,7 +334,7 @@ public final class ScreenUtils {
         int bgColor = focused ? bgFocused : bgNormal;
         int borderColor = focused ? borderFocused : borderNormal;
         graphics.fill(x, y, x + width, y + height, bgColor);
-        graphics.renderOutline(x, y, width, height, borderColor);
+        ScreenUtils.renderOutline(graphics, x, y, width, height, borderColor);
     }
 
     /**

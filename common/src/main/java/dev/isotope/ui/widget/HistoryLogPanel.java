@@ -90,7 +90,7 @@ public class HistoryLogPanel extends AbstractWidget {
 
         // Background
         graphics.fill(getX(), getY(), getX() + width, getY() + renderHeight, IsotopeColors.BACKGROUND_MEDIUM);
-        graphics.renderOutline(getX(), getY(), width, renderHeight, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, getX(), getY(), width, renderHeight, IsotopeColors.BORDER_DEFAULT);
 
         // Header
         graphics.fill(getX(), getY(), getX() + width, getY() + HEADER_HEIGHT, IsotopeColors.POOL_HEADER_BACKGROUND);
