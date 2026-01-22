@@ -44,6 +44,7 @@ processResources {
     inputs.property "mod_license", rootProject.mod_license
     inputs.property "neoforge_version", rootProject.neoforge_version
     inputs.property "minecraft_version_range_neoforge", rootProject.minecraft_version_range_neoforge
+    inputs.property "architectury_min_version", rootProject.architectury_min_version
 
     filesMatching("META-INF/neoforge.mods.toml") {
         expand(
@@ -56,7 +57,7 @@ processResources {
             "neoforge_loader_version": "[4,)",
             "neoforge_version": rootProject.neoforge_version,
             "minecraft_version_range_neoforge": rootProject.minecraft_version_range_neoforge,
-            "architectury_min_version": "13.0.0"
+            "architectury_min_version": rootProject.architectury_min_version
         )
     }
 }
