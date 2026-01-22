@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
-import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableParser;
@@ -232,7 +231,7 @@ public final class DatapackImporter {
                         String pathStr = relativePath.toString()
                             .replace(".json", "")
                             .replace("\\", "/");
-                        ResourceLocation tableId = RegistryHelper.fromNamespaceAndPath(namespaceName, pathStr);
+                        ResourceLocation tableId = ResourceLocation.fromNamespaceAndPath(namespaceName, pathStr);
 
                         try {
                             String json = Files.readString(file);
@@ -326,7 +325,7 @@ public final class DatapackImporter {
                 String pathStr = relativePath.toString()
                     .replace(".json", "")
                     .replace("\\", "/");
-                ResourceLocation tableId = RegistryHelper.fromNamespaceAndPath(finalNamespace, pathStr);
+                ResourceLocation tableId = ResourceLocation.fromNamespaceAndPath(finalNamespace, pathStr);
 
                 try {
                     String json = Files.readString(file);

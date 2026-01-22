@@ -9,7 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import dev.isotope.compat.RegistryHelper;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -59,8 +59,12 @@ public class ItemPickerScreen extends Screen {
     }
 
     private void collectMods() {
+        Set<String> mods = new TreeSet<>();
+        for (var entry : BuiltInRegistries.ITEM.entrySet()) {
+            mods.add(entry.getKey().location().getNamespace());
+        }
         availableMods.add("All");
-        availableMods.addAll(RegistryHelper.getAllItemNamespaces());
+        availableMods.addAll(mods);
     }
 
     @Override
@@ -109,9 +113,9 @@ public class ItemPickerScreen extends Screen {
         filteredItems.clear();
         String search = searchBox != null ? searchBox.getValue().toLowerCase() : "";
 
-        for (var entry : RegistryHelper.getAllItems().entrySet()) {
+        for (var entry : BuiltInRegistries.ITEM.entrySet()) {
             Item item = entry.getValue();
-            ResourceLocation id = entry.getKey();
+            ResourceLocation id = entry.getKey().location();
 
             // Skip air
             if (item == Items.AIR) continue;
@@ -322,7 +326,7 @@ public class ItemPickerScreen extends Screen {
 
             if (index >= 0 && index < filteredItems.size()) {
                 Item item = filteredItems.get(index);
-                ResourceLocation id = RegistryHelper.getItemId(item);
+                ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
                 onItemSelected.accept(id);
                 onClose();
                 return true;
@@ -332,6 +336,7 @@ public class ItemPickerScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         // Mod dropdown scroll
         if (modDropdownOpen && mouseX >= modDropdownX && mouseX < modDropdownX + modDropdownWidth) {

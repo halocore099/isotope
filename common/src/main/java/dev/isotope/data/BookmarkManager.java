@@ -1,5 +1,4 @@
 package dev.isotope.data;
-import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -180,7 +179,7 @@ public final class BookmarkManager {
             bookmarks.clear();
             if (bookmarkStrings != null) {
                 for (String str : bookmarkStrings) {
-                    ResourceLocation id = RegistryHelper.tryParseLocation(str);
+                    ResourceLocation id = ResourceLocation.tryParse(str);
                     if (id != null) {
                         bookmarks.add(id);
                     }

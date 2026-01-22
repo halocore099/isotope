@@ -1,7 +1,6 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
-import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.StructureLootLink;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -67,8 +66,8 @@ public final class StructureTemplateParser {
         SpawnerEntityExtractor.getInstance().clear();
 
         StructureTemplateManager templateManager = server.getStructureManager();
-        Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(server.registryAccess());
-        Registry<StructureTemplatePool> poolRegistry = RegistryHelper.getRegistry(server.registryAccess(), Registries.TEMPLATE_POOL);
+        Registry<Structure> structureRegistry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        Registry<StructureTemplatePool> poolRegistry = server.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL);
 
         Isotope.LOGGER.info("[TemplateParser] Starting structure template parsing (including spawner analysis)...");
 
@@ -365,7 +364,7 @@ public final class StructureTemplateParser {
         if (nbt.contains("LootTable", Tag.TAG_STRING)) {
             String lootTableStr = nbt.getString("LootTable");
             try {
-                ResourceLocation lootTableId = RegistryHelper.parseLocation(lootTableStr);
+                ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
                 lootTables.add(lootTableId);
             } catch (Exception e) {
                 // Invalid resource location
@@ -376,7 +375,7 @@ public final class StructureTemplateParser {
         if (nbt.contains("loot_table", Tag.TAG_STRING)) {
             String lootTableStr = nbt.getString("loot_table");
             try {
-                ResourceLocation lootTableId = RegistryHelper.parseLocation(lootTableStr);
+                ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
                 lootTables.add(lootTableId);
             } catch (Exception e) {
                 // Invalid resource location
@@ -417,7 +416,7 @@ public final class StructureTemplateParser {
         };
 
         for (String pattern : patterns) {
-            ResourceLocation templateLoc = RegistryHelper.fromNamespaceAndPath(
+            ResourceLocation templateLoc = ResourceLocation.fromNamespaceAndPath(
                 structureId.getNamespace(), pattern);
 
             lootTables.addAll(parseTemplate(structureId, templateLoc, templateManager));

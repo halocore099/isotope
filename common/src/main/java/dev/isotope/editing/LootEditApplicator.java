@@ -22,32 +22,33 @@ public final class LootEditApplicator {
      * @return A new structure with the operation applied
      */
     public static LootTableStructure apply(LootTableStructure structure, LootEditOperation op) {
-        if (op instanceof LootEditOperation.AddPool p) return applyAddPool(structure, p);
-        if (op instanceof LootEditOperation.RemovePool p) return applyRemovePool(structure, p);
-        if (op instanceof LootEditOperation.ModifyPoolRolls p) return applyModifyPoolRolls(structure, p);
-        if (op instanceof LootEditOperation.ModifyBonusRolls p) return applyModifyBonusRolls(structure, p);
-        if (op instanceof LootEditOperation.AddEntry p) return applyAddEntry(structure, p);
-        if (op instanceof LootEditOperation.RemoveEntry p) return applyRemoveEntry(structure, p);
-        if (op instanceof LootEditOperation.ModifyEntryWeight p) return applyModifyEntryWeight(structure, p);
-        if (op instanceof LootEditOperation.ModifyEntryQuality p) return applyModifyEntryQuality(structure, p);
-        if (op instanceof LootEditOperation.ModifyEntryItem p) return applyModifyEntryItem(structure, p);
-        if (op instanceof LootEditOperation.ModifyEntryType p) return applyModifyEntryType(structure, p);
-        if (op instanceof LootEditOperation.SetItemCount p) return applySetItemCount(structure, p);
-        if (op instanceof LootEditOperation.AddFunction p) return applyAddFunction(structure, p);
-        if (op instanceof LootEditOperation.RemoveFunction p) return applyRemoveFunction(structure, p);
-        if (op instanceof LootEditOperation.AddCondition p) return applyAddCondition(structure, p);
-        if (op instanceof LootEditOperation.RemoveCondition p) return applyRemoveCondition(structure, p);
-        if (op instanceof LootEditOperation.AddPoolFunction p) return applyAddPoolFunction(structure, p);
-        if (op instanceof LootEditOperation.RemovePoolFunction p) return applyRemovePoolFunction(structure, p);
-        if (op instanceof LootEditOperation.AddPoolCondition p) return applyAddPoolCondition(structure, p);
-        if (op instanceof LootEditOperation.RemovePoolCondition p) return applyRemovePoolCondition(structure, p);
-        if (op instanceof LootEditOperation.AddTableFunction p) return applyAddTableFunction(structure, p);
-        if (op instanceof LootEditOperation.RemoveTableFunction p) return applyRemoveTableFunction(structure, p);
-        if (op instanceof LootEditOperation.SetRandomSequence p) return applySetRandomSequence(structure, p);
-        if (op instanceof LootEditOperation.AddChild p) return applyAddChild(structure, p);
-        if (op instanceof LootEditOperation.RemoveChild p) return applyRemoveChild(structure, p);
-        if (op instanceof LootEditOperation.ModifyChild p) return applyModifyChild(structure, p);
-        return structure;
+        return switch (op) {
+            case LootEditOperation.AddPool p -> applyAddPool(structure, p);
+            case LootEditOperation.RemovePool p -> applyRemovePool(structure, p);
+            case LootEditOperation.ModifyPoolRolls p -> applyModifyPoolRolls(structure, p);
+            case LootEditOperation.ModifyBonusRolls p -> applyModifyBonusRolls(structure, p);
+            case LootEditOperation.AddEntry p -> applyAddEntry(structure, p);
+            case LootEditOperation.RemoveEntry p -> applyRemoveEntry(structure, p);
+            case LootEditOperation.ModifyEntryWeight p -> applyModifyEntryWeight(structure, p);
+            case LootEditOperation.ModifyEntryQuality p -> applyModifyEntryQuality(structure, p);
+            case LootEditOperation.ModifyEntryItem p -> applyModifyEntryItem(structure, p);
+            case LootEditOperation.ModifyEntryType p -> applyModifyEntryType(structure, p);
+            case LootEditOperation.SetItemCount p -> applySetItemCount(structure, p);
+            case LootEditOperation.AddFunction p -> applyAddFunction(structure, p);
+            case LootEditOperation.RemoveFunction p -> applyRemoveFunction(structure, p);
+            case LootEditOperation.AddCondition p -> applyAddCondition(structure, p);
+            case LootEditOperation.RemoveCondition p -> applyRemoveCondition(structure, p);
+            case LootEditOperation.AddPoolFunction p -> applyAddPoolFunction(structure, p);
+            case LootEditOperation.RemovePoolFunction p -> applyRemovePoolFunction(structure, p);
+            case LootEditOperation.AddPoolCondition p -> applyAddPoolCondition(structure, p);
+            case LootEditOperation.RemovePoolCondition p -> applyRemovePoolCondition(structure, p);
+            case LootEditOperation.AddTableFunction p -> applyAddTableFunction(structure, p);
+            case LootEditOperation.RemoveTableFunction p -> applyRemoveTableFunction(structure, p);
+            case LootEditOperation.SetRandomSequence p -> applySetRandomSequence(structure, p);
+            case LootEditOperation.AddChild p -> applyAddChild(structure, p);
+            case LootEditOperation.RemoveChild p -> applyRemoveChild(structure, p);
+            case LootEditOperation.ModifyChild p -> applyModifyChild(structure, p);
+        };
     }
 
     /**
@@ -307,15 +308,14 @@ public final class LootEditApplicator {
      * Create a set_count function from a NumberProvider.
      */
     private static LootFunction createSetCountFunction(NumberProvider count) {
-        if (count instanceof NumberProvider.Constant c) {
-            return LootFunction.setCount((int) c.value());
-        } else if (count instanceof NumberProvider.Uniform u) {
-            return LootFunction.setCount((int) u.min(), (int) u.max());
-        } else if (count instanceof NumberProvider.Binomial b) {
-            // Binomial is not directly supported by set_count, use range approximation
-            return LootFunction.setCount(0, b.n());
-        }
-        return LootFunction.setCount(1);
+        return switch (count) {
+            case NumberProvider.Constant c -> LootFunction.setCount((int) c.value());
+            case NumberProvider.Uniform u -> LootFunction.setCount((int) u.min(), (int) u.max());
+            case NumberProvider.Binomial b -> {
+                // Binomial is not directly supported by set_count, use range approximation
+                yield LootFunction.setCount(0, b.n());
+            }
+        };
     }
 
     // ===== Composite Entry Child Operations =====

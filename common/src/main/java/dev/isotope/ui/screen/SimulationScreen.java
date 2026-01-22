@@ -290,6 +290,7 @@ public class SimulationScreen extends Screen {
         graphics.fill(barX, y + 3 + BAR_HEIGHT / 2, barX + (int)(barWidth * expPct), y + 3 + BAR_HEIGHT, IsotopeColors.STAR_MUTED);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (result != null && maxScroll > 0) {
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));

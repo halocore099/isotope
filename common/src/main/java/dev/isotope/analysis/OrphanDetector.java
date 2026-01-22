@@ -37,9 +37,6 @@ public final class OrphanDetector {
     // Detection stats
     private boolean detected = false;
 
-    // Last detection report (for summary logging)
-    private OrphanReport lastReport = null;
-
     private OrphanDetector() {}
 
     public static OrphanDetector getInstance() {
@@ -109,7 +106,7 @@ public final class OrphanDetector {
 
         detected = true;
 
-        lastReport = new OrphanReport(
+        OrphanReport report = new OrphanReport(
             Collections.unmodifiableSet(new LinkedHashSet<>(orphanLootTables)),
             Collections.unmodifiableSet(new LinkedHashSet<>(orphanStructures)),
             Collections.unmodifiableSet(new LinkedHashSet<>(runtimeOnlyTables))
@@ -118,7 +115,7 @@ public final class OrphanDetector {
         Isotope.LOGGER.info("[OrphanDetector] Detection complete: {} orphan loot tables, {} orphan structures, {} runtime-only discoveries",
             orphanLootTables.size(), orphanStructures.size(), runtimeOnlyTables.size());
 
-        return lastReport;
+        return report;
     }
 
     /**
@@ -184,14 +181,6 @@ public final class OrphanDetector {
      */
     public boolean isDetected() {
         return detected;
-    }
-
-    /**
-     * Get the last detection report.
-     * Returns null if detection hasn't been run yet.
-     */
-    public OrphanReport getLastReport() {
-        return lastReport;
     }
 
     /**

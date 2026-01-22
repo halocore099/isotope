@@ -448,6 +448,7 @@ public class ValidationPanel extends AbstractWidget {
         return false;
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (!isMouseOver(mouseX, mouseY)) return false;
 

@@ -1,6 +1,5 @@
 package dev.isotope.ui.screen;
 
-import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.StructureLootLinker;
@@ -38,8 +37,8 @@ import java.util.Set;
 @Environment(EnvType.CLIENT)
 public class TestingScreen extends Screen {
 
-    private static final int PANEL_WIDTH = 480;
-    private static final int PANEL_HEIGHT = 420;
+    private static final int PANEL_WIDTH = 400;
+    private static final int PANEL_HEIGHT = 350;
 
     private final List<TableEntry> entries = new ArrayList<>();
     private int selectedArenaCount = 16;
@@ -112,7 +111,7 @@ public class TestingScreen extends Screen {
 
         // Calculate max scroll
         int contentHeight = entries.size() * 70;
-        int viewHeight = PANEL_HEIGHT - 130; // header (58px) + footer (68px) + padding
+        int viewHeight = PANEL_HEIGHT - 120; // header + footer
         maxScroll = Math.max(0, contentHeight - viewHeight);
     }
 
@@ -123,135 +122,127 @@ public class TestingScreen extends Screen {
         int panelX = (width - PANEL_WIDTH) / 2;
         int panelY = (height - PANEL_HEIGHT) / 2;
 
-        // === HEADER ROW 1 ===
-        int row1Y = panelY + 8;
+        // Header buttons
+        addRenderableWidget(Button.builder(
+            Component.literal("Exit Test Mode"),
+            b -> onExitTestMode()
+        ).pos(panelX + PANEL_WIDTH - 115, panelY + 8).size(105, 20).build());
 
-        // Auto-collect toggle
+        addRenderableWidget(Button.builder(
+            Component.literal("?"),
+            b -> HelpLinks.open(HelpLinks.TEST_MODE)
+        ).pos(panelX + PANEL_WIDTH - 140, panelY + 8).size(20, 20).build());
+
+        // Auto-collect toggle in header
         addRenderableWidget(Button.builder(
             Component.literal(autoCollect ? "📦 Inventory" : "📦 Ground"),
             b -> {
                 autoCollect = !autoCollect;
                 rebuildWidgets();
             }
-        ).pos(panelX + 10, row1Y).size(85, 20).build());
+        ).pos(panelX + 10, panelY + 8).size(80, 20).build());
 
-        // Test count selector
+        // Test count selector in header (for Stats/Compare)
         addRenderableWidget(Button.builder(
             Component.literal("Tests:"),
             b -> {}
-        ).pos(panelX + 100, row1Y).size(45, 20).build()).active = false;
+        ).pos(panelX + 95, panelY + 8).size(40, 20).build()).active = false;
 
         int[] testPresets = {10, 50, 100, 500};
-        int testX = panelX + 148;
+        int testX = panelX + 138;
         for (int preset : testPresets) {
             final int count = preset;
             addRenderableWidget(Button.builder(
                 Component.literal(String.valueOf(count)),
                 b -> selectedTestCount = count
-            ).pos(testX, row1Y).size(32, 20).build());
-            testX += 36;
+            ).pos(testX, panelY + 8).size(28, 20).build());
+            testX += 30;
         }
 
-        // Help and Exit buttons on the right
-        addRenderableWidget(Button.builder(
-            Component.literal("?"),
-            b -> HelpLinks.open(HelpLinks.TEST_MODE)
-        ).pos(panelX + PANEL_WIDTH - 140, row1Y).size(20, 20).build());
-
-        addRenderableWidget(Button.builder(
-            Component.literal("Exit Test Mode"),
-            b -> onExitTestMode()
-        ).pos(panelX + PANEL_WIDTH - 115, row1Y).size(105, 20).build());
-
-        // === HEADER ROW 2 - Luck and Looting ===
-        int row2Y = panelY + 32;
-
+        // Second row of header - Luck selector (for chests) and Looting selector (for mobs)
+        int row2Y = panelY + 30;
         addRenderableWidget(Button.builder(
             Component.literal("Luck:"),
             b -> {}
-        ).pos(panelX + 10, row2Y).size(38, 18).build()).active = false;
+        ).pos(panelX + 10, row2Y).size(35, 16).build()).active = false;
 
         int[] luckPresets = {0, 1, 2, 3, 5};
-        int luckX = panelX + 52;
+        int luckX = panelX + 48;
         for (int preset : luckPresets) {
             final int luck = preset;
             addRenderableWidget(Button.builder(
                 Component.literal(String.valueOf(luck)),
                 b -> selectedLuck = luck
-            ).pos(luckX, row2Y).size(22, 18).build());
-            luckX += 26;
+            ).pos(luckX, row2Y).size(20, 16).build());
+            luckX += 22;
         }
 
         // Looting selector (for mob loot)
         addRenderableWidget(Button.builder(
             Component.literal("Looting:"),
             b -> {}
-        ).pos(panelX + 190, row2Y).size(50, 18).build()).active = false;
+        ).pos(panelX + 170, row2Y).size(45, 16).build()).active = false;
 
         int[] lootingPresets = {0, 1, 2, 3};
-        int lootingX = panelX + 244;
+        int lootingX = panelX + 218;
         for (int preset : lootingPresets) {
             final int looting = preset;
             addRenderableWidget(Button.builder(
                 Component.literal(String.valueOf(looting)),
                 b -> selectedLootingLevel = looting
-            ).pos(lootingX, row2Y).size(22, 18).build());
-            lootingX += 26;
+            ).pos(lootingX, row2Y).size(20, 16).build());
+            lootingX += 22;
         }
 
-        // === FOOTER ROW 1 - Arena and Kill settings ===
-        int footerRow1Y = panelY + PANEL_HEIGHT - 58;
-
-        // Arena size buttons
+        // Footer - Arena size buttons (for structures)
+        int footerY = panelY + PANEL_HEIGHT - 35;
+        int[] presets = {4, 9, 16, 25, 36};
+        int presetX = panelX + 10;
         addRenderableWidget(Button.builder(
             Component.literal("Arena:"),
             b -> {}
-        ).pos(panelX + 10, footerRow1Y).size(50, 20).build()).active = false;
-
-        int[] presets = {4, 9, 16, 25, 36};
-        int presetX = panelX + 64;
+        ).pos(presetX, footerY).size(45, 20).build()).active = false;
+        presetX += 50;
         for (int preset : presets) {
             final int count = preset;
             addRenderableWidget(Button.builder(
                 Component.literal(String.valueOf(count)),
                 b -> selectedArenaCount = count
-            ).pos(presetX, footerRow1Y).size(28, 20).build());
+            ).pos(presetX, footerY).size(30, 20).build());
             presetX += 32;
         }
 
-        // Kill condition controls
-        int killX = panelX + 240;
+        // Kill condition buttons (for mobs)
+        int killX = presetX + 15;
         addRenderableWidget(Button.builder(
             Component.literal("Kill:"),
             b -> {}
-        ).pos(killX, footerRow1Y).size(35, 20).build()).active = false;
+        ).pos(killX, footerY).size(35, 20).build()).active = false;
+        killX += 38;
 
+        // Cycle through kill conditions
         addRenderableWidget(Button.builder(
             Component.literal("◀"),
             b -> cycleKillCondition(-1)
-        ).pos(killX + 40, footerRow1Y).size(20, 20).build());
-
-        // Kill condition display space is in render()
+        ).pos(killX, footerY).size(20, 20).build());
+        killX += 22;
 
         addRenderableWidget(Button.builder(
             Component.literal("▶"),
             b -> cycleKillCondition(1)
-        ).pos(killX + 140, footerRow1Y).size(20, 20).build());
-
-        // === FOOTER ROW 2 - Action buttons ===
-        int footerRow2Y = panelY + PANEL_HEIGHT - 30;
+        ).pos(killX + 70, footerY).size(20, 20).build());
 
         // Clear ground items button
         addRenderableWidget(Button.builder(
             Component.literal("Clear Items"),
             b -> onClearGroundItems()
-        ).pos(panelX + 10, footerRow2Y).size(80, 22).build());
+        ).pos(panelX + PANEL_WIDTH - 130, footerY).size(70, 20).build());
 
         // Close button
         addRenderableWidget(Button.builder(
             Component.literal(UIConstants.LABEL_CLOSE),
             b -> onClose()
-        ).pos(panelX + PANEL_WIDTH - 65, footerRow2Y).size(55, 22).build());
+        ).pos(panelX + PANEL_WIDTH - 55, footerY).size(50, 20).build());
 
         // Build entry buttons
         rebuildEntryButtons();
@@ -273,8 +264,8 @@ public class TestingScreen extends Screen {
 
         int panelX = (width - PANEL_WIDTH) / 2;
         int panelY = (height - PANEL_HEIGHT) / 2;
-        int contentY = panelY + 58;  // After header (2 rows)
-        int contentHeight = PANEL_HEIGHT - 130;  // Leave room for footer (2 rows)
+        int contentY = panelY + 45;
+        int contentHeight = PANEL_HEIGHT - 120;
 
         int entryY = contentY - scrollOffset;
         for (int i = 0; i < entries.size(); i++) {
@@ -317,7 +308,7 @@ public class TestingScreen extends Screen {
                     entryButtons.add(addRenderableWidget(statsBtn));
 
                     // Compare button - only show if edits exist
-                    ResourceLocation lootTableId = RegistryHelper.fromNamespaceAndPath(
+                    ResourceLocation lootTableId = ResourceLocation.fromNamespaceAndPath(
                         entityId.getNamespace(), "entities/" + entityId.getPath());
                     if (LootEditManager.getInstance().hasEdits(lootTableId)) {
                         Button compareBtn = Button.builder(
@@ -726,12 +717,18 @@ public class TestingScreen extends Screen {
         graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, IsotopeColors.BORDER_OUTER_DARK);
         graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, IsotopeColors.BACKGROUND_MEDIUM);
 
-        // Header background (covers both rows)
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 54, IsotopeColors.BACKGROUND_SOLID);
+        // Header
+        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 40, IsotopeColors.BACKGROUND_SOLID);
+        graphics.fill(panelX + 8, panelY + 10, panelX + 12, panelY + 30, IsotopeColors.TEST_INDICATOR); // Green indicator
+        graphics.drawString(font, "ISOTOPE TEST MODE", panelX + 18, panelY + 14, IsotopeColors.ACCENT_GOLD, false);
 
-        // Content area
-        int contentY = panelY + 58;
-        int contentHeight = PANEL_HEIGHT - 130;
+        // World type
+        String worldType = TestModeState.getInstance().getWorldType().displayName;
+        graphics.drawString(font, worldType, panelX + 150, panelY + 14, IsotopeColors.TEXT_MUTED, false);
+
+        // Content area (adjusted for second header row)
+        int contentY = panelY + 52;
+        int contentHeight = PANEL_HEIGHT - 127;
 
         // Scissor for scrolling
         graphics.enableScissor(panelX, contentY, panelX + PANEL_WIDTH, contentY + contentHeight);
@@ -747,16 +744,14 @@ public class TestingScreen extends Screen {
 
         graphics.disableScissor();
 
-        // Footer background (covers both rows)
-        int footerY = panelY + PANEL_HEIGHT - 68;
+        // Footer
+        int footerY = panelY + PANEL_HEIGHT - 45;
         graphics.fill(panelX, footerY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, IsotopeColors.BACKGROUND_SOLID);
 
-        // Draw current kill condition text (between ◀ and ▶ buttons)
-        int killCondX = panelX + 305;
-        int killCondY = panelY + PANEL_HEIGHT - 53;
-        String condText = selectedKillCondition.displayName;
-        int condWidth = font.width(condText);
-        graphics.drawString(font, condText, killCondX - condWidth / 2, killCondY, IsotopeColors.SOURCE_MOB, false);
+        // Draw current kill condition in the middle area
+        int killCondX = panelX + 230;
+        graphics.drawString(font, selectedKillCondition.displayName, killCondX, footerY + 12,
+            IsotopeColors.SOURCE_MOB, false);
 
         // Re-render buttons on top of panel
         for (var widget : this.children()) {
@@ -765,48 +760,48 @@ public class TestingScreen extends Screen {
             }
         }
 
-        // Selected arena highlight (footer row 1)
-        int[] arenaPresets = {4, 9, 16, 25, 36};
-        int arenaX = panelX + 64;
-        int arenaY = panelY + PANEL_HEIGHT - 58;
-        for (int preset : arenaPresets) {
+        // Selected arena highlight
+        int[] presets = {4, 9, 16, 25, 36};
+        int presetX = panelX + 100;
+        int presetButtonY = panelY + PANEL_HEIGHT - 35;
+        for (int preset : presets) {
             if (preset == selectedArenaCount) {
-                graphics.renderOutline(arenaX - 1, arenaY - 1, 30, 22, IsotopeColors.ACCENT_GOLD);
+                graphics.renderOutline(presetX - 1, presetButtonY - 1, 42, 22, IsotopeColors.ACCENT_GOLD);
             }
-            arenaX += 32;
+            presetX += 45;
         }
 
-        // Selected test count highlight (header row 1)
+        // Selected test count highlight (in header)
         int[] testPresets = {10, 50, 100, 500};
-        int testX = panelX + 148;
+        int testX = panelX + 138;
         int testButtonY = panelY + 8;
         for (int preset : testPresets) {
             if (preset == selectedTestCount) {
-                graphics.renderOutline(testX - 1, testButtonY - 1, 34, 22, IsotopeColors.ACCENT_AQUA);
+                graphics.renderOutline(testX - 1, testButtonY - 1, 30, 22, IsotopeColors.ACCENT_AQUA);
             }
-            testX += 36;
+            testX += 30;
         }
 
-        // Selected luck highlight (header row 2)
+        // Selected luck highlight (second row)
         int[] luckPresets = {0, 1, 2, 3, 5};
-        int luckX = panelX + 52;
-        int luckButtonY = panelY + 32;
+        int luckX = panelX + 48;
+        int luckButtonY = panelY + 30;
         for (int preset : luckPresets) {
             if (preset == selectedLuck) {
-                graphics.renderOutline(luckX - 1, luckButtonY - 1, 24, 20, IsotopeColors.ACCENT_GREEN);
+                graphics.renderOutline(luckX - 1, luckButtonY - 1, 22, 18, IsotopeColors.ACCENT_GREEN);
             }
-            luckX += 26;
+            luckX += 22;
         }
 
-        // Selected looting highlight (header row 2)
+        // Selected looting highlight (second row, for mobs)
         int[] lootingPresets = {0, 1, 2, 3};
-        int lootingX = panelX + 244;
-        int lootingButtonY = panelY + 32;
+        int lootingX = panelX + 218;
+        int lootingButtonY = panelY + 30;
         for (int preset : lootingPresets) {
             if (preset == selectedLootingLevel) {
-                graphics.renderOutline(lootingX - 1, lootingButtonY - 1, 24, 20, IsotopeColors.SOURCE_MOB);
+                graphics.renderOutline(lootingX - 1, lootingButtonY - 1, 22, 18, IsotopeColors.SOURCE_MOB);
             }
-            lootingX += 26;
+            lootingX += 22;
         }
     }
 
@@ -847,6 +842,7 @@ public class TestingScreen extends Screen {
         }
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int oldOffset = scrollOffset;
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));

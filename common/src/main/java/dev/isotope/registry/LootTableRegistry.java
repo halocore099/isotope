@@ -4,6 +4,8 @@ import dev.isotope.Isotope;
 import dev.isotope.analysis.LootTableContentAnalyzer;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 
@@ -31,7 +33,7 @@ public final class LootTableRegistry {
 
     /**
      * Scan the loot table registry from the server.
-     * Version-specific: 1.21+ uses reloadableRegistries, 1.20.x uses getLootData.
+     * In 1.21.4, loot tables are in the reloadable registries.
      *
      * Uses content-based analysis to detect categories, with path-based fallback.
      */
@@ -39,37 +41,39 @@ public final class LootTableRegistry {
         lootTables.clear();
 
         int contentAnalyzed = 0;
-        int contentAnalysisFailed = 0;
         int pathFallback = 0;
-        int stubsSkipped = 0;
-        Map<String, Integer> stubsByNamespace = new LinkedHashMap<>();
-        String apiUsed = "unknown";
 
         try {
+            // In 1.21.4, reloadableRegistries() returns a Holder with a lookup() method
+            var holder = server.reloadableRegistries();
+
+            // Log the holder type for debugging
+            Isotope.LOGGER.info("Holder type: {}", holder.getClass().getName());
+
+            // Try lookup() with no args to see what it returns
+            var lookup = holder.lookup();
+            Isotope.LOGGER.info("Lookup type: {}", lookup.getClass().getName());
+
             // Collect all IDs first
             List<ResourceLocation> tableIds = new ArrayList<>();
 
-            // Try 1.21+ API first, fall back to 1.20.x if not available
-            boolean used121 = scan1_21Plus(server, tableIds);
-            if (used121) {
-                apiUsed = "1.21+ (reloadableRegistries)";
-            } else {
-                scan1_20x(server, tableIds);
-                apiUsed = "1.20.x (getLootData)";
-            }
+            // The lookup should implement HolderLookup.Provider
+            if (lookup instanceof net.minecraft.core.HolderLookup.Provider provider) {
+                // Now we can look up the loot table registry
+                var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
 
-            Isotope.LOGGER.info("LootTableRegistry: using {} API, found {} candidates", apiUsed, tableIds.size());
+                lootLookup.listElementIds().forEach(key -> {
+                    ResourceLocation id = key.location();
+                    if (!id.getPath().equals("empty")) {
+                        tableIds.add(id);
+                    }
+                });
+            } else {
+                Isotope.LOGGER.warn("Lookup is not a HolderLookup.Provider: {}", lookup.getClass());
+            }
 
             // Now analyze each table with content-based detection
             for (ResourceLocation id : tableIds) {
-                // Skip stub/placeholder loot tables that have no pools
-                // (e.g., trial_chambers stubs in 1.20.4 before the feature was released)
-                if (isStubLootTable(server, id)) {
-                    stubsSkipped++;
-                    stubsByNamespace.merge(id.getNamespace(), 1, Integer::sum);
-                    Isotope.LOGGER.debug("Skipping stub loot table: {}", id);
-                    continue;
-                }
                 LootTableCategory category = null;
                 String path = id.getPath();
 
@@ -86,11 +90,8 @@ public final class LootTableRegistry {
                         category = LootTableContentAnalyzer.analyze(server, id);
                         if (category != null) {
                             contentAnalyzed++;
-                        } else {
-                            contentAnalysisFailed++;
                         }
                     } catch (Exception e) {
-                        contentAnalysisFailed++;
                         Isotope.LOGGER.debug("Content analysis failed for {}: {}", id, e.getMessage());
                     }
 
@@ -105,16 +106,8 @@ public final class LootTableRegistry {
             }
 
             scanned = true;
-
-            // Summary logging
-            Isotope.LOGGER.info("LootTableRegistry: scanned {} loot tables ({} path-categorized, {} content-analyzed, {} analysis-failed, {} stubs skipped)",
-                lootTables.size(), pathFallback, contentAnalyzed, contentAnalysisFailed, stubsSkipped);
-
-            // Log stubs breakdown by namespace if any were skipped
-            if (!stubsByNamespace.isEmpty()) {
-                stubsByNamespace.forEach((ns, count) ->
-                    Isotope.LOGGER.debug("  Skipped {} stubs from {}", count, ns));
-            }
+            Isotope.LOGGER.info("LootTableRegistry: scanned {} loot tables ({} content-analyzed, {} path-fallback)",
+                lootTables.size(), contentAnalyzed, pathFallback);
 
             // Log category breakdown
             Map<LootTableCategory, Long> byCategory = lootTables.values().stream()
@@ -125,305 +118,6 @@ public final class LootTableRegistry {
         } catch (Exception e) {
             Isotope.LOGGER.error("Failed to scan loot table registry", e);
         }
-    }
-
-    /**
-     * Try 1.21+ API: reloadableRegistries().lookup().lookupOrThrow(LOOT_TABLE)
-     * Uses reflection to avoid compile-time dependency on 1.21+ classes.
-     * @return true if successful, false if API not available
-     */
-    private boolean scan1_21Plus(MinecraftServer server, List<ResourceLocation> tableIds) {
-        try {
-            // server.reloadableRegistries() - 1.21+ only
-            java.lang.reflect.Method reloadableRegistries = MinecraftServer.class.getMethod("reloadableRegistries");
-            Object holder = reloadableRegistries.invoke(server);
-
-            // Try to get lookup from holder
-            java.lang.reflect.Method lookupMethod = null;
-            try {
-                lookupMethod = holder.getClass().getMethod("lookup");
-            } catch (NoSuchMethodException e) {
-                // Use holder directly
-            }
-
-            Object lookup = lookupMethod != null ? lookupMethod.invoke(holder) : holder;
-
-            // Get Registries.LOOT_TABLE via reflection
-            Class<?> registriesClass = Class.forName("net.minecraft.core.registries.Registries");
-            Object lootTableKey = registriesClass.getField("LOOT_TABLE").get(null);
-
-            // provider.lookupOrThrow(Registries.LOOT_TABLE)
-            java.lang.reflect.Method lookupOrThrow = null;
-            for (java.lang.reflect.Method m : lookup.getClass().getMethods()) {
-                if (m.getName().equals("lookupOrThrow") && m.getParameterCount() == 1) {
-                    lookupOrThrow = m;
-                    break;
-                }
-            }
-
-            if (lookupOrThrow == null) {
-                Isotope.LOGGER.debug("No lookupOrThrow method found");
-                return false;
-            }
-
-            Object lootLookup = lookupOrThrow.invoke(lookup, lootTableKey);
-
-            // Try multiple methods to get the keys from the registry
-            // Method 1: keySet() - returns Set<ResourceLocation> in 1.21.x
-            try {
-                java.lang.reflect.Method keySetMethod = lootLookup.getClass().getMethod("keySet");
-                Object keySet = keySetMethod.invoke(lootLookup);
-                if (keySet instanceof java.util.Set<?>) {
-                    for (Object key : (java.util.Set<?>) keySet) {
-                        if (key instanceof ResourceLocation) {
-                            ResourceLocation id = (ResourceLocation) key;
-                            if (!id.getPath().equals("empty")) {
-                                tableIds.add(id);
-                            }
-                        }
-                    }
-                }
-            } catch (NoSuchMethodException e) {
-                Isotope.LOGGER.debug("No keySet() method");
-            }
-
-            // Method 2: registryKeySet() - returns Set<ResourceKey<T>>
-            if (tableIds.isEmpty()) {
-                try {
-                    java.lang.reflect.Method registryKeySet = lootLookup.getClass().getMethod("registryKeySet");
-                    Object keySet = registryKeySet.invoke(lootLookup);
-                    if (keySet instanceof java.util.Set<?>) {
-                        for (Object key : (java.util.Set<?>) keySet) {
-                            try {
-                                java.lang.reflect.Method location = key.getClass().getMethod("location");
-                                ResourceLocation id = (ResourceLocation) location.invoke(key);
-                                if (!id.getPath().equals("empty")) {
-                                    tableIds.add(id);
-                                }
-                            } catch (Exception ex) {
-                                Isotope.LOGGER.debug("Failed to get location from registry key: {}", ex.getMessage());
-                            }
-                        }
-                    }
-                } catch (NoSuchMethodException e) {
-                    Isotope.LOGGER.debug("No registryKeySet() method");
-                }
-            }
-
-            // Method 3: listElementIds() - returns Stream<ResourceKey<T>>
-            if (tableIds.isEmpty()) {
-                try {
-                    java.lang.reflect.Method listElementIds = lootLookup.getClass().getMethod("listElementIds");
-                    Object stream = listElementIds.invoke(lootLookup);
-
-                    java.lang.reflect.Method forEach = stream.getClass().getMethod("forEach", java.util.function.Consumer.class);
-                    forEach.invoke(stream, (java.util.function.Consumer<Object>) key -> {
-                        try {
-                            java.lang.reflect.Method location = key.getClass().getMethod("location");
-                            ResourceLocation id = (ResourceLocation) location.invoke(key);
-                            if (!id.getPath().equals("empty")) {
-                                tableIds.add(id);
-                            }
-                        } catch (Exception ex) {
-                            Isotope.LOGGER.debug("Failed to get location from key: {}", ex.getMessage());
-                        }
-                    });
-                } catch (NoSuchMethodException e) {
-                    Isotope.LOGGER.debug("No listElementIds() method");
-                }
-            }
-
-            if (tableIds.isEmpty()) {
-                Isotope.LOGGER.warn("1.21+ API: Could not find any method to list loot tables");
-                return false;
-            }
-
-            Isotope.LOGGER.info("1.21+ API: found {} loot tables", tableIds.size());
-            return true;
-        } catch (NoSuchMethodException | NoSuchFieldException e) {
-            // Expected on 1.20.x - method doesn't exist
-            Isotope.LOGGER.debug("1.21+ API not available: {}", e.getMessage());
-            return false;
-        } catch (Exception e) {
-            Isotope.LOGGER.debug("1.21+ API failed: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Scan using 1.20.x API: getLootData().getKeys(LootDataType.TABLE)
-     * Uses reflection to avoid compile-time dependency on 1.20.x classes.
-     */
-    private void scan1_20x(MinecraftServer server, List<ResourceLocation> tableIds) {
-        try {
-            // Use reflection for 1.20.x API
-            java.lang.reflect.Method getLootData = MinecraftServer.class.getMethod("getLootData");
-            Object lootData = getLootData.invoke(server);
-
-            // Get LootDataType.TABLE
-            Class<?> lootDataTypeClass = Class.forName("net.minecraft.world.level.storage.loot.LootDataType");
-            Object tableType = lootDataTypeClass.getField("TABLE").get(null);
-
-            // lootData.getKeys(LootDataType.TABLE)
-            java.lang.reflect.Method getKeys = lootData.getClass().getMethod("getKeys", lootDataTypeClass);
-            Object keys = getKeys.invoke(lootData, tableType);
-
-            // keys is a Set<ResourceLocation>
-            if (keys instanceof Iterable<?>) {
-                for (Object key : (Iterable<?>) keys) {
-                    ResourceLocation id = (ResourceLocation) key;
-                    if (!id.getPath().equals("empty")) {
-                        tableIds.add(id);
-                    }
-                }
-            }
-            Isotope.LOGGER.info("1.20.x API: found {} loot tables", tableIds.size());
-        } catch (Exception e) {
-            Isotope.LOGGER.error("1.20.x API scan failed: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Check if a loot table is a stub (placeholder with no pools).
-     * Minecraft 1.20.4 includes stub loot tables for experimental features like trial_chambers
-     * that have no actual content - just a type and random_sequence.
-     *
-     * @param server The server to look up the loot table
-     * @param id The loot table ID to check
-     * @return true if the table is a stub with no pools
-     */
-    private boolean isStubLootTable(MinecraftServer server, ResourceLocation id) {
-        try {
-            // Try 1.21+ API first
-            Object lootTable = getLootTable1_21Plus(server, id);
-            if (lootTable == null) {
-                // Fall back to 1.20.x API
-                lootTable = getLootTable1_20x(server, id);
-            }
-
-            if (lootTable == null) {
-                return false; // Can't determine, assume not a stub
-            }
-
-            // Check if the loot table has pools
-            // First try to find the field by name (more precise)
-            java.lang.reflect.Field poolsField = findPoolsField(lootTable.getClass());
-
-            if (poolsField != null) {
-                poolsField.setAccessible(true);
-                Object value = poolsField.get(lootTable);
-                if (value instanceof java.util.List<?> list) {
-                    return list.isEmpty();
-                }
-            }
-
-            // Fallback: scan all List fields if "pools" not found by name
-            for (java.lang.reflect.Field f : lootTable.getClass().getDeclaredFields()) {
-                if (java.util.List.class.isAssignableFrom(f.getType())) {
-                    f.setAccessible(true);
-                    Object value = f.get(lootTable);
-                    if (value instanceof java.util.List<?> list) {
-                        // Found a List field - check if it contains LootPool instances
-                        if (list.isEmpty()) {
-                            // Empty list - likely the pools field, it's a stub
-                            return true;
-                        } else {
-                            Object first = list.get(0);
-                            if (first != null && first.getClass().getSimpleName().contains("LootPool")) {
-                                // Has pools - not a stub
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Couldn't determine, assume not a stub
-            return false;
-        } catch (Exception e) {
-            Isotope.LOGGER.debug("Failed to check if {} is stub: {}", id, e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Find the "pools" field by name, checking common obfuscated names.
-     * Returns null if not found.
-     */
-    private java.lang.reflect.Field findPoolsField(Class<?> clazz) {
-        // Common field names for pools (vanilla and various mappings)
-        String[] possibleNames = {"pools", "field_186466_e", "f_79109_", "c"};
-
-        for (String name : possibleNames) {
-            try {
-                return clazz.getDeclaredField(name);
-            } catch (NoSuchFieldException ignored) {
-                // Try next name
-            }
-        }
-
-        // Also try superclass in case it's inherited
-        Class<?> superClass = clazz.getSuperclass();
-        if (superClass != null && !superClass.equals(Object.class)) {
-            for (String name : possibleNames) {
-                try {
-                    return superClass.getDeclaredField(name);
-                } catch (NoSuchFieldException ignored) {
-                    // Try next name
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Get a LootTable using 1.21+ API.
-     */
-    private Object getLootTable1_21Plus(MinecraftServer server, ResourceLocation id) {
-        try {
-            java.lang.reflect.Method reloadableRegistries = MinecraftServer.class.getMethod("reloadableRegistries");
-            Object holder = reloadableRegistries.invoke(server);
-
-            // Find getLootTable method
-            for (java.lang.reflect.Method m : holder.getClass().getMethods()) {
-                if (m.getName().equals("getLootTable") && m.getParameterCount() == 1) {
-                    // Could take ResourceKey or ResourceLocation
-                    Class<?> paramType = m.getParameterTypes()[0];
-                    if (paramType.getSimpleName().contains("ResourceKey")) {
-                        // Create ResourceKey<LootTable>
-                        Class<?> registriesClass = Class.forName("net.minecraft.core.registries.Registries");
-                        Object lootTableRegistry = registriesClass.getField("LOOT_TABLE").get(null);
-
-                        Class<?> resourceKeyClass = Class.forName("net.minecraft.resources.ResourceKey");
-                        java.lang.reflect.Method create = resourceKeyClass.getMethod("create", resourceKeyClass, ResourceLocation.class);
-                        Object resourceKey = create.invoke(null, lootTableRegistry, id);
-
-                        return m.invoke(holder, resourceKey);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Expected on 1.20.x
-        }
-        return null;
-    }
-
-    /**
-     * Get a LootTable using 1.20.x API.
-     */
-    private Object getLootTable1_20x(MinecraftServer server, ResourceLocation id) {
-        try {
-            java.lang.reflect.Method getLootData = MinecraftServer.class.getMethod("getLootData");
-            Object lootData = getLootData.invoke(server);
-
-            // getLootTable(ResourceLocation)
-            java.lang.reflect.Method getLootTable = lootData.getClass().getMethod("getLootTable", ResourceLocation.class);
-            return getLootTable.invoke(lootData, id);
-        } catch (Exception e) {
-            // Expected on 1.21+
-        }
-        return null;
     }
 
     /**
@@ -458,32 +152,6 @@ public final class LootTableRegistry {
         }
         return lootTables.values().stream()
             .filter(lt -> lt.namespace().equals(namespace))
-            .toList();
-    }
-
-    /**
-     * Get loot tables filtered by path prefix.
-     * Useful for structure-focused filtering (e.g., "chests/", "entities/zombie").
-     *
-     * @param prefix The path prefix to match (e.g., "chests/village/", "entities/")
-     * @return List of loot tables whose path starts with the prefix
-     */
-    public List<LootTableInfo> getByPathPrefix(String prefix) {
-        return lootTables.values().stream()
-            .filter(lt -> lt.path().startsWith(prefix))
-            .toList();
-    }
-
-    /**
-     * Get loot tables filtered by path containing a substring.
-     * Useful for finding related loot tables (e.g., "trial_chambers", "ancient_city").
-     *
-     * @param substring The substring to search for in paths
-     * @return List of loot tables whose path contains the substring
-     */
-    public List<LootTableInfo> getByPathContaining(String substring) {
-        return lootTables.values().stream()
-            .filter(lt -> lt.path().contains(substring))
             .toList();
     }
 

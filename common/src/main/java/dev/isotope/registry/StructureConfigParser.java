@@ -1,5 +1,4 @@
 package dev.isotope.registry;
-import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -156,7 +155,7 @@ public final class StructureConfigParser {
                     poolStr = poolStr.substring(1);
                 }
                 try {
-                    ResourceLocation poolId = RegistryHelper.parseLocation(poolStr);
+                    ResourceLocation poolId = ResourceLocation.parse(poolStr);
                     structureToStartPool.put(structureId, poolId);
 
                     // Cross-reference with TemplatePoolParser to get loot from this pool
@@ -184,58 +183,58 @@ public final class StructureConfigParser {
         switch (type) {
             case "minecraft:buried_treasure":
                 // Buried treasure has a known loot table
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/buried_treasure"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/buried_treasure"));
                 break;
 
             case "minecraft:desert_pyramid":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/desert_pyramid"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/desert_pyramid"));
                 break;
 
             case "minecraft:jungle_pyramid":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/jungle_temple"));
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/jungle_temple_dispenser"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/jungle_temple"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/jungle_temple_dispenser"));
                 break;
 
             case "minecraft:igloo":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/igloo_chest"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/igloo_chest"));
                 break;
 
             case "minecraft:shipwreck":
             case "minecraft:shipwreck_beached":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/shipwreck_map"));
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/shipwreck_supply"));
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/shipwreck_treasure"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/shipwreck_map"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/shipwreck_supply"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/shipwreck_treasure"));
                 break;
 
             case "minecraft:stronghold":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/stronghold_corridor"));
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/stronghold_crossing"));
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/stronghold_library"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/stronghold_corridor"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/stronghold_crossing"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/stronghold_library"));
                 break;
 
             case "minecraft:fortress":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/nether_bridge"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/nether_bridge"));
                 break;
 
             case "minecraft:ocean_ruin_cold":
             case "minecraft:ocean_ruin_warm":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/underwater_ruin_small"));
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/underwater_ruin_big"));
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "archaeology/ocean_ruin_cold"));
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "archaeology/ocean_ruin_warm"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/underwater_ruin_small"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/underwater_ruin_big"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "archaeology/ocean_ruin_cold"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "archaeology/ocean_ruin_warm"));
                 break;
 
             case "minecraft:mineshaft":
             case "minecraft:mineshaft_mesa":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/abandoned_mineshaft"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/abandoned_mineshaft"));
                 break;
 
             case "minecraft:woodland_mansion":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/woodland_mansion"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/woodland_mansion"));
                 break;
 
             case "minecraft:end_city":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/end_city_treasure"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/end_city_treasure"));
                 break;
 
             case "minecraft:ruined_portal":
@@ -245,11 +244,11 @@ public final class StructureConfigParser {
             case "minecraft:ruined_portal_nether":
             case "minecraft:ruined_portal_ocean":
             case "minecraft:ruined_portal_swamp":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/ruined_portal"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/ruined_portal"));
                 break;
 
             case "minecraft:pillager_outpost":
-                foundLoot.add(RegistryHelper.fromNamespaceAndPath("minecraft", "chests/pillager_outpost"));
+                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/pillager_outpost"));
                 break;
 
             default:
@@ -274,7 +273,7 @@ public final class StructureConfigParser {
                     if (lootElement.isJsonPrimitive()) {
                         String lootTableStr = lootElement.getAsString();
                         try {
-                            ResourceLocation lootId = RegistryHelper.parseLocation(lootTableStr);
+                            ResourceLocation lootId = ResourceLocation.parse(lootTableStr);
                             found.add(lootId);
                         } catch (Exception e) {
                             // Invalid ResourceLocation
@@ -284,7 +283,7 @@ public final class StructureConfigParser {
                         for (JsonElement item : lootElement.getAsJsonArray()) {
                             if (item.isJsonPrimitive()) {
                                 try {
-                                    found.add(RegistryHelper.parseLocation(item.getAsString()));
+                                    found.add(ResourceLocation.parse(item.getAsString()));
                                 } catch (Exception e) {
                                     // Invalid
                                 }
@@ -322,7 +321,7 @@ public final class StructureConfigParser {
             structurePath = structurePath.substring(0, structurePath.length() - 5);
         }
 
-        return RegistryHelper.fromNamespaceAndPath(path.getNamespace(), structurePath);
+        return ResourceLocation.fromNamespaceAndPath(path.getNamespace(), structurePath);
     }
 
     // --- Query API ---

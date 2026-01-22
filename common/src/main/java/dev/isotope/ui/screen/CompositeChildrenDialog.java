@@ -5,7 +5,6 @@ import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -121,9 +120,9 @@ public class CompositeChildrenDialog extends DialogScreen {
             int iconX = listX + 30;
             if (child.name().isPresent()) {
                 ResourceLocation itemId = child.name().get();
-                var itemOpt = RegistryHelper.getItem(itemId);
+                var itemOpt = BuiltInRegistries.ITEM.get(itemId);
                 if (itemOpt.isPresent()) {
-                    ItemStack stack = new ItemStack(itemOpt.get());
+                    ItemStack stack = new ItemStack(itemOpt.get().value());
                     graphics.renderItem(stack, iconX, childY + 4);
                 }
             }
@@ -218,6 +217,7 @@ public class CompositeChildrenDialog extends DialogScreen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int dialogX = getDialogX();
         int dialogY = getDialogY();

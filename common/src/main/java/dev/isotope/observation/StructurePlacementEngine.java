@@ -1,12 +1,9 @@
 package dev.isotope.observation;
 
 import dev.isotope.Isotope;
-import dev.isotope.compat.RegistryHelper;
-import dev.isotope.compat.VersionHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -18,9 +15,6 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 
-import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -63,10 +57,11 @@ public final class StructurePlacementEngine {
         Map<ResourceLocation, PlacementResult> results = new LinkedHashMap<>();
 
         // Get all registered structures
-        Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(server.registryAccess());
+        HolderLookup.RegistryLookup<Structure> lookup = server.registryAccess()
+            .lookupOrThrow(Registries.STRUCTURE);
 
         List<ResourceLocation> structureIds = new ArrayList<>();
-        structureRegistry.keySet().forEach(structureIds::add);
+        lookup.listElementIds().forEach(key -> structureIds.add(key.location()));
 
         onProgress.accept("Found " + structureIds.size() + " structures to place");
 
@@ -119,11 +114,11 @@ public final class StructurePlacementEngine {
             BlockPos targetPos) {
 
         try {
-            // Get the structure from registry using version-compatible method
+            // Get the structure from registry
             ResourceKey<Structure> key = ResourceKey.create(Registries.STRUCTURE, structureId);
-            Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(server.registryAccess());
+            var lookup = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
-            Holder<Structure> holder = getStructureHolder(structureRegistry, key);
+            Holder.Reference<Structure> holder = lookup.get(key).orElse(null);
 
             if (holder == null) {
                 return PlacementResult.failed(structureId, "Structure not found in registry");
@@ -131,11 +126,23 @@ public final class StructurePlacementEngine {
 
             Structure structure = holder.value();
 
-            // Generate the structure using version-compatible method
+            // Generate the structure using Structure.generate()
+            // This creates a StructureStart directly
             var chunkPos = level.getChunk(targetPos).getPos();
 
-            StructureStart start = generateStructureVersionCompatible(
-                structure, holder, level, chunkPos, 0
+            StructureStart start = structure.generate(
+                holder,
+                level.dimension(),
+                level.registryAccess(),
+                level.getChunkSource().getGenerator(),
+                level.getChunkSource().getGenerator().getBiomeSource(),
+                level.getChunkSource().randomState(),
+                level.getStructureManager(),
+                level.getSeed(),
+                chunkPos,
+                0, // references
+                level,
+                biome -> true // Accept any biome for forced placement
             );
 
             if (start == null || start == StructureStart.INVALID_START) {
@@ -208,135 +215,6 @@ public final class StructurePlacementEngine {
 
         public static PlacementResult failed(ResourceLocation id, String error) {
             return new PlacementResult(id, false, BlockPos.ZERO, null, error);
-        }
-    }
-
-    /**
-     * Get a structure holder using version-compatible reflection.
-     *
-     * 1.21+: Registry.get(key) returns Optional<Holder.Reference<T>>
-     * 1.20.x: Registry.get(key) returns T directly (nullable)
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable
-    private Holder<Structure> getStructureHolder(Registry<Structure> registry, ResourceKey<Structure> key) {
-        try {
-            Object result = registry.get(key);
-
-            if (result == null) {
-                return null;
-            }
-
-            // Check if it's an Optional (1.21+)
-            if (result instanceof Optional) {
-                Optional<?> optional = (Optional<?>) result;
-                if (optional.isEmpty()) {
-                    return null;
-                }
-                return (Holder<Structure>) optional.get();
-            }
-
-            // 1.20.x: Direct structure returned, wrap in a Holder
-            if (result instanceof Structure) {
-                Structure structure = (Structure) result;
-                return Holder.direct(structure);
-            }
-
-            // If it's already a Holder
-            if (result instanceof Holder) {
-                return (Holder<Structure>) result;
-            }
-
-            return null;
-        } catch (Exception e) {
-            Isotope.LOGGER.debug("Failed to get structure holder: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Generate a structure using version-compatible reflection.
-     *
-     * 1.21+: Structure.generate(Holder, ResourceKey, RegistryAccess, ...)
-     * 1.20.x: Structure.generate(RegistryAccess, ...)
-     */
-    @Nullable
-    private StructureStart generateStructureVersionCompatible(Structure structure,
-                                                              Holder<Structure> structureHolder,
-                                                              ServerLevel level,
-                                                              net.minecraft.world.level.ChunkPos chunkPos,
-                                                              long seedOffset) {
-        try {
-            // Get common parameters
-            var registryAccess = level.registryAccess();
-            var generator = level.getChunkSource().getGenerator();
-            var biomeSource = generator.getBiomeSource();
-            var structureManager = level.getStructureManager();
-            long seed = level.getSeed() + seedOffset;
-
-            // Try to get randomState if it exists (1.20.4+)
-            Object randomState = null;
-            try {
-                Method randomStateMethod = level.getChunkSource().getClass().getMethod("randomState");
-                randomState = randomStateMethod.invoke(level.getChunkSource());
-            } catch (NoSuchMethodException e) {
-                // randomState doesn't exist in this version
-            }
-
-            // Find the generate method
-            for (Method method : Structure.class.getMethods()) {
-                if (!method.getName().equals("generate")) continue;
-
-                Class<?>[] params = method.getParameterTypes();
-
-                // Try 1.21+ signature (with Holder and ResourceKey first)
-                if (params.length >= 11 && params[0].getName().contains("Holder")) {
-                    try {
-                        return (StructureStart) method.invoke(structure,
-                            structureHolder,
-                            level.dimension(),
-                            registryAccess,
-                            generator,
-                            biomeSource,
-                            randomState,
-                            structureManager,
-                            seed,
-                            chunkPos,
-                            0,
-                            level,
-                            (java.util.function.Predicate<?>) biome -> true
-                        );
-                    } catch (Exception e) {
-                        Isotope.LOGGER.debug("1.21+ generate failed: {}", e.getMessage());
-                    }
-                }
-
-                // Try 1.20.x signature (without Holder and ResourceKey)
-                if (params.length >= 10 && params[0].getName().contains("RegistryAccess")) {
-                    try {
-                        return (StructureStart) method.invoke(structure,
-                            registryAccess,
-                            generator,
-                            biomeSource,
-                            randomState,
-                            structureManager,
-                            seed,
-                            chunkPos,
-                            0,
-                            level,
-                            (java.util.function.Predicate<?>) biome -> true
-                        );
-                    } catch (Exception e) {
-                        Isotope.LOGGER.debug("1.20.x generate failed: {}", e.getMessage());
-                    }
-                }
-            }
-
-            Isotope.LOGGER.warn("Could not find compatible Structure.generate() method");
-            return null;
-        } catch (Exception e) {
-            Isotope.LOGGER.error("Structure generation failed: {}", e.getMessage());
-            return null;
         }
     }
 }

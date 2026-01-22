@@ -1,6 +1,5 @@
 package dev.isotope.ui.screen;
 
-import dev.isotope.compat.RegistryHelper;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
@@ -181,7 +180,7 @@ public class RandomSequenceDialog extends DialogScreen {
         if (inputText.isEmpty()) {
             result = Optional.empty();
         } else {
-            result = Optional.of(RegistryHelper.parseLocation(ScreenUtils.ensureNamespace(inputText)));
+            result = Optional.of(ResourceLocation.parse(ScreenUtils.ensureNamespace(inputText)));
         }
         onSequenceSelected.accept(result);
         onClose();

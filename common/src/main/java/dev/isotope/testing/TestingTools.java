@@ -1,8 +1,6 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
-import dev.isotope.compat.RegistryHelper;
-import dev.isotope.compat.VersionHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -82,17 +80,18 @@ public final class TestingTools {
             BlockPos playerPos = player.blockPosition();
 
             // Get structure registry
-            Registry<Structure> structureRegistry = RegistryHelper.getStructureRegistry(level.registryAccess());
+            Registry<Structure> structureRegistry = level.registryAccess()
+                .lookupOrThrow(Registries.STRUCTURE);
 
-            // Find the structure holder using version-compatible method
+            // Find the structure holder
             ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);
-            Holder<Structure> structureHolder = getStructureHolder(structureRegistry, structureKey);
-            if (structureHolder == null) {
+            Optional<Holder.Reference<Structure>> structureHolder = structureRegistry.get(structureKey);
+            if (structureHolder.isEmpty()) {
                 return LocateResult.error("Unknown structure: " + structureId);
             }
 
             // Create a HolderSet with just this structure
-            HolderSet<Structure> holderSet = HolderSet.direct(structureHolder);
+            HolderSet<Structure> holderSet = HolderSet.direct(structureHolder.get());
 
             // Locate the structure
             var result = level.getChunkSource().getGenerator().findNearestMapStructure(
@@ -144,8 +143,8 @@ public final class TestingTools {
             double y = position.getY() + 1;
             double z = position.getZ() + 0.5;
 
-            VersionHelper.teleportPlayer(player, player.serverLevel(), x, y, z,
-                Set.of(), player.getYRot(), player.getXRot());
+            player.teleportTo(player.serverLevel(), x, y, z,
+                Set.of(), player.getYRot(), player.getXRot(), true);
 
             Isotope.LOGGER.info("Teleported player to {}, {}, {}", x, y, z);
             return true;
@@ -195,48 +194,5 @@ public final class TestingTools {
             : server.getPlayerList().getPlayers().get(0);
 
         return player != null ? player.blockPosition() : null;
-    }
-
-    /**
-     * Get a structure holder using version-compatible reflection.
-     *
-     * 1.21+: Registry.get(key) returns Optional<Holder.Reference<T>>
-     * 1.20.x: Registry.get(key) returns T directly (nullable)
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable
-    private static Holder<Structure> getStructureHolder(Registry<Structure> registry, ResourceKey<Structure> key) {
-        try {
-            Object result = registry.get(key);
-
-            if (result == null) {
-                return null;
-            }
-
-            // Check if it's an Optional (1.21+)
-            if (result instanceof Optional) {
-                Optional<?> optional = (Optional<?>) result;
-                if (optional.isEmpty()) {
-                    return null;
-                }
-                return (Holder<Structure>) optional.get();
-            }
-
-            // 1.20.x: Direct structure returned, wrap in a Holder
-            if (result instanceof Structure) {
-                Structure structure = (Structure) result;
-                return Holder.direct(structure);
-            }
-
-            // If it's already a Holder
-            if (result instanceof Holder) {
-                return (Holder<Structure>) result;
-            }
-
-            return null;
-        } catch (Exception e) {
-            Isotope.LOGGER.debug("Failed to get structure holder: {}", e.getMessage());
-            return null;
-        }
     }
 }

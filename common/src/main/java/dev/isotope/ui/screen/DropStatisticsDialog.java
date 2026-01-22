@@ -11,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -204,9 +203,9 @@ public class DropStatisticsDialog extends Screen {
                     }
 
                     // Item icon
-                    var itemOpt = RegistryHelper.getItem(entry.itemId);
+                    var itemOpt = BuiltInRegistries.ITEM.get(entry.itemId);
                     if (itemOpt.isPresent()) {
-                        ItemStack stack = new ItemStack(itemOpt.get());
+                        ItemStack stack = new ItemStack(itemOpt.get().value());
                         graphics.renderItem(stack, dialogX + 10, entryY + 3);
                     }
 
@@ -253,6 +252,7 @@ public class DropStatisticsDialog extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int)(scrollY * 20)));
         return true;

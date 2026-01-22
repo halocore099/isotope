@@ -15,7 +15,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -283,9 +282,9 @@ public class TemplateEditorScreen extends Screen {
 
         if (selectedItem != null) {
             // Render item icon
-            var itemOpt = RegistryHelper.getItem(selectedItem);
+            var itemOpt = BuiltInRegistries.ITEM.get(selectedItem);
             if (itemOpt.isPresent()) {
-                graphics.renderItem(new ItemStack(itemOpt.get()), itemBtnX + 2, y);
+                graphics.renderItem(new ItemStack(itemOpt.get().value()), itemBtnX + 2, y);
             }
             String itemName = selectedItem.getPath();
             if (itemName.length() > 18) itemName = itemName.substring(0, 15) + "...";
@@ -501,6 +500,7 @@ public class TemplateEditorScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         // Functions list scroll
         int listX = panelX + 14;

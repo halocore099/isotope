@@ -14,7 +14,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -155,9 +154,9 @@ public class DropRatePanel extends AbstractWidget {
         int x = getX() + PADDING;
 
         // Item icon
-        var itemOpt = RegistryHelper.getItem(rate.item());
+        var itemOpt = BuiltInRegistries.ITEM.get(rate.item());
         if (itemOpt.isPresent()) {
-            ItemStack stack = new ItemStack(itemOpt.get());
+            ItemStack stack = new ItemStack(itemOpt.get().value());
             graphics.renderItem(stack, x, y + 2);
         }
         x += 20;
@@ -192,6 +191,7 @@ public class DropRatePanel extends AbstractWidget {
         }
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (isMouseOver(mouseX, mouseY)) {
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));

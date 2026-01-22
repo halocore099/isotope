@@ -2,7 +2,6 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.analysis.DropRateCalculator;
 import dev.isotope.analysis.DropRateCalculator.DropRate;
-import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
@@ -17,6 +16,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -344,9 +344,9 @@ public class CompareScreen extends Screen {
                     // Item icon
                     final int itemY = currentY;
                     entry.name().ifPresent(itemId -> {
-                        var itemOpt = RegistryHelper.getItem(itemId);
+                        var itemOpt = BuiltInRegistries.ITEM.get(itemId);
                         if (itemOpt.isPresent()) {
-                            ItemStack stack = new ItemStack(itemOpt.get());
+                            ItemStack stack = new ItemStack(itemOpt.get().value());
                             graphics.renderItem(stack, x + 2, itemY + 1);
                         }
                     });
@@ -497,6 +497,7 @@ public class CompareScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));
         return true;

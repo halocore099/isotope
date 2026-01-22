@@ -247,6 +247,7 @@ public class SessionScreen extends Screen {
 
     private long lastClickTime = 0;
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;

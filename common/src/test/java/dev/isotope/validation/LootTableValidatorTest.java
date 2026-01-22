@@ -19,32 +19,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class LootTableValidatorTest {
 
-    private static final ResourceLocation TEST_TABLE = createResourceLocation("test", "table");
-
-    // Version-compatible ResourceLocation creation for tests
-    @SuppressWarnings("deprecation")
-    private static ResourceLocation createResourceLocation(String namespace, String path) {
-        try {
-            // Try 1.21+ method first
-            return (ResourceLocation) ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class)
-                .invoke(null, namespace, path);
-        } catch (Exception e) {
-            // Fall back to 1.20.x constructor
-            try {
-                return ResourceLocation.class.getConstructor(String.class, String.class)
-                    .newInstance(namespace, path);
-            } catch (Exception e2) {
-                throw new RuntimeException("Cannot create ResourceLocation", e2);
-            }
-        }
-    }
+    private static final ResourceLocation TEST_TABLE = ResourceLocation.fromNamespaceAndPath("test", "table");
 
     // ===== Helper Methods =====
 
     private LootEntry createSimpleEntry(String item, int weight) {
         return new LootEntry(
             "minecraft:item",
-            Optional.of(createResourceLocation("test", item)),
+            Optional.of(ResourceLocation.fromNamespaceAndPath("test", item)),
             weight,
             0,
             Collections.emptyList(),

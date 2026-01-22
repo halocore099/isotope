@@ -1,5 +1,4 @@
 package dev.isotope.registry;
-import dev.isotope.compat.RegistryHelper;
 
 import dev.isotope.Isotope;
 import dev.isotope.data.LootSource;
@@ -80,9 +79,9 @@ public final class FeatureRegistry {
      */
     private void registerFeature(String featureId, String displayName, String description,
                                   List<String> lootTablePaths) {
-        ResourceLocation id = RegistryHelper.parseLocation(featureId);
+        ResourceLocation id = ResourceLocation.parse(featureId);
         List<ResourceLocation> lootTables = lootTablePaths.stream()
-            .map(RegistryHelper::parseLocation)
+            .map(ResourceLocation::parse)
             .toList();
 
         features.put(id, new FeatureDefinition(id, displayName, description, lootTables));

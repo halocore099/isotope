@@ -1,6 +1,5 @@
 package dev.isotope.ui.screen;
 
-import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
@@ -309,7 +308,7 @@ public class EntryTypeDialog extends DialogScreen {
         Optional<ResourceLocation> name = Optional.empty();
 
         if (opt.needsName && !nameInput.isEmpty()) {
-            name = Optional.of(RegistryHelper.parseLocation(ScreenUtils.ensureNamespace(nameInput)));
+            name = Optional.of(ResourceLocation.parse(ScreenUtils.ensureNamespace(nameInput)));
         }
 
         onTypeSelected.accept(opt.type, name);

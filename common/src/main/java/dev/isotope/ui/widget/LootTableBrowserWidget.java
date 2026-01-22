@@ -843,6 +843,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         return false;
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (isMouseOver(mouseX, mouseY) && !modDropdownOpen) {
             scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));

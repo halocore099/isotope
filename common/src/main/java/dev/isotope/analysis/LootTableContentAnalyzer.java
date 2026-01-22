@@ -1,5 +1,4 @@
 package dev.isotope.analysis;
-import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.*;
 import dev.isotope.Isotope;
@@ -308,7 +307,7 @@ public final class LootTableContentAnalyzer {
                                           String itemId, String structureId,
                                           int confidence, String reason) {
         items.computeIfAbsent(itemId, k -> new ArrayList<>())
-            .add(new StructureHint(RegistryHelper.parseLocation(structureId), confidence, reason));
+            .add(new StructureHint(ResourceLocation.parse(structureId), confidence, reason));
     }
 
     // ===== Analysis statistics =====
@@ -330,7 +329,7 @@ public final class LootTableContentAnalyzer {
 
         // Loot tables are at: data/<namespace>/loot_table/<path>.json
         // Try both singular and plural paths (some mods differ)
-        ResourceLocation jsonPath = RegistryHelper.fromNamespaceAndPath(
+        ResourceLocation jsonPath = ResourceLocation.fromNamespaceAndPath(
             tableId.getNamespace(),
             "loot_table/" + tableId.getPath() + ".json"
         );
@@ -338,7 +337,7 @@ public final class LootTableContentAnalyzer {
         Optional<Resource> resource = resourceManager.getResource(jsonPath);
         if (resource.isEmpty()) {
             // Try plural form
-            jsonPath = RegistryHelper.fromNamespaceAndPath(
+            jsonPath = ResourceLocation.fromNamespaceAndPath(
                 tableId.getNamespace(),
                 "loot_tables/" + tableId.getPath() + ".json"
             );
@@ -626,7 +625,7 @@ public final class LootTableContentAnalyzer {
         ResourceManager resourceManager = server.getResourceManager();
 
         // Try to load the loot table JSON
-        ResourceLocation jsonPath = RegistryHelper.fromNamespaceAndPath(
+        ResourceLocation jsonPath = ResourceLocation.fromNamespaceAndPath(
             tableId.getNamespace(),
             "loot_table/" + tableId.getPath() + ".json"
         );
@@ -634,7 +633,7 @@ public final class LootTableContentAnalyzer {
         Optional<Resource> resource = resourceManager.getResource(jsonPath);
         if (resource.isEmpty()) {
             // Try plural form
-            jsonPath = RegistryHelper.fromNamespaceAndPath(
+            jsonPath = ResourceLocation.fromNamespaceAndPath(
                 tableId.getNamespace(),
                 "loot_tables/" + tableId.getPath() + ".json"
             );

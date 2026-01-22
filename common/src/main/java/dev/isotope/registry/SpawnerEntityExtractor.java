@@ -1,5 +1,4 @@
 package dev.isotope.registry;
-import dev.isotope.compat.RegistryHelper;
 
 import dev.isotope.Isotope;
 import net.minecraft.nbt.CompoundTag;
@@ -236,7 +235,7 @@ public final class SpawnerEntityExtractor {
      */
     private void addEntityId(String entityIdStr, Set<ResourceLocation> entities) {
         try {
-            ResourceLocation entityId = RegistryHelper.parseLocation(entityIdStr);
+            ResourceLocation entityId = ResourceLocation.parse(entityIdStr);
             entities.add(entityId);
         } catch (Exception e) {
             Isotope.LOGGER.debug("[SpawnerExtractor] Invalid entity ID: {}", entityIdStr);

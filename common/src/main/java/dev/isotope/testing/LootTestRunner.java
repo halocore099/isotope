@@ -1,10 +1,10 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
-import dev.isotope.compat.RegistryHelper;
-import dev.isotope.compat.VersionHelper;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -21,8 +21,6 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,7 +111,7 @@ public final class LootTestRunner {
             DropStatistics stats = new DropStatistics(entityId, entityName, conditionText);
 
             // Get entity type
-            Optional<EntityType<?>> entityTypeOpt = RegistryHelper.getEntityType(entityId);
+            Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
             if (entityTypeOpt.isEmpty()) {
                 return TestResult.error("Unknown entity: " + entityId);
             }
@@ -128,9 +126,10 @@ public final class LootTestRunner {
 
                 stats.startTest();
 
-                // Spawn entity using version-compatible method
+                // Spawn entity
                 BlockPos spawnPos = playerPos.offset(3 + (i % 5) * 2, 0, 3 + (i / 5) * 2);
-                Entity entity = createEntityVersionCompatible(entityType, level, spawnPos);
+                Entity entity = entityType.create(level, null, spawnPos,
+                    net.minecraft.world.entity.EntitySpawnReason.COMMAND, false, false);
 
                 if (entity == null) continue;
 
@@ -187,10 +186,11 @@ public final class LootTestRunner {
         List<ItemStack> drops = new ArrayList<>();
 
         try {
-            // Get loot table using version-compatible method
-            ResourceLocation lootTableId = VersionHelper.getEntityLootTable(entity);
-            if (lootTableId == null) return drops;
-            LootTable lootTable = RegistryHelper.getLootTable(level.getServer(), lootTableId);
+            var lootTableKey = entity.getLootTable().orElse(null);
+            if (lootTableKey == null) return drops;
+
+            LootTable lootTable = level.getServer().reloadableRegistries()
+                .getLootTable(lootTableKey);
 
             if (lootTable == LootTable.EMPTY) return drops;
 
@@ -200,8 +200,7 @@ public final class LootTestRunner {
                 .withParameter(LootContextParams.DAMAGE_SOURCE, damageSource);
 
             if (damageSource.getEntity() != null) {
-                // Add attacking entity parameter using version-compatible method
-                addAttackingEntityParam(paramsBuilder, damageSource.getEntity());
+                paramsBuilder.withParameter(LootContextParams.ATTACKING_ENTITY, damageSource.getEntity());
                 if (damageSource.getEntity() instanceof ServerPlayer killer) {
                     paramsBuilder.withParameter(LootContextParams.LAST_DAMAGE_PLAYER, killer);
                 }
@@ -250,7 +249,8 @@ public final class LootTestRunner {
             DropStatistics stats = new DropStatistics(lootTableId, tableName, condition);
 
             // Get loot table
-            LootTable lootTable = RegistryHelper.getLootTable(server, lootTableId);
+            LootTable lootTable = server.reloadableRegistries()
+                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
 
             if (lootTable == LootTable.EMPTY) {
                 return TestResult.error("Loot table not found: " + lootTableId);
@@ -323,7 +323,8 @@ public final class LootTestRunner {
 
             if (level == null || player == null) return 0;
 
-            LootTable lootTable = RegistryHelper.getLootTable(server, lootTableId);
+            LootTable lootTable = server.reloadableRegistries()
+                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
 
             if (lootTable == LootTable.EMPTY) return 0;
 
@@ -378,7 +379,8 @@ public final class LootTestRunner {
 
             if (level == null || player == null) return 0;
 
-            LootTable lootTable = RegistryHelper.getLootTable(server, lootTableId);
+            LootTable lootTable = server.reloadableRegistries()
+                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
 
             if (lootTable == LootTable.EMPTY) return 0;
 
@@ -531,7 +533,7 @@ public final class LootTestRunner {
             LootEditManager editManager = LootEditManager.getInstance();
 
             // Get the loot table ID for this entity
-            ResourceLocation lootTableId = RegistryHelper.fromNamespaceAndPath(
+            ResourceLocation lootTableId = ResourceLocation.fromNamespaceAndPath(
                 entityId.getNamespace(), "entities/" + entityId.getPath());
 
             // Check if table has edits
@@ -600,7 +602,7 @@ public final class LootTestRunner {
             // Create fake stacks to record the totals
             int total = source.getTotalForItem(itemId);
             if (total > 0) {
-                var itemOpt = RegistryHelper.getItem(itemId);
+                var itemOpt = BuiltInRegistries.ITEM.getOptional(itemId);
                 if (itemOpt.isPresent()) {
                     dest.recordDrop(new ItemStack(itemOpt.get(), total));
                 }
@@ -613,104 +615,5 @@ public final class LootTestRunner {
         if (server == null) return null;
         List<ServerPlayer> players = server.getPlayerList().getPlayers();
         return players.isEmpty() ? null : players.get(0);
-    }
-
-    /**
-     * Create an entity using version-compatible reflection.
-     *
-     * 1.21+: EntityType.create(ServerLevel, CompoundTag, BlockPos, EntitySpawnReason, boolean, boolean)
-     * 1.20.x: EntityType.create(ServerLevel, CompoundTag, Consumer, BlockPos, MobSpawnType, boolean, boolean)
-     */
-    @SuppressWarnings("unchecked")
-    private static <T extends Entity> T createEntityVersionCompatible(EntityType<T> entityType,
-                                                                       ServerLevel level, BlockPos pos) {
-        try {
-            // Try 1.20.x version first (has Consumer parameter)
-            try {
-                Class<?> mobSpawnTypeClass = Class.forName("net.minecraft.world.entity.MobSpawnType");
-                Object commandType = mobSpawnTypeClass.getField("COMMAND").get(null);
-
-                for (Method method : entityType.getClass().getMethods()) {
-                    if (method.getName().equals("create") && method.getParameterCount() == 7) {
-                        Class<?>[] params = method.getParameterTypes();
-                        if (params[2].getName().contains("Consumer")) {
-                            return (T) method.invoke(entityType, level, null, null, pos, commandType, false, false);
-                        }
-                    }
-                }
-            } catch (ClassNotFoundException e) {
-                // MobSpawnType doesn't exist
-            }
-
-            // Try 1.21+ version
-            try {
-                Class<?> spawnReasonClass = Class.forName("net.minecraft.world.entity.EntitySpawnReason");
-                Object commandReason = spawnReasonClass.getField("COMMAND").get(null);
-
-                for (Method method : entityType.getClass().getMethods()) {
-                    if (method.getName().equals("create") && method.getParameterCount() == 6) {
-                        return (T) method.invoke(entityType, level, null, pos, commandReason, false, false);
-                    }
-                }
-            } catch (ClassNotFoundException e) {
-                // EntitySpawnReason doesn't exist
-            }
-
-            // Fallback
-            for (Method method : entityType.getClass().getMethods()) {
-                if (method.getName().equals("create") && method.getParameterCount() == 1) {
-                    return (T) method.invoke(entityType, level);
-                }
-            }
-
-            return null;
-        } catch (Exception e) {
-            Isotope.LOGGER.error("Failed to create entity via reflection: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Add attacking entity parameter using reflection to handle version differences.
-     * Uses reflection to call withParameter since the parameter types differ between versions.
-     *
-     * 1.21+: LootContextParams.ATTACKING_ENTITY exists
-     * 1.20.x: LootContextParams.ATTACKING_ENTITY may not exist, use KILLER_ENTITY instead
-     */
-    @SuppressWarnings("unchecked")
-    private static void addAttackingEntityParam(LootParams.Builder builder, Entity attackingEntity) {
-        try {
-            // Try ATTACKING_ENTITY (1.21+) first, then KILLER_ENTITY (1.20.x)
-            Object paramValue = null;
-            try {
-                var field = LootContextParams.class.getField("ATTACKING_ENTITY");
-                paramValue = field.get(null);
-            } catch (NoSuchFieldException e) {
-                // Try KILLER_ENTITY (1.20.x name)
-                try {
-                    var field = LootContextParams.class.getField("KILLER_ENTITY");
-                    paramValue = field.get(null);
-                } catch (NoSuchFieldException e2) {
-                    Isotope.LOGGER.debug("Could not find attacking entity parameter field");
-                    return;
-                }
-            }
-
-            if (paramValue != null) {
-                // Use reflection to call withParameter since the exact type varies
-                for (Method method : builder.getClass().getMethods()) {
-                    if (method.getName().equals("withParameter") && method.getParameterCount() == 2) {
-                        try {
-                            method.invoke(builder, paramValue, attackingEntity);
-                            return;
-                        } catch (Exception e) {
-                            // Try next method variant
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            Isotope.LOGGER.debug("Failed to add attacking entity param: {}", e.getMessage());
-        }
     }
 }

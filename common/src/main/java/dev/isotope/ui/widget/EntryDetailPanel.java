@@ -11,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -546,9 +545,9 @@ public class EntryDetailPanel extends AbstractWidget {
 
     private ItemStack getItemStack(ResourceLocation itemId) {
         try {
-            var itemOpt = RegistryHelper.getItem(itemId);
+            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
             if (itemOpt.isPresent()) {
-                return new ItemStack(itemOpt.get());
+                return new ItemStack(itemOpt.get().value());
             }
         } catch (Exception e) {
             // Ignore
@@ -692,6 +691,7 @@ public class EntryDetailPanel extends AbstractWidget {
             || (countMaxField != null && countMaxField.isEditing());
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (!isMouseOver(mouseX, mouseY)) return false;
 

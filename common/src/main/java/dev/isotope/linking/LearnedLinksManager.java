@@ -1,5 +1,4 @@
 package dev.isotope.linking;
-import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -40,11 +39,11 @@ public final class LearnedLinksManager {
         }
 
         public ResourceLocation structureId() {
-            return RegistryHelper.tryParseLocation(structure);
+            return ResourceLocation.tryParse(structure);
         }
 
         public ResourceLocation lootTableId() {
-            return RegistryHelper.tryParseLocation(lootTable);
+            return ResourceLocation.tryParse(lootTable);
         }
     }
 
@@ -68,11 +67,11 @@ public final class LearnedLinksManager {
         }
 
         public ResourceLocation structureId() {
-            return RegistryHelper.tryParseLocation(structure);
+            return ResourceLocation.tryParse(structure);
         }
 
         public ResourceLocation lootTableId() {
-            return RegistryHelper.tryParseLocation(lootTable);
+            return ResourceLocation.tryParse(lootTable);
         }
 
         /**

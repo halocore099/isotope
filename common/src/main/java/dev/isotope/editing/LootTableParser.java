@@ -1,5 +1,4 @@
 package dev.isotope.editing;
-import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.*;
 import dev.isotope.Isotope;
@@ -36,27 +35,14 @@ public final class LootTableParser {
     public static Optional<LootTableStructure> parse(MinecraftServer server, ResourceLocation tableId) {
         ResourceManager resourceManager = server.getResourceManager();
 
-        // Loot tables path differs by version:
-        // 1.21+: data/<namespace>/loot_table/<path>.json (singular)
-        // 1.20.x: data/<namespace>/loot_tables/<path>.json (plural)
-        // Try both paths for compatibility
-        ResourceLocation jsonPath = RegistryHelper.fromNamespaceAndPath(
+        // Loot tables are at: data/<namespace>/loot_table/<path>.json
+        ResourceLocation jsonPath = ResourceLocation.fromNamespaceAndPath(
             tableId.getNamespace(),
             "loot_table/" + tableId.getPath() + ".json"
         );
 
-        Optional<Resource> resource = resourceManager.getResource(jsonPath);
-
-        // If not found, try the 1.20.x plural path
-        if (resource.isEmpty()) {
-            jsonPath = RegistryHelper.fromNamespaceAndPath(
-                tableId.getNamespace(),
-                "loot_tables/" + tableId.getPath() + ".json"
-            );
-            resource = resourceManager.getResource(jsonPath);
-        }
-
         try {
+            Optional<Resource> resource = resourceManager.getResource(jsonPath);
             if (resource.isEmpty()) {
                 Isotope.LOGGER.debug("Loot table not found: {}", tableId);
                 return Optional.empty();
@@ -115,7 +101,7 @@ public final class LootTableParser {
 
         Optional<ResourceLocation> randomSequence = Optional.empty();
         if (json.has("random_sequence")) {
-            randomSequence = Optional.of(RegistryHelper.parseLocation(json.get("random_sequence").getAsString()));
+            randomSequence = Optional.of(ResourceLocation.parse(json.get("random_sequence").getAsString()));
         }
 
         return new LootTableStructure(tableId, type, pools, functions, randomSequence);
@@ -167,7 +153,7 @@ public final class LootTableParser {
 
         Optional<ResourceLocation> name = Optional.empty();
         if (json.has("name")) {
-            name = Optional.of(RegistryHelper.parseLocation(json.get("name").getAsString()));
+            name = Optional.of(ResourceLocation.parse(json.get("name").getAsString()));
         }
 
         int weight = json.has("weight") ? json.get("weight").getAsInt() : 1;

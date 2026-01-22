@@ -12,7 +12,6 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import dev.isotope.compat.RegistryHelper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -141,9 +140,9 @@ public class TemplateManagerScreen extends Screen {
                     // Item icon (if has default item)
                     int iconX = listX + 8;
                     if (template.defaultItem().isPresent()) {
-                        var itemOpt = RegistryHelper.getItem(template.defaultItem().get());
+                        var itemOpt = BuiltInRegistries.ITEM.get(template.defaultItem().get());
                         if (itemOpt.isPresent()) {
-                            graphics.renderItem(new ItemStack(itemOpt.get()), iconX, y + (TEMPLATE_HEIGHT - 4 - 16) / 2);
+                            graphics.renderItem(new ItemStack(itemOpt.get().value()), iconX, y + (TEMPLATE_HEIGHT - 4 - 16) / 2);
                         }
                     }
 
@@ -333,6 +332,7 @@ public class TemplateManagerScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (confirmingDelete) return true;
 

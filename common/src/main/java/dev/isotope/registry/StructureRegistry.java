@@ -1,7 +1,6 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
-import dev.isotope.compat.RegistryHelper;
 import dev.isotope.data.StructureInfo;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -38,7 +37,7 @@ public final class StructureRegistry {
         structures.clear();
 
         try {
-            Registry<Structure> registry = RegistryHelper.getStructureRegistry(server.registryAccess());
+            Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
             registry.keySet().forEach(id -> {
                 StructureInfo info = StructureInfo.fromId(id);

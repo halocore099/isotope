@@ -1,5 +1,4 @@
 package dev.isotope.registry;
-import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -117,7 +116,7 @@ public final class TemplatePoolParser {
             if (json.has("fallback")) {
                 String fallback = json.get("fallback").getAsString();
                 try {
-                    referencedPools.add(RegistryHelper.parseLocation(fallback));
+                    referencedPools.add(ResourceLocation.parse(fallback));
                 } catch (Exception e) {
                     // Invalid fallback
                 }
@@ -184,7 +183,7 @@ public final class TemplatePoolParser {
         if (data.has("location")) {
             String location = data.get("location").getAsString();
             try {
-                foundTemplates.add(RegistryHelper.parseLocation(location));
+                foundTemplates.add(ResourceLocation.parse(location));
             } catch (Exception e) {
                 // Invalid location
             }
@@ -194,7 +193,7 @@ public final class TemplatePoolParser {
         if (data.has("template")) {
             String template = data.get("template").getAsString();
             try {
-                foundTemplates.add(RegistryHelper.parseLocation(template));
+                foundTemplates.add(ResourceLocation.parse(template));
             } catch (Exception e) {
                 // Invalid template
             }
@@ -205,7 +204,7 @@ public final class TemplatePoolParser {
             JsonElement processors = data.get("processors");
             if (processors.isJsonPrimitive()) {
                 try {
-                    foundProcessors.add(RegistryHelper.parseLocation(processors.getAsString()));
+                    foundProcessors.add(ResourceLocation.parse(processors.getAsString()));
                 } catch (Exception e) {
                     // Invalid processor
                 }
@@ -216,7 +215,7 @@ public final class TemplatePoolParser {
         if (data.has("pool")) {
             String pool = data.get("pool").getAsString();
             try {
-                referencedPools.add(RegistryHelper.parseLocation(pool));
+                referencedPools.add(ResourceLocation.parse(pool));
             } catch (Exception e) {
                 // Invalid pool
             }
@@ -242,7 +241,7 @@ public final class TemplatePoolParser {
                     if (lootElement.isJsonPrimitive()) {
                         String lootTableStr = lootElement.getAsString();
                         try {
-                            ResourceLocation lootId = RegistryHelper.parseLocation(lootTableStr);
+                            ResourceLocation lootId = ResourceLocation.parse(lootTableStr);
                             found.add(lootId);
                         } catch (Exception e) {
                             // Invalid ResourceLocation
@@ -319,7 +318,7 @@ public final class TemplatePoolParser {
             poolPath = poolPath.substring(0, poolPath.length() - 5);
         }
 
-        return RegistryHelper.fromNamespaceAndPath(path.getNamespace(), poolPath);
+        return ResourceLocation.fromNamespaceAndPath(path.getNamespace(), poolPath);
     }
 
     // --- Query API ---

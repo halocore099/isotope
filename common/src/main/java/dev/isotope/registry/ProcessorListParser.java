@@ -1,5 +1,4 @@
 package dev.isotope.registry;
-import dev.isotope.compat.RegistryHelper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -214,7 +213,7 @@ public final class ProcessorListParser {
 
             String tableStr = snbt.substring(start + 1, end);
             try {
-                ResourceLocation tableId = RegistryHelper.parseLocation(tableStr);
+                ResourceLocation tableId = ResourceLocation.parse(tableStr);
                 found.add(tableId);
             } catch (Exception e) {
                 // Invalid resource location
@@ -240,7 +239,7 @@ public final class ProcessorListParser {
                     if (lootElement.isJsonPrimitive()) {
                         String lootTableStr = lootElement.getAsString();
                         try {
-                            ResourceLocation lootId = RegistryHelper.parseLocation(lootTableStr);
+                            ResourceLocation lootId = ResourceLocation.parse(lootTableStr);
                             found.add(lootId);
                         } catch (Exception e) {
                             // Invalid ResourceLocation
@@ -277,7 +276,7 @@ public final class ProcessorListParser {
             processorPath = processorPath.substring(0, processorPath.length() - 5);
         }
 
-        return RegistryHelper.fromNamespaceAndPath(path.getNamespace(), processorPath);
+        return ResourceLocation.fromNamespaceAndPath(path.getNamespace(), processorPath);
     }
 
     // --- Query API ---
