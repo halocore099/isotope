@@ -1,6 +1,6 @@
 package dev.isotope.data.loot;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -12,11 +12,11 @@ import java.util.Optional;
  * suitable for display and editing in the ISOTOPE UI.
  */
 public record LootTableStructure(
-    ResourceLocation id,                    // The loot table's resource location
+    Identifier id,                    // The loot table's resource location
     String type,                            // e.g., "minecraft:chest", "minecraft:entity"
     List<LootPool> pools,                   // The pools in this table
     List<LootFunction> functions,           // Global functions applied to all outputs
-    Optional<ResourceLocation> randomSequence  // Optional random sequence for deterministic generation
+    Optional<Identifier> randomSequence  // Optional random sequence for deterministic generation
 ) {
     // Common loot table type constants
     public static final String TYPE_EMPTY = "minecraft:empty";
@@ -36,7 +36,7 @@ public record LootTableStructure(
     /**
      * Create an empty loot table.
      */
-    public static LootTableStructure empty(ResourceLocation id) {
+    public static LootTableStructure empty(Identifier id) {
         return new LootTableStructure(
             id,
             TYPE_EMPTY,
@@ -49,7 +49,7 @@ public record LootTableStructure(
     /**
      * Create a chest loot table with given pools.
      */
-    public static LootTableStructure chest(ResourceLocation id, List<LootPool> pools) {
+    public static LootTableStructure chest(Identifier id, List<LootPool> pools) {
         return new LootTableStructure(
             id,
             TYPE_CHEST,
@@ -180,14 +180,14 @@ public record LootTableStructure(
     /**
      * Create a copy with a new ID.
      */
-    public LootTableStructure withId(ResourceLocation newId) {
+    public LootTableStructure withId(Identifier newId) {
         return new LootTableStructure(newId, type, pools, functions, randomSequence);
     }
 
     /**
      * Create a copy with a new random sequence.
      */
-    public LootTableStructure withRandomSequence(Optional<ResourceLocation> newRandomSequence) {
+    public LootTableStructure withRandomSequence(Optional<Identifier> newRandomSequence) {
         return new LootTableStructure(id, type, pools, functions, newRandomSequence);
     }
 }

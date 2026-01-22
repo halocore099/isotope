@@ -1,12 +1,12 @@
 package dev.isotope.ui;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Represents an open tab in the loot table editor.
  */
 public record EditorTab(
-    ResourceLocation tableId,
+    Identifier tableId,
     String displayName,
     int scrollOffset,
     int selectedPool,
@@ -15,7 +15,7 @@ public record EditorTab(
     /**
      * Create a new tab for a loot table.
      */
-    public static EditorTab create(ResourceLocation tableId) {
+    public static EditorTab create(Identifier tableId) {
         String name = tableId.getPath();
         // Shorten long names
         if (name.length() > 20) {

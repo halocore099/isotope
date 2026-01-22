@@ -3,7 +3,7 @@ package dev.isotope.wizards;
 import dev.isotope.data.loot.*;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootEditOperation;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +51,7 @@ public class QuickFix {
     /**
      * Preview a quick fix without applying it.
      */
-    public static FixResult preview(FixType type, ResourceLocation tableId, LootTableStructure structure) {
+    public static FixResult preview(FixType type, Identifier tableId, LootTableStructure structure) {
         List<LootEditOperation> operations = new ArrayList<>();
 
         switch (type) {
@@ -73,7 +73,7 @@ public class QuickFix {
     /**
      * Apply a quick fix.
      */
-    public static void apply(ResourceLocation tableId, FixResult result) {
+    public static void apply(Identifier tableId, FixResult result) {
         LootEditManager manager = LootEditManager.getInstance();
         for (LootEditOperation op : result.operations) {
             manager.applyOperation(tableId, op);
@@ -226,13 +226,13 @@ public class QuickFix {
                                          List<LootEditOperation> ops) {
         for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
             LootPool pool = structure.pools().get(poolIdx);
-            java.util.Set<ResourceLocation> seen = new java.util.HashSet<>();
+            java.util.Set<Identifier> seen = new java.util.HashSet<>();
 
             // Process in reverse so indices stay valid when removing
             for (int entryIdx = pool.entries().size() - 1; entryIdx >= 0; entryIdx--) {
                 LootEntry entry = pool.entries().get(entryIdx);
                 if (entry.name().isPresent()) {
-                    ResourceLocation item = entry.name().get();
+                    Identifier item = entry.name().get();
                     if (seen.contains(item)) {
                         ops.add(new LootEditOperation.RemoveEntry(poolIdx, entryIdx));
                     } else {

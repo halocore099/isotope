@@ -4,7 +4,7 @@ import dev.isotope.Isotope;
 import dev.isotope.data.StructureInfo;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
@@ -21,7 +21,7 @@ public final class StructureRegistry {
 
     private static final StructureRegistry INSTANCE = new StructureRegistry();
 
-    private final Map<ResourceLocation, StructureInfo> structures = new LinkedHashMap<>();
+    private final Map<Identifier, StructureInfo> structures = new LinkedHashMap<>();
     private boolean scanned = false;
 
     private StructureRegistry() {}
@@ -68,7 +68,7 @@ public final class StructureRegistry {
     /**
      * Get structure by ID.
      */
-    public Optional<StructureInfo> get(ResourceLocation id) {
+    public Optional<StructureInfo> get(Identifier id) {
         return Optional.ofNullable(structures.get(id));
     }
 

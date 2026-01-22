@@ -1,7 +1,7 @@
 package dev.isotope.analysis;
 
 import dev.isotope.data.loot.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +22,9 @@ public final class StructureDiff {
         record RemovedPool(int poolIndex, LootPool pool) implements DiffEntry {}
         record AddedEntry(int poolIndex, int entryIndex, LootEntry entry) implements DiffEntry {}
         record RemovedEntry(int poolIndex, int entryIndex, LootEntry entry) implements DiffEntry {}
-        record ModifiedWeight(int poolIndex, int entryIndex, ResourceLocation item, int oldWeight, int newWeight) implements DiffEntry {}
-        record ModifiedCount(int poolIndex, int entryIndex, ResourceLocation item, String oldCount, String newCount) implements DiffEntry {}
-        record ModifiedItem(int poolIndex, int entryIndex, ResourceLocation oldItem, ResourceLocation newItem) implements DiffEntry {}
+        record ModifiedWeight(int poolIndex, int entryIndex, Identifier item, int oldWeight, int newWeight) implements DiffEntry {}
+        record ModifiedCount(int poolIndex, int entryIndex, Identifier item, String oldCount, String newCount) implements DiffEntry {}
+        record ModifiedItem(int poolIndex, int entryIndex, Identifier oldItem, Identifier newItem) implements DiffEntry {}
     }
 
     /**
@@ -108,8 +108,8 @@ public final class StructureDiff {
                                      List<DiffEntry> modifications) {
 
         // Check item change
-        ResourceLocation origItem = original.name().orElse(null);
-        ResourceLocation editItem = edited.name().orElse(null);
+        Identifier origItem = original.name().orElse(null);
+        Identifier editItem = edited.name().orElse(null);
 
         if (!Objects.equals(origItem, editItem) && origItem != null && editItem != null) {
             modifications.add(new DiffEntry.ModifiedItem(poolIndex, entryIndex, origItem, editItem));
@@ -117,7 +117,7 @@ public final class StructureDiff {
 
         // Check weight change
         if (original.weight() != edited.weight()) {
-            ResourceLocation item = editItem != null ? editItem : origItem;
+            Identifier item = editItem != null ? editItem : origItem;
             if (item != null) {
                 modifications.add(new DiffEntry.ModifiedWeight(poolIndex, entryIndex, item,
                     original.weight(), edited.weight()));
@@ -128,7 +128,7 @@ public final class StructureDiff {
         String origCount = getCountString(original);
         String editCount = getCountString(edited);
         if (!origCount.equals(editCount)) {
-            ResourceLocation item = editItem != null ? editItem : origItem;
+            Identifier item = editItem != null ? editItem : origItem;
             if (item != null) {
                 modifications.add(new DiffEntry.ModifiedCount(poolIndex, entryIndex, item, origCount, editCount));
             }
@@ -176,9 +176,9 @@ public final class StructureDiff {
             case DiffEntry.RemovedPool e ->
                 "- Removed Pool " + (e.poolIndex() + 1);
             case DiffEntry.AddedEntry e ->
-                "+ Added: " + e.entry().name().map(ResourceLocation::getPath).orElse("unknown");
+                "+ Added: " + e.entry().name().map(Identifier::getPath).orElse("unknown");
             case DiffEntry.RemovedEntry e ->
-                "- Removed: " + e.entry().name().map(ResourceLocation::getPath).orElse("unknown");
+                "- Removed: " + e.entry().name().map(Identifier::getPath).orElse("unknown");
             case DiffEntry.ModifiedWeight e ->
                 "~ " + e.item().getPath() + " weight: " + e.oldWeight() + " -> " + e.newWeight();
             case DiffEntry.ModifiedCount e ->

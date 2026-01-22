@@ -7,7 +7,7 @@ import dev.isotope.data.LootSourceType;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.StructureInfo;
 import dev.isotope.data.StructureLootLink;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ public final class LootSourceRegistry {
 
     private static final LootSourceRegistry INSTANCE = new LootSourceRegistry();
 
-    private final Map<ResourceLocation, LootSource> sources = new LinkedHashMap<>();
+    private final Map<Identifier, LootSource> sources = new LinkedHashMap<>();
     private boolean compiled = false;
 
     private LootSourceRegistry() {}
@@ -87,7 +87,7 @@ public final class LootSourceRegistry {
     /**
      * Get loot source by ID.
      */
-    public Optional<LootSource> get(ResourceLocation id) {
+    public Optional<LootSource> get(Identifier id) {
         return Optional.ofNullable(sources.get(id));
     }
 
@@ -294,17 +294,17 @@ public final class LootSourceRegistry {
         Isotope.LOGGER.info("│ ORPHANS (no linked source)                                      │");
         Isotope.LOGGER.info("└─────────────────────────────────────────────────────────────────┘");
 
-        Set<ResourceLocation> orphanTables = orphans.getOrphanLootTables();
-        Set<ResourceLocation> orphanStructs = orphans.getOrphanStructures();
+        Set<Identifier> orphanTables = orphans.getOrphanLootTables();
+        Set<Identifier> orphanStructs = orphans.getOrphanStructures();
 
         if (orphanTables.isEmpty() && orphanStructs.isEmpty()) {
             Isotope.LOGGER.info("  No orphans detected!");
         } else {
             if (!orphanTables.isEmpty()) {
                 Isotope.LOGGER.info("  Orphan Loot Tables ({}):", orphanTables.size());
-                List<ResourceLocation> sortedOrphanTables = new ArrayList<>(orphanTables);
-                sortedOrphanTables.sort(Comparator.comparing(ResourceLocation::toString));
-                for (ResourceLocation table : sortedOrphanTables) {
+                List<Identifier> sortedOrphanTables = new ArrayList<>(orphanTables);
+                sortedOrphanTables.sort(Comparator.comparing(Identifier::toString));
+                for (Identifier table : sortedOrphanTables) {
                     LootTableInfo info = lootTables.get(table).orElse(null);
                     String category = info != null ? info.category().toString() : "UNKNOWN";
                     Isotope.LOGGER.info("    └─ {} [{}]", table, category);
@@ -313,9 +313,9 @@ public final class LootSourceRegistry {
 
             if (!orphanStructs.isEmpty()) {
                 Isotope.LOGGER.info("  Orphan Structures ({}):", orphanStructs.size());
-                List<ResourceLocation> sortedOrphanStructs = new ArrayList<>(orphanStructs);
-                sortedOrphanStructs.sort(Comparator.comparing(ResourceLocation::toString));
-                for (ResourceLocation struct : sortedOrphanStructs) {
+                List<Identifier> sortedOrphanStructs = new ArrayList<>(orphanStructs);
+                sortedOrphanStructs.sort(Comparator.comparing(Identifier::toString));
+                for (Identifier struct : sortedOrphanStructs) {
                     Isotope.LOGGER.info("    └─ {}", struct);
                 }
             }

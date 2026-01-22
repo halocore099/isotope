@@ -9,7 +9,7 @@ import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.LootSourceRegistry;
 import dev.isotope.registry.StructureLootLinker;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -34,7 +34,7 @@ public final class FlowGraphBuilder {
             return graph;
         }
 
-        Set<ResourceLocation> addedTables = new HashSet<>();
+        Set<Identifier> addedTables = new HashSet<>();
 
         // 1. Add source nodes (structures, features, mobs for this namespace)
         List<LootSource> sources = sourceRegistry.getByNamespace(namespace);
@@ -46,7 +46,7 @@ public final class FlowGraphBuilder {
         for (LootSource source : sources) {
             List<StructureLootLink> links = linker.getLinksForStructure(source.id());
             for (StructureLootLink link : links) {
-                ResourceLocation tableId = link.lootTableId();
+                Identifier tableId = link.lootTableId();
 
                 // Add table node if not already added
                 if (!addedTables.contains(tableId)) {
@@ -61,10 +61,10 @@ public final class FlowGraphBuilder {
         }
 
         // 3. Find nested table references and add nodes/edges
-        Set<ResourceLocation> nestedTables = new HashSet<>();
-        for (ResourceLocation tableId : addedTables) {
-            Set<ResourceLocation> nested = findNestedTableReferences(tableId);
-            for (ResourceLocation nestedId : nested) {
+        Set<Identifier> nestedTables = new HashSet<>();
+        for (Identifier tableId : addedTables) {
+            Set<Identifier> nested = findNestedTableReferences(tableId);
+            for (Identifier nestedId : nested) {
                 // Add nested table node if not already in graph
                 if (!graph.getNode(nestedId).isPresent()) {
                     String nestedName = formatTableName(nestedId);
@@ -86,8 +86,8 @@ public final class FlowGraphBuilder {
     /**
      * Find all minecraft:loot_table references within a table.
      */
-    private static Set<ResourceLocation> findNestedTableReferences(ResourceLocation tableId) {
-        Set<ResourceLocation> nested = new LinkedHashSet<>();
+    private static Set<Identifier> findNestedTableReferences(Identifier tableId) {
+        Set<Identifier> nested = new LinkedHashSet<>();
 
         // Try to get the cached structure
         Optional<LootTableStructure> structureOpt = LootEditManager.getInstance().getCachedOriginalStructure(tableId);
@@ -110,7 +110,7 @@ public final class FlowGraphBuilder {
     /**
      * Recursively find nested table references in an entry.
      */
-    private static void findNestedInEntry(LootEntry entry, Set<ResourceLocation> nested) {
+    private static void findNestedInEntry(LootEntry entry, Set<Identifier> nested) {
         // Check if this entry is a loot table reference
         if (LootEntry.TYPE_LOOT_TABLE.equals(entry.type()) && entry.name().isPresent()) {
             nested.add(entry.name().get());
@@ -126,7 +126,7 @@ public final class FlowGraphBuilder {
      * Format a table ID into a display name.
      * "minecraft:chests/simple_dungeon" -> "simple_dungeon"
      */
-    private static String formatTableName(ResourceLocation id) {
+    private static String formatTableName(Identifier id) {
         String path = id.getPath();
         // Get the last part of the path
         int lastSlash = path.lastIndexOf('/');

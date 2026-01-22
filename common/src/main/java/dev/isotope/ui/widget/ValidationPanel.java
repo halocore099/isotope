@@ -19,7 +19,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class ValidationPanel extends AbstractWidget {
     private static final int FIX_BUTTON_WIDTH = 30;
 
     @Nullable
-    private ResourceLocation currentTableId;
+    private Identifier currentTableId;
     @Nullable
     private ValidationResult validationResult;
     private List<ValidationIssue> displayedIssues = new ArrayList<>();
@@ -64,7 +64,7 @@ public class ValidationPanel extends AbstractWidget {
     /**
      * Set the loot table to validate.
      */
-    public void setTable(@Nullable ResourceLocation tableId) {
+    public void setTable(@Nullable Identifier tableId) {
         this.currentTableId = tableId;
 
         if (tableId == null) {
@@ -113,7 +113,7 @@ public class ValidationPanel extends AbstractWidget {
     /**
      * Refresh validation for the current table.
      */
-    public void refresh(ResourceLocation tableId) {
+    public void refresh(Identifier tableId) {
         setTable(tableId);
     }
 

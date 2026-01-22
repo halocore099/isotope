@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureLootLink;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,12 +60,12 @@ public final class UserCorrectionManager {
         String minecraftVersion,
         String note               // Optional user note
     ) {
-        public ResourceLocation structureId() {
-            return ResourceLocation.tryParse(structure);
+        public Identifier structureId() {
+            return Identifier.tryParse(structure);
         }
 
-        public ResourceLocation lootTableId() {
-            return ResourceLocation.tryParse(lootTable);
+        public Identifier lootTableId() {
+            return Identifier.tryParse(lootTable);
         }
 
         /**
@@ -87,7 +87,7 @@ public final class UserCorrectionManager {
      * Key for identifying a structure-loot pair.
      */
     public record CorrectionKey(String structure, String lootTable) {
-        public static CorrectionKey from(ResourceLocation structure, ResourceLocation lootTable) {
+        public static CorrectionKey from(Identifier structure, Identifier lootTable) {
             return new CorrectionKey(structure.toString(), lootTable.toString());
         }
     }
@@ -137,7 +137,7 @@ public final class UserCorrectionManager {
      * Record that the user manually added a link.
      * This indicates a false negative - the system should have detected this link.
      */
-    public void recordAddedLink(ResourceLocation structureId, ResourceLocation lootTableId,
+    public void recordAddedLink(Identifier structureId, Identifier lootTableId,
                                  String originalSource, String originalConfidence) {
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
 
@@ -164,7 +164,7 @@ public final class UserCorrectionManager {
      * Record that the user manually removed a link.
      * This indicates a false positive - the system incorrectly suggested this link.
      */
-    public void recordRemovedLink(ResourceLocation structureId, ResourceLocation lootTableId,
+    public void recordRemovedLink(Identifier structureId, Identifier lootTableId,
                                    String originalSource, String originalConfidence) {
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
 
@@ -190,7 +190,7 @@ public final class UserCorrectionManager {
     /**
      * Record that the user restored a previously removed link.
      */
-    public void recordRestoredLink(ResourceLocation structureId, ResourceLocation lootTableId) {
+    public void recordRestoredLink(Identifier structureId, Identifier lootTableId) {
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
 
         // Check if there was a previous removal
@@ -222,7 +222,7 @@ public final class UserCorrectionManager {
     /**
      * Check if user has added this link manually.
      */
-    public boolean isUserAdded(ResourceLocation structureId, ResourceLocation lootTableId) {
+    public boolean isUserAdded(Identifier structureId, Identifier lootTableId) {
         ensureLoaded();
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
         UserCorrection correction = corrections.get(key);
@@ -232,7 +232,7 @@ public final class UserCorrectionManager {
     /**
      * Check if user has removed this link.
      */
-    public boolean isUserRemoved(ResourceLocation structureId, ResourceLocation lootTableId) {
+    public boolean isUserRemoved(Identifier structureId, Identifier lootTableId) {
         ensureLoaded();
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
         UserCorrection correction = corrections.get(key);
@@ -242,7 +242,7 @@ public final class UserCorrectionManager {
     /**
      * Check if user has any correction for this link.
      */
-    public Optional<UserCorrection> getCorrection(ResourceLocation structureId, ResourceLocation lootTableId) {
+    public Optional<UserCorrection> getCorrection(Identifier structureId, Identifier lootTableId) {
         ensureLoaded();
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
         return Optional.ofNullable(corrections.get(key));
@@ -257,8 +257,8 @@ public final class UserCorrectionManager {
 
         for (UserCorrection correction : corrections.values()) {
             if (correction.isPositive()) {
-                ResourceLocation structId = correction.structureId();
-                ResourceLocation tableId = correction.lootTableId();
+                Identifier structId = correction.structureId();
+                Identifier tableId = correction.lootTableId();
                 if (structId != null && tableId != null) {
                     result.add(StructureLootLink.manual(structId, tableId));
                 }
@@ -295,7 +295,7 @@ public final class UserCorrectionManager {
     /**
      * Get corrections for a specific structure.
      */
-    public List<UserCorrection> getCorrectionsForStructure(ResourceLocation structureId) {
+    public List<UserCorrection> getCorrectionsForStructure(Identifier structureId) {
         ensureLoaded();
         String structStr = structureId.toString();
         List<UserCorrection> result = new ArrayList<>();
@@ -350,7 +350,7 @@ public final class UserCorrectionManager {
     /**
      * Clear a specific correction.
      */
-    public void clearCorrection(ResourceLocation structureId, ResourceLocation lootTableId) {
+    public void clearCorrection(Identifier structureId, Identifier lootTableId) {
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
         if (corrections.remove(key) != null) {
             save();

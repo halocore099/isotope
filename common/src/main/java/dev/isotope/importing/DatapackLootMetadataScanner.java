@@ -8,7 +8,7 @@ import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
 import dev.isotope.api.ModLinkRegistry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -191,23 +191,23 @@ public final class DatapackLootMetadataScanner {
                     continue;
                 }
                 String structureStr = linkObj.get("structure").getAsString();
-                ResourceLocation structureId;
+                Identifier structureId;
                 try {
-                    structureId = ResourceLocation.parse(structureStr);
+                    structureId = Identifier.parse(structureStr);
                 } catch (Exception e) {
                     Isotope.LOGGER.warn("[DatapackLootMetadataScanner] {} has invalid structure ID: {}", file, structureStr);
                     continue;
                 }
 
                 // Get loot tables
-                List<ResourceLocation> lootTables = new ArrayList<>();
+                List<Identifier> lootTables = new ArrayList<>();
                 if (linkObj.has("loot_tables")) {
                     JsonElement tablesElem = linkObj.get("loot_tables");
                     if (tablesElem.isJsonArray()) {
                         for (JsonElement tableElem : tablesElem.getAsJsonArray()) {
                             if (tableElem.isJsonPrimitive()) {
                                 try {
-                                    lootTables.add(ResourceLocation.parse(tableElem.getAsString()));
+                                    lootTables.add(Identifier.parse(tableElem.getAsString()));
                                 } catch (Exception e) {
                                     Isotope.LOGGER.warn("[DatapackLootMetadataScanner] {} has invalid loot table ID: {}",
                                         file, tableElem.getAsString());
@@ -217,7 +217,7 @@ public final class DatapackLootMetadataScanner {
                     } else if (tablesElem.isJsonPrimitive()) {
                         // Single loot table as string
                         try {
-                            lootTables.add(ResourceLocation.parse(tablesElem.getAsString()));
+                            lootTables.add(Identifier.parse(tablesElem.getAsString()));
                         } catch (Exception e) {
                             Isotope.LOGGER.warn("[DatapackLootMetadataScanner] {} has invalid loot table ID: {}",
                                 file, tablesElem.getAsString());
@@ -227,7 +227,7 @@ public final class DatapackLootMetadataScanner {
                 // Also support singular "loot_table" key
                 if (linkObj.has("loot_table")) {
                     try {
-                        lootTables.add(ResourceLocation.parse(linkObj.get("loot_table").getAsString()));
+                        lootTables.add(Identifier.parse(linkObj.get("loot_table").getAsString()));
                     } catch (Exception e) {
                         // Invalid
                     }

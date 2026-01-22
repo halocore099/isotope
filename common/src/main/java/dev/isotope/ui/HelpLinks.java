@@ -1,7 +1,7 @@
 package dev.isotope.ui;
 
 import dev.isotope.Isotope;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 
 import java.net.URI;
 

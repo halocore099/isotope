@@ -13,7 +13,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +40,7 @@ public class DropStatisticsDialog extends Screen {
     private final List<StatEntry> entries = new ArrayList<>();
 
     private record StatEntry(
-        ResourceLocation itemId,
+        Identifier itemId,
         String itemName,
         int total,
         float average,
@@ -60,13 +60,13 @@ public class DropStatisticsDialog extends Screen {
         entries.clear();
 
         // Sort items by total count descending
-        List<ResourceLocation> sortedItems = new ArrayList<>(statistics.getDroppedItems());
+        List<Identifier> sortedItems = new ArrayList<>(statistics.getDroppedItems());
         sortedItems.sort((a, b) -> Integer.compare(
             statistics.getTotalForItem(b),
             statistics.getTotalForItem(a)
         ));
 
-        for (ResourceLocation itemId : sortedItems) {
+        for (Identifier itemId : sortedItems) {
             int total = statistics.getTotalForItem(itemId);
             float avg = statistics.getAverageForItem(itemId);
             float rate = statistics.getDropRateForItem(itemId);

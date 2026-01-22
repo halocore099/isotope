@@ -13,7 +13,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +42,7 @@ public class CompareStatisticsDialog extends Screen {
 
     private record CompareEntry(
         String itemName,
-        ResourceLocation itemId,
+        Identifier itemId,
         int originalTotal,
         float originalAvg,
         float originalRate,
@@ -83,11 +83,11 @@ public class CompareStatisticsDialog extends Screen {
         entries.clear();
 
         // Collect all unique items from both stats
-        Set<ResourceLocation> allItems = new LinkedHashSet<>();
+        Set<Identifier> allItems = new LinkedHashSet<>();
         allItems.addAll(originalStats.getDroppedItems());
         allItems.addAll(editedStats.getDroppedItems());
 
-        for (ResourceLocation itemId : allItems) {
+        for (Identifier itemId : allItems) {
             int origTotal = originalStats.getTotalForItem(itemId);
             float origAvg = originalStats.getAverageForItem(itemId);
             float origRate = originalStats.getDropRateForItem(itemId);

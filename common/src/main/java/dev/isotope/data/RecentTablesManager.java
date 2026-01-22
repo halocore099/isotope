@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import dev.isotope.Isotope;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -27,7 +27,7 @@ public final class RecentTablesManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int MAX_RECENT = 15;
 
-    private final LinkedList<ResourceLocation> recentTables = new LinkedList<>();
+    private final LinkedList<Identifier> recentTables = new LinkedList<>();
     private final List<RecentListener> listeners = new CopyOnWriteArrayList<>();
     private boolean loaded = false;
 
@@ -42,7 +42,7 @@ public final class RecentTablesManager {
      * Moves to front if already in list, otherwise adds to front.
      * Trims oldest entries if over MAX_RECENT.
      */
-    public void recordView(ResourceLocation tableId) {
+    public void recordView(Identifier tableId) {
         ensureLoaded();
 
         // Remove if exists (will re-add at front)
@@ -63,7 +63,7 @@ public final class RecentTablesManager {
     /**
      * Remove a table from recent history.
      */
-    public void remove(ResourceLocation tableId) {
+    public void remove(Identifier tableId) {
         ensureLoaded();
         if (recentTables.remove(tableId)) {
             save();
@@ -74,7 +74,7 @@ public final class RecentTablesManager {
     /**
      * Check if a table is in recent history.
      */
-    public boolean isRecent(ResourceLocation tableId) {
+    public boolean isRecent(Identifier tableId) {
         ensureLoaded();
         return recentTables.contains(tableId);
     }
@@ -82,7 +82,7 @@ public final class RecentTablesManager {
     /**
      * Get all recent tables (most recent first).
      */
-    public List<ResourceLocation> getAll() {
+    public List<Identifier> getAll() {
         ensureLoaded();
         return new ArrayList<>(recentTables);
     }
@@ -153,7 +153,7 @@ public final class RecentTablesManager {
 
             // Convert to string list for JSON
             List<String> recentStrings = new ArrayList<>();
-            for (ResourceLocation id : recentTables) {
+            for (Identifier id : recentTables) {
                 recentStrings.add(id.toString());
             }
 
@@ -184,7 +184,7 @@ public final class RecentTablesManager {
             recentTables.clear();
             if (recentStrings != null) {
                 for (String str : recentStrings) {
-                    ResourceLocation id = ResourceLocation.tryParse(str);
+                    Identifier id = Identifier.tryParse(str);
                     if (id != null) {
                         recentTables.add(id);
                     }

@@ -17,7 +17,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,7 +31,7 @@ public class QuickFixScreen extends Screen {
     private static final int ROW_HEIGHT = 28;
 
     private final Screen parent;
-    private final ResourceLocation tableId;
+    private final Identifier tableId;
 
     @Nullable
     private LootTableStructure structure;
@@ -44,7 +44,7 @@ public class QuickFixScreen extends Screen {
 
     private Button applyButton;
 
-    public QuickFixScreen(Screen parent, ResourceLocation tableId) {
+    public QuickFixScreen(Screen parent, Identifier tableId) {
         super(Component.literal("Quick Fix Wizards"));
         this.parent = parent;
         this.tableId = tableId;

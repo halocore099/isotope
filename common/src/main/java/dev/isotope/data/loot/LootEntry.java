@@ -1,6 +1,6 @@
 package dev.isotope.data.loot;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +20,7 @@ import java.util.Optional;
  */
 public record LootEntry(
     String type,                           // Entry type
-    Optional<ResourceLocation> name,       // Item ID for item entries, table ID for loot_table entries
+    Optional<Identifier> name,       // Item ID for item entries, table ID for loot_table entries
     int weight,                            // Weight for selection (default 1)
     int quality,                           // Quality modifier based on luck
     List<LootCondition> conditions,        // Conditions for this entry
@@ -40,14 +40,14 @@ public record LootEntry(
     /**
      * Create a simple item entry with default weight.
      */
-    public static LootEntry item(ResourceLocation itemId) {
+    public static LootEntry item(Identifier itemId) {
         return item(itemId, 1);
     }
 
     /**
      * Create an item entry with specified weight.
      */
-    public static LootEntry item(ResourceLocation itemId, int weight) {
+    public static LootEntry item(Identifier itemId, int weight) {
         return new LootEntry(
             TYPE_ITEM,
             Optional.of(itemId),
@@ -62,7 +62,7 @@ public record LootEntry(
     /**
      * Create an item entry with weight and count.
      */
-    public static LootEntry item(ResourceLocation itemId, int weight, int minCount, int maxCount) {
+    public static LootEntry item(Identifier itemId, int weight, int minCount, int maxCount) {
         List<LootFunction> functions = new ArrayList<>();
         if (minCount != 1 || maxCount != 1) {
             functions.add(LootFunction.setCount(minCount, maxCount));
@@ -96,7 +96,7 @@ public record LootEntry(
     /**
      * Create a loot table reference entry.
      */
-    public static LootEntry lootTable(ResourceLocation tableId, int weight) {
+    public static LootEntry lootTable(Identifier tableId, int weight) {
         return new LootEntry(
             TYPE_LOOT_TABLE,
             Optional.of(tableId),
@@ -134,7 +134,7 @@ public record LootEntry(
     /**
      * Get the item ID if this is an item entry.
      */
-    public Optional<ResourceLocation> getItemId() {
+    public Optional<Identifier> getItemId() {
         if (isItem()) {
             return name;
         }
@@ -218,7 +218,7 @@ public record LootEntry(
     /**
      * Create a copy with a different item.
      */
-    public LootEntry withItem(ResourceLocation newItem) {
+    public LootEntry withItem(Identifier newItem) {
         return new LootEntry(TYPE_ITEM, Optional.of(newItem), weight, quality, conditions, functions, children);
     }
 
@@ -229,7 +229,7 @@ public record LootEntry(
      * @param newType The new entry type
      * @param newName The name/ID for the new type (item ID, table ID, tag ID) - use Optional.empty() for empty type
      */
-    public LootEntry withType(String newType, Optional<ResourceLocation> newName) {
+    public LootEntry withType(String newType, Optional<Identifier> newName) {
         // For empty entries, clear name and functions (they don't apply)
         if (TYPE_EMPTY.equals(newType)) {
             return new LootEntry(newType, Optional.empty(), weight, quality, conditions, List.of(), List.of());

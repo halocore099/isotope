@@ -15,7 +15,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -130,7 +130,7 @@ public class BulkOperationScreen extends Screen {
                     IsotopeToast.warning("Input Required", "Enter an item ID");
                     return;
                 }
-                ResourceLocation item = ResourceLocation.tryParse(itemText);
+                Identifier item = Identifier.tryParse(itemText);
                 if (item == null) {
                     IsotopeToast.error("Invalid", "Invalid item ID format");
                     return;
@@ -144,8 +144,8 @@ public class BulkOperationScreen extends Screen {
                     IsotopeToast.warning("Input Required", "Enter both item IDs");
                     return;
                 }
-                ResourceLocation item = ResourceLocation.tryParse(itemText);
-                ResourceLocation item2 = ResourceLocation.tryParse(item2Text);
+                Identifier item = Identifier.tryParse(itemText);
+                Identifier item2 = Identifier.tryParse(item2Text);
                 if (item == null || item2 == null) {
                     IsotopeToast.error("Invalid", "Invalid item ID format");
                     return;
@@ -192,15 +192,15 @@ public class BulkOperationScreen extends Screen {
 
         switch (selectedType) {
             case REMOVE_ITEM -> {
-                ResourceLocation item = ResourceLocation.tryParse(itemInput.getValue().trim());
+                Identifier item = Identifier.tryParse(itemInput.getValue().trim());
                 if (item != null) {
                     BulkOperation.applyRemoveItem(minecraft.getSingleplayerServer(), item);
                     IsotopeToast.success("Applied", "Removed " + item.getPath() + " from " + previewResult.tablesAffected() + " tables");
                 }
             }
             case REPLACE_ITEM -> {
-                ResourceLocation item = ResourceLocation.tryParse(itemInput.getValue().trim());
-                ResourceLocation item2 = ResourceLocation.tryParse(item2Input.getValue().trim());
+                Identifier item = Identifier.tryParse(itemInput.getValue().trim());
+                Identifier item2 = Identifier.tryParse(item2Input.getValue().trim());
                 if (item != null && item2 != null) {
                     BulkOperation.applyReplaceItem(minecraft.getSingleplayerServer(), item, item2);
                     IsotopeToast.success("Applied", "Replaced in " + previewResult.tablesAffected() + " tables");

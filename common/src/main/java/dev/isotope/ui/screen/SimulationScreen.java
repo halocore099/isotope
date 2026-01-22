@@ -17,7 +17,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -36,7 +36,7 @@ public class SimulationScreen extends Screen {
     private static final int ROW_HEIGHT = 18;
 
     private final Screen parent;
-    private final ResourceLocation tableId;
+    private final Identifier tableId;
 
     @Nullable
     private SimulationResult result;
@@ -51,7 +51,7 @@ public class SimulationScreen extends Screen {
     private Button runButton;
     private Button countButton;
 
-    public SimulationScreen(Screen parent, ResourceLocation tableId) {
+    public SimulationScreen(Screen parent, Identifier tableId) {
         super(Component.literal("Drop Simulation"));
         this.parent = parent;
         this.tableId = tableId;

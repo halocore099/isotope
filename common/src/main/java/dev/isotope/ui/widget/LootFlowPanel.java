@@ -14,7 +14,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -65,7 +65,7 @@ public class LootFlowPanel extends AbstractWidget {
 
     // Callbacks
     @Nullable
-    private Consumer<ResourceLocation> onTableSelected;
+    private Consumer<Identifier> onTableSelected;
 
     public LootFlowPanel(int x, int y, int width, int height) {
         super(x, y, width, height, Component.literal("Loot Flow"));
@@ -74,7 +74,7 @@ public class LootFlowPanel extends AbstractWidget {
     /**
      * Set callback for when a loot table is clicked.
      */
-    public void setOnTableSelected(@Nullable Consumer<ResourceLocation> callback) {
+    public void setOnTableSelected(@Nullable Consumer<Identifier> callback) {
         this.onTableSelected = callback;
     }
 
@@ -181,7 +181,7 @@ public class LootFlowPanel extends AbstractWidget {
 
         // Render edges first (below nodes)
         // Track edge index per source for curvature variation
-        Map<ResourceLocation, Integer> edgeIndexBySource = new HashMap<>();
+        Map<Identifier, Integer> edgeIndexBySource = new HashMap<>();
         for (FlowEdge edge : graph.getEdges()) {
             int edgeIndex = edgeIndexBySource.getOrDefault(edge.fromId(), 0);
             edgeIndexBySource.put(edge.fromId(), edgeIndex + 1);

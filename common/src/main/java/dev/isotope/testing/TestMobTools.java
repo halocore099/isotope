@@ -3,7 +3,7 @@ package dev.isotope.testing;
 import dev.isotope.Isotope;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -95,7 +95,7 @@ public final class TestMobTools {
      * @param offset Offset from player position
      * @return SpawnResult with the spawned entity
      */
-    public static SpawnResult spawnMob(MinecraftServer server, ResourceLocation entityId, BlockPos offset) {
+    public static SpawnResult spawnMob(MinecraftServer server, Identifier entityId, BlockPos offset) {
         try {
             ServerLevel level = server.overworld();
             if (level == null) {
@@ -156,7 +156,7 @@ public final class TestMobTools {
      * @param count Number of mobs to spawn
      * @return List of spawn results
      */
-    public static List<SpawnResult> spawnMobGrid(MinecraftServer server, ResourceLocation entityId, int count) {
+    public static List<SpawnResult> spawnMobGrid(MinecraftServer server, Identifier entityId, int count) {
         List<SpawnResult> results = new ArrayList<>();
 
         // Calculate grid dimensions (roughly square)
@@ -247,7 +247,7 @@ public final class TestMobTools {
      * @param lootingLevel Looting enchant level (0-3)
      * @return KillResult
      */
-    public static KillResult spawnAndKill(MinecraftServer server, ResourceLocation entityId, KillCondition condition, int lootingLevel) {
+    public static KillResult spawnAndKill(MinecraftServer server, Identifier entityId, KillCondition condition, int lootingLevel) {
         SpawnResult spawn = spawnMob(server, entityId, new BlockPos(3, 0, 3));
         if (!spawn.success()) {
             return KillResult.error("Spawn failed: " + spawn.error());
@@ -266,7 +266,7 @@ public final class TestMobTools {
      * @param lootingLevel Looting enchant level (0-3)
      * @return Total kills successful
      */
-    public static int batchSpawnAndKill(MinecraftServer server, ResourceLocation entityId,
+    public static int batchSpawnAndKill(MinecraftServer server, Identifier entityId,
                                          int count, KillCondition condition, int lootingLevel) {
         int successful = 0;
 
@@ -298,7 +298,7 @@ public final class TestMobTools {
      * @param radius Radius in blocks
      * @return Number of entities removed
      */
-    public static int clearMobs(MinecraftServer server, @Nullable ResourceLocation entityId, int radius) {
+    public static int clearMobs(MinecraftServer server, @Nullable Identifier entityId, int radius) {
         try {
             ServerLevel level = server.overworld();
             ServerPlayer player = getPlayer(server);
@@ -317,7 +317,7 @@ public final class TestMobTools {
 
                 // Check entity type if specified
                 if (entityId != null) {
-                    ResourceLocation entityType = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+                    Identifier entityType = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
                     if (!entityId.equals(entityType)) continue;
                 }
 
@@ -347,7 +347,7 @@ public final class TestMobTools {
     /**
      * Get entity display name from entity ID.
      */
-    public static String getEntityDisplayName(ResourceLocation entityId) {
+    public static String getEntityDisplayName(Identifier entityId) {
         Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
         if (entityTypeOpt.isPresent()) {
             String key = entityTypeOpt.get().getDescriptionId();

@@ -3,7 +3,7 @@ package dev.isotope.testing;
 import dev.isotope.Isotope;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -44,7 +44,7 @@ public final class TestWorldManager {
      * @param worldType The type of world to create (VOID or NORMAL)
      */
     public void enterTestMode(TestModeState.WorldType worldType) {
-        Set<ResourceLocation> editedTables = LootEditManager.getInstance().getEditedTables();
+        Set<Identifier> editedTables = LootEditManager.getInstance().getEditedTables();
         String worldName = generateWorldName();
 
         // Enter test mode state
@@ -147,7 +147,7 @@ public final class TestWorldManager {
     public void onWorldLoad(String worldName) {
         if (isTestWorld(worldName) && !TestModeState.getInstance().isInTestMode()) {
             // User created a world with our prefix, enable test mode
-            Set<ResourceLocation> editedTables = LootEditManager.getInstance().getEditedTables();
+            Set<Identifier> editedTables = LootEditManager.getInstance().getEditedTables();
             TestModeState.getInstance().enterTestMode(worldName, editedTables, TestModeState.WorldType.VOID);
             Isotope.LOGGER.info("Auto-enabled test mode for world: {}", worldName);
         }

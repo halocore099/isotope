@@ -1,6 +1,6 @@
 package dev.isotope.ui;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +20,7 @@ public final class TabManager {
     /**
      * Open a new tab or switch to existing tab for the given table.
      */
-    public void openTab(ResourceLocation tableId) {
+    public void openTab(Identifier tableId) {
         // Check if already open
         for (int i = 0; i < tabs.size(); i++) {
             if (tabs.get(i).tableId().equals(tableId)) {
@@ -105,7 +105,7 @@ public final class TabManager {
     /**
      * Get the active tab's table ID.
      */
-    public Optional<ResourceLocation> getActiveTableId() {
+    public Optional<Identifier> getActiveTableId() {
         return getActiveTab().map(EditorTab::tableId);
     }
 
@@ -133,7 +133,7 @@ public final class TabManager {
     /**
      * Check if a table is currently open in a tab.
      */
-    public boolean isOpen(ResourceLocation tableId) {
+    public boolean isOpen(Identifier tableId) {
         return tabs.stream().anyMatch(t -> t.tableId().equals(tableId));
     }
 

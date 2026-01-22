@@ -8,7 +8,7 @@ import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.registry.StructureRegistry;
 import dev.isotope.registry.StructureTemplateParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -28,11 +28,11 @@ public final class OrphanDetector {
     private static final OrphanDetector INSTANCE = new OrphanDetector();
 
     // Orphan results
-    private final Set<ResourceLocation> orphanLootTables = new LinkedHashSet<>();
-    private final Set<ResourceLocation> orphanStructures = new LinkedHashSet<>();
+    private final Set<Identifier> orphanLootTables = new LinkedHashSet<>();
+    private final Set<Identifier> orphanStructures = new LinkedHashSet<>();
 
     // Runtime-only discoveries (loot tables seen at runtime but not in templates/heuristics)
-    private final Set<ResourceLocation> runtimeOnlyTables = new LinkedHashSet<>();
+    private final Set<Identifier> runtimeOnlyTables = new LinkedHashSet<>();
 
     // Detection stats
     private boolean detected = false;
@@ -62,21 +62,21 @@ public final class OrphanDetector {
         }
 
         // Get all linked loot tables and structures
-        Set<ResourceLocation> linkedLootTables = linker.getLinkedLootTables();
-        Set<ResourceLocation> linkedStructures = linker.getLinkedStructures();
+        Set<Identifier> linkedLootTables = linker.getLinkedLootTables();
+        Set<Identifier> linkedStructures = linker.getLinkedStructures();
 
         // Get template-referenced loot tables
-        Set<ResourceLocation> templateLootTables = templateParser.isParsed()
+        Set<Identifier> templateLootTables = templateParser.isParsed()
             ? templateParser.getLootTablesInTemplates()
             : Set.of();
 
         // Get runtime-observed loot tables
-        Set<ResourceLocation> runtimeLootTables = correlator.getObservedLootTables();
+        Set<Identifier> runtimeLootTables = correlator.getObservedLootTables();
 
         // Detect orphan loot tables
         // Focus on chest loot tables (most relevant for structure linking)
         for (LootTableInfo info : lootTables.getChestLootTables()) {
-            ResourceLocation tableId = info.id();
+            Identifier tableId = info.id();
 
             boolean isLinked = linkedLootTables.contains(tableId);
             boolean isInTemplate = templateLootTables.contains(tableId);
@@ -94,7 +94,7 @@ public final class OrphanDetector {
 
         // Detect orphan structures (structures with no loot links)
         for (StructureInfo info : structures.getAll()) {
-            ResourceLocation structureId = info.id();
+            Identifier structureId = info.id();
 
             if (!linkedStructures.contains(structureId)) {
                 // Check if it's a known decorative structure (no chests expected)
@@ -121,7 +121,7 @@ public final class OrphanDetector {
     /**
      * Check if a structure is known to be decorative (no loot expected).
      */
-    private boolean isKnownDecorativeStructure(ResourceLocation structureId) {
+    private boolean isKnownDecorativeStructure(Identifier structureId) {
         if (!"minecraft".equals(structureId.getNamespace())) {
             return false;
         }
@@ -143,14 +143,14 @@ public final class OrphanDetector {
     /**
      * Get all orphan loot tables (not linked to any structure).
      */
-    public Set<ResourceLocation> getOrphanLootTables() {
+    public Set<Identifier> getOrphanLootTables() {
         return Collections.unmodifiableSet(orphanLootTables);
     }
 
     /**
      * Get all orphan structures (no loot table links).
      */
-    public Set<ResourceLocation> getOrphanStructures() {
+    public Set<Identifier> getOrphanStructures() {
         return Collections.unmodifiableSet(orphanStructures);
     }
 
@@ -158,21 +158,21 @@ public final class OrphanDetector {
      * Get loot tables discovered only at runtime.
      * These were not found via templates or heuristics.
      */
-    public Set<ResourceLocation> getRuntimeOnlyDiscoveries() {
+    public Set<Identifier> getRuntimeOnlyDiscoveries() {
         return Collections.unmodifiableSet(runtimeOnlyTables);
     }
 
     /**
      * Check if a loot table is orphaned.
      */
-    public boolean isOrphanLootTable(ResourceLocation tableId) {
+    public boolean isOrphanLootTable(Identifier tableId) {
         return orphanLootTables.contains(tableId);
     }
 
     /**
      * Check if a structure is orphaned.
      */
-    public boolean isOrphanStructure(ResourceLocation structureId) {
+    public boolean isOrphanStructure(Identifier structureId) {
         return orphanStructures.contains(structureId);
     }
 
@@ -197,9 +197,9 @@ public final class OrphanDetector {
      * Orphan detection report.
      */
     public record OrphanReport(
-        Set<ResourceLocation> orphanLootTables,
-        Set<ResourceLocation> orphanStructures,
-        Set<ResourceLocation> runtimeOnlyDiscoveries
+        Set<Identifier> orphanLootTables,
+        Set<Identifier> orphanStructures,
+        Set<Identifier> runtimeOnlyDiscoveries
     ) {
         public static OrphanReport empty() {
             return new OrphanReport(Set.of(), Set.of(), Set.of());
@@ -269,7 +269,7 @@ public final class OrphanDetector {
     /**
      * Get detailed orphan info for a loot table.
      */
-    public OrphanInfo getLootTableOrphanInfo(ResourceLocation tableId) {
+    public OrphanInfo getLootTableOrphanInfo(Identifier tableId) {
         List<OrphanReason> reasons = new ArrayList<>();
 
         StructureLootLinker linker = StructureLootLinker.getInstance();
@@ -294,7 +294,7 @@ public final class OrphanDetector {
     /**
      * Get detailed orphan info for a structure.
      */
-    public OrphanInfo getStructureOrphanInfo(ResourceLocation structureId) {
+    public OrphanInfo getStructureOrphanInfo(Identifier structureId) {
         List<OrphanReason> reasons = new ArrayList<>();
 
         StructureLootLinker linker = StructureLootLinker.getInstance();
@@ -314,7 +314,7 @@ public final class OrphanDetector {
      * Detailed orphan information.
      */
     public record OrphanInfo(
-        ResourceLocation id,
+        Identifier id,
         List<OrphanReason> reasons
     ) {
         public boolean isOrphan() {

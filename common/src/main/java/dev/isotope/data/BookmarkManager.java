@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import dev.isotope.Isotope;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -23,7 +23,7 @@ public final class BookmarkManager {
     private static final BookmarkManager INSTANCE = new BookmarkManager();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private final Set<ResourceLocation> bookmarks = new LinkedHashSet<>();
+    private final Set<Identifier> bookmarks = new LinkedHashSet<>();
     private final List<BookmarkListener> listeners = new CopyOnWriteArrayList<>();
     private boolean loaded = false;
 
@@ -36,7 +36,7 @@ public final class BookmarkManager {
     /**
      * Add a table to bookmarks.
      */
-    public void add(ResourceLocation tableId) {
+    public void add(Identifier tableId) {
         if (bookmarks.add(tableId)) {
             save();
             notifyListeners();
@@ -46,7 +46,7 @@ public final class BookmarkManager {
     /**
      * Remove a table from bookmarks.
      */
-    public void remove(ResourceLocation tableId) {
+    public void remove(Identifier tableId) {
         if (bookmarks.remove(tableId)) {
             save();
             notifyListeners();
@@ -56,7 +56,7 @@ public final class BookmarkManager {
     /**
      * Toggle bookmark status.
      */
-    public boolean toggle(ResourceLocation tableId) {
+    public boolean toggle(Identifier tableId) {
         if (bookmarks.contains(tableId)) {
             remove(tableId);
             return false;
@@ -69,7 +69,7 @@ public final class BookmarkManager {
     /**
      * Check if a table is bookmarked.
      */
-    public boolean isBookmarked(ResourceLocation tableId) {
+    public boolean isBookmarked(Identifier tableId) {
         ensureLoaded();
         return bookmarks.contains(tableId);
     }
@@ -77,7 +77,7 @@ public final class BookmarkManager {
     /**
      * Get all bookmarked tables.
      */
-    public List<ResourceLocation> getAll() {
+    public List<Identifier> getAll() {
         ensureLoaded();
         return new ArrayList<>(bookmarks);
     }
@@ -148,7 +148,7 @@ public final class BookmarkManager {
 
             // Convert to string list for JSON
             List<String> bookmarkStrings = new ArrayList<>();
-            for (ResourceLocation id : bookmarks) {
+            for (Identifier id : bookmarks) {
                 bookmarkStrings.add(id.toString());
             }
 
@@ -179,7 +179,7 @@ public final class BookmarkManager {
             bookmarks.clear();
             if (bookmarkStrings != null) {
                 for (String str : bookmarkStrings) {
-                    ResourceLocation id = ResourceLocation.tryParse(str);
+                    Identifier id = Identifier.tryParse(str);
                     if (id != null) {
                         bookmarks.add(id);
                     }

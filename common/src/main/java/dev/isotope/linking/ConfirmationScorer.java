@@ -3,7 +3,7 @@ package dev.isotope.linking;
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.data.StructureLootLink.Confidence;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -67,17 +67,17 @@ public final class ConfirmationScorer {
      */
     public List<ConfirmationResult> score(
             Collection<StructureLootLink> links,
-            Map<ResourceLocation, Set<ResourceLocation>> templateLinks,
-            Map<ResourceLocation, Set<ResourceLocation>> worldgenLinks,
-            Map<ResourceLocation, Set<ResourceLocation>> assignmentLinks,
-            Map<ResourceLocation, Set<ResourceLocation>> observationLinks,
-            Map<ResourceLocation, Set<ResourceLocation>> learnedLinks) {
+            Map<Identifier, Set<Identifier>> templateLinks,
+            Map<Identifier, Set<Identifier>> worldgenLinks,
+            Map<Identifier, Set<Identifier>> assignmentLinks,
+            Map<Identifier, Set<Identifier>> observationLinks,
+            Map<Identifier, Set<Identifier>> learnedLinks) {
 
         List<ConfirmationResult> results = new ArrayList<>();
 
         for (StructureLootLink link : links) {
-            ResourceLocation structureId = link.structureId();
-            ResourceLocation tableId = link.lootTableId();
+            Identifier structureId = link.structureId();
+            Identifier tableId = link.lootTableId();
 
             // Count confirming source categories
             Set<SourceCategory> categories = new HashSet<>();
@@ -172,11 +172,11 @@ public final class ConfirmationScorer {
      */
     public List<StructureLootLink> applyScoring(
             List<StructureLootLink> links,
-            Map<ResourceLocation, Set<ResourceLocation>> templateLinks,
-            Map<ResourceLocation, Set<ResourceLocation>> worldgenLinks,
-            Map<ResourceLocation, Set<ResourceLocation>> assignmentLinks,
-            Map<ResourceLocation, Set<ResourceLocation>> observationLinks,
-            Map<ResourceLocation, Set<ResourceLocation>> learnedLinks) {
+            Map<Identifier, Set<Identifier>> templateLinks,
+            Map<Identifier, Set<Identifier>> worldgenLinks,
+            Map<Identifier, Set<Identifier>> assignmentLinks,
+            Map<Identifier, Set<Identifier>> observationLinks,
+            Map<Identifier, Set<Identifier>> learnedLinks) {
 
         List<ConfirmationResult> scored = score(links, templateLinks, worldgenLinks,
             assignmentLinks, observationLinks, learnedLinks);

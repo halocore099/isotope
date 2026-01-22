@@ -1,7 +1,7 @@
 package dev.isotope.observation;
 
 import dev.isotope.Isotope;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 
@@ -69,7 +69,7 @@ public final class ObservationSession {
             ServerLevel level = server.overworld();
 
             // Place all structures
-            Map<ResourceLocation, StructurePlacementEngine.PlacementResult> placementResults =
+            Map<Identifier, StructurePlacementEngine.PlacementResult> placementResults =
                 StructurePlacementEngine.getInstance().placeAllStructures(server, level, this::progress);
 
             // Count successes/failures
@@ -161,7 +161,7 @@ public final class ObservationSession {
     /**
      * Get the observed data for a structure.
      */
-    public Optional<ObservedStructureData> getStructureData(ResourceLocation structureId) {
+    public Optional<ObservedStructureData> getStructureData(Identifier structureId) {
         var observation = ObservationCorrelator.getInstance().getObservation(structureId);
         if (observation.isEmpty()) {
             return Optional.empty();
@@ -213,10 +213,10 @@ public final class ObservationSession {
      * This is the authoritative truth about what loot tables a structure uses.
      */
     public record ObservedStructureData(
-        ResourceLocation structureId,
-        Set<ResourceLocation> lootTables,
-        Set<ResourceLocation> observedItems,
-        Map<ResourceLocation, Integer> invocationCounts,
+        Identifier structureId,
+        Set<Identifier> lootTables,
+        Set<Identifier> observedItems,
+        Map<Identifier, Integer> invocationCounts,
         StructurePlacement placement
     ) {
         public boolean hasLoot() {

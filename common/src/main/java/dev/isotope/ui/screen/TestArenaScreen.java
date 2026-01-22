@@ -13,7 +13,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Screen for configuring and launching a test arena.
@@ -25,12 +25,12 @@ public class TestArenaScreen extends Screen {
     private static final int DIALOG_HEIGHT = 180;
 
     private final Screen parent;
-    private final ResourceLocation structureId;
+    private final Identifier structureId;
 
     private EditBox countInput;
     private Button createButton;
 
-    public TestArenaScreen(Screen parent, ResourceLocation structureId) {
+    public TestArenaScreen(Screen parent, Identifier structureId) {
         super(Component.literal("Test Arena"));
         this.parent = parent;
         this.structureId = structureId;

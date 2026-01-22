@@ -5,7 +5,7 @@ import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -17,13 +17,13 @@ public final class SearchIndex {
     private static final SearchIndex INSTANCE = new SearchIndex();
 
     // Inverted index: item ID -> list of hits
-    private final Map<ResourceLocation, List<SearchHit>> itemIndex = new HashMap<>();
+    private final Map<Identifier, List<SearchHit>> itemIndex = new HashMap<>();
 
     // Forward index: table ID -> list of items
-    private final Map<ResourceLocation, Set<ResourceLocation>> tableItems = new HashMap<>();
+    private final Map<Identifier, Set<Identifier>> tableItems = new HashMap<>();
 
     // All indexed tables
-    private final Set<ResourceLocation> indexedTables = new HashSet<>();
+    private final Set<Identifier> indexedTables = new HashSet<>();
 
     private SearchIndex() {}
 
@@ -59,9 +59,9 @@ public final class SearchIndex {
      * Index a single loot table structure.
      */
     public void indexTable(LootTableStructure structure) {
-        ResourceLocation tableId = structure.id();
+        Identifier tableId = structure.id();
         indexedTables.add(tableId);
-        Set<ResourceLocation> items = new HashSet<>();
+        Set<Identifier> items = new HashSet<>();
 
         for (int poolIdx = 0; poolIdx < structure.pools().size(); poolIdx++) {
             LootPool pool = structure.pools().get(poolIdx);
@@ -69,7 +69,7 @@ public final class SearchIndex {
                 LootEntry entry = pool.entries().get(entryIdx);
 
                 if (entry.name().isPresent()) {
-                    ResourceLocation itemId = entry.name().get();
+                    Identifier itemId = entry.name().get();
                     items.add(itemId);
 
                     // Build context string
@@ -99,7 +99,7 @@ public final class SearchIndex {
 
         // Search by item ID
         for (var entry : itemIndex.entrySet()) {
-            ResourceLocation itemId = entry.getKey();
+            Identifier itemId = entry.getKey();
             if (itemId.toString().toLowerCase().contains(lowerQuery) ||
                 itemId.getPath().toLowerCase().contains(lowerQuery)) {
                 results.addAll(entry.getValue());
@@ -125,26 +125,26 @@ public final class SearchIndex {
     /**
      * Search for tables containing a specific item.
      */
-    public List<ResourceLocation> findTablesWithItem(ResourceLocation itemId) {
+    public List<Identifier> findTablesWithItem(Identifier itemId) {
         List<SearchHit> hits = itemIndex.getOrDefault(itemId, List.of());
         return hits.stream()
             .map(SearchHit::table)
             .distinct()
-            .sorted(Comparator.comparing(ResourceLocation::toString))
+            .sorted(Comparator.comparing(Identifier::toString))
             .toList();
     }
 
     /**
      * Get all items in a table.
      */
-    public Set<ResourceLocation> getItemsInTable(ResourceLocation tableId) {
+    public Set<Identifier> getItemsInTable(Identifier tableId) {
         return tableItems.getOrDefault(tableId, Set.of());
     }
 
     /**
      * Check if a table is indexed.
      */
-    public boolean isIndexed(ResourceLocation tableId) {
+    public boolean isIndexed(Identifier tableId) {
         return indexedTables.contains(tableId);
     }
 

@@ -2,7 +2,7 @@ package dev.isotope.testing;
 
 import dev.isotope.Isotope;
 import dev.isotope.editing.LootEditManager;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,7 +18,7 @@ public final class TestModeState {
 
     private boolean inTestMode = false;
     private String testWorldName = null;
-    private final Set<ResourceLocation> testedTables = new HashSet<>();
+    private final Set<Identifier> testedTables = new HashSet<>();
     private WorldType worldType = WorldType.VOID;
 
     public enum WorldType {
@@ -41,7 +41,7 @@ public final class TestModeState {
     /**
      * Enter test mode with the given world name and tested tables.
      */
-    public void enterTestMode(String worldName, Set<ResourceLocation> tables, WorldType type) {
+    public void enterTestMode(String worldName, Set<Identifier> tables, WorldType type) {
         this.inTestMode = true;
         this.testWorldName = worldName;
         this.testedTables.clear();
@@ -86,7 +86,7 @@ public final class TestModeState {
     /**
      * Get the set of loot tables being tested.
      */
-    public Set<ResourceLocation> getTestedTables() {
+    public Set<Identifier> getTestedTables() {
         return new HashSet<>(testedTables);
     }
 
@@ -100,7 +100,7 @@ public final class TestModeState {
     /**
      * Check if a specific table is being tested.
      */
-    public boolean isTableBeingTested(ResourceLocation tableId) {
+    public boolean isTableBeingTested(Identifier tableId) {
         return testedTables.contains(tableId);
     }
 }

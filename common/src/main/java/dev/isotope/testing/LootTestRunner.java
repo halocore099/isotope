@@ -5,7 +5,7 @@ import dev.isotope.editing.LootEditManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -86,7 +86,7 @@ public final class LootTestRunner {
      */
     public static TestResult runMobTest(
         MinecraftServer server,
-        ResourceLocation entityId,
+        Identifier entityId,
         int count,
         TestMobTools.KillCondition condition,
         int lootingLevel,
@@ -231,7 +231,7 @@ public final class LootTestRunner {
      */
     public static TestResult runChestTest(
         MinecraftServer server,
-        ResourceLocation lootTableId,
+        Identifier lootTableId,
         int count,
         int luck,
         @Nullable Consumer<String> progressCallback
@@ -314,7 +314,7 @@ public final class LootTestRunner {
      */
     public static int spawnLootOnGround(
         MinecraftServer server,
-        ResourceLocation lootTableId,
+        Identifier lootTableId,
         int count
     ) {
         try {
@@ -370,7 +370,7 @@ public final class LootTestRunner {
      */
     public static int collectLootToInventory(
         MinecraftServer server,
-        ResourceLocation lootTableId,
+        Identifier lootTableId,
         int count
     ) {
         try {
@@ -415,7 +415,7 @@ public final class LootTestRunner {
     /**
      * Format loot table ID to display name.
      */
-    private static String formatTableName(ResourceLocation tableId) {
+    private static String formatTableName(Identifier tableId) {
         String path = tableId.getPath();
         // Remove common prefixes
         if (path.startsWith("chests/")) {
@@ -453,7 +453,7 @@ public final class LootTestRunner {
      */
     public static CompareResult runChestCompare(
         MinecraftServer server,
-        ResourceLocation lootTableId,
+        Identifier lootTableId,
         int count,
         int luck,
         @Nullable Consumer<String> progressCallback
@@ -523,7 +523,7 @@ public final class LootTestRunner {
      */
     public static CompareResult runMobCompare(
         MinecraftServer server,
-        ResourceLocation entityId,
+        Identifier entityId,
         int count,
         TestMobTools.KillCondition condition,
         int lootingLevel,
@@ -533,7 +533,7 @@ public final class LootTestRunner {
             LootEditManager editManager = LootEditManager.getInstance();
 
             // Get the loot table ID for this entity
-            ResourceLocation lootTableId = ResourceLocation.fromNamespaceAndPath(
+            Identifier lootTableId = Identifier.fromNamespaceAndPath(
                 entityId.getNamespace(), "entities/" + entityId.getPath());
 
             // Check if table has edits
@@ -598,7 +598,7 @@ public final class LootTestRunner {
         for (int i = 0; i < source.getTestCount(); i++) {
             dest.startTest();
         }
-        for (ResourceLocation itemId : source.getDroppedItems()) {
+        for (Identifier itemId : source.getDroppedItems()) {
             // Create fake stacks to record the totals
             int total = source.getTotalForItem(itemId);
             if (total > 0) {

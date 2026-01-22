@@ -18,7 +18,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,9 +39,9 @@ public class CompareScreen extends Screen {
 
     // Selected tables
     @Nullable
-    private ResourceLocation leftTableId;
+    private Identifier leftTableId;
     @Nullable
-    private ResourceLocation rightTableId;
+    private Identifier rightTableId;
     @Nullable
     private LootTableStructure leftTable;
     @Nullable
@@ -57,8 +57,8 @@ public class CompareScreen extends Screen {
     private EditBox rightSearchBox;
     private boolean leftDropdownOpen = false;
     private boolean rightDropdownOpen = false;
-    private List<ResourceLocation> filteredTablesLeft = new ArrayList<>();
-    private List<ResourceLocation> filteredTablesRight = new ArrayList<>();
+    private List<Identifier> filteredTablesLeft = new ArrayList<>();
+    private List<Identifier> filteredTablesRight = new ArrayList<>();
 
     // Widgets
     private Button syncButton;
@@ -70,7 +70,7 @@ public class CompareScreen extends Screen {
         this.parent = parent;
     }
 
-    public CompareScreen(Screen parent, ResourceLocation leftTable, ResourceLocation rightTable) {
+    public CompareScreen(Screen parent, Identifier leftTable, Identifier rightTable) {
         this(parent);
         this.leftTableId = leftTable;
         this.rightTableId = rightTable;
@@ -133,7 +133,7 @@ public class CompareScreen extends Screen {
         leftDropdownOpen = !text.isEmpty() && !filteredTablesLeft.isEmpty();
 
         // Check for exact match
-        ResourceLocation id = ResourceLocation.tryParse(text);
+        Identifier id = Identifier.tryParse(text);
         if (id != null && LootTableRegistry.getInstance().get(id).isPresent()) {
             leftTableId = id;
             loadTables();
@@ -146,7 +146,7 @@ public class CompareScreen extends Screen {
         rightDropdownOpen = !text.isEmpty() && !filteredTablesRight.isEmpty();
 
         // Check for exact match
-        ResourceLocation id = ResourceLocation.tryParse(text);
+        Identifier id = Identifier.tryParse(text);
         if (id != null && LootTableRegistry.getInstance().get(id).isPresent()) {
             rightTableId = id;
             loadTables();
@@ -155,7 +155,7 @@ public class CompareScreen extends Screen {
     }
 
     private void filterTables(String query, boolean isLeft) {
-        List<ResourceLocation> results = new ArrayList<>();
+        List<Identifier> results = new ArrayList<>();
         String lowerQuery = query.toLowerCase();
 
         for (var info : LootTableRegistry.getInstance().getAll()) {
@@ -220,7 +220,7 @@ public class CompareScreen extends Screen {
 
     private void onSwap(Button button) {
         // Swap tables
-        ResourceLocation tempId = leftTableId;
+        Identifier tempId = leftTableId;
         leftTableId = rightTableId;
         rightTableId = tempId;
 
@@ -303,7 +303,7 @@ public class CompareScreen extends Screen {
                              int mouseX, int mouseY, boolean isLeft) {
         // Calculate drop rates for comparison
         List<DropRate> rates = DropRateCalculator.calculate(table);
-        Map<ResourceLocation, DropRate> rateMap = new HashMap<>();
+        Map<Identifier, DropRate> rateMap = new HashMap<>();
         for (DropRate rate : rates) {
             rateMap.put(rate.item(), rate);
         }
@@ -352,7 +352,7 @@ public class CompareScreen extends Screen {
                     });
 
                     // Entry name
-                    String entryName = entry.name().map(ResourceLocation::getPath).orElse("???");
+                    String entryName = entry.name().map(Identifier::getPath).orElse("???");
                     if (font.width(entryName) > panelWidth - 100) {
                         entryName = font.plainSubstrByWidth(entryName, panelWidth - 110) + "...";
                     }
@@ -410,7 +410,7 @@ public class CompareScreen extends Screen {
             graphics.fill(PADDING, dropY, halfWidth - PADDING, dropY + dropHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             int itemY = dropY + 2;
-            for (ResourceLocation id : filteredTablesLeft) {
+            for (Identifier id : filteredTablesLeft) {
                 boolean hovered = mouseX >= PADDING && mouseX < halfWidth - PADDING &&
                     mouseY >= itemY && mouseY < itemY + 14;
 
@@ -436,7 +436,7 @@ public class CompareScreen extends Screen {
             graphics.fill(halfWidth + PADDING, dropY, width - PADDING, dropY + dropHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             int itemY = dropY + 2;
-            for (ResourceLocation id : filteredTablesRight) {
+            for (Identifier id : filteredTablesRight) {
                 boolean hovered = mouseX >= halfWidth + PADDING && mouseX < width - PADDING &&
                     mouseY >= itemY && mouseY < itemY + 14;
 
@@ -462,7 +462,7 @@ public class CompareScreen extends Screen {
         if (leftDropdownOpen) {
             int dropY = 50;
             int itemY = dropY + 2;
-            for (ResourceLocation id : filteredTablesLeft) {
+            for (Identifier id : filteredTablesLeft) {
                 if (mouseX >= PADDING && mouseX < halfWidth - PADDING &&
                     mouseY >= itemY && mouseY < itemY + 14) {
                     leftTableId = id;
@@ -480,7 +480,7 @@ public class CompareScreen extends Screen {
         if (rightDropdownOpen) {
             int dropY = 50;
             int itemY = dropY + 2;
-            for (ResourceLocation id : filteredTablesRight) {
+            for (Identifier id : filteredTablesRight) {
                 if (mouseX >= halfWidth + PADDING && mouseX < width - PADDING &&
                     mouseY >= itemY && mouseY < itemY + 14) {
                     rightTableId = id;

@@ -17,7 +17,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +50,7 @@ public class TemplateEditorScreen extends Screen {
 
     // State
     @Nullable
-    private ResourceLocation selectedItem;
+    private Identifier selectedItem;
     private boolean useRange = true;
     private final List<LootFunction> functions = new ArrayList<>();
     private int functionsScrollOffset = 0;
@@ -93,7 +93,7 @@ public class TemplateEditorScreen extends Screen {
      */
     public static TemplateEditorScreen fromEntry(Screen parent, LootEntry entry, @Nullable Runnable onSaved) {
         // Build a template from the entry
-        ResourceLocation itemId = entry.name().orElse(null);
+        Identifier itemId = entry.name().orElse(null);
 
         // Extract count from set_count function
         NumberProvider count = NumberProvider.constant(1);

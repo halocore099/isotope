@@ -2,7 +2,7 @@ package dev.isotope.observation;
 
 import dev.isotope.Isotope;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootParams;
 
@@ -37,7 +37,7 @@ public final class LootObserver {
     private final Map<Long, List<LootInvocation>> invocationsByChunk = new ConcurrentHashMap<>();
 
     // Quick lookup: table -> all invocations of that table
-    private final Map<ResourceLocation, List<LootInvocation>> invocationsByTable = new ConcurrentHashMap<>();
+    private final Map<Identifier, List<LootInvocation>> invocationsByTable = new ConcurrentHashMap<>();
 
     // Loot table assignments captured via setLootTable() hook
     private final Queue<LootAssignment> assignments = new ConcurrentLinkedQueue<>();
@@ -46,14 +46,14 @@ public final class LootObserver {
     private final Map<String, List<LootAssignment>> assignmentsByOrigin = new ConcurrentHashMap<>();
 
     // Quick lookup: table -> all assignments of that table
-    private final Map<ResourceLocation, List<LootAssignment>> assignmentsByTable = new ConcurrentHashMap<>();
+    private final Map<Identifier, List<LootAssignment>> assignmentsByTable = new ConcurrentHashMap<>();
 
     /**
      * Record of a loot table being assigned to a container.
      * Captures the exact moment and calling context.
      */
     public record LootAssignment(
-        ResourceLocation tableId,
+        Identifier tableId,
         String callerOrigin,      // e.g., "net.minecraft.world.level.levelgen.structure.StructureTemplate.placeInWorld"
         String callerNamespace,   // Extracted namespace: "minecraft" or mod ID
         BlockPos position,
@@ -64,7 +64,7 @@ public final class LootObserver {
          * First tries exact lookup via StructureClassRegistry, then falls
          * back to heuristics to map class names to structure IDs.
          */
-        public Optional<ResourceLocation> inferStructureId() {
+        public Optional<Identifier> inferStructureId() {
             if (callerOrigin == null || callerOrigin.equals("unknown")) {
                 return Optional.empty();
             }
@@ -76,7 +76,7 @@ public final class LootObserver {
 
             StructureClassRegistry classRegistry = StructureClassRegistry.getInstance();
             if (classRegistry.isScanned()) {
-                Optional<ResourceLocation> exact = classRegistry.getStructureForClass(className);
+                Optional<Identifier> exact = classRegistry.getStructureForClass(className);
                 if (exact.isPresent()) {
                     return exact;
                 }
@@ -87,58 +87,58 @@ public final class LootObserver {
 
             // Look for known structure patterns
             if (lowerOrigin.contains("village")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "village"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "village"));
             }
             if (lowerOrigin.contains("stronghold")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "stronghold"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "stronghold"));
             }
             if (lowerOrigin.contains("mineshaft")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "mineshaft"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "mineshaft"));
             }
             if (lowerOrigin.contains("dungeon") || lowerOrigin.contains("monster_room")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "monster_room"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "monster_room"));
             }
             if (lowerOrigin.contains("shipwreck")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "shipwreck"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "shipwreck"));
             }
             if (lowerOrigin.contains("ocean_ruin")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "ocean_ruin"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "ocean_ruin"));
             }
             if (lowerOrigin.contains("buried_treasure")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "buried_treasure"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "buried_treasure"));
             }
             if (lowerOrigin.contains("end_city")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "end_city"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "end_city"));
             }
             if (lowerOrigin.contains("bastion")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "bastion_remnant"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "bastion_remnant"));
             }
             if (lowerOrigin.contains("fortress") || lowerOrigin.contains("nether_bridge")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "fortress"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "fortress"));
             }
             if (lowerOrigin.contains("ruined_portal")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "ruined_portal"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "ruined_portal"));
             }
             if (lowerOrigin.contains("desert_pyramid")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "desert_pyramid"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "desert_pyramid"));
             }
             if (lowerOrigin.contains("jungle") && (lowerOrigin.contains("temple") || lowerOrigin.contains("pyramid"))) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "jungle_pyramid"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "jungle_pyramid"));
             }
             if (lowerOrigin.contains("igloo")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "igloo"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "igloo"));
             }
             if (lowerOrigin.contains("pillager") || lowerOrigin.contains("outpost")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "pillager_outpost"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "pillager_outpost"));
             }
             if (lowerOrigin.contains("woodland") || lowerOrigin.contains("mansion")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "woodland_mansion"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "woodland_mansion"));
             }
             if (lowerOrigin.contains("ancient_city")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "ancient_city"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "ancient_city"));
             }
             if (lowerOrigin.contains("trial_chamber")) {
-                return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, "trial_chambers"));
+                return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, "trial_chambers"));
             }
 
             // For modded structures, try to extract from class name
@@ -146,7 +146,7 @@ public final class LootObserver {
             if (!callerNamespace.equals("minecraft")) {
                 String structureName = extractStructureNameFromClass(callerOrigin);
                 if (structureName != null) {
-                    return Optional.of(ResourceLocation.fromNamespaceAndPath(callerNamespace, structureName));
+                    return Optional.of(Identifier.fromNamespaceAndPath(callerNamespace, structureName));
                 }
             }
 
@@ -225,7 +225,7 @@ public final class LootObserver {
      * This is the core observation hook.
      */
     public void onLootTableInvoked(
-            ResourceLocation tableId,
+            Identifier tableId,
             LootParams params,
             List<ItemStack> generatedItems) {
 
@@ -247,11 +247,11 @@ public final class LootObserver {
         }
 
         // Convert items to resource locations
-        List<ResourceLocation> itemIds = new ArrayList<>();
+        List<Identifier> itemIds = new ArrayList<>();
         for (ItemStack stack : generatedItems) {
             if (!stack.isEmpty()) {
                 stack.getItemHolder().unwrapKey().ifPresent(key ->
-                    itemIds.add(key.location())
+                    itemIds.add(key.id())
                 );
             }
         }
@@ -313,14 +313,14 @@ public final class LootObserver {
     /**
      * Get all invocations of a specific loot table.
      */
-    public List<LootInvocation> getInvocationsOf(ResourceLocation tableId) {
+    public List<LootInvocation> getInvocationsOf(Identifier tableId) {
         return invocationsByTable.getOrDefault(tableId, List.of());
     }
 
     /**
      * Get all unique loot tables that were invoked.
      */
-    public Set<ResourceLocation> getObservedTables() {
+    public Set<Identifier> getObservedTables() {
         return Collections.unmodifiableSet(invocationsByTable.keySet());
     }
 
@@ -348,7 +348,7 @@ public final class LootObserver {
      * Called by RandomizableContainerMixin when a loot table is assigned to a container.
      * This captures the exact moment of assignment with caller context.
      */
-    public void onLootAssigned(ResourceLocation tableId, String callerOrigin, BlockPos pos) {
+    public void onLootAssigned(Identifier tableId, String callerOrigin, BlockPos pos) {
         if (!recording.get()) return;
 
         // Extract namespace from caller origin
@@ -427,7 +427,7 @@ public final class LootObserver {
     /**
      * Get assignments for a specific loot table.
      */
-    public List<LootAssignment> getAssignmentsFor(ResourceLocation tableId) {
+    public List<LootAssignment> getAssignmentsFor(Identifier tableId) {
         return assignmentsByTable.getOrDefault(tableId, List.of());
     }
 
@@ -441,11 +441,11 @@ public final class LootObserver {
     /**
      * Get all loot tables that were assigned from a specific origin.
      */
-    public Set<ResourceLocation> getTablesAssignedFrom(String origin) {
+    public Set<Identifier> getTablesAssignedFrom(String origin) {
         List<LootAssignment> originAssignments = assignmentsByOrigin.get(origin);
         if (originAssignments == null) return Set.of();
 
-        Set<ResourceLocation> tables = new HashSet<>();
+        Set<Identifier> tables = new HashSet<>();
         for (LootAssignment assignment : originAssignments) {
             tables.add(assignment.tableId());
         }
@@ -463,8 +463,8 @@ public final class LootObserver {
      * Build a map of inferred structure/feature IDs to their assigned loot tables.
      * This is used by the linker to create RUNTIME_ASSIGNED confidence links.
      */
-    public Map<ResourceLocation, Set<ResourceLocation>> buildAssignmentLinks() {
-        Map<ResourceLocation, Set<ResourceLocation>> links = new HashMap<>();
+    public Map<Identifier, Set<Identifier>> buildAssignmentLinks() {
+        Map<Identifier, Set<Identifier>> links = new HashMap<>();
 
         for (LootAssignment assignment : assignments) {
             assignment.inferStructureId().ifPresent(structureId -> {

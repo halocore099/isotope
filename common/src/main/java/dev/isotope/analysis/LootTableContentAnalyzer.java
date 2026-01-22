@@ -4,7 +4,7 @@ import com.google.gson.*;
 import dev.isotope.Isotope;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
 import dev.isotope.data.StructureLootLink;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -120,7 +120,7 @@ public final class LootTableContentAnalyzer {
      * A hint about which structure a loot table might belong to.
      */
     public record StructureHint(
-        ResourceLocation structureId,
+        Identifier structureId,
         int confidence,      // 0-100, how confident we are this item indicates this structure
         String reason        // Human-readable reason for the hint
     ) {}
@@ -129,7 +129,7 @@ public final class LootTableContentAnalyzer {
      * Result of structure hint analysis.
      */
     public record StructureHintResult(
-        ResourceLocation lootTableId,
+        Identifier lootTableId,
         List<StructureHint> hints,
         Set<String> signatureItemsFound
     ) {
@@ -307,13 +307,13 @@ public final class LootTableContentAnalyzer {
                                           String itemId, String structureId,
                                           int confidence, String reason) {
         items.computeIfAbsent(itemId, k -> new ArrayList<>())
-            .add(new StructureHint(ResourceLocation.parse(structureId), confidence, reason));
+            .add(new StructureHint(Identifier.parse(structureId), confidence, reason));
     }
 
     // ===== Analysis statistics =====
     private static int tablesAnalyzed = 0;
     private static int structureHintsFound = 0;
-    private static final Map<ResourceLocation, StructureHintResult> cachedHints = new LinkedHashMap<>();
+    private static final Map<Identifier, StructureHintResult> cachedHints = new LinkedHashMap<>();
 
     private LootTableContentAnalyzer() {}
 
@@ -324,12 +324,12 @@ public final class LootTableContentAnalyzer {
      * @param tableId The loot table ID
      * @return The detected category, or null if unable to analyze
      */
-    public static LootTableCategory analyze(MinecraftServer server, ResourceLocation tableId) {
+    public static LootTableCategory analyze(MinecraftServer server, Identifier tableId) {
         ResourceManager resourceManager = server.getResourceManager();
 
         // Loot tables are at: data/<namespace>/loot_table/<path>.json
         // Try both singular and plural paths (some mods differ)
-        ResourceLocation jsonPath = ResourceLocation.fromNamespaceAndPath(
+        Identifier jsonPath = Identifier.fromNamespaceAndPath(
             tableId.getNamespace(),
             "loot_table/" + tableId.getPath() + ".json"
         );
@@ -337,7 +337,7 @@ public final class LootTableContentAnalyzer {
         Optional<Resource> resource = resourceManager.getResource(jsonPath);
         if (resource.isEmpty()) {
             // Try plural form
-            jsonPath = ResourceLocation.fromNamespaceAndPath(
+            jsonPath = Identifier.fromNamespaceAndPath(
                 tableId.getNamespace(),
                 "loot_tables/" + tableId.getPath() + ".json"
             );
@@ -364,7 +364,7 @@ public final class LootTableContentAnalyzer {
     /**
      * Analyze a loot table JSON and determine its category.
      */
-    public static LootTableCategory analyzeJson(ResourceLocation tableId, JsonObject json) {
+    public static LootTableCategory analyzeJson(Identifier tableId, JsonObject json) {
         ContentAnalysis analysis = new ContentAnalysis();
 
         // Path-based hints for categories that can't be detected from content alone
@@ -616,7 +616,7 @@ public final class LootTableContentAnalyzer {
      * @param tableId The loot table ID
      * @return Structure hint result, or null if unable to analyze
      */
-    public static StructureHintResult analyzeForStructureHints(MinecraftServer server, ResourceLocation tableId) {
+    public static StructureHintResult analyzeForStructureHints(MinecraftServer server, Identifier tableId) {
         // Check cache first
         if (cachedHints.containsKey(tableId)) {
             return cachedHints.get(tableId);
@@ -625,7 +625,7 @@ public final class LootTableContentAnalyzer {
         ResourceManager resourceManager = server.getResourceManager();
 
         // Try to load the loot table JSON
-        ResourceLocation jsonPath = ResourceLocation.fromNamespaceAndPath(
+        Identifier jsonPath = Identifier.fromNamespaceAndPath(
             tableId.getNamespace(),
             "loot_table/" + tableId.getPath() + ".json"
         );
@@ -633,7 +633,7 @@ public final class LootTableContentAnalyzer {
         Optional<Resource> resource = resourceManager.getResource(jsonPath);
         if (resource.isEmpty()) {
             // Try plural form
-            jsonPath = ResourceLocation.fromNamespaceAndPath(
+            jsonPath = Identifier.fromNamespaceAndPath(
                 tableId.getNamespace(),
                 "loot_tables/" + tableId.getPath() + ".json"
             );
@@ -668,10 +668,10 @@ public final class LootTableContentAnalyzer {
     /**
      * Analyze a loot table JSON for structure hints based on signature items.
      */
-    public static StructureHintResult analyzeJsonForStructureHints(ResourceLocation tableId, JsonObject json) {
+    public static StructureHintResult analyzeJsonForStructureHints(Identifier tableId, JsonObject json) {
         Set<String> allItems = new LinkedHashSet<>();
         Set<String> signatureItemsFound = new LinkedHashSet<>();
-        Map<ResourceLocation, List<StructureHint>> hintsByStructure = new LinkedHashMap<>();
+        Map<Identifier, List<StructureHint>> hintsByStructure = new LinkedHashMap<>();
 
         // Extract all items from the loot table
         extractItemsFromJson(json, allItems);
@@ -689,7 +689,7 @@ public final class LootTableContentAnalyzer {
 
         // Aggregate hints by structure (multiple signature items for same structure = higher confidence)
         List<StructureHint> aggregatedHints = new ArrayList<>();
-        for (Map.Entry<ResourceLocation, List<StructureHint>> entry : hintsByStructure.entrySet()) {
+        for (Map.Entry<Identifier, List<StructureHint>> entry : hintsByStructure.entrySet()) {
             List<StructureHint> structureHints = entry.getValue();
             if (structureHints.size() == 1) {
                 aggregatedHints.add(structureHints.get(0));
@@ -797,13 +797,13 @@ public final class LootTableContentAnalyzer {
     /**
      * Analyze all loot tables in a registry and return structure hints.
      */
-    public static Map<ResourceLocation, StructureHintResult> analyzeAllForStructureHints(
+    public static Map<Identifier, StructureHintResult> analyzeAllForStructureHints(
             MinecraftServer server,
-            Collection<ResourceLocation> tableIds) {
+            Collection<Identifier> tableIds) {
 
-        Map<ResourceLocation, StructureHintResult> results = new LinkedHashMap<>();
+        Map<Identifier, StructureHintResult> results = new LinkedHashMap<>();
 
-        for (ResourceLocation tableId : tableIds) {
+        for (Identifier tableId : tableIds) {
             StructureHintResult result = analyzeForStructureHints(server, tableId);
             if (result != null && result.hasHints()) {
                 results.put(tableId, result);
@@ -820,14 +820,14 @@ public final class LootTableContentAnalyzer {
      * Get structure hints for orphan loot tables (tables without existing links).
      * This is useful for discovering links for tables that aren't matched by other methods.
      */
-    public static Map<ResourceLocation, StructureHintResult> analyzeOrphansForStructureHints(
+    public static Map<Identifier, StructureHintResult> analyzeOrphansForStructureHints(
             MinecraftServer server,
-            Collection<ResourceLocation> orphanTableIds,
+            Collection<Identifier> orphanTableIds,
             int minConfidence) {
 
-        Map<ResourceLocation, StructureHintResult> results = new LinkedHashMap<>();
+        Map<Identifier, StructureHintResult> results = new LinkedHashMap<>();
 
-        for (ResourceLocation tableId : orphanTableIds) {
+        for (Identifier tableId : orphanTableIds) {
             StructureHintResult result = analyzeForStructureHints(server, tableId);
             if (result != null && result.hasHints()) {
                 // Filter to only include hints above threshold
@@ -844,7 +844,7 @@ public final class LootTableContentAnalyzer {
     /**
      * Get cached hints (for UI display).
      */
-    public static Map<ResourceLocation, StructureHintResult> getCachedHints() {
+    public static Map<Identifier, StructureHintResult> getCachedHints() {
         return Collections.unmodifiableMap(cachedHints);
     }
 

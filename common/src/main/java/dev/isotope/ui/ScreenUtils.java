@@ -3,7 +3,7 @@ package dev.isotope.ui;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Utility methods for screen-related operations.
@@ -75,23 +75,23 @@ public final class ScreenUtils {
     }
 
     /**
-     * Format an item name from a ResourceLocation.
+     * Format an item name from a Identifier.
      * Converts underscores to spaces and capitalizes words.
      * Example: "minecraft:golden_apple" -&gt; "Golden Apple"
      *
-     * @param itemId The ResourceLocation of the item
+     * @param itemId The Identifier of the item
      * @return The formatted display name
      */
-    public static String formatItemName(ResourceLocation itemId) {
+    public static String formatItemName(Identifier itemId) {
         return formatItemName(itemId != null ? itemId.getPath() : "");
     }
 
     /**
-     * Format an item name from a ResourceLocation path.
+     * Format an item name from a Identifier path.
      * Converts underscores to spaces and capitalizes words.
      * Example: "golden_apple" -&gt; "Golden Apple"
      *
-     * @param path The ResourceLocation path
+     * @param path The Identifier path
      * @return The formatted display name
      */
     public static String formatItemName(String path) {

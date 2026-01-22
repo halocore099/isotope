@@ -6,7 +6,7 @@ import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.*;
@@ -22,7 +22,7 @@ public final class LootTableRegistry {
 
     private static final LootTableRegistry INSTANCE = new LootTableRegistry();
 
-    private final Map<ResourceLocation, LootTableInfo> lootTables = new LinkedHashMap<>();
+    private final Map<Identifier, LootTableInfo> lootTables = new LinkedHashMap<>();
     private boolean scanned = false;
 
     private LootTableRegistry() {}
@@ -55,7 +55,7 @@ public final class LootTableRegistry {
             Isotope.LOGGER.info("Lookup type: {}", lookup.getClass().getName());
 
             // Collect all IDs first
-            List<ResourceLocation> tableIds = new ArrayList<>();
+            List<Identifier> tableIds = new ArrayList<>();
 
             // The lookup should implement HolderLookup.Provider
             if (lookup instanceof net.minecraft.core.HolderLookup.Provider provider) {
@@ -63,7 +63,7 @@ public final class LootTableRegistry {
                 var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
 
                 lootLookup.listElementIds().forEach(key -> {
-                    ResourceLocation id = key.location();
+                    Identifier id = key.id();
                     if (!id.getPath().equals("empty")) {
                         tableIds.add(id);
                     }
@@ -73,7 +73,7 @@ public final class LootTableRegistry {
             }
 
             // Now analyze each table with content-based detection
-            for (ResourceLocation id : tableIds) {
+            for (Identifier id : tableIds) {
                 LootTableCategory category = null;
                 String path = id.getPath();
 
@@ -130,7 +130,7 @@ public final class LootTableRegistry {
     /**
      * Get loot table by ID.
      */
-    public Optional<LootTableInfo> get(ResourceLocation id) {
+    public Optional<LootTableInfo> get(Identifier id) {
         return Optional.ofNullable(lootTables.get(id));
     }
 

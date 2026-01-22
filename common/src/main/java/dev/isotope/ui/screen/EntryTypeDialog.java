@@ -6,7 +6,7 @@ import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -23,7 +23,7 @@ public class EntryTypeDialog extends DialogScreen {
     private final int poolIdx;
     private final int entryIdx;
     private final String currentType;
-    private final BiConsumer<String, Optional<ResourceLocation>> onTypeSelected;
+    private final BiConsumer<String, Optional<Identifier>> onTypeSelected;
 
     // Type options
     private static final TypeOption[] TYPE_OPTIONS = {
@@ -44,7 +44,7 @@ public class EntryTypeDialog extends DialogScreen {
     private boolean inputFocused = false;
 
     public EntryTypeDialog(@Nullable Screen parent, int poolIdx, int entryIdx, String currentType,
-                           BiConsumer<String, Optional<ResourceLocation>> onTypeSelected) {
+                           BiConsumer<String, Optional<Identifier>> onTypeSelected) {
         super(parent, "Change Entry Type");
         this.poolIdx = poolIdx;
         this.entryIdx = entryIdx;
@@ -292,7 +292,7 @@ public class EntryTypeDialog extends DialogScreen {
     @Override
     public boolean charTyped(char chr, int modifiers) {
         if (inputFocused) {
-            // Allow alphanumeric, underscore, colon, slash for ResourceLocation
+            // Allow alphanumeric, underscore, colon, slash for Identifier
             if (Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == '/') {
                 nameInput += chr;
                 return true;
@@ -305,10 +305,10 @@ public class EntryTypeDialog extends DialogScreen {
         if (selectedOption < 0) return;
 
         TypeOption opt = TYPE_OPTIONS[selectedOption];
-        Optional<ResourceLocation> name = Optional.empty();
+        Optional<Identifier> name = Optional.empty();
 
         if (opt.needsName && !nameInput.isEmpty()) {
-            name = Optional.of(ResourceLocation.parse(ScreenUtils.ensureNamespace(nameInput)));
+            name = Optional.of(Identifier.parse(ScreenUtils.ensureNamespace(nameInput)));
         }
 
         onTypeSelected.accept(opt.type, name);

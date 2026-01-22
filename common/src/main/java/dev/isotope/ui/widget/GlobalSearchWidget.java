@@ -12,7 +12,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import dev.isotope.registry.LootTableRegistry;
 import java.util.ArrayList;
@@ -42,9 +42,9 @@ public class GlobalSearchWidget extends AbstractWidget {
     private int hoveredNamespace = -1;
     private boolean showNamespaceDropdown = false;
 
-    private final Consumer<ResourceLocation> onTableSelected;
+    private final Consumer<Identifier> onTableSelected;
 
-    public GlobalSearchWidget(int x, int y, int width, int height, Consumer<ResourceLocation> onTableSelected) {
+    public GlobalSearchWidget(int x, int y, int width, int height, Consumer<Identifier> onTableSelected) {
         super(x, y, width, height, Component.literal("Global Search"));
         this.onTableSelected = onTableSelected;
 

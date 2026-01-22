@@ -11,7 +11,7 @@ import dev.isotope.validation.LootTableValidator.ValidationResult;
 import dev.isotope.validation.LootTableValidator.ValidationIssue;
 import dev.isotope.observation.ObservationSession;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -99,7 +99,7 @@ public final class ExportManager {
     public ExportResult exportEditedAsDatapack(String packName, Consumer<String> progressCallback) {
         try {
             LootEditManager editManager = LootEditManager.getInstance();
-            Set<ResourceLocation> editedTables = editManager.getEditedTables();
+            Set<Identifier> editedTables = editManager.getEditedTables();
 
             if (editedTables.isEmpty()) {
                 return new ExportResult(false, "No edited loot tables to export", null, List.of());
@@ -120,7 +120,7 @@ public final class ExportManager {
             exportedFiles.add("pack.mcmeta");
 
             // Export each edited loot table
-            for (ResourceLocation tableId : editedTables) {
+            for (Identifier tableId : editedTables) {
                 progressCallback.accept("Exporting: " + tableId);
 
                 Optional<LootTableStructure> edited = editManager.getEditedStructure(tableId);
@@ -185,7 +185,7 @@ public final class ExportManager {
     public ExportResult exportValidationReport(ReportFormat format, Consumer<String> progressCallback) {
         try {
             LootEditManager editManager = LootEditManager.getInstance();
-            Set<ResourceLocation> editedTables = editManager.getEditedTables();
+            Set<Identifier> editedTables = editManager.getEditedTables();
 
             progressCallback.accept("Validating " + editedTables.size() + " edited table(s)...");
 
@@ -194,7 +194,7 @@ public final class ExportManager {
             int totalErrors = 0;
             int totalWarnings = 0;
 
-            for (ResourceLocation tableId : editedTables) {
+            for (Identifier tableId : editedTables) {
                 Optional<LootTableStructure> structure = editManager.getEditedStructure(tableId);
                 if (structure.isPresent()) {
                     ValidationResult result = LootTableValidator.validate(tableId, structure.get());
@@ -438,7 +438,7 @@ public final class ExportManager {
 
             // Loot tables with invocation counts
             List<Map<String, Object>> lootTables = new ArrayList<>();
-            for (ResourceLocation tableId : data.lootTables()) {
+            for (Identifier tableId : data.lootTables()) {
                 Map<String, Object> tableEntry = new LinkedHashMap<>();
                 tableEntry.put("tableId", tableId.toString());
                 tableEntry.put("invocationCount", data.invocationCounts().getOrDefault(tableId, 0));
@@ -448,7 +448,7 @@ public final class ExportManager {
 
             // Observed items
             List<String> items = data.observedItems().stream()
-                .map(ResourceLocation::toString)
+                .map(Identifier::toString)
                 .sorted()
                 .toList();
             entry.put("observedItems", items);
@@ -493,10 +493,10 @@ public final class ExportManager {
 
     private void exportObservedLootTables(Path file) throws IOException {
         // Collect all unique loot tables with their source structures
-        Map<ResourceLocation, Set<ResourceLocation>> tableToStructures = new LinkedHashMap<>();
+        Map<Identifier, Set<Identifier>> tableToStructures = new LinkedHashMap<>();
 
         for (var data : ObservationSession.getInstance().getAllStructureData()) {
-            for (ResourceLocation tableId : data.lootTables()) {
+            for (Identifier tableId : data.lootTables()) {
                 tableToStructures.computeIfAbsent(tableId, k -> new LinkedHashSet<>())
                     .add(data.structureId());
             }
@@ -509,7 +509,7 @@ public final class ExportManager {
             tableEntry.put("namespace", entry.getKey().getNamespace());
             tableEntry.put("path", entry.getKey().getPath());
             tableEntry.put("usedByStructures", entry.getValue().stream()
-                .map(ResourceLocation::toString)
+                .map(Identifier::toString)
                 .sorted()
                 .toList());
             tableEntry.put("structureCount", entry.getValue().size());

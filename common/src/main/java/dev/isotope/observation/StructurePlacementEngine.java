@@ -6,7 +6,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -49,19 +49,19 @@ public final class StructurePlacementEngine {
      * @param onProgress Callback for progress updates
      * @return Map of structure ID -> placement result
      */
-    public Map<ResourceLocation, PlacementResult> placeAllStructures(
+    public Map<Identifier, PlacementResult> placeAllStructures(
             MinecraftServer server,
             ServerLevel level,
             Consumer<String> onProgress) {
 
-        Map<ResourceLocation, PlacementResult> results = new LinkedHashMap<>();
+        Map<Identifier, PlacementResult> results = new LinkedHashMap<>();
 
         // Get all registered structures
         HolderLookup.RegistryLookup<Structure> lookup = server.registryAccess()
             .lookupOrThrow(Registries.STRUCTURE);
 
-        List<ResourceLocation> structureIds = new ArrayList<>();
-        lookup.listElementIds().forEach(key -> structureIds.add(key.location()));
+        List<Identifier> structureIds = new ArrayList<>();
+        lookup.listElementIds().forEach(key -> structureIds.add(key.id()));
 
         onProgress.accept("Found " + structureIds.size() + " structures to place");
 
@@ -70,7 +70,7 @@ public final class StructurePlacementEngine {
         int gridSize = (int) Math.ceil(Math.sqrt(structureIds.size()));
 
         for (int i = 0; i < structureIds.size(); i++) {
-            ResourceLocation structureId = structureIds.get(i);
+            Identifier structureId = structureIds.get(i);
 
             // Calculate position on grid
             int gridX = i % gridSize;
@@ -110,7 +110,7 @@ public final class StructurePlacementEngine {
     public PlacementResult placeStructure(
             MinecraftServer server,
             ServerLevel level,
-            ResourceLocation structureId,
+            Identifier structureId,
             BlockPos targetPos) {
 
         try {
@@ -203,17 +203,17 @@ public final class StructurePlacementEngine {
      * Result of a structure placement attempt.
      */
     public record PlacementResult(
-        ResourceLocation structureId,
+        Identifier structureId,
         boolean success,
         BlockPos origin,
         BoundingBox bounds,
         String error
     ) {
-        public static PlacementResult success(ResourceLocation id, BlockPos origin, BoundingBox bounds) {
+        public static PlacementResult success(Identifier id, BlockPos origin, BoundingBox bounds) {
             return new PlacementResult(id, true, origin, bounds, null);
         }
 
-        public static PlacementResult failed(ResourceLocation id, String error) {
+        public static PlacementResult failed(Identifier id, String error) {
             return new PlacementResult(id, false, BlockPos.ZERO, null, error);
         }
     }

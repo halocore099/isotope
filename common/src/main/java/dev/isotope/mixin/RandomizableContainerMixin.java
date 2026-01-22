@@ -45,7 +45,7 @@ public abstract class RandomizableContainerMixin {
         }
 
         // Get the loot table ID
-        var tableId = lootTableKey.location();
+        var tableId = lootTableKey.id();
 
         // Get the block position - cast this to access the method
         BlockPos pos = BlockPos.ZERO;

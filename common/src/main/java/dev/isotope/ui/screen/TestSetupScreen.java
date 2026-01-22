@@ -19,10 +19,10 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.flag.FeatureFlags;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
@@ -58,11 +58,11 @@ public class TestSetupScreen extends Screen {
     private int scrollOffset = 0;
 
     private record EditedTableInfo(
-        ResourceLocation tableId,
-        Set<ResourceLocation> structures,
+        Identifier tableId,
+        Set<Identifier> structures,
         int changeCount,
         boolean isEntityLoot,
-        ResourceLocation entityId
+        Identifier entityId
     ) {
         boolean isMobLoot() {
             return isEntityLoot && entityId != null;
@@ -78,18 +78,18 @@ public class TestSetupScreen extends Screen {
     private void loadEditedTables() {
         editedTables.clear();
 
-        Set<ResourceLocation> edited = LootEditManager.getInstance().getEditedTables();
+        Set<Identifier> edited = LootEditManager.getInstance().getEditedTables();
         StructureLootLinker linker = StructureLootLinker.getInstance();
         EntityLootRegistry entityRegistry = EntityLootRegistry.getInstance();
 
-        for (ResourceLocation tableId : edited) {
+        for (Identifier tableId : edited) {
             // Check if this is an entity loot table
             var entityInfo = entityRegistry.getByLootTable(tableId);
             boolean isEntityLoot = entityInfo.isPresent();
-            ResourceLocation entityId = entityInfo.map(e -> e.entityId()).orElse(null);
+            Identifier entityId = entityInfo.map(e -> e.entityId()).orElse(null);
 
             // Find structures that use this loot table
-            Set<ResourceLocation> structures = new HashSet<>();
+            Set<Identifier> structures = new HashSet<>();
             for (var link : linker.getAllLinks()) {
                 if (link.lootTableId().equals(tableId)) {
                     structures.add(link.structureId());
