@@ -13,6 +13,7 @@ import dev.isotope.testing.TestWorldManager;
 import dev.isotope.testing.TestingTools;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.UIConstants;
 import net.fabricmc.api.EnvType;
@@ -22,6 +23,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 

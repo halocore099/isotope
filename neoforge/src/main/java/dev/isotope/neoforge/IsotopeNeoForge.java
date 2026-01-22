@@ -14,7 +14,7 @@ public final class IsotopeNeoForge {
         Isotope.init();
 
         // Register client setup only on client side
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             modEventBus.addListener(this::onClientSetup);
         }
     }

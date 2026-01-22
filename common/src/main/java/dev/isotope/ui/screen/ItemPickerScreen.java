@@ -9,6 +9,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -291,7 +294,8 @@ public class ItemPickerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x(); double mouseY = event.y(); int button = event.button();
         // Mod dropdown
         if (modDropdownOpen) {
             int maxVisible = 12;
@@ -342,7 +346,7 @@ public class ItemPickerScreen extends Screen {
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, focused);
     }
 
     @Override
@@ -365,7 +369,8 @@ public class ItemPickerScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key(); int scanCode = event.scancode(); int modifiers = event.modifiers();
         if (keyCode == UIConstants.KEY_ESCAPE) {
             if (modDropdownOpen) {
                 modDropdownOpen = false;
@@ -374,7 +379,7 @@ public class ItemPickerScreen extends Screen {
             onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override

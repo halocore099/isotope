@@ -12,6 +12,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -473,7 +476,10 @@ public class LootFlowPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!isMouseOver(mouseX, mouseY)) {
             return false;
         }
@@ -527,8 +533,8 @@ public class LootFlowPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button == 0 && dragging) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        if (event.button() == 0 && dragging) {
             dragging = false;
             return true;
         }
@@ -536,10 +542,10 @@ public class LootFlowPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
         if (dragging) {
-            panX = dragStartPanX + (int) (mouseX - dragStartX);
-            panY = dragStartPanY + (int) (mouseY - dragStartY);
+            panX = dragStartPanX + (int) (event.x() - dragStartX);
+            panY = dragStartPanY + (int) (event.y() - dragStartY);
             return true;
         }
         return false;

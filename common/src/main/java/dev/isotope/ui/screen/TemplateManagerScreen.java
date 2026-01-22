@@ -12,6 +12,9 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -258,7 +261,8 @@ public class TemplateManagerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x(); double mouseY = event.y(); int button = event.button();
         // Handle delete confirmation dialog
         if (confirmingDelete) {
             int dialogWidth = 280;
@@ -329,7 +333,7 @@ public class TemplateManagerScreen extends Screen {
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, focused);
     }
 
     @Override
@@ -348,7 +352,8 @@ public class TemplateManagerScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key(); int scanCode = event.scancode(); int modifiers = event.modifiers();
         if (keyCode == UIConstants.KEY_ESCAPE) {
             if (confirmingDelete) {
                 confirmingDelete = false;
@@ -372,7 +377,7 @@ public class TemplateManagerScreen extends Screen {
             return true;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     private void openNewTemplate() {

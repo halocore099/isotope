@@ -3,12 +3,16 @@ package dev.isotope.ui.widget;
 import dev.isotope.search.SearchHit;
 import dev.isotope.search.SearchIndex;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
@@ -276,7 +280,10 @@ public class GlobalSearchWidget extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+
         if (!isMouseOver(mouseX, mouseY)) {
             showNamespaceDropdown = false;
             setFocused(false);
@@ -291,7 +298,7 @@ public class GlobalSearchWidget extends AbstractWidget {
         if (searchBox != null && searchBox.isMouseOver(mouseX, mouseY)) {
             showNamespaceDropdown = false;
             searchBox.setFocused(true);
-            searchBox.mouseClicked(mouseX, mouseY, button);
+            searchBox.mouseClicked(event, focused);
             return true;
         } else if (searchBox != null) {
             searchBox.setFocused(false);
@@ -356,17 +363,17 @@ public class GlobalSearchWidget extends AbstractWidget {
     }
 
     @Override
-    public boolean charTyped(char c, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.charTyped(c, modifiers);
+            return searchBox.charTyped(event);
         }
         return false;
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.keyPressed(keyCode, scanCode, modifiers);
+            return searchBox.keyPressed(event);
         }
         return false;
     }

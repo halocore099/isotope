@@ -36,6 +36,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -1162,11 +1165,12 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x(); double mouseY = event.y(); int button = event.button();
         // Context menu takes priority over everything
         if (contextMenuVisible && contextMenu != null) {
             if (contextMenu.isMouseOver(mouseX, mouseY)) {
-                return contextMenu.mouseClicked(mouseX, mouseY, button);
+                return contextMenu.mouseClicked(event, focused);
             } else {
                 // Click outside closes context menu
                 closeContextMenu();
@@ -1177,7 +1181,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         // Command palette takes priority
         if (commandPaletteVisible) {
             if (commandPalette.isMouseOver(mouseX, mouseY)) {
-                return commandPalette.mouseClicked(mouseX, mouseY, button);
+                return commandPalette.mouseClicked(event, focused);
             } else {
                 // Click outside closes palette
                 commandPaletteVisible = false;
@@ -1186,11 +1190,12 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, focused);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key(); int scanCode = event.scancode(); int modifiers = event.modifiers();
         // Context menu - Escape closes it
         if (contextMenuVisible && contextMenu != null) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
@@ -1203,7 +1208,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         // Command palette takes priority when visible
         if (commandPaletteVisible) {
-            return commandPalette.keyPressed(keyCode, scanCode, modifiers);
+            return commandPalette.keyPressed(event);
         }
 
         // Number keys for quick panel switching (only if no text field is focused)
@@ -1226,7 +1231,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         if (editPanel != null) {
             // Always forward to edit panel for editing mode
             if (editPanel.isEditing()) {
-                if (editPanel.keyPressed(keyCode, scanCode, modifiers)) {
+                if (editPanel.keyPressed(event)) {
                     return true;
                 }
             }
@@ -1234,14 +1239,14 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
             if (keyCode == GLFW.GLFW_KEY_UP || keyCode == GLFW.GLFW_KEY_DOWN ||
                 keyCode == GLFW.GLFW_KEY_HOME || keyCode == GLFW.GLFW_KEY_END ||
                 keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-                if (editPanel.keyPressed(keyCode, scanCode, modifiers)) {
+                if (editPanel.keyPressed(event)) {
                     return true;
                 }
             }
         }
 
         // Let focused widgets handle the key
-        if (super.keyPressed(keyCode, scanCode, modifiers)) {
+        if (super.keyPressed(event)) {
             return true;
         }
 
@@ -1254,18 +1259,18 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
         if (commandPaletteVisible) {
-            return commandPalette.charTyped(chr, modifiers);
+            return commandPalette.charTyped(event);
         }
 
         if (editPanel != null && editPanel.isEditing()) {
-            if (editPanel.charTyped(chr, modifiers)) {
+            if (editPanel.charTyped(event)) {
                 return true;
             }
         }
 
-        return super.charTyped(chr, modifiers);
+        return super.charTyped(event);
     }
 
     @Override

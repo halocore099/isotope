@@ -24,6 +24,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import dev.isotope.ui.screen.ItemPickerScreen;
@@ -1357,7 +1360,10 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!isMouseOver(mouseX, mouseY)) return false;
         if (tableId == null) return false;
 
@@ -1666,8 +1672,10 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button != 0) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        if (event.button() != 0) {
             return false;
         }
 
@@ -1830,8 +1838,10 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button != 0) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        if (event.button() != 0) {
             return false;
         }
 
@@ -2205,7 +2215,10 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         // Inline editing mode - handle text input keys
         if (editingField != EditingField.NONE) {
             // Enter - commit
@@ -2414,13 +2427,15 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
+        char c = (char) event.codepoint();
+        int modifiers = event.modifiers();
         if (editingField == EditingField.NONE) return false;
 
         // Only allow digits (no decimals)
-        if (Character.isDigit(chr)) {
+        if (Character.isDigit(c)) {
             if (editText.length() < 4) { // Max 4 digits (9999)
-                editText = editText.substring(0, editCursorPos) + chr + editText.substring(editCursorPos);
+                editText = editText.substring(0, editCursorPos) + c + editText.substring(editCursorPos);
                 editCursorPos++;
             }
             return true;

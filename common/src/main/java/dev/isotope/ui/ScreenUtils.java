@@ -41,7 +41,7 @@ public final class ScreenUtils {
      * Replacement for Screen.hasControlDown() which was removed in MC 1.21.9+.
      */
     public static boolean hasControlDown() {
-        long window = net.minecraft.client.Minecraft.getInstance().getWindow().getWindow();
+        com.mojang.blaze3d.platform.Window window = net.minecraft.client.Minecraft.getInstance().getWindow();
         return com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
             com.mojang.blaze3d.platform.InputConstants.KEY_LCONTROL) ||
             com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
@@ -53,7 +53,7 @@ public final class ScreenUtils {
      * Replacement for Screen.hasShiftDown() which was removed in MC 1.21.9+.
      */
     public static boolean hasShiftDown() {
-        long window = net.minecraft.client.Minecraft.getInstance().getWindow().getWindow();
+        com.mojang.blaze3d.platform.Window window = net.minecraft.client.Minecraft.getInstance().getWindow();
         return com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
             com.mojang.blaze3d.platform.InputConstants.KEY_LSHIFT) ||
             com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
