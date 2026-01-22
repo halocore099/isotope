@@ -110,8 +110,8 @@ public final class SpawnerEntityExtractor {
             extractSpawnerEntityTypes(nbt, entities);
         }
 
-        // Recursively check nested compound tags
-        for (String key : nbt.getAllKeys()) {
+        // Recursively check nested compound tags (MC 1.21.5+ uses keySet() instead of getAllKeys())
+        for (String key : nbt.keySet()) {
             Tag tag = nbt.get(key);
             if (tag instanceof CompoundTag compound) {
                 extractSpawnerEntitiesRecursive(compound, entities);
@@ -129,9 +129,9 @@ public final class SpawnerEntityExtractor {
      * Check if a compound tag represents a spawner block entity.
      */
     private boolean isSpawnerBlock(CompoundTag nbt) {
-        // Check for block entity ID field
-        if (nbt.contains("id", Tag.TAG_STRING)) {
-            String id = nbt.getString("id");
+        // Check for block entity ID field (MC 1.21.5+ returns Optional)
+        if (nbt.contains("id")) {
+            String id = nbt.getString("id").orElse("");
             if (SPAWNER_IDS.contains(id)) {
                 return true;
             }
@@ -139,23 +139,29 @@ public final class SpawnerEntityExtractor {
 
         // Also check for nbt field within blocks array (structure template format)
         // The blocks array has elements with {state: {Name: "..."}, nbt: {...}}
-        if (nbt.contains("nbt", Tag.TAG_COMPOUND)) {
-            CompoundTag innerNbt = nbt.getCompound("nbt");
-            if (innerNbt.contains("id", Tag.TAG_STRING)) {
-                String id = innerNbt.getString("id");
-                if (SPAWNER_IDS.contains(id)) {
-                    return true;
+        if (nbt.contains("nbt")) {
+            var innerNbtOpt = nbt.getCompound("nbt");
+            if (innerNbtOpt.isPresent()) {
+                CompoundTag innerNbt = innerNbtOpt.get();
+                if (innerNbt.contains("id")) {
+                    String id = innerNbt.getString("id").orElse("");
+                    if (SPAWNER_IDS.contains(id)) {
+                        return true;
+                    }
                 }
             }
         }
 
         // Check state.Name for the block type (structure template format)
-        if (nbt.contains("state", Tag.TAG_COMPOUND)) {
-            CompoundTag state = nbt.getCompound("state");
-            if (state.contains("Name", Tag.TAG_STRING)) {
-                String name = state.getString("Name");
-                if (SPAWNER_IDS.contains(name)) {
-                    return true;
+        if (nbt.contains("state")) {
+            var stateOpt = nbt.getCompound("state");
+            if (stateOpt.isPresent()) {
+                CompoundTag state = stateOpt.get();
+                if (state.contains("Name")) {
+                    String name = state.getString("Name").orElse("");
+                    if (SPAWNER_IDS.contains(name)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -169,38 +175,52 @@ public final class SpawnerEntityExtractor {
     private void extractSpawnerEntityTypes(CompoundTag spawnerNbt, Set<ResourceLocation> entities) {
         // The actual spawner data might be in 'nbt' field (structure template format)
         CompoundTag dataTag = spawnerNbt;
-        if (spawnerNbt.contains("nbt", Tag.TAG_COMPOUND)) {
-            dataTag = spawnerNbt.getCompound("nbt");
+        if (spawnerNbt.contains("nbt")) {
+            dataTag = spawnerNbt.getCompound("nbt").orElse(spawnerNbt);
         }
 
         // Extract from SpawnData (the default/current spawn entity)
-        if (dataTag.contains("SpawnData", Tag.TAG_COMPOUND)) {
-            CompoundTag spawnData = dataTag.getCompound("SpawnData");
-            extractEntityFromSpawnData(spawnData, entities);
+        if (dataTag.contains("SpawnData")) {
+            var spawnDataOpt = dataTag.getCompound("SpawnData");
+            if (spawnDataOpt.isPresent()) {
+                extractEntityFromSpawnData(spawnDataOpt.get(), entities);
+            }
         }
 
         // Extract from SpawnPotentials (weighted list of possible entities)
-        if (dataTag.contains("SpawnPotentials", Tag.TAG_LIST)) {
-            ListTag potentials = dataTag.getList("SpawnPotentials", Tag.TAG_COMPOUND);
-            for (int i = 0; i < potentials.size(); i++) {
-                CompoundTag potential = potentials.getCompound(i);
-                // SpawnPotentials format: { weight: N, data: { entity: { id: "..." } } }
-                if (potential.contains("data", Tag.TAG_COMPOUND)) {
-                    CompoundTag data = potential.getCompound("data");
-                    extractEntityFromSpawnData(data, entities);
-                }
-                // Alternative format: { weight: N, Entity: { id: "..." } }
-                if (potential.contains("Entity", Tag.TAG_COMPOUND)) {
-                    CompoundTag entityTag = potential.getCompound("Entity");
-                    extractEntityId(entityTag, entities);
+        if (dataTag.contains("SpawnPotentials")) {
+            var potentialsOpt = dataTag.getList("SpawnPotentials");
+            if (potentialsOpt.isPresent()) {
+                ListTag potentials = potentialsOpt.get();
+                for (int i = 0; i < potentials.size(); i++) {
+                    var potentialOpt = potentials.getCompound(i);
+                    if (potentialOpt.isPresent()) {
+                        CompoundTag potential = potentialOpt.get();
+                        // SpawnPotentials format: { weight: N, data: { entity: { id: "..." } } }
+                        if (potential.contains("data")) {
+                            var dataOpt = potential.getCompound("data");
+                            if (dataOpt.isPresent()) {
+                                extractEntityFromSpawnData(dataOpt.get(), entities);
+                            }
+                        }
+                        // Alternative format: { weight: N, Entity: { id: "..." } }
+                        if (potential.contains("Entity")) {
+                            var entityTagOpt = potential.getCompound("Entity");
+                            if (entityTagOpt.isPresent()) {
+                                extractEntityId(entityTagOpt.get(), entities);
+                            }
+                        }
+                    }
                 }
             }
         }
 
         // Legacy format: direct Entity tag
-        if (dataTag.contains("Entity", Tag.TAG_COMPOUND)) {
-            CompoundTag entityTag = dataTag.getCompound("Entity");
-            extractEntityId(entityTag, entities);
+        if (dataTag.contains("Entity")) {
+            var entityTagOpt = dataTag.getCompound("Entity");
+            if (entityTagOpt.isPresent()) {
+                extractEntityId(entityTagOpt.get(), entities);
+            }
         }
     }
 
@@ -209,14 +229,18 @@ public final class SpawnerEntityExtractor {
      */
     private void extractEntityFromSpawnData(CompoundTag spawnData, Set<ResourceLocation> entities) {
         // Modern format: { entity: { id: "..." } }
-        if (spawnData.contains("entity", Tag.TAG_COMPOUND)) {
-            CompoundTag entityTag = spawnData.getCompound("entity");
-            extractEntityId(entityTag, entities);
+        if (spawnData.contains("entity")) {
+            var entityTagOpt = spawnData.getCompound("entity");
+            if (entityTagOpt.isPresent()) {
+                extractEntityId(entityTagOpt.get(), entities);
+            }
         }
         // Direct ID in SpawnData (some versions)
-        if (spawnData.contains("id", Tag.TAG_STRING)) {
-            String entityIdStr = spawnData.getString("id");
-            addEntityId(entityIdStr, entities);
+        if (spawnData.contains("id")) {
+            String entityIdStr = spawnData.getString("id").orElse("");
+            if (!entityIdStr.isEmpty()) {
+                addEntityId(entityIdStr, entities);
+            }
         }
     }
 
@@ -224,9 +248,11 @@ public final class SpawnerEntityExtractor {
      * Extract entity ID from an entity compound tag.
      */
     private void extractEntityId(CompoundTag entityTag, Set<ResourceLocation> entities) {
-        if (entityTag.contains("id", Tag.TAG_STRING)) {
-            String entityIdStr = entityTag.getString("id");
-            addEntityId(entityIdStr, entities);
+        if (entityTag.contains("id")) {
+            String entityIdStr = entityTag.getString("id").orElse("");
+            if (!entityIdStr.isEmpty()) {
+                addEntityId(entityIdStr, entities);
+            }
         }
     }
 

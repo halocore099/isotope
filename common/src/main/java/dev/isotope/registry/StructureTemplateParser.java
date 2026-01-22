@@ -360,30 +360,34 @@ public final class StructureTemplateParser {
      * Recursively extract loot table references from NBT data.
      */
     private void extractLootTablesFromNbt(CompoundTag nbt, Set<ResourceLocation> lootTables) {
-        // Check for LootTable field (used by chests, barrels, etc.)
-        if (nbt.contains("LootTable", Tag.TAG_STRING)) {
-            String lootTableStr = nbt.getString("LootTable");
-            try {
-                ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
-                lootTables.add(lootTableId);
-            } catch (Exception e) {
-                // Invalid resource location
+        // Check for LootTable field (used by chests, barrels, etc.) - MC 1.21.5+ uses Optional returns
+        if (nbt.contains("LootTable")) {
+            String lootTableStr = nbt.getString("LootTable").orElse("");
+            if (!lootTableStr.isEmpty()) {
+                try {
+                    ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
+                    lootTables.add(lootTableId);
+                } catch (Exception e) {
+                    // Invalid resource location
+                }
             }
         }
 
         // Check for loot_table field (alternative naming)
-        if (nbt.contains("loot_table", Tag.TAG_STRING)) {
-            String lootTableStr = nbt.getString("loot_table");
-            try {
-                ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
-                lootTables.add(lootTableId);
-            } catch (Exception e) {
-                // Invalid resource location
+        if (nbt.contains("loot_table")) {
+            String lootTableStr = nbt.getString("loot_table").orElse("");
+            if (!lootTableStr.isEmpty()) {
+                try {
+                    ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
+                    lootTables.add(lootTableId);
+                } catch (Exception e) {
+                    // Invalid resource location
+                }
             }
         }
 
-        // Recursively check nested compound tags
-        for (String key : nbt.getAllKeys()) {
+        // Recursively check nested compound tags (MC 1.21.5+ uses keySet() instead of getAllKeys())
+        for (String key : nbt.keySet()) {
             Tag tag = nbt.get(key);
             if (tag instanceof CompoundTag compound) {
                 extractLootTablesFromNbt(compound, lootTables);
