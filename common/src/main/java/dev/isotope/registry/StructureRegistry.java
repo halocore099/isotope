@@ -2,7 +2,7 @@ package dev.isotope.registry;
 
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureInfo;
-import net.minecraft.core.Registry;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -37,9 +37,11 @@ public final class StructureRegistry {
         structures.clear();
 
         try {
-            Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+            // 1.21.1: Use HolderLookup and listElementIds() instead of Registry.keySet()
+            HolderLookup.RegistryLookup<Structure> lookup = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
-            registry.keySet().forEach(id -> {
+            lookup.listElementIds().forEach(key -> {
+                ResourceLocation id = key.location();
                 StructureInfo info = StructureInfo.fromId(id);
                 structures.put(id, info);
             });

@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.toasts.Toast;
-import net.minecraft.client.gui.components.toasts.ToastManager;
+import net.minecraft.client.gui.components.toasts.ToastComponent;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -42,7 +42,6 @@ public class IsotopeToast implements Toast {
     private final Component title;
     private final Component message;
     private long startTime;
-    private boolean justUpdated;
 
     public IsotopeToast(Type type, Component title, Component message) {
         this.type = type;
@@ -51,25 +50,10 @@ public class IsotopeToast implements Toast {
     }
 
     @Override
-    public Visibility getWantedVisibility() {
-        if (this.startTime == 0) return Visibility.SHOW;
-        long elapsed = System.currentTimeMillis() - this.startTime;
-        return elapsed < DISPLAY_TIME_MS + FADE_TIME_MS ? Visibility.SHOW : Visibility.HIDE;
-    }
-
-    @Override
-    public void update(ToastManager manager, long time) {
+    public Visibility render(GuiGraphics graphics, ToastComponent component, long time) {
+        // Initialize start time on first render
         if (this.startTime == 0) {
             this.startTime = System.currentTimeMillis();
-            this.justUpdated = true;
-        }
-    }
-
-    @Override
-    public void render(GuiGraphics graphics, Font font, long time) {
-        if (this.justUpdated) {
-            this.startTime = System.currentTimeMillis();
-            this.justUpdated = false;
         }
 
         // Calculate fade alpha
@@ -93,6 +77,8 @@ public class IsotopeToast implements Toast {
         // Border
         graphics.renderOutline(0, 0, width() - 2, height() - 2, IsotopeColors.withAlpha(IsotopeColors.TOAST_BORDER, (int)(alpha * 0x50)));
 
+        Font font = component.getMinecraft().font;
+
         // Icon
         graphics.drawString(font, type.icon, 8, 7, IsotopeColors.withAlpha(type.color, textAlpha), false);
 
@@ -106,6 +92,9 @@ public class IsotopeToast implements Toast {
         String badge = "ISOTOPE";
         int badgeWidth = font.width(badge);
         graphics.drawString(font, badge, width() - badgeWidth - 8, 19, IsotopeColors.withAlpha(0xFFFFFF, (int)(alpha * 0x40)), false);
+
+        // Return visibility based on elapsed time
+        return elapsed < DISPLAY_TIME_MS + FADE_TIME_MS ? Visibility.SHOW : Visibility.HIDE;
     }
 
     @Override
@@ -139,7 +128,7 @@ public class IsotopeToast implements Toast {
     public static void show(Type type, String title, String message) {
         Minecraft mc = Minecraft.getInstance();
         if (mc != null) {
-            mc.getToastManager().addToast(new IsotopeToast(
+            mc.getToasts().addToast(new IsotopeToast(
                 type,
                 Component.literal(title),
                 Component.literal(message)

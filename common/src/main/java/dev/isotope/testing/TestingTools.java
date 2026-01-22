@@ -3,8 +3,8 @@ package dev.isotope.testing;
 import dev.isotope.Isotope;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -79,13 +79,13 @@ public final class TestingTools {
 
             BlockPos playerPos = player.blockPosition();
 
-            // Get structure registry
-            Registry<Structure> structureRegistry = level.registryAccess()
+            // Get structure registry (1.21.1 compatible)
+            HolderLookup.RegistryLookup<Structure> structureLookup = level.registryAccess()
                 .lookupOrThrow(Registries.STRUCTURE);
 
             // Find the structure holder
             ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);
-            Optional<Holder.Reference<Structure>> structureHolder = structureRegistry.get(structureKey);
+            Optional<Holder.Reference<Structure>> structureHolder = structureLookup.get(structureKey);
             if (structureHolder.isEmpty()) {
                 return LocateResult.error("Unknown structure: " + structureId);
             }
@@ -143,8 +143,9 @@ public final class TestingTools {
             double y = position.getY() + 1;
             double z = position.getZ() + 0.5;
 
+            // 1.21.1: teleportTo has simpler signature (no Set<RelativeMovement> or boolean)
             player.teleportTo(player.serverLevel(), x, y, z,
-                Set.of(), player.getYRot(), player.getXRot(), true);
+                player.getYRot(), player.getXRot());
 
             Isotope.LOGGER.info("Teleported player to {}, {}, {}", x, y, z);
             return true;

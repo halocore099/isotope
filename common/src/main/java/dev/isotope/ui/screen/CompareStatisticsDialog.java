@@ -14,7 +14,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -250,9 +252,9 @@ public class CompareStatisticsDialog extends Screen {
                     }
 
                     // Item icon
-                    var itemOpt = BuiltInRegistries.ITEM.get(entry.itemId);
-                    if (itemOpt.isPresent()) {
-                        ItemStack stack = new ItemStack(itemOpt.get().value());
+                    Item item = BuiltInRegistries.ITEM.get(entry.itemId);
+                    if (item != Items.AIR) {
+                        ItemStack stack = new ItemStack(item);
                         graphics.renderItem(stack, dialogX + 10, entryY + 2);
                     }
 

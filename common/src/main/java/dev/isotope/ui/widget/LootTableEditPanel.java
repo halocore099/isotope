@@ -28,6 +28,8 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import dev.isotope.ui.screen.ItemPickerScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -477,9 +479,9 @@ public class LootTableEditPanel extends AbstractWidget {
 
                 // Item icon
                 if (entry.isItem() && entry.name().isPresent()) {
-                    var itemOpt = BuiltInRegistries.ITEM.get(entry.name().get());
-                    if (itemOpt.isPresent()) {
-                        graphics.renderItem(new ItemStack(itemOpt.get().value()), ghostX + 2, ghostY + 4);
+                    Item item = BuiltInRegistries.ITEM.get(entry.name().get());
+                    if (item != Items.AIR) {
+                        graphics.renderItem(new ItemStack(item), ghostX + 2, ghostY + 4);
                     }
                 }
 
@@ -1044,9 +1046,9 @@ public class LootTableEditPanel extends AbstractWidget {
         // Item icon
         if (entry.name().isPresent()) {
             ResourceLocation itemId = entry.name().get();
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
-            if (itemOpt.isPresent()) {
-                ItemStack stack = new ItemStack(itemOpt.get().value());
+            Item item = BuiltInRegistries.ITEM.get(itemId);
+            if (item != Items.AIR) {
+                ItemStack stack = new ItemStack(item);
                 graphics.renderItem(stack, x, y + 4);
             }
         }

@@ -1,7 +1,7 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
-import net.minecraft.core.Registry;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -53,11 +53,12 @@ public final class StructureClassRegistry {
         superclassToStructure.clear();
 
         try {
-            Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+            // 1.21.1: Use HolderLookup and listElements() instead of Registry.entrySet()
+            HolderLookup.RegistryLookup<Structure> lookup = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
-            for (var entry : registry.entrySet()) {
-                ResourceLocation structureId = entry.getKey().location();
-                Structure structure = entry.getValue();
+            lookup.listElements().forEach(holder -> {
+                ResourceLocation structureId = holder.key().location();
+                Structure structure = holder.value();
                 String className = structure.getClass().getName();
 
                 classToStructure.put(className, structureId);
@@ -74,11 +75,11 @@ public final class StructureClassRegistry {
                 }
 
                 Isotope.LOGGER.debug("[StructureClassRegistry] Mapped {} -> {}", className, structureId);
-            }
+            });
 
             scanned = true;
-            Isotope.LOGGER.info("[StructureClassRegistry] Scanned {} structures, {} unique classes",
-                registry.size(), classToStructure.size());
+            Isotope.LOGGER.info("[StructureClassRegistry] Scanned {} unique structure classes",
+                classToStructure.size());
 
         } catch (Exception e) {
             Isotope.LOGGER.error("[StructureClassRegistry] Failed to scan structure registry", e);

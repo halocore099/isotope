@@ -14,7 +14,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -140,9 +142,9 @@ public class TemplateManagerScreen extends Screen {
                     // Item icon (if has default item)
                     int iconX = listX + 8;
                     if (template.defaultItem().isPresent()) {
-                        var itemOpt = BuiltInRegistries.ITEM.get(template.defaultItem().get());
-                        if (itemOpt.isPresent()) {
-                            graphics.renderItem(new ItemStack(itemOpt.get().value()), iconX, y + (TEMPLATE_HEIGHT - 4 - 16) / 2);
+                        Item item = BuiltInRegistries.ITEM.get(template.defaultItem().get());
+                        if (item != Items.AIR) {
+                            graphics.renderItem(new ItemStack(item), iconX, y + (TEMPLATE_HEIGHT - 4 - 16) / 2);
                         }
                     }
 

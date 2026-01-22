@@ -5,7 +5,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
@@ -76,34 +75,34 @@ public class IsotopeWindow {
 
         // === Top edge ===
         // Top-left corner
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x, y, 0, 0, BORDER, BORDER, 256, 256);
+        graphics.blit(WINDOW_TEXTURE, x, y, 0, 0, BORDER, BORDER, 256, 256);
         // Top edge (stretched)
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + BORDER, y, innerWidth, BORDER,
+        graphics.blit(WINDOW_TEXTURE, x + BORDER, y, innerWidth, BORDER,
             BORDER, 0, TEXTURE_WIDTH - BORDER * 2, BORDER, 256, 256);
         // Top-right corner
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + width - BORDER, y,
+        graphics.blit(WINDOW_TEXTURE, x + width - BORDER, y,
             TEXTURE_WIDTH - BORDER, 0, BORDER, BORDER, 256, 256);
 
         // === Middle (sides + center) ===
         // Left edge (stretched vertically)
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x, y + BORDER, BORDER, innerHeight,
+        graphics.blit(WINDOW_TEXTURE, x, y + BORDER, BORDER, innerHeight,
             0, BORDER, BORDER, TEXTURE_HEIGHT - BORDER * 2, 256, 256);
         // Center (stretched both ways) - dark background
         graphics.fill(x + BORDER, y + BORDER, x + width - BORDER, y + height - BORDER,
             IsotopeColors.BACKGROUND_DARK);
         // Right edge (stretched vertically)
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + width - BORDER, y + BORDER, BORDER, innerHeight,
+        graphics.blit(WINDOW_TEXTURE, x + width - BORDER, y + BORDER, BORDER, innerHeight,
             TEXTURE_WIDTH - BORDER, BORDER, BORDER, TEXTURE_HEIGHT - BORDER * 2, 256, 256);
 
         // === Bottom edge ===
         // Bottom-left corner
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x, y + height - BORDER,
+        graphics.blit(WINDOW_TEXTURE, x, y + height - BORDER,
             0, TEXTURE_HEIGHT - BORDER, BORDER, BORDER, 256, 256);
         // Bottom edge (stretched)
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + BORDER, y + height - BORDER, innerWidth, BORDER,
+        graphics.blit(WINDOW_TEXTURE, x + BORDER, y + height - BORDER, innerWidth, BORDER,
             BORDER, TEXTURE_HEIGHT - BORDER, TEXTURE_WIDTH - BORDER * 2, BORDER, 256, 256);
         // Bottom-right corner
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + width - BORDER, y + height - BORDER,
+        graphics.blit(WINDOW_TEXTURE, x + width - BORDER, y + height - BORDER,
             TEXTURE_WIDTH - BORDER, TEXTURE_HEIGHT - BORDER, BORDER, BORDER, 256, 256);
 
         // Title bar separator

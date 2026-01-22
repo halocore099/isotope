@@ -5,6 +5,7 @@ import dev.isotope.Isotope;
 import dev.isotope.data.loot.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -193,16 +194,10 @@ public final class LootGenerator {
      */
     private static ItemStack createItemStack(ResourceLocation itemId, LootEntry entry, Random random) {
         try {
-            // In 1.21.4, registry get returns Optional<Reference<Item>>
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
-            if (itemOpt.isEmpty()) {
-                Isotope.LOGGER.warn("Unknown item: {}", itemId);
-                return ItemStack.EMPTY;
-            }
-
-            var item = itemOpt.get().value();
+            // In 1.21.1, registry get returns Item directly
+            Item item = BuiltInRegistries.ITEM.get(itemId);
             if (item == Items.AIR) {
-                Isotope.LOGGER.warn("Item is AIR: {}", itemId);
+                Isotope.LOGGER.warn("Unknown or AIR item: {}", itemId);
                 return ItemStack.EMPTY;
             }
 
