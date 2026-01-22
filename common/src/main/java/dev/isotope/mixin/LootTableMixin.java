@@ -14,7 +14,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -30,31 +29,26 @@ import java.util.function.Consumer;
  * This mixin serves two purposes:
  * 1. Observation - Records loot table invocations during analysis
  * 2. Test mode - Replaces loot generation with edited structures when test mode is active
+ *
+ * Note: LootTable objects don't store their own ID in Fabric 1.21.4 mappings.
+ * We use LootTableTracker (ThreadLocal) set by ReloadableRegistriesMixin to track the current table.
  */
 @Mixin(LootTable.class)
 public abstract class LootTableMixin {
 
     /**
-     * Shadow the getLootTableId method to access the table's ID directly.
-     * This is more reliable than ThreadLocal tracking.
-     */
-    @Shadow
-    public abstract ResourceLocation getLootTableId();
-
-    /**
-     * Helper to get the table ID, preferring the table's own ID over ThreadLocal.
+     * Helper to get the table ID from the ThreadLocal tracker.
+     * The ID is set by ReloadableRegistriesMixin when getLootTable() is called.
      */
     private ResourceLocation getTableId() {
-        ResourceLocation id = getLootTableId();
-        if (id != null) {
-            return id;
-        }
-        // Fallback to ThreadLocal (for observation mode compatibility)
         return LootTableTracker.getCurrentTableId();
     }
 
     /**
      * Intercept loot generation for observation and test mode (3-param version with seed).
+     *
+     * When ISOTOPE test mode is active and we have edits for the current table,
+     * we generate loot from our edited structure instead of the vanilla table.
      */
     @Inject(
         method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;JLjava/util/function/Consumer;)V",
@@ -99,10 +93,16 @@ public abstract class LootTableMixin {
                 return;
             }
         }
+
+        // Observation recording
+        if (LootObserver.getInstance().isRecording() && tableId != null) {
+            LootObserver.getInstance().onLootTableInvoked(tableId, params, Collections.emptyList());
+        }
     }
 
     /**
      * Also intercept the overload with LootParams and RandomSource.
+     * This may be called instead of the seed-based version.
      */
     @Inject(
         method = "getRandomItems(Lnet/minecraft/world/level/storage/loot/LootParams;Lnet/minecraft/util/RandomSource;)Lit/unimi/dsi/fastutil/objects/ObjectArrayList;",
