@@ -36,6 +36,8 @@ public final class LootEditApplicator {
             case LootEditOperation.SetItemCount p -> applySetItemCount(structure, p);
             case LootEditOperation.AddFunction p -> applyAddFunction(structure, p);
             case LootEditOperation.RemoveFunction p -> applyRemoveFunction(structure, p);
+            case LootEditOperation.AddFunctionCondition p -> applyAddFunctionCondition(structure, p);
+            case LootEditOperation.RemoveFunctionCondition p -> applyRemoveFunctionCondition(structure, p);
             case LootEditOperation.AddCondition p -> applyAddCondition(structure, p);
             case LootEditOperation.RemoveCondition p -> applyRemoveCondition(structure, p);
             case LootEditOperation.AddPoolFunction p -> applyAddPoolFunction(structure, p);
@@ -180,6 +182,46 @@ public final class LootEditApplicator {
             }
             List<LootFunction> newFunctions = new ArrayList<>(entry.functions());
             newFunctions.remove(op.functionIndex());
+            return entry.withFunctions(newFunctions);
+        });
+    }
+
+    // ===== Function Condition Operations =====
+
+    private static LootTableStructure applyAddFunctionCondition(LootTableStructure structure, LootEditOperation.AddFunctionCondition op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry -> {
+            if (op.functionIndex() < 0 || op.functionIndex() >= entry.functions().size()) {
+                return entry;
+            }
+            List<LootFunction> newFunctions = new ArrayList<>(entry.functions());
+            LootFunction oldFunc = newFunctions.get(op.functionIndex());
+
+            // Create new function with added condition
+            List<LootCondition> newConditions = new ArrayList<>(oldFunc.conditions());
+            newConditions.add(op.condition());
+            LootFunction newFunc = new LootFunction(oldFunc.function(), oldFunc.parameters(), newConditions);
+            newFunctions.set(op.functionIndex(), newFunc);
+
+            return entry.withFunctions(newFunctions);
+        });
+    }
+
+    private static LootTableStructure applyRemoveFunctionCondition(LootTableStructure structure, LootEditOperation.RemoveFunctionCondition op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry -> {
+            if (op.functionIndex() < 0 || op.functionIndex() >= entry.functions().size()) {
+                return entry;
+            }
+            LootFunction oldFunc = entry.functions().get(op.functionIndex());
+            if (op.conditionIndex() < 0 || op.conditionIndex() >= oldFunc.conditions().size()) {
+                return entry;
+            }
+
+            List<LootFunction> newFunctions = new ArrayList<>(entry.functions());
+            List<LootCondition> newConditions = new ArrayList<>(oldFunc.conditions());
+            newConditions.remove(op.conditionIndex());
+            LootFunction newFunc = new LootFunction(oldFunc.function(), oldFunc.parameters(), newConditions);
+            newFunctions.set(op.functionIndex(), newFunc);
+
             return entry.withFunctions(newFunctions);
         });
     }

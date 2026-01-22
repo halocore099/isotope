@@ -26,6 +26,8 @@ public sealed interface LootEditOperation permits
         LootEditOperation.SetItemCount,
         LootEditOperation.AddFunction,
         LootEditOperation.RemoveFunction,
+        LootEditOperation.AddFunctionCondition,
+        LootEditOperation.RemoveFunctionCondition,
         LootEditOperation.AddCondition,
         LootEditOperation.RemoveCondition,
         LootEditOperation.AddPoolFunction,
@@ -182,6 +184,26 @@ public sealed interface LootEditOperation permits
         @Override
         public String getDescription() {
             return "Remove function #" + (functionIndex + 1) + " from entry #" + (entryIndex + 1) + " in pool #" + (poolIndex + 1);
+        }
+    }
+
+    /**
+     * Add a condition to a function on an entry.
+     */
+    record AddFunctionCondition(int poolIndex, int entryIndex, int functionIndex, LootCondition condition) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return "Add " + condition.getDisplayName() + " to function #" + (functionIndex + 1) + " on entry #" + (entryIndex + 1);
+        }
+    }
+
+    /**
+     * Remove a condition from a function on an entry.
+     */
+    record RemoveFunctionCondition(int poolIndex, int entryIndex, int functionIndex, int conditionIndex) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return "Remove condition #" + (conditionIndex + 1) + " from function #" + (functionIndex + 1) + " on entry #" + (entryIndex + 1);
         }
     }
 

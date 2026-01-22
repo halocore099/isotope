@@ -554,6 +554,32 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         }));
     }
 
+    /**
+     * Open dialog to add a condition to a specific function on an entry.
+     */
+    private void openAddFunctionConditionDialog(int poolIdx, int entryIdx, int funcIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new AddConditionDialog(this, condition -> {
+            LootEditOperation op = new LootEditOperation.AddFunctionCondition(poolIdx, entryIdx, funcIdx, condition);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    /**
+     * Remove a condition from a specific function on an entry.
+     */
+    private void removeFunctionCondition(int poolIdx, int entryIdx, int funcIdx, int condIdx) {
+        ResourceLocation tableId = getSelectedTable();
+        if (tableId == null) return;
+
+        LootEditOperation op = new LootEditOperation.RemoveFunctionCondition(poolIdx, entryIdx, funcIdx, condIdx);
+        LootEditManager.getInstance().applyOperation(tableId, op);
+        editPanel.refresh();
+    }
+
     private void openChangeTypeDialog(int poolIdx, int entryIdx) {
         ResourceLocation tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
