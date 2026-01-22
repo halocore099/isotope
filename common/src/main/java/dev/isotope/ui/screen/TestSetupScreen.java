@@ -16,6 +16,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -43,7 +44,7 @@ import java.util.Set;
 public class TestSetupScreen extends Screen {
 
     private static final int DIALOG_WIDTH = 400;
-    private static final int DIALOG_HEIGHT = 320;
+    private static final int DIALOG_HEIGHT = 380;
 
     @Nullable
     private final Screen parent;
@@ -119,17 +120,21 @@ public class TestSetupScreen extends Screen {
         int dialogY = (height - DIALOG_HEIGHT) / 2;
 
         // World type buttons
-        int buttonY = dialogY + 180;
+        int buttonY = dialogY + 240;
 
         voidButton = addRenderableWidget(Button.builder(
-            Component.literal("Superflat"),
+            Component.literal("Flat World"),
             b -> selectWorldType(TestModeState.WorldType.VOID)
-        ).pos(dialogX + 30, buttonY).size(160, 20).build());
+        ).pos(dialogX + 30, buttonY).size(160, 20)
+            .tooltip(Tooltip.create(Component.literal("Empty flat world. Fast to load.\nTeleport and Arena disabled.")))
+            .build());
 
         normalButton = addRenderableWidget(Button.builder(
-            Component.literal("Normal (Recommended)"),
+            Component.literal("Normal World"),
             b -> selectWorldType(TestModeState.WorldType.NORMAL)
-        ).pos(dialogX + 210, buttonY).size(160, 20).build());
+        ).pos(dialogX + 210, buttonY).size(160, 20)
+            .tooltip(Tooltip.create(Component.literal("Full world with structures.\nAll features available.")))
+            .build());
 
         updateWorldTypeButtons();
 
@@ -239,8 +244,8 @@ public class TestSetupScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Dim background
-        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DARK);
+        // Background first (no blur)
+        renderBackground(graphics, mouseX, mouseY, partialTick);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
@@ -308,15 +313,23 @@ public class TestSetupScreen extends Screen {
                 dialogX + 12, listY + 14 + listHeight + 8, IsotopeColors.TEXT_SECONDARY, false);
         }
 
+        // Quick guide section
+        int guideY = dialogY + 160;
+        graphics.fill(dialogX + 10, guideY, dialogX + DIALOG_WIDTH - 10, guideY + 55, IsotopeColors.BACKGROUND_DARK);
+        graphics.drawString(font, "First time testing?", dialogX + 16, guideY + 6, IsotopeColors.ACCENT_AQUA, false);
+        graphics.drawString(font, "1. Edit loot tables in the main editor", dialogX + 16, guideY + 20, IsotopeColors.TEXT_SECONDARY, false);
+        graphics.drawString(font, "2. Create a Normal world for full testing", dialogX + 16, guideY + 32, IsotopeColors.TEXT_SECONDARY, false);
+        graphics.drawString(font, "3. Use buttons on each entry to test drops", dialogX + 16, guideY + 44, IsotopeColors.TEXT_SECONDARY, false);
+
         // World type section
-        int typeY = dialogY + 160;
+        int typeY = dialogY + 220;
         graphics.drawString(font, "World Type:", dialogX + 12, typeY, IsotopeColors.TEXT_PRIMARY, false);
 
         // Description of selected type
         String typeDesc = selectedWorldType == TestModeState.WorldType.VOID
             ? "Flat world - no structures (testing loot drops only)"
             : "Normal world - has structures (Teleport & Arena work)";
-        graphics.drawString(font, typeDesc, dialogX + 30, dialogY + 210, IsotopeColors.TEXT_SECONDARY, false);
+        graphics.drawString(font, typeDesc, dialogX + 30, dialogY + 270, IsotopeColors.TEXT_SECONDARY, false);
 
         // Info text
         graphics.drawString(font, "A temporary creative world will be created.",
@@ -355,5 +368,11 @@ public class TestSetupScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Don't call super - just fill with solid color to prevent blur
+        graphics.fill(0, 0, this.width, this.height, IsotopeColors.BACKGROUND_MEDIUM);
     }
 }

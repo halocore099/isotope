@@ -142,8 +142,8 @@ public class DropStatisticsDialog extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Dim background
-        graphics.fill(0, 0, width, height, IsotopeColors.OVERLAY_DARK);
+        // Background first (no blur)
+        renderBackground(graphics, mouseX, mouseY, partialTick);
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
@@ -268,5 +268,11 @@ public class DropStatisticsDialog extends Screen {
     @Override
     public boolean isPauseScreen() {
         return true;
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // Don't call super - just fill with solid color to prevent blur
+        graphics.fill(0, 0, this.width, this.height, IsotopeColors.BACKGROUND_MEDIUM);
     }
 }
