@@ -34,12 +34,12 @@ public class EntryListWidget extends ScrollableListWidget<LootEntry> {
         if (entry.isItem() && entry.name().isPresent()) {
             ItemStack stack = getItemStack(entry.name().get());
             if (!stack.isEmpty()) {
-                // Render small item icon
-                graphics.pose().pushPose();
-                graphics.pose().translate(x + 2, y + 3, 0);
-                graphics.pose().scale(0.75f, 0.75f, 1.0f);
+                // Render small item icon (MC 1.21.6+ uses Matrix3x2fStack with 2D methods)
+                graphics.pose().pushMatrix();
+                graphics.pose().translate(x + 2, y + 3);
+                graphics.pose().scale(0.75f, 0.75f);
                 graphics.renderItem(stack, 0, 0);
-                graphics.pose().popPose();
+                graphics.pose().popMatrix();
                 textX = x + 16;
             }
         }

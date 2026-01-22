@@ -171,10 +171,10 @@ public class LootFlowPanel extends AbstractWidget {
         // Enable scissor for content area
         graphics.enableScissor(getX(), contentY, getX() + width, getY() + height);
 
-        // Transform for pan and zoom
-        graphics.pose().pushPose();
-        graphics.pose().translate(getX() + panX, contentY + panY, 0);
-        graphics.pose().scale(zoom, zoom, 1);
+        // Transform for pan and zoom (MC 1.21.6+ uses Matrix3x2fStack with 2D methods)
+        graphics.pose().pushMatrix();
+        graphics.pose().translate(getX() + panX, contentY + panY);
+        graphics.pose().scale(zoom, zoom);
 
         // Update hovered node
         updateHoveredNode(mouseX, mouseY, contentY);
@@ -195,7 +195,7 @@ public class LootFlowPanel extends AbstractWidget {
             renderNode(graphics, font, node);
         }
 
-        graphics.pose().popPose();
+        graphics.pose().popMatrix();
         graphics.disableScissor();
 
         // Render tooltip (outside scissor so it can extend beyond panel)

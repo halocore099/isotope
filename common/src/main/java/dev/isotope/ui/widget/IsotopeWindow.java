@@ -5,25 +5,16 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 /**
- * Vanilla-style window frame using the advancements screen texture.
- * Renders 9-slice borders with a title bar.
+ * Vanilla-style window frame using solid fills and borders.
+ * Compatible with MC 1.21.6+ rendering changes.
  */
 @Environment(EnvType.CLIENT)
 public class IsotopeWindow {
 
-    // Vanilla window texture (from advancements screen)
-    private static final ResourceLocation WINDOW_TEXTURE =
-        ResourceLocation.withDefaultNamespace("textures/gui/advancements/window.png");
-
-    // The advancements window.png is 252x140, with 9-pixel borders
-    private static final int TEXTURE_WIDTH = 252;
-    private static final int TEXTURE_HEIGHT = 140;
-    private static final int BORDER = 9;
+    private static final int BORDER = 4;
     private static final int TITLE_HEIGHT = 18;
 
     private final int x;
@@ -60,56 +51,35 @@ public class IsotopeWindow {
         // Dim background behind window
         graphics.fill(0, 0, graphics.guiWidth(), graphics.guiHeight(), IsotopeColors.OVERLAY_DARK);
 
-        // Render window frame using vanilla texture
-        renderVanillaFrame(graphics);
+        // Render window frame using fills (compatible with MC 1.21.6+)
+        renderFrame(graphics);
 
         // Render title
         renderTitle(graphics);
     }
 
-    private void renderVanillaFrame(GuiGraphics graphics) {
-        // Use 9-slice rendering from the advancements window texture
-        // The texture has corners, edges, and a center that tile/stretch
+    private void renderFrame(GuiGraphics graphics) {
+        // Outer border (dark)
+        graphics.fill(x, y, x + width, y + height, IsotopeColors.BORDER_OUTER_DARK);
 
-        int innerWidth = width - BORDER * 2;
-        int innerHeight = height - BORDER * 2;
+        // Inner fill (main background)
+        graphics.fill(x + 2, y + 2, x + width - 2, y + height - 2, IsotopeColors.BACKGROUND_MEDIUM);
 
-        // === Top edge ===
-        // Top-left corner
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x, y, 0, 0, BORDER, BORDER, 256, 256);
-        // Top edge (stretched)
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + BORDER, y, innerWidth, BORDER,
-            BORDER, 0, TEXTURE_WIDTH - BORDER * 2, BORDER, 256, 256);
-        // Top-right corner
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + width - BORDER, y,
-            TEXTURE_WIDTH - BORDER, 0, BORDER, BORDER, 256, 256);
-
-        // === Middle (sides + center) ===
-        // Left edge (stretched vertically)
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x, y + BORDER, BORDER, innerHeight,
-            0, BORDER, BORDER, TEXTURE_HEIGHT - BORDER * 2, 256, 256);
-        // Center (stretched both ways) - dark background
-        graphics.fill(x + BORDER, y + BORDER, x + width - BORDER, y + height - BORDER,
-            IsotopeColors.BACKGROUND_DARK);
-        // Right edge (stretched vertically)
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + width - BORDER, y + BORDER, BORDER, innerHeight,
-            TEXTURE_WIDTH - BORDER, BORDER, BORDER, TEXTURE_HEIGHT - BORDER * 2, 256, 256);
-
-        // === Bottom edge ===
-        // Bottom-left corner
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x, y + height - BORDER,
-            0, TEXTURE_HEIGHT - BORDER, BORDER, BORDER, 256, 256);
-        // Bottom edge (stretched)
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + BORDER, y + height - BORDER, innerWidth, BORDER,
-            BORDER, TEXTURE_HEIGHT - BORDER, TEXTURE_WIDTH - BORDER * 2, BORDER, 256, 256);
-        // Bottom-right corner
-        graphics.blit(RenderType::guiTextured, WINDOW_TEXTURE, x + width - BORDER, y + height - BORDER,
-            TEXTURE_WIDTH - BORDER, TEXTURE_HEIGHT - BORDER, BORDER, BORDER, 256, 256);
+        // Title bar background (slightly darker)
+        graphics.fill(x + 2, y + 2, x + width - 2, y + TITLE_HEIGHT + BORDER, IsotopeColors.BACKGROUND_DARK);
 
         // Title bar separator
-        graphics.fill(x + BORDER, y + TITLE_HEIGHT + BORDER,
-            x + width - BORDER, y + TITLE_HEIGHT + BORDER + 1,
+        graphics.fill(x + 2, y + TITLE_HEIGHT + BORDER,
+            x + width - 2, y + TITLE_HEIGHT + BORDER + 1,
             IsotopeColors.BORDER_INNER);
+
+        // Highlight border (top and left)
+        graphics.fill(x + 1, y + 1, x + width - 1, y + 2, IsotopeColors.BORDER_HIGHLIGHT);
+        graphics.fill(x + 1, y + 1, x + 2, y + height - 1, IsotopeColors.BORDER_HIGHLIGHT);
+
+        // Shadow border (bottom and right)
+        graphics.fill(x + 1, y + height - 2, x + width - 1, y + height - 1, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(x + width - 2, y + 1, x + width - 1, y + height - 1, IsotopeColors.BORDER_OUTER_DARK);
     }
 
     private void renderTitle(GuiGraphics graphics) {
