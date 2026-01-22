@@ -157,6 +157,10 @@ public final class IsotopeColors {
 
     // === Function/Condition section colors ===
     public static final int FUNC_COND_BACKGROUND = 0xFF252530;          // Dark blue tint for function sections
+    public static final int CONDITION_KEYWORD = 0xFFCC9900;             // "if" keyword color (gold/orange)
+    public static final int CONDITION_TEXT = 0xFF88BBDD;                // Condition name color (light blue)
+    public static final int FUNCTION_COND_BTN_BG = 0xFF303040;          // "+ if" button background
+    public static final int FUNCTION_COND_BTN_TEXT = 0xFF8899AA;        // "+ if" button text
 
     // === Selection/editing colors ===
     public static final int MULTI_SELECT_BACKGROUND = 0xFF3A2A4A;       // Purple tint for multi-selected

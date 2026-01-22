@@ -49,6 +49,10 @@ public class EntryDetailPanel extends AbstractWidget {
     @Nullable
     private java.util.function.Consumer<Integer> onRemoveFunction;  // functionIndex
     @Nullable
+    private java.util.function.BiConsumer<Integer, LootCondition> onAddFunctionCondition;  // (functionIndex, condition)
+    @Nullable
+    private java.util.function.BiConsumer<Integer, Integer> onRemoveFunctionCondition;  // (functionIndex, conditionIndex)
+    @Nullable
     private Runnable onAddCondition;
     @Nullable
     private java.util.function.Consumer<Integer> onRemoveCondition;  // conditionIndex
@@ -58,6 +62,8 @@ public class EntryDetailPanel extends AbstractWidget {
     private int addFunctionBtnX, addFunctionBtnY, addFunctionBtnWidth;
     private int addConditionBtnX, addConditionBtnY, addConditionBtnWidth;
     private final java.util.List<int[]> removeFunctionBtns = new java.util.ArrayList<>();
+    private final java.util.List<int[]> addFuncCondBtns = new java.util.ArrayList<>();  // [x, y, funcIndex]
+    private final java.util.List<int[]> removeFuncCondBtns = new java.util.ArrayList<>();  // [x, y, funcIndex, condIndex]
     private final java.util.List<int[]> removeConditionBtns = new java.util.ArrayList<>();
     private static final int BTN_SIZE = 14;
 
@@ -90,6 +96,14 @@ public class EntryDetailPanel extends AbstractWidget {
 
     public void setOnRemoveFunction(@Nullable java.util.function.Consumer<Integer> callback) {
         this.onRemoveFunction = callback;
+    }
+
+    public void setOnAddFunctionCondition(@Nullable java.util.function.BiConsumer<Integer, LootCondition> callback) {
+        this.onAddFunctionCondition = callback;
+    }
+
+    public void setOnRemoveFunctionCondition(@Nullable java.util.function.BiConsumer<Integer, Integer> callback) {
+        this.onRemoveFunctionCondition = callback;
     }
 
     public void setOnAddCondition(@Nullable Runnable callback) {
@@ -203,9 +217,18 @@ public class EntryDetailPanel extends AbstractWidget {
         // Base info: type, name, weight, count
         contentHeight = lineHeight * 5;
 
-        // Functions
+        // Functions (with their conditions)
         contentHeight += lineHeight; // "Functions:" header
-        contentHeight += entry.functions().size() * lineHeight;
+        for (LootFunction func : entry.functions()) {
+            contentHeight += lineHeight;  // Function line
+            // Add space for function conditions
+            if (!func.conditions().isEmpty()) {
+                contentHeight += func.conditions().size() * (lineHeight - 2);  // Smaller lines for conditions
+                contentHeight += 14;  // "+ Add" button for function condition
+            } else {
+                contentHeight += 14;  // "+ Add" button even when no conditions
+            }
+        }
 
         // Conditions
         contentHeight += lineHeight; // "Conditions:" header
@@ -342,6 +365,8 @@ public class EntryDetailPanel extends AbstractWidget {
 
         // Clear button lists
         removeFunctionBtns.clear();
+        addFuncCondBtns.clear();
+        removeFuncCondBtns.clear();
         removeConditionBtns.clear();
 
         // Functions section
@@ -363,7 +388,7 @@ public class EntryDetailPanel extends AbstractWidget {
                         IsotopeColors.TEXT_MUTED, false);
                 }
 
-                // [X] remove button
+                // [X] remove button for function
                 if (onRemoveFunction != null) {
                     int btnX = x + width - 30;
                     int btnY = y - 1;
@@ -372,6 +397,42 @@ public class EntryDetailPanel extends AbstractWidget {
                 }
 
                 y += lineHeight;
+
+                // Show function conditions (indented)
+                if (!func.conditions().isEmpty()) {
+                    int condIndex = 0;
+                    for (LootCondition cond : func.conditions()) {
+                        graphics.drawString(font, "    if ", x, y, IsotopeColors.CONDITION_KEYWORD, false);
+                        String condName = cond.getDisplayName();
+                        String condParams = cond.getParameterSummary();
+                        graphics.drawString(font, condName, x + font.width("    if "), y, IsotopeColors.CONDITION_TEXT, false);
+                        if (!condParams.isEmpty()) {
+                            int condWidth = font.width("    if " + condName);
+                            graphics.drawString(font, " " + condParams, x + condWidth, y, IsotopeColors.TEXT_MUTED, false);
+                        }
+
+                        // [X] remove button for function condition
+                        if (onRemoveFunctionCondition != null) {
+                            int btnX = x + width - 30;
+                            int btnY = y - 1;
+                            renderMiniButton(graphics, btnX, btnY, "X", IsotopeColors.DESTRUCTIVE_BACKGROUND);
+                            removeFuncCondBtns.add(new int[]{btnX, btnY, funcIndex, condIndex});
+                        }
+
+                        y += lineHeight - 2;
+                        condIndex++;
+                    }
+                }
+
+                // "+ if" button to add condition to this function
+                if (onAddFunctionCondition != null) {
+                    int btnX = x + 20;
+                    int btnY = y;
+                    renderSmallAddButton(graphics, btnX, btnY, "+ if");
+                    addFuncCondBtns.add(new int[]{btnX, btnY, funcIndex});
+                    y += 14;
+                }
+
                 funcIndex++;
             }
         }
@@ -524,6 +585,18 @@ public class EntryDetailPanel extends AbstractWidget {
             IsotopeColors.ACCENT_GREEN, false);
     }
 
+    private void renderSmallAddButton(GuiGraphics graphics, int x, int y, String label) {
+        var font = Minecraft.getInstance().font;
+        int btnWidth = font.width(label) + 8;
+        int btnHeight = 12;
+
+        // Subtle background
+        graphics.fill(x, y, x + btnWidth, y + btnHeight, IsotopeColors.FUNCTION_COND_BTN_BG);
+
+        // Label
+        graphics.drawString(font, label, x + 4, y + 2, IsotopeColors.FUNCTION_COND_BTN_TEXT, false);
+    }
+
     private void renderScrollbar(GuiGraphics graphics, int mouseX, int mouseY) {
         int scrollbarWidth = 4;
         int scrollbarX = getX() + width - scrollbarWidth - 2;
@@ -624,6 +697,31 @@ public class EntryDetailPanel extends AbstractWidget {
                 if (mouseX >= btn[0] && mouseX < btn[0] + 12
                     && mouseY >= btn[1] && mouseY < btn[1] + 12) {
                     onRemoveFunction.accept(btn[2]);
+                    return true;
+                }
+            }
+        }
+
+        // Check Add Function Condition buttons
+        if (onAddFunctionCondition != null) {
+            for (int[] btn : addFuncCondBtns) {
+                var font = Minecraft.getInstance().font;
+                int btnWidth = font.width("+ if") + 8;
+                if (mouseX >= btn[0] && mouseX < btn[0] + btnWidth
+                    && mouseY >= btn[1] && mouseY < btn[1] + 12) {
+                    // This will trigger a dialog - pass null condition, handled in LootEditorScreen
+                    onAddFunctionCondition.accept(btn[2], null);
+                    return true;
+                }
+            }
+        }
+
+        // Check Remove Function Condition buttons
+        if (onRemoveFunctionCondition != null) {
+            for (int[] btn : removeFuncCondBtns) {
+                if (mouseX >= btn[0] && mouseX < btn[0] + 12
+                    && mouseY >= btn[1] && mouseY < btn[1] + 12) {
+                    onRemoveFunctionCondition.accept(btn[2], btn[3]);
                     return true;
                 }
             }

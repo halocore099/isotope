@@ -69,6 +69,8 @@ public final class HistoryLog {
                 case LootEditOperation.SetItemCount ignored -> "SET_COUNT";
                 case LootEditOperation.AddFunction ignored -> "ADD_FUNCTION";
                 case LootEditOperation.RemoveFunction ignored -> "REMOVE_FUNCTION";
+                case LootEditOperation.AddFunctionCondition ignored -> "ADD_FUNC_COND";
+                case LootEditOperation.RemoveFunctionCondition ignored -> "REMOVE_FUNC_COND";
                 case LootEditOperation.AddCondition ignored -> "ADD_CONDITION";
                 case LootEditOperation.RemoveCondition ignored -> "REMOVE_CONDITION";
                 case LootEditOperation.AddPoolFunction ignored -> "ADD_POOL_FUNC";
