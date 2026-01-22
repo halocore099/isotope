@@ -2,13 +2,29 @@
 
 ## Branch Info
 
-**Branch**: `neo-1.21.9-.11`
-**Target**: Minecraft 1.21.9-1.21.11, NeoForge only
+**Branch**: `neo-1.21.11`
+**Target**: Minecraft 1.21.11, NeoForge only
 **Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
 
-This is a multi-version, single-loader branch. For other versions/loaders, see:
-- `fab-1.21.9-.11` - Fabric 1.21.9-1.21.11
+This is a single-version, single-loader branch. For other versions/loaders, see:
+- `fab-1.21.11` - Fabric 1.21.11 (not yet created)
+- `neo-1.21.9-.10` - NeoForge 1.21.9-1.21.10
+- `fab-1.21.9-.10` - Fabric 1.21.9-1.21.10
 - `main` - Documentation only
+
+## MC 1.21.11 API Changes
+
+Key API changes in Minecraft 1.21.11:
+
+| Old | New |
+|-----|-----|
+| `ResourceLocation` | `net.minecraft.resources.Identifier` |
+| `ResourceKey.location()` | `ResourceKey.identifier()` |
+| `net.minecraft.Util` | `net.minecraft.util.Util` |
+| `net.minecraft.world.level.GameRules` | `net.minecraft.world.level.gamerules.GameRules` |
+| `CommandSourceStack.hasPermission(int)` | `source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)` |
+| `FMLEnvironment.dist` | `FMLEnvironment.getDist()` |
+| `Button.renderWidget()` (override) | `Button.renderContents()` (override) |
 
 ## Critical Rules
 
@@ -45,7 +61,7 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 
 | Dependency | Version |
 |------------|---------|
-| Minecraft | 1.21.9-1.21.11 |
+| Minecraft | 1.21.11 |
 | NeoForge | 21.11.34-beta |
 | Architectury | 19.0.1 |
 | Java | 21 |

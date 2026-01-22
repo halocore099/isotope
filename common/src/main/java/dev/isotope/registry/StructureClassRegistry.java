@@ -56,7 +56,7 @@ public final class StructureClassRegistry {
             Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
             for (var entry : registry.entrySet()) {
-                Identifier structureId = entry.getKey().id();
+                Identifier structureId = entry.getKey().identifier();
                 Structure structure = entry.getValue();
                 String className = structure.getClass().getName();
 

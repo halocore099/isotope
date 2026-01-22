@@ -73,7 +73,7 @@ public final class StructureTemplateParser {
 
         // Process each registered structure
         for (var entry : structureRegistry.entrySet()) {
-            Identifier structureId = entry.getKey().id();
+            Identifier structureId = entry.getKey().identifier();
             Structure structure = entry.getValue();
 
             Set<Identifier> lootTables = new HashSet<>();
@@ -150,7 +150,7 @@ public final class StructureTemplateParser {
 
             if (startPoolHolder != null && startPoolHolder.isBound()) {
                 Identifier poolId = startPoolHolder.unwrapKey()
-                    .map(ResourceKey::location)
+                    .map(ResourceKey::identifier)
                     .orElse(null);
 
                 if (poolId != null) {
@@ -214,7 +214,7 @@ public final class StructureTemplateParser {
             // Check fallback pool
             if (pool.getFallback().isBound()) {
                 Identifier fallbackId = pool.getFallback().unwrapKey()
-                    .map(ResourceKey::location)
+                    .map(ResourceKey::identifier)
                     .orElse(null);
 
                 if (fallbackId != null && !fallbackId.equals(poolId)) {
@@ -252,7 +252,7 @@ public final class StructureTemplateParser {
                     Object templateHolder = templateField.get(element);
                     if (templateHolder instanceof net.minecraft.core.Holder<?> holder) {
                         holder.unwrapKey()
-                            .map(key -> ((ResourceKey<?>) key).id())
+                            .map(key -> ((ResourceKey<?>) key).identifier())
                             .ifPresent(locations::add);
                     }
                 }

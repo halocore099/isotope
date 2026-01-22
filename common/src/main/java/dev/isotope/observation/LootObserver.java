@@ -251,7 +251,7 @@ public final class LootObserver {
         for (ItemStack stack : generatedItems) {
             if (!stack.isEmpty()) {
                 stack.getItemHolder().unwrapKey().ifPresent(key ->
-                    itemIds.add(key.id())
+                    itemIds.add(key.identifier())
                 );
             }
         }

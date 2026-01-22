@@ -10,6 +10,9 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -629,7 +632,10 @@ public class EntryDetailPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!isMouseOver(mouseX, mouseY) || button != 0 || entry == null) return false;
 
         // First, unfocus any currently editing fields if clicking outside them
@@ -638,7 +644,7 @@ public class EntryDetailPanel extends AbstractWidget {
         // Check weight field
         if (weightField != null && onWeightChanged != null) {
             if (weightField.isMouseOver(mouseX, mouseY)) {
-                weightField.mouseClicked(mouseX, mouseY, button);
+                weightField.mouseClicked(event, focused);
                 clickedOnField = true;
                 // Unfocus other fields
                 if (countMinField != null) countMinField.setFocused(false);
@@ -651,7 +657,7 @@ public class EntryDetailPanel extends AbstractWidget {
         // Check count fields
         if (countMinField != null && onCountChanged != null && entry.isItem()) {
             if (countMinField.isMouseOver(mouseX, mouseY)) {
-                countMinField.mouseClicked(mouseX, mouseY, button);
+                countMinField.mouseClicked(event, focused);
                 clickedOnField = true;
                 if (weightField != null) weightField.setFocused(false);
                 if (countMaxField != null) countMaxField.setFocused(false);
@@ -662,7 +668,7 @@ public class EntryDetailPanel extends AbstractWidget {
 
         if (countMaxField != null && showCountMaxField && onCountChanged != null) {
             if (countMaxField.isMouseOver(mouseX, mouseY)) {
-                countMaxField.mouseClicked(mouseX, mouseY, button);
+                countMaxField.mouseClicked(event, focused);
                 clickedOnField = true;
                 if (weightField != null) weightField.setFocused(false);
                 if (countMinField != null) countMinField.setFocused(false);
@@ -751,31 +757,36 @@ public class EntryDetailPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         // Route to active edit field
         if (weightField != null && weightField.isEditing()) {
-            return weightField.keyPressed(keyCode, scanCode, modifiers);
+            return weightField.keyPressed(event);
         }
         if (countMinField != null && countMinField.isEditing()) {
-            return countMinField.keyPressed(keyCode, scanCode, modifiers);
+            return countMinField.keyPressed(event);
         }
         if (countMaxField != null && countMaxField.isEditing()) {
-            return countMaxField.keyPressed(keyCode, scanCode, modifiers);
+            return countMaxField.keyPressed(event);
         }
         return false;
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
+        char c = (char) event.codepoint();
+        int modifiers = event.modifiers();
         // Route to active edit field
         if (weightField != null && weightField.isEditing()) {
-            return weightField.charTyped(chr, modifiers);
+            return weightField.charTyped(event);
         }
         if (countMinField != null && countMinField.isEditing()) {
-            return countMinField.charTyped(chr, modifiers);
+            return countMinField.charTyped(event);
         }
         if (countMaxField != null && countMaxField.isEditing()) {
-            return countMaxField.charTyped(chr, modifiers);
+            return countMaxField.charTyped(event);
         }
         return false;
     }

@@ -63,7 +63,7 @@ public final class LootTableRegistry {
                 var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
 
                 lootLookup.listElementIds().forEach(key -> {
-                    Identifier id = key.id();
+                    Identifier id = key.identifier();
                     if (!id.getPath().equals("empty")) {
                         tableIds.add(id);
                     }

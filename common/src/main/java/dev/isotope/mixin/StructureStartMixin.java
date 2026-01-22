@@ -63,7 +63,7 @@ public abstract class StructureStartMixin {
             .listElements()
             .filter(holder -> holder.value() == this.structure)
             .findFirst()
-            .map(holder -> holder.key().id())
+            .map(holder -> holder.key().identifier())
             .orElse(null);
 
         if (structureId == null) {

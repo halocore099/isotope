@@ -17,6 +17,9 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
@@ -323,7 +326,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
         graphics.fill(dropdownX, y + 2, dropdownX + dropdownWidth, y + MOD_FILTER_HEIGHT + 2,
             dropdownHovered ? IsotopeColors.BORDER_DEFAULT : IsotopeColors.INPUT_BACKGROUND);
-        graphics.renderOutline(dropdownX, y + 2, dropdownWidth, MOD_FILTER_HEIGHT, IsotopeColors.INPUT_BORDER);
+        ScreenUtils.renderOutline(graphics, dropdownX, y + 2, dropdownWidth, MOD_FILTER_HEIGHT, IsotopeColors.INPUT_BORDER);
 
         String modDisplay = selectedMod.length() > 18 ? selectedMod.substring(0, 16) + "..." : selectedMod;
         graphics.drawString(font, modDisplay, dropdownX + 4, y + 6, IsotopeColors.TEXT_PRIMARY, false);
@@ -701,12 +704,15 @@ public class LootTableBrowserWidget extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         // Search box
         if (searchBox != null && searchBox.isMouseOver(mouseX, mouseY)) {
             setFocused(true);  // Mark widget as focused for key events
             searchBox.setFocused(true);
-            return searchBox.mouseClicked(mouseX, mouseY, button);
+            return searchBox.mouseClicked(event, focused);
         } else if (searchBox != null) {
             searchBox.setFocused(false);
         }
@@ -853,17 +859,22 @@ public class LootTableBrowserWidget extends AbstractWidget {
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
+        char c = (char) event.codepoint();
+        int modifiers = event.modifiers();
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.charTyped(chr, modifiers);
+            return searchBox.charTyped(event);
         }
         return false;
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.keyPressed(keyCode, scanCode, modifiers);
+            return searchBox.keyPressed(event);
         }
         return false;
     }

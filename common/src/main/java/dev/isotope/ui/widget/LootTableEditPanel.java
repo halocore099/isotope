@@ -24,6 +24,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import dev.isotope.ui.screen.ItemPickerScreen;
@@ -386,7 +389,7 @@ public class LootTableEditPanel extends AbstractWidget {
                 mouseY >= y && mouseY < y + 22;
 
             graphics.fill(btnX, y + 2, btnX + btnWidth, y + 22, hovered ? IsotopeColors.ENTRY_BACKGROUND_HOVER : IsotopeColors.ENTRY_BACKGROUND);
-            graphics.renderOutline(btnX, y + 2, btnWidth, 20, IsotopeColors.BORDER_DEFAULT);
+            ScreenUtils.renderOutline(graphics, btnX, y + 2, btnWidth, 20, IsotopeColors.BORDER_DEFAULT);
 
             String addPoolText = "+ Add Pool";
             int textX = btnX + (btnWidth - font.width(addPoolText)) / 2;
@@ -473,7 +476,7 @@ public class LootTableEditPanel extends AbstractWidget {
 
                 // Semi-transparent background
                 graphics.fill(ghostX, ghostY, ghostX + ghostWidth, ghostY + ENTRY_HEIGHT, IsotopeColors.withAlpha(IsotopeColors.ENTRY_BACKGROUND, 0xAA));
-                graphics.renderOutline(ghostX, ghostY, ghostWidth, ENTRY_HEIGHT, IsotopeColors.DRAG_GHOST_ENTRY);
+                ScreenUtils.renderOutline(graphics, ghostX, ghostY, ghostWidth, ENTRY_HEIGHT, IsotopeColors.DRAG_GHOST_ENTRY);
 
                 // Item icon
                 if (entry.isItem() && entry.name().isPresent()) {
@@ -522,7 +525,7 @@ public class LootTableEditPanel extends AbstractWidget {
 
             // Semi-transparent background
             graphics.fill(ghostX, ghostY, ghostX + ghostWidth, ghostY + POOL_HEADER_HEIGHT, IsotopeColors.withAlpha(IsotopeColors.POOL_HEADER_BACKGROUND, 0xAA));
-            graphics.renderOutline(ghostX, ghostY, ghostWidth, POOL_HEADER_HEIGHT, IsotopeColors.DRAG_GHOST_POOL);
+            ScreenUtils.renderOutline(graphics, ghostX, ghostY, ghostWidth, POOL_HEADER_HEIGHT, IsotopeColors.DRAG_GHOST_POOL);
 
             // Pool name
             String poolName = "Pool " + (draggedPoolIdx + 1);
@@ -733,7 +736,7 @@ public class LootTableEditPanel extends AbstractWidget {
             mouseY >= btnY && mouseY < btnY + btnHeight;
         graphics.fill(deleteX, btnY, deleteX + 65, btnY + btnHeight,
             batchDeleteHovered ? IsotopeColors.DESTRUCTIVE_HOVER : IsotopeColors.BATCH_BUTTON_BACKGROUND);
-        graphics.renderOutline(deleteX, btnY, 65, btnHeight, IsotopeColors.INPUT_BORDER);
+        ScreenUtils.renderOutline(graphics, deleteX, btnY, 65, btnHeight, IsotopeColors.INPUT_BORDER);
         graphics.drawString(font, "Delete All", deleteX + 6, btnY + 6,
             batchDeleteHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.TEXT_PRIMARY, false);
 
@@ -743,7 +746,7 @@ public class LootTableEditPanel extends AbstractWidget {
             mouseY >= btnY && mouseY < btnY + btnHeight;
         graphics.fill(weightX, btnY, weightX + 70, btnY + btnHeight,
             batchWeightHovered ? IsotopeColors.ENTRY_BACKGROUND_EDITED : IsotopeColors.BATCH_BUTTON_BACKGROUND);
-        graphics.renderOutline(weightX, btnY, 70, btnHeight, IsotopeColors.INPUT_BORDER);
+        ScreenUtils.renderOutline(graphics, weightX, btnY, 70, btnHeight, IsotopeColors.INPUT_BORDER);
         graphics.drawString(font, "Set Weight", weightX + 6, btnY + 6,
             batchWeightHovered ? IsotopeColors.ACCENT_GOLD : IsotopeColors.TEXT_PRIMARY, false);
 
@@ -1030,11 +1033,11 @@ public class LootTableEditPanel extends AbstractWidget {
         if (isMultiSelected) {
             // Multi-selected entries (purple tint)
             graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, IsotopeColors.MULTI_SELECT_BACKGROUND);
-            graphics.renderOutline(getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, IsotopeColors.MULTI_SELECT_BORDER);
+            ScreenUtils.renderOutline(graphics, getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, IsotopeColors.MULTI_SELECT_BORDER);
         } else if (isSelected) {
             // Single selected highlight (stronger blue tint)
             graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, IsotopeColors.SINGLE_SELECT_BACKGROUND);
-            graphics.renderOutline(getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, IsotopeColors.ACCENT_GOLD);
+            ScreenUtils.renderOutline(graphics, getX() + PADDING, y, width - PADDING * 2, ENTRY_HEIGHT, IsotopeColors.ACCENT_GOLD);
         } else if (rowHovered) {
             graphics.fill(getX() + PADDING, y, getX() + width - PADDING, y + ENTRY_HEIGHT, IsotopeColors.ENTRY_BACKGROUND);
         }
@@ -1081,7 +1084,7 @@ public class LootTableEditPanel extends AbstractWidget {
         int weightBgColor = weightEditing ? IsotopeColors.SINGLE_SELECT_BACKGROUND : (weightHovered ? IsotopeColors.INPUT_BACKGROUND_HOVER : IsotopeColors.INPUT_BACKGROUND);
         int weightBorderColor = weightEditing ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER;
         graphics.fill(x, y + 3, x + weightBoxWidth, y + 19, weightBgColor);
-        graphics.renderOutline(x, y + 3, weightBoxWidth, 16, weightBorderColor);
+        ScreenUtils.renderOutline(graphics, x, y + 3, weightBoxWidth, 16, weightBorderColor);
 
         if (weightEditing) {
             // Show edit text with cursor
@@ -1114,7 +1117,7 @@ public class LootTableEditPanel extends AbstractWidget {
         int minBgColor = minEditing ? IsotopeColors.SINGLE_SELECT_BACKGROUND : (minHovered ? IsotopeColors.INPUT_BACKGROUND_HOVER : IsotopeColors.INPUT_BACKGROUND);
         int minBorderColor = minEditing ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER;
         graphics.fill(x, y + 3, x + countBoxWidth, y + 19, minBgColor);
-        graphics.renderOutline(x, y + 3, countBoxWidth, 16, minBorderColor);
+        ScreenUtils.renderOutline(graphics, x, y + 3, countBoxWidth, 16, minBorderColor);
 
         if (minEditing) {
             int textX = x + (countBoxWidth - font.width(editText)) / 2;
@@ -1142,7 +1145,7 @@ public class LootTableEditPanel extends AbstractWidget {
         int maxBgColor = maxEditing ? IsotopeColors.SINGLE_SELECT_BACKGROUND : (maxHovered ? IsotopeColors.INPUT_BACKGROUND_HOVER : IsotopeColors.INPUT_BACKGROUND);
         int maxBorderColor = maxEditing ? IsotopeColors.ACCENT_GOLD : IsotopeColors.INPUT_BORDER;
         graphics.fill(x, y + 3, x + countBoxWidth, y + 19, maxBgColor);
-        graphics.renderOutline(x, y + 3, countBoxWidth, 16, maxBorderColor);
+        ScreenUtils.renderOutline(graphics, x, y + 3, countBoxWidth, 16, maxBorderColor);
 
         if (maxEditing) {
             int textX = x + (countBoxWidth - font.width(editText)) / 2;
@@ -1357,7 +1360,10 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (!isMouseOver(mouseX, mouseY)) return false;
         if (tableId == null) return false;
 
@@ -1487,8 +1493,8 @@ public class LootTableEditPanel extends AbstractWidget {
         }
 
         // Check modifier keys for multi-selection
-        boolean ctrlHeld = Screen.hasControlDown();
-        boolean shiftHeld = Screen.hasShiftDown();
+        boolean ctrlHeld = ScreenUtils.hasControlDown();
+        boolean shiftHeld = ScreenUtils.hasShiftDown();
 
         // Check for weight/qty box clicks
         int y = getY() - scrollOffset + HEADER_HEIGHT;
@@ -1666,8 +1672,10 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (button != 0) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        if (event.button() != 0) {
             return false;
         }
 
@@ -1830,8 +1838,10 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (button != 0) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        if (event.button() != 0) {
             return false;
         }
 
@@ -2205,7 +2215,10 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         // Inline editing mode - handle text input keys
         if (editingField != EditingField.NONE) {
             // Enter - commit
@@ -2414,13 +2427,15 @@ public class LootTableEditPanel extends AbstractWidget {
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
+        char c = (char) event.codepoint();
+        int modifiers = event.modifiers();
         if (editingField == EditingField.NONE) return false;
 
         // Only allow digits (no decimals)
-        if (Character.isDigit(chr)) {
+        if (Character.isDigit(c)) {
             if (editText.length() < 4) { // Max 4 digits (9999)
-                editText = editText.substring(0, editCursorPos) + chr + editText.substring(editCursorPos);
+                editText = editText.substring(0, editCursorPos) + c + editText.substring(editCursorPos);
                 editCursorPos++;
             }
             return true;

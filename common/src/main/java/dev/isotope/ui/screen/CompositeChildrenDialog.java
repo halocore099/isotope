@@ -5,6 +5,9 @@ import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
@@ -92,7 +95,7 @@ public class CompositeChildrenDialog extends DialogScreen {
         int listHeight = DIALOG_HEIGHT - HEADER_HEIGHT - BUTTON_HEIGHT - 16;
 
         graphics.fill(listX, listY, listX + listWidth, listY + listHeight, IsotopeColors.POOL_HEADER_BACKGROUND);
-        graphics.renderOutline(listX, listY, listWidth, listHeight, IsotopeColors.BORDER_DEFAULT);
+        ScreenUtils.renderOutline(graphics, listX, listY, listWidth, listHeight, IsotopeColors.BORDER_DEFAULT);
 
         // Render visible children
         int maxVisible = listHeight / CHILD_HEIGHT;
@@ -170,8 +173,9 @@ public class CompositeChildrenDialog extends DialogScreen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x(); double mouseY = event.y(); int button = event.button();
+        if (button != 0) return super.mouseClicked(event, focused);
 
         int dialogX = getDialogX();
         int dialogY = getDialogY();
@@ -214,7 +218,7 @@ public class CompositeChildrenDialog extends DialogScreen {
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, focused);
     }
 
     @Override

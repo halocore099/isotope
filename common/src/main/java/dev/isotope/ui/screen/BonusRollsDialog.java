@@ -4,6 +4,9 @@ import dev.isotope.data.loot.NumberProvider;
 import dev.isotope.ui.IsotopeColors;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
@@ -97,7 +100,8 @@ public class BonusRollsDialog extends DialogScreen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x(); double mouseY = event.y(); int button = event.button();
         if (button == 0) {
             int dialogX = getDialogX();
             int dialogY = getDialogY();
@@ -119,7 +123,7 @@ public class BonusRollsDialog extends DialogScreen {
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, focused);
     }
 
     // keyPressed, onClose, and isPauseScreen are provided by DialogScreen base class

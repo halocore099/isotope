@@ -61,7 +61,7 @@ public final class StructurePlacementEngine {
             .lookupOrThrow(Registries.STRUCTURE);
 
         List<Identifier> structureIds = new ArrayList<>();
-        lookup.listElementIds().forEach(key -> structureIds.add(key.id()));
+        lookup.listElementIds().forEach(key -> structureIds.add(key.identifier()));
 
         onProgress.accept("Found " + structureIds.size() + " structures to place");
 

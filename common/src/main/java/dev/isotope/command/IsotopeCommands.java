@@ -14,6 +14,7 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.permissions.Permissions;
 
 import java.util.*;
 
@@ -46,7 +47,7 @@ public final class IsotopeCommands {
 
         dispatcher.register(
             Commands.literal("isotope")
-                .requires(source -> source.hasPermission(2))
+                .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
                 .then(Commands.literal("status")
                     .executes(IsotopeCommands::statusCommand))
                 .then(Commands.literal("structures")

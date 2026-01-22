@@ -8,6 +8,9 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
@@ -93,7 +96,7 @@ public class InlineEditField extends AbstractWidget {
         int borderColor = editing ? IsotopeColors.ACCENT_GOLD : (hovered ? IsotopeColors.INPUT_BORDER : IsotopeColors.BORDER_DEFAULT);
 
         graphics.fill(getX(), getY(), getX() + width, getY() + height, bgColor);
-        graphics.renderOutline(getX(), getY(), width, height, borderColor);
+        ScreenUtils.renderOutline(graphics, getX(), getY(), width, height, borderColor);
 
         // Text
         String displayText = editing ? editText : String.valueOf(value);
@@ -113,7 +116,10 @@ public class InlineEditField extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (isMouseOver(mouseX, mouseY)) {
             if (!editing) {
                 startEditing();
@@ -126,7 +132,10 @@ public class InlineEditField extends AbstractWidget {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         if (!editing) return false;
 
         // Enter - commit
@@ -182,13 +191,15 @@ public class InlineEditField extends AbstractWidget {
     }
 
     @Override
-    public boolean charTyped(char chr, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
+        char c = (char) event.codepoint();
+        int modifiers = event.modifiers();
         if (!editing) return false;
 
         // Only allow digits
-        if (Character.isDigit(chr)) {
+        if (Character.isDigit(c)) {
             if (editText.length() < 4) { // Max 4 digits
-                editText = editText.substring(0, cursorPos) + chr + editText.substring(cursorPos);
+                editText = editText.substring(0, cursorPos) + c + editText.substring(cursorPos);
                 cursorPos++;
             }
             return true;
