@@ -361,29 +361,27 @@ public final class StructureTemplateParser {
      */
     private void extractLootTablesFromNbt(CompoundTag nbt, Set<ResourceLocation> lootTables) {
         // Check for LootTable field (used by chests, barrels, etc.)
-        if (nbt.contains("LootTable", Tag.TAG_STRING)) {
-            String lootTableStr = nbt.getString("LootTable");
+        nbt.getString("LootTable").ifPresent(lootTableStr -> {
             try {
                 ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
                 lootTables.add(lootTableId);
             } catch (Exception e) {
                 // Invalid resource location
             }
-        }
+        });
 
         // Check for loot_table field (alternative naming)
-        if (nbt.contains("loot_table", Tag.TAG_STRING)) {
-            String lootTableStr = nbt.getString("loot_table");
+        nbt.getString("loot_table").ifPresent(lootTableStr -> {
             try {
                 ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
                 lootTables.add(lootTableId);
             } catch (Exception e) {
                 // Invalid resource location
             }
-        }
+        });
 
         // Recursively check nested compound tags
-        for (String key : nbt.getAllKeys()) {
+        for (String key : nbt.keySet()) {
             Tag tag = nbt.get(key);
             if (tag instanceof CompoundTag compound) {
                 extractLootTablesFromNbt(compound, lootTables);
