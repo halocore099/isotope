@@ -1,7 +1,7 @@
 package dev.isotope.observation;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -10,11 +10,11 @@ import java.util.List;
  * This is the ground truth - we saw this happen.
  */
 public record LootInvocation(
-    ResourceLocation tableId,
+    Identifier tableId,
     BlockPos position,
     long timestamp,
     String contextType,
-    List<ResourceLocation> itemsGenerated
+    List<Identifier> itemsGenerated
 ) {
     /**
      * Check if this invocation occurred near a given position.

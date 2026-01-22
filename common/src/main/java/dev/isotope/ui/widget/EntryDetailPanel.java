@@ -16,7 +16,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
@@ -619,7 +619,7 @@ public class EntryDetailPanel extends AbstractWidget {
             IsotopeColors.SCROLLBAR_THUMB);
     }
 
-    private ItemStack getItemStack(ResourceLocation itemId) {
+    private ItemStack getItemStack(Identifier itemId) {
         try {
             var itemOpt = BuiltInRegistries.ITEM.get(itemId);
             if (itemOpt.isPresent()) {

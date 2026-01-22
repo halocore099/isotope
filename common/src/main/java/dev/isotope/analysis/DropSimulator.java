@@ -1,7 +1,7 @@
 package dev.isotope.analysis;
 
 import dev.isotope.data.loot.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -19,7 +19,7 @@ public class DropSimulator {
      * Result of a single item in the simulation.
      */
     public record ItemResult(
-        ResourceLocation item,
+        Identifier item,
         int timesDropped,      // How many simulations this item appeared in
         int totalCount,        // Total items across all simulations
         float dropRate,        // timesDropped / totalSimulations
@@ -35,10 +35,10 @@ public class DropSimulator {
      * Full simulation result.
      */
     public record SimulationResult(
-        ResourceLocation tableId,
+        Identifier tableId,
         int simulationCount,
         long durationMs,
-        Map<ResourceLocation, ItemResult> items,
+        Map<Identifier, ItemResult> items,
         float avgItemsPerRoll,
         int totalItemsGenerated
     ) {
@@ -74,25 +74,25 @@ public class DropSimulator {
      */
     public static SimulationResult simulate(
             LootTableStructure table,
-            ResourceLocation tableId,
+            Identifier tableId,
             int simulationCount,
             ProgressCallback callback) {
 
         long startTime = System.currentTimeMillis();
 
         // Get theoretical rates for comparison
-        Map<ResourceLocation, Float> theoreticalRates = new HashMap<>();
+        Map<Identifier, Float> theoreticalRates = new HashMap<>();
         for (DropRateCalculator.DropRate rate : DropRateCalculator.calculate(table)) {
             theoreticalRates.put(rate.item(), rate.probability());
         }
 
         // Track drops
-        Map<ResourceLocation, int[]> dropCounts = new HashMap<>(); // [timesDropped, totalCount]
+        Map<Identifier, int[]> dropCounts = new HashMap<>(); // [timesDropped, totalCount]
         int totalItems = 0;
 
         // Run simulations
         for (int sim = 0; sim < simulationCount; sim++) {
-            Set<ResourceLocation> droppedThisRoll = new HashSet<>();
+            Set<Identifier> droppedThisRoll = new HashSet<>();
 
             // Roll each pool
             for (LootPool pool : table.pools()) {
@@ -101,7 +101,7 @@ public class DropSimulator {
                 for (int roll = 0; roll < rolls; roll++) {
                     LootEntry selected = selectEntry(pool);
                     if (selected != null && selected.name().isPresent()) {
-                        ResourceLocation item = selected.name().get();
+                        Identifier item = selected.name().get();
                         int count = getItemCount(selected);
 
                         dropCounts.computeIfAbsent(item, k -> new int[2]);
@@ -122,9 +122,9 @@ public class DropSimulator {
         }
 
         // Build results
-        Map<ResourceLocation, ItemResult> items = new HashMap<>();
+        Map<Identifier, ItemResult> items = new HashMap<>();
         for (var entry : dropCounts.entrySet()) {
-            ResourceLocation item = entry.getKey();
+            Identifier item = entry.getKey();
             int timesDropped = entry.getValue()[0];
             int totalCount = entry.getValue()[1];
 

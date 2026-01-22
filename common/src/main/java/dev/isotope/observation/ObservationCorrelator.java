@@ -1,7 +1,7 @@
 package dev.isotope.observation;
 
 import dev.isotope.Isotope;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -18,13 +18,13 @@ public final class ObservationCorrelator {
     private static final ObservationCorrelator INSTANCE = new ObservationCorrelator();
 
     // The final result: structure -> set of observed loot tables
-    private final Map<ResourceLocation, Set<ResourceLocation>> structureToLootTables = new LinkedHashMap<>();
+    private final Map<Identifier, Set<Identifier>> structureToLootTables = new LinkedHashMap<>();
 
     // Reverse index: loot table -> set of structures that invoked it
-    private final Map<ResourceLocation, Set<ResourceLocation>> lootTableToStructures = new LinkedHashMap<>();
+    private final Map<Identifier, Set<Identifier>> lootTableToStructures = new LinkedHashMap<>();
 
     // Detailed observations per structure
-    private final Map<ResourceLocation, StructureObservation> observations = new LinkedHashMap<>();
+    private final Map<Identifier, StructureObservation> observations = new LinkedHashMap<>();
 
     private ObservationCorrelator() {}
 
@@ -55,7 +55,7 @@ public final class ObservationCorrelator {
 
         // For each structure placement, find loot invocations that occurred within its bounds
         for (StructurePlacement placement : placements) {
-            Set<ResourceLocation> lootTables = new HashSet<>();
+            Set<Identifier> lootTables = new HashSet<>();
             List<LootInvocation> structureInvocations = new ArrayList<>();
 
             for (LootInvocation invocation : invocations) {
@@ -69,13 +69,13 @@ public final class ObservationCorrelator {
             }
 
             if (!lootTables.isEmpty()) {
-                ResourceLocation structureId = placement.structureId();
+                Identifier structureId = placement.structureId();
 
                 // Store the correlation
                 structureToLootTables.put(structureId, lootTables);
 
                 // Update reverse index
-                for (ResourceLocation tableId : lootTables) {
+                for (Identifier tableId : lootTables) {
                     lootTableToStructures
                         .computeIfAbsent(tableId, k -> new HashSet<>())
                         .add(structureId);
@@ -105,35 +105,35 @@ public final class ObservationCorrelator {
      * Get the loot tables observed for a structure.
      * Returns empty set if structure wasn't observed to use any loot tables.
      */
-    public Set<ResourceLocation> getLootTablesFor(ResourceLocation structureId) {
+    public Set<Identifier> getLootTablesFor(Identifier structureId) {
         return structureToLootTables.getOrDefault(structureId, Set.of());
     }
 
     /**
      * Get all structures that used a specific loot table.
      */
-    public Set<ResourceLocation> getStructuresUsing(ResourceLocation lootTableId) {
+    public Set<Identifier> getStructuresUsing(Identifier lootTableId) {
         return lootTableToStructures.getOrDefault(lootTableId, Set.of());
     }
 
     /**
      * Get detailed observation data for a structure.
      */
-    public Optional<StructureObservation> getObservation(ResourceLocation structureId) {
+    public Optional<StructureObservation> getObservation(Identifier structureId) {
         return Optional.ofNullable(observations.get(structureId));
     }
 
     /**
      * Get all correlated structures.
      */
-    public Set<ResourceLocation> getCorrelatedStructures() {
+    public Set<Identifier> getCorrelatedStructures() {
         return Collections.unmodifiableSet(structureToLootTables.keySet());
     }
 
     /**
      * Get all observed loot tables.
      */
-    public Set<ResourceLocation> getObservedLootTables() {
+    public Set<Identifier> getObservedLootTables() {
         return Collections.unmodifiableSet(lootTableToStructures.keySet());
     }
 
@@ -149,14 +149,14 @@ public final class ObservationCorrelator {
      */
     public record StructureObservation(
         StructurePlacement placement,
-        Set<ResourceLocation> lootTables,
+        Set<Identifier> lootTables,
         List<LootInvocation> invocations
     ) {
         /**
          * Get unique items observed from this structure.
          */
-        public Set<ResourceLocation> getObservedItems() {
-            Set<ResourceLocation> items = new HashSet<>();
+        public Set<Identifier> getObservedItems() {
+            Set<Identifier> items = new HashSet<>();
             for (LootInvocation inv : invocations) {
                 items.addAll(inv.itemsGenerated());
             }
@@ -166,8 +166,8 @@ public final class ObservationCorrelator {
         /**
          * Get invocation count per loot table.
          */
-        public Map<ResourceLocation, Integer> getInvocationCounts() {
-            Map<ResourceLocation, Integer> counts = new HashMap<>();
+        public Map<Identifier, Integer> getInvocationCounts() {
+            Map<Identifier, Integer> counts = new HashMap<>();
             for (LootInvocation inv : invocations) {
                 counts.merge(inv.tableId(), 1, Integer::sum);
             }

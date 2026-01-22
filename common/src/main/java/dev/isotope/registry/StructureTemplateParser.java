@@ -9,7 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
@@ -35,16 +35,16 @@ public final class StructureTemplateParser {
     private static final StructureTemplateParser INSTANCE = new StructureTemplateParser();
 
     // Results: structure ID -> set of loot table IDs found in templates
-    private final Map<ResourceLocation, Set<ResourceLocation>> structureToLootTables = new LinkedHashMap<>();
+    private final Map<Identifier, Set<Identifier>> structureToLootTables = new LinkedHashMap<>();
 
     // Reverse index: loot table ID -> set of structures that reference it
-    private final Map<ResourceLocation, Set<ResourceLocation>> lootTableToStructures = new LinkedHashMap<>();
+    private final Map<Identifier, Set<Identifier>> lootTableToStructures = new LinkedHashMap<>();
 
     // Template -> loot tables mapping (for detailed view)
-    private final Map<ResourceLocation, Set<ResourceLocation>> templateToLootTables = new LinkedHashMap<>();
+    private final Map<Identifier, Set<Identifier>> templateToLootTables = new LinkedHashMap<>();
 
     // Structure -> spawner entity loot tables (from SpawnerEntityExtractor)
-    private final Map<ResourceLocation, Set<ResourceLocation>> structureToSpawnerLoot = new LinkedHashMap<>();
+    private final Map<Identifier, Set<Identifier>> structureToSpawnerLoot = new LinkedHashMap<>();
 
     // Parsing stats
     private int templatesScanned = 0;
@@ -73,10 +73,10 @@ public final class StructureTemplateParser {
 
         // Process each registered structure
         for (var entry : structureRegistry.entrySet()) {
-            ResourceLocation structureId = entry.getKey().location();
+            Identifier structureId = entry.getKey().identifier();
             Structure structure = entry.getValue();
 
-            Set<ResourceLocation> lootTables = new HashSet<>();
+            Set<Identifier> lootTables = new HashSet<>();
 
             try {
                 // Check if this is a jigsaw structure (has template pools)
@@ -91,7 +91,7 @@ public final class StructureTemplateParser {
                     structureToLootTables.put(structureId, lootTables);
 
                     // Update reverse index
-                    for (ResourceLocation tableId : lootTables) {
+                    for (Identifier tableId : lootTables) {
                         lootTableToStructures
                             .computeIfAbsent(tableId, k -> new HashSet<>())
                             .add(structureId);
@@ -101,7 +101,7 @@ public final class StructureTemplateParser {
                 }
 
                 // Get spawner entity loot tables for this structure
-                Set<ResourceLocation> spawnerLootTables =
+                Set<Identifier> spawnerLootTables =
                     SpawnerEntityExtractor.getInstance().getSpawnerLootTablesForStructure(structureId);
                 if (!spawnerLootTables.isEmpty()) {
                     structureToSpawnerLoot.put(structureId, spawnerLootTables);
@@ -125,14 +125,14 @@ public final class StructureTemplateParser {
     /**
      * Parse a jigsaw structure by traversing its template pools.
      */
-    private Set<ResourceLocation> parseJigsawStructure(
-            ResourceLocation structureId,
+    private Set<Identifier> parseJigsawStructure(
+            Identifier structureId,
             JigsawStructure structure,
             StructureTemplateManager templateManager,
             Registry<StructureTemplatePool> poolRegistry) {
 
-        Set<ResourceLocation> lootTables = new HashSet<>();
-        Set<ResourceLocation> visitedPools = new HashSet<>();
+        Set<Identifier> lootTables = new HashSet<>();
+        Set<Identifier> visitedPools = new HashSet<>();
 
         try {
             // Get the start pool - use reflection to handle API changes across versions
@@ -149,8 +149,8 @@ public final class StructureTemplateParser {
             }
 
             if (startPoolHolder != null && startPoolHolder.isBound()) {
-                ResourceLocation poolId = startPoolHolder.unwrapKey()
-                    .map(ResourceKey::location)
+                Identifier poolId = startPoolHolder.unwrapKey()
+                    .map(ResourceKey::identifier)
                     .orElse(null);
 
                 if (poolId != null) {
@@ -168,12 +168,12 @@ public final class StructureTemplateParser {
     /**
      * Recursively parse a template pool and all pools it references.
      */
-    private Set<ResourceLocation> parseTemplatePoolRecursive(
-            ResourceLocation structureId,
-            ResourceLocation poolId,
+    private Set<Identifier> parseTemplatePoolRecursive(
+            Identifier structureId,
+            Identifier poolId,
             StructureTemplateManager templateManager,
             Registry<StructureTemplatePool> poolRegistry,
-            Set<ResourceLocation> visitedPools) {
+            Set<Identifier> visitedPools) {
 
         // Avoid infinite recursion
         if (visitedPools.contains(poolId)) {
@@ -181,7 +181,7 @@ public final class StructureTemplateParser {
         }
         visitedPools.add(poolId);
 
-        Set<ResourceLocation> lootTables = new HashSet<>();
+        Set<Identifier> lootTables = new HashSet<>();
 
         try {
             Optional<StructureTemplatePool> poolOpt = poolRegistry.getOptional(poolId);
@@ -198,9 +198,9 @@ public final class StructureTemplateParser {
                 for (var element : elements) {
                     try {
                         // Try to get the template location from the element
-                        Set<ResourceLocation> templateLocations = extractTemplateLocations(element);
+                        Set<Identifier> templateLocations = extractTemplateLocations(element);
 
-                        for (ResourceLocation templateLoc : templateLocations) {
+                        for (Identifier templateLoc : templateLocations) {
                             lootTables.addAll(parseTemplate(structureId, templateLoc, templateManager));
                         }
                     } catch (Exception e) {
@@ -213,8 +213,8 @@ public final class StructureTemplateParser {
 
             // Check fallback pool
             if (pool.getFallback().isBound()) {
-                ResourceLocation fallbackId = pool.getFallback().unwrapKey()
-                    .map(ResourceKey::location)
+                Identifier fallbackId = pool.getFallback().unwrapKey()
+                    .map(ResourceKey::identifier)
                     .orElse(null);
 
                 if (fallbackId != null && !fallbackId.equals(poolId)) {
@@ -234,10 +234,10 @@ public final class StructureTemplateParser {
      * Extract template locations from a pool element.
      * Uses reflection as a fallback for accessing template references.
      */
-    private Set<ResourceLocation> extractTemplateLocations(
+    private Set<Identifier> extractTemplateLocations(
             net.minecraft.world.level.levelgen.structure.pools.StructurePoolElement element) {
 
-        Set<ResourceLocation> locations = new HashSet<>();
+        Set<Identifier> locations = new HashSet<>();
 
         try {
             // Try to extract template location using reflection
@@ -252,7 +252,7 @@ public final class StructureTemplateParser {
                     Object templateHolder = templateField.get(element);
                     if (templateHolder instanceof net.minecraft.core.Holder<?> holder) {
                         holder.unwrapKey()
-                            .map(key -> ((ResourceKey<?>) key).location())
+                            .map(key -> ((ResourceKey<?>) key).identifier())
                             .ifPresent(locations::add);
                     }
                 }
@@ -298,12 +298,12 @@ public final class StructureTemplateParser {
     /**
      * Parse a single structure template to extract loot table references.
      */
-    private Set<ResourceLocation> parseTemplate(
-            ResourceLocation structureId,
-            ResourceLocation templateLocation,
+    private Set<Identifier> parseTemplate(
+            Identifier structureId,
+            Identifier templateLocation,
             StructureTemplateManager templateManager) {
 
-        Set<ResourceLocation> lootTables = new HashSet<>();
+        Set<Identifier> lootTables = new HashSet<>();
 
         try {
             Optional<StructureTemplate> templateOpt = templateManager.get(templateLocation);
@@ -335,8 +335,8 @@ public final class StructureTemplateParser {
      * Uses NBT serialization (public API) to access template data.
      * Also analyzes spawner blocks for entity loot tables.
      */
-    private Set<ResourceLocation> extractLootTablesFromTemplate(ResourceLocation structureId, StructureTemplate template) {
-        Set<ResourceLocation> lootTables = new HashSet<>();
+    private Set<Identifier> extractLootTablesFromTemplate(Identifier structureId, StructureTemplate template) {
+        Set<Identifier> lootTables = new HashSet<>();
 
         try {
             // Serialize template to NBT - this is the public API
@@ -359,11 +359,11 @@ public final class StructureTemplateParser {
     /**
      * Recursively extract loot table references from NBT data.
      */
-    private void extractLootTablesFromNbt(CompoundTag nbt, Set<ResourceLocation> lootTables) {
+    private void extractLootTablesFromNbt(CompoundTag nbt, Set<Identifier> lootTables) {
         // Check for LootTable field (used by chests, barrels, etc.)
         nbt.getString("LootTable").ifPresent(lootTableStr -> {
             try {
-                ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
+                Identifier lootTableId = Identifier.parse(lootTableStr);
                 lootTables.add(lootTableId);
             } catch (Exception e) {
                 // Invalid resource location
@@ -373,7 +373,7 @@ public final class StructureTemplateParser {
         // Check for loot_table field (alternative naming)
         nbt.getString("loot_table").ifPresent(lootTableStr -> {
             try {
-                ResourceLocation lootTableId = ResourceLocation.parse(lootTableStr);
+                Identifier lootTableId = Identifier.parse(lootTableStr);
                 lootTables.add(lootTableId);
             } catch (Exception e) {
                 // Invalid resource location
@@ -399,11 +399,11 @@ public final class StructureTemplateParser {
      * Try to find templates for non-jigsaw structures by naming convention.
      * e.g., minecraft:igloo -> data/minecraft/structures/igloo/*.nbt
      */
-    private Set<ResourceLocation> parseByNamingConvention(
-            ResourceLocation structureId,
+    private Set<Identifier> parseByNamingConvention(
+            Identifier structureId,
             StructureTemplateManager templateManager) {
 
-        Set<ResourceLocation> lootTables = new HashSet<>();
+        Set<Identifier> lootTables = new HashSet<>();
 
         // Common patterns for structure template locations
         String[] patterns = {
@@ -414,7 +414,7 @@ public final class StructureTemplateParser {
         };
 
         for (String pattern : patterns) {
-            ResourceLocation templateLoc = ResourceLocation.fromNamespaceAndPath(
+            Identifier templateLoc = Identifier.fromNamespaceAndPath(
                 structureId.getNamespace(), pattern);
 
             lootTables.addAll(parseTemplate(structureId, templateLoc, templateManager));
@@ -428,28 +428,28 @@ public final class StructureTemplateParser {
     /**
      * Get loot tables found in templates for a structure.
      */
-    public Set<ResourceLocation> getLootTablesForStructure(ResourceLocation structureId) {
+    public Set<Identifier> getLootTablesForStructure(Identifier structureId) {
         return structureToLootTables.getOrDefault(structureId, Set.of());
     }
 
     /**
      * Get structures that reference a loot table in their templates.
      */
-    public Set<ResourceLocation> getStructuresForLootTable(ResourceLocation lootTableId) {
+    public Set<Identifier> getStructuresForLootTable(Identifier lootTableId) {
         return lootTableToStructures.getOrDefault(lootTableId, Set.of());
     }
 
     /**
      * Get all structures that have template-based loot links.
      */
-    public Set<ResourceLocation> getStructuresWithTemplateLinks() {
+    public Set<Identifier> getStructuresWithTemplateLinks() {
         return Collections.unmodifiableSet(structureToLootTables.keySet());
     }
 
     /**
      * Get all loot tables found in templates.
      */
-    public Set<ResourceLocation> getLootTablesInTemplates() {
+    public Set<Identifier> getLootTablesInTemplates() {
         return Collections.unmodifiableSet(lootTableToStructures.keySet());
     }
 
@@ -457,14 +457,14 @@ public final class StructureTemplateParser {
      * Get spawner entity loot tables for a structure.
      * These are entity loot tables linked to entities found in spawner blocks.
      */
-    public Set<ResourceLocation> getSpawnerLootTablesForStructure(ResourceLocation structureId) {
+    public Set<Identifier> getSpawnerLootTablesForStructure(Identifier structureId) {
         return structureToSpawnerLoot.getOrDefault(structureId, Set.of());
     }
 
     /**
      * Get all structures with spawner entity loot.
      */
-    public Set<ResourceLocation> getStructuresWithSpawnerLoot() {
+    public Set<Identifier> getStructuresWithSpawnerLoot() {
         return Collections.unmodifiableSet(structureToSpawnerLoot.keySet());
     }
 
@@ -482,8 +482,8 @@ public final class StructureTemplateParser {
         List<StructureLootLink> links = new ArrayList<>();
 
         for (var entry : structureToLootTables.entrySet()) {
-            ResourceLocation structureId = entry.getKey();
-            for (ResourceLocation lootTableId : entry.getValue()) {
+            Identifier structureId = entry.getKey();
+            for (Identifier lootTableId : entry.getValue()) {
                 links.add(StructureLootLink.fromTemplate(structureId, lootTableId));
             }
         }

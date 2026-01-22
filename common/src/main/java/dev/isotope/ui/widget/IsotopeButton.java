@@ -26,7 +26,7 @@ public class IsotopeButton extends Button {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         int backgroundColor;
         int textColor;
         int borderColor;

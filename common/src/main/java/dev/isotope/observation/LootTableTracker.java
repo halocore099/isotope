@@ -1,6 +1,6 @@
 package dev.isotope.observation;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Thread-local tracker for loot table IDs.
@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public final class LootTableTracker {
 
-    private static final ThreadLocal<ResourceLocation> CURRENT_TABLE = new ThreadLocal<>();
+    private static final ThreadLocal<Identifier> CURRENT_TABLE = new ThreadLocal<>();
 
     private LootTableTracker() {}
 
@@ -21,7 +21,7 @@ public final class LootTableTracker {
      * Set the current table being resolved/executed.
      * Called by ReloadableRegistriesMixin when getLootTable() is called.
      */
-    public static void setCurrentTableId(ResourceLocation tableId) {
+    public static void setCurrentTableId(Identifier tableId) {
         CURRENT_TABLE.set(tableId);
     }
 
@@ -29,7 +29,7 @@ public final class LootTableTracker {
      * Get the current table ID.
      * Called by LootTableMixin when getRandomItems() is called.
      */
-    public static ResourceLocation getCurrentTableId() {
+    public static Identifier getCurrentTableId() {
         return CURRENT_TABLE.get();
     }
 

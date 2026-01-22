@@ -14,7 +14,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -36,7 +36,7 @@ public class ItemPickerScreen extends Screen {
     private static final int CELL_SIZE = ITEM_SIZE + ITEM_PADDING;
 
     private final Screen parent;
-    private final Consumer<ResourceLocation> onItemSelected;
+    private final Consumer<Identifier> onItemSelected;
 
     private EditBox searchBox;
     private List<Item> filteredItems = new ArrayList<>();
@@ -54,7 +54,7 @@ public class ItemPickerScreen extends Screen {
     private int gridX, gridY, gridWidth, gridHeight;
     private int modDropdownX, modDropdownY, modDropdownWidth;
 
-    public ItemPickerScreen(Screen parent, Consumer<ResourceLocation> onItemSelected) {
+    public ItemPickerScreen(Screen parent, Consumer<Identifier> onItemSelected) {
         super(Component.literal("Select Item"));
         this.parent = parent;
         this.onItemSelected = onItemSelected;
@@ -64,7 +64,7 @@ public class ItemPickerScreen extends Screen {
     private void collectMods() {
         Set<String> mods = new TreeSet<>();
         for (var entry : BuiltInRegistries.ITEM.entrySet()) {
-            mods.add(entry.getKey().location().getNamespace());
+            mods.add(entry.getKey().identifier().getNamespace());
         }
         availableMods.add("All");
         availableMods.addAll(mods);
@@ -118,7 +118,7 @@ public class ItemPickerScreen extends Screen {
 
         for (var entry : BuiltInRegistries.ITEM.entrySet()) {
             Item item = entry.getValue();
-            ResourceLocation id = entry.getKey().location();
+            Identifier id = entry.getKey().identifier();
 
             // Skip air
             if (item == Items.AIR) continue;
@@ -339,7 +339,7 @@ public class ItemPickerScreen extends Screen {
 
             if (index >= 0 && index < filteredItems.size()) {
                 Item item = filteredItems.get(index);
-                ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
+                Identifier id = BuiltInRegistries.ITEM.getKey(item);
                 onItemSelected.accept(id);
                 onClose();
                 return true;

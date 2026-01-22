@@ -1,6 +1,6 @@
 package dev.isotope.session;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,9 +27,9 @@ public record EditorSession(
      */
     public static EditorSession create(
             String name,
-            List<ResourceLocation> openTabs,
+            List<Identifier> openTabs,
             int activeTabIndex,
-            List<ResourceLocation> bookmarks,
+            List<Identifier> bookmarks,
             UIState uiState
     ) {
         long now = System.currentTimeMillis();
@@ -38,9 +38,9 @@ public record EditorSession(
             name,
             now,
             now,
-            openTabs.stream().map(ResourceLocation::toString).toList(),
+            openTabs.stream().map(Identifier::toString).toList(),
             activeTabIndex,
-            bookmarks.stream().map(ResourceLocation::toString).toList(),
+            bookmarks.stream().map(Identifier::toString).toList(),
             SessionMetadata.current(),
             uiState != null ? uiState : UIState.defaults()
         );
@@ -51,9 +51,9 @@ public record EditorSession(
      */
     public static EditorSession create(
             String name,
-            List<ResourceLocation> openTabs,
+            List<Identifier> openTabs,
             int activeTabIndex,
-            List<ResourceLocation> bookmarks
+            List<Identifier> bookmarks
     ) {
         return create(name, openTabs, activeTabIndex, bookmarks, UIState.defaults());
     }
@@ -83,21 +83,21 @@ public record EditorSession(
     }
 
     /**
-     * Get open tabs as ResourceLocations.
+     * Get open tabs as Identifiers.
      */
-    public List<ResourceLocation> getOpenTabIds() {
+    public List<Identifier> getOpenTabIds() {
         return openTabs.stream()
-            .map(ResourceLocation::tryParse)
+            .map(Identifier::tryParse)
             .filter(id -> id != null)
             .toList();
     }
 
     /**
-     * Get bookmarks as ResourceLocations.
+     * Get bookmarks as Identifiers.
      */
-    public List<ResourceLocation> getBookmarkIds() {
+    public List<Identifier> getBookmarkIds() {
         return bookmarks.stream()
-            .map(ResourceLocation::tryParse)
+            .map(Identifier::tryParse)
             .filter(id -> id != null)
             .toList();
     }

@@ -1,7 +1,7 @@
 package dev.isotope.analysis;
 
 import dev.isotope.data.loot.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -16,7 +16,7 @@ public final class DropRateCalculator {
      * Calculated drop rate for an item.
      */
     public record DropRate(
-        ResourceLocation item,
+        Identifier item,
         float probability,    // 0.0 to 1.0
         float avgCount,       // Average items per roll
         int weight,

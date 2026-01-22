@@ -18,7 +18,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public class DiffPanel extends AbstractWidget {
     private static final int PADDING = 6;
 
     @Nullable
-    private ResourceLocation tableId;
+    private Identifier tableId;
     @Nullable
     private DiffResult diffResult;
     private List<DiffEntry> allChanges = new ArrayList<>();
@@ -49,7 +49,7 @@ public class DiffPanel extends AbstractWidget {
     /**
      * Set the table to show diff for.
      */
-    public void setTable(@Nullable ResourceLocation tableId) {
+    public void setTable(@Nullable Identifier tableId) {
         this.tableId = tableId;
         this.scrollOffset = 0;
         recalculate();

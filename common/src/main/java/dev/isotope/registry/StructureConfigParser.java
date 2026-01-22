@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -35,13 +35,13 @@ public final class StructureConfigParser {
     private static final Gson GSON = new GsonBuilder().create();
 
     // Structure ID -> start pool ID (for jigsaw structures)
-    private final Map<ResourceLocation, ResourceLocation> structureToStartPool = new LinkedHashMap<>();
+    private final Map<Identifier, Identifier> structureToStartPool = new LinkedHashMap<>();
 
     // Structure ID -> loot tables found directly in the config
-    private final Map<ResourceLocation, Set<ResourceLocation>> structureToLootTables = new LinkedHashMap<>();
+    private final Map<Identifier, Set<Identifier>> structureToLootTables = new LinkedHashMap<>();
 
     // Structure ID -> structure type (e.g., "minecraft:jigsaw", "minecraft:buried_treasure")
-    private final Map<ResourceLocation, String> structureTypes = new LinkedHashMap<>();
+    private final Map<Identifier, String> structureTypes = new LinkedHashMap<>();
 
     // Statistics
     private int filesParsed = 0;
@@ -66,14 +66,14 @@ public final class StructureConfigParser {
             ResourceManager resourceManager = server.getResourceManager();
 
             // Scan for structure JSON files
-            Map<ResourceLocation, Resource> resources = resourceManager.listResources(
+            Map<Identifier, Resource> resources = resourceManager.listResources(
                 "worldgen/structure",
                 path -> path.getPath().endsWith(".json")
             );
 
             Isotope.LOGGER.debug("[StructureConfigParser] Found {} structure files", resources.size());
 
-            for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
+            for (Map.Entry<Identifier, Resource> entry : resources.entrySet()) {
                 parseStructureJson(entry.getKey(), entry.getValue());
                 filesParsed++;
             }
@@ -90,7 +90,7 @@ public final class StructureConfigParser {
     /**
      * Parse a single structure definition JSON file.
      */
-    private void parseStructureJson(ResourceLocation path, Resource resource) {
+    private void parseStructureJson(Identifier path, Resource resource) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
 
@@ -98,7 +98,7 @@ public final class StructureConfigParser {
             if (json == null) return;
 
             // Build the structure ID from the path
-            ResourceLocation structureId = extractStructureId(path);
+            Identifier structureId = extractStructureId(path);
             if (structureId == null) return;
 
             // Get structure type
@@ -108,7 +108,7 @@ public final class StructureConfigParser {
                 structureTypes.put(structureId, type);
             }
 
-            Set<ResourceLocation> foundLoot = new HashSet<>();
+            Set<Identifier> foundLoot = new HashSet<>();
 
             // Handle jigsaw structures - they have a start_pool
             if (type.equals("minecraft:jigsaw") || json.has("start_pool")) {
@@ -137,7 +137,7 @@ public final class StructureConfigParser {
     /**
      * Parse a jigsaw structure for its start_pool reference.
      */
-    private void parseJigsawStructure(JsonObject json, ResourceLocation structureId, Set<ResourceLocation> foundLoot) {
+    private void parseJigsawStructure(JsonObject json, Identifier structureId, Set<Identifier> foundLoot) {
         if (json.has("start_pool")) {
             JsonElement startPool = json.get("start_pool");
             String poolStr = null;
@@ -155,7 +155,7 @@ public final class StructureConfigParser {
                     poolStr = poolStr.substring(1);
                 }
                 try {
-                    ResourceLocation poolId = ResourceLocation.parse(poolStr);
+                    Identifier poolId = Identifier.parse(poolStr);
                     structureToStartPool.put(structureId, poolId);
 
                     // Cross-reference with TemplatePoolParser to get loot from this pool
@@ -178,63 +178,63 @@ public final class StructureConfigParser {
     /**
      * Parse structure-type-specific loot references.
      */
-    private void parseStructureTypeLoot(String type, JsonObject json, ResourceLocation structureId,
-                                         Set<ResourceLocation> foundLoot) {
+    private void parseStructureTypeLoot(String type, JsonObject json, Identifier structureId,
+                                         Set<Identifier> foundLoot) {
         switch (type) {
             case "minecraft:buried_treasure":
                 // Buried treasure has a known loot table
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/buried_treasure"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/buried_treasure"));
                 break;
 
             case "minecraft:desert_pyramid":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/desert_pyramid"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/desert_pyramid"));
                 break;
 
             case "minecraft:jungle_pyramid":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/jungle_temple"));
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/jungle_temple_dispenser"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/jungle_temple"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/jungle_temple_dispenser"));
                 break;
 
             case "minecraft:igloo":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/igloo_chest"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/igloo_chest"));
                 break;
 
             case "minecraft:shipwreck":
             case "minecraft:shipwreck_beached":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/shipwreck_map"));
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/shipwreck_supply"));
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/shipwreck_treasure"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/shipwreck_map"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/shipwreck_supply"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/shipwreck_treasure"));
                 break;
 
             case "minecraft:stronghold":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/stronghold_corridor"));
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/stronghold_crossing"));
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/stronghold_library"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/stronghold_corridor"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/stronghold_crossing"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/stronghold_library"));
                 break;
 
             case "minecraft:fortress":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/nether_bridge"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/nether_bridge"));
                 break;
 
             case "minecraft:ocean_ruin_cold":
             case "minecraft:ocean_ruin_warm":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/underwater_ruin_small"));
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/underwater_ruin_big"));
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "archaeology/ocean_ruin_cold"));
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "archaeology/ocean_ruin_warm"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/underwater_ruin_small"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/underwater_ruin_big"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "archaeology/ocean_ruin_cold"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "archaeology/ocean_ruin_warm"));
                 break;
 
             case "minecraft:mineshaft":
             case "minecraft:mineshaft_mesa":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/abandoned_mineshaft"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/abandoned_mineshaft"));
                 break;
 
             case "minecraft:woodland_mansion":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/woodland_mansion"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/woodland_mansion"));
                 break;
 
             case "minecraft:end_city":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/end_city_treasure"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/end_city_treasure"));
                 break;
 
             case "minecraft:ruined_portal":
@@ -244,11 +244,11 @@ public final class StructureConfigParser {
             case "minecraft:ruined_portal_nether":
             case "minecraft:ruined_portal_ocean":
             case "minecraft:ruined_portal_swamp":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/ruined_portal"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/ruined_portal"));
                 break;
 
             case "minecraft:pillager_outpost":
-                foundLoot.add(ResourceLocation.fromNamespaceAndPath("minecraft", "chests/pillager_outpost"));
+                foundLoot.add(Identifier.fromNamespaceAndPath("minecraft", "chests/pillager_outpost"));
                 break;
 
             default:
@@ -260,7 +260,7 @@ public final class StructureConfigParser {
     /**
      * Recursively search a JSON structure for loot_table references.
      */
-    private void searchForLootTables(JsonElement element, Set<ResourceLocation> found) {
+    private void searchForLootTables(JsonElement element, Set<Identifier> found) {
         if (element == null) return;
 
         if (element.isJsonObject()) {
@@ -273,17 +273,17 @@ public final class StructureConfigParser {
                     if (lootElement.isJsonPrimitive()) {
                         String lootTableStr = lootElement.getAsString();
                         try {
-                            ResourceLocation lootId = ResourceLocation.parse(lootTableStr);
+                            Identifier lootId = Identifier.parse(lootTableStr);
                             found.add(lootId);
                         } catch (Exception e) {
-                            // Invalid ResourceLocation
+                            // Invalid Identifier
                         }
                     } else if (lootElement.isJsonArray()) {
                         // Array of loot tables
                         for (JsonElement item : lootElement.getAsJsonArray()) {
                             if (item.isJsonPrimitive()) {
                                 try {
-                                    found.add(ResourceLocation.parse(item.getAsString()));
+                                    found.add(Identifier.parse(item.getAsString()));
                                 } catch (Exception e) {
                                     // Invalid
                                 }
@@ -309,7 +309,7 @@ public final class StructureConfigParser {
     /**
      * Extract structure ID from resource path.
      */
-    private ResourceLocation extractStructureId(ResourceLocation path) {
+    private Identifier extractStructureId(Identifier path) {
         String pathStr = path.getPath();
 
         if (!pathStr.startsWith("worldgen/structure/")) {
@@ -321,7 +321,7 @@ public final class StructureConfigParser {
             structurePath = structurePath.substring(0, structurePath.length() - 5);
         }
 
-        return ResourceLocation.fromNamespaceAndPath(path.getNamespace(), structurePath);
+        return Identifier.fromNamespaceAndPath(path.getNamespace(), structurePath);
     }
 
     // --- Query API ---
@@ -329,42 +329,42 @@ public final class StructureConfigParser {
     /**
      * Get the start pool for a jigsaw structure.
      */
-    public Optional<ResourceLocation> getStartPoolForStructure(ResourceLocation structureId) {
+    public Optional<Identifier> getStartPoolForStructure(Identifier structureId) {
         return Optional.ofNullable(structureToStartPool.get(structureId));
     }
 
     /**
      * Get all loot tables directly referenced by a structure config.
      */
-    public Set<ResourceLocation> getLootTablesForStructure(ResourceLocation structureId) {
+    public Set<Identifier> getLootTablesForStructure(Identifier structureId) {
         return structureToLootTables.getOrDefault(structureId, Set.of());
     }
 
     /**
      * Get the structure type for a structure.
      */
-    public Optional<String> getStructureType(ResourceLocation structureId) {
+    public Optional<String> getStructureType(Identifier structureId) {
         return Optional.ofNullable(structureTypes.get(structureId));
     }
 
     /**
      * Build a map of all structures to their loot tables.
      */
-    public Map<ResourceLocation, Set<ResourceLocation>> buildStructureLootMap() {
+    public Map<Identifier, Set<Identifier>> buildStructureLootMap() {
         return Collections.unmodifiableMap(structureToLootTables);
     }
 
     /**
      * Get all jigsaw structures and their start pools.
      */
-    public Map<ResourceLocation, ResourceLocation> getJigsawStartPools() {
+    public Map<Identifier, Identifier> getJigsawStartPools() {
         return Collections.unmodifiableMap(structureToStartPool);
     }
 
     /**
      * Check if a structure is a jigsaw structure.
      */
-    public boolean isJigsawStructure(ResourceLocation structureId) {
+    public boolean isJigsawStructure(Identifier structureId) {
         return structureToStartPool.containsKey(structureId);
     }
 

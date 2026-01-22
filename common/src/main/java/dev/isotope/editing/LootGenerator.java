@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
 import dev.isotope.data.loot.*;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -147,7 +147,7 @@ public final class LootGenerator {
                 // Nested loot table - would need recursive parsing
                 // For now, skip
                 Isotope.LOGGER.debug("Skipping nested loot table reference: {}",
-                    entry.name().map(ResourceLocation::toString).orElse("unknown"));
+                    entry.name().map(Identifier::toString).orElse("unknown"));
             }
             case LootEntry.TYPE_ALTERNATIVES -> {
                 // First child that passes conditions
@@ -178,7 +178,7 @@ public final class LootGenerator {
             case LootEntry.TYPE_TAG -> {
                 // Tag entries would need tag lookup
                 Isotope.LOGGER.debug("Skipping tag entry: {}",
-                    entry.name().map(ResourceLocation::toString).orElse("unknown"));
+                    entry.name().map(Identifier::toString).orElse("unknown"));
             }
             default -> {
                 Isotope.LOGGER.debug("Unknown entry type: {}", entry.type());
@@ -191,7 +191,7 @@ public final class LootGenerator {
     /**
      * Create an ItemStack from an item ID and entry.
      */
-    private static ItemStack createItemStack(ResourceLocation itemId, LootEntry entry, Random random) {
+    private static ItemStack createItemStack(Identifier itemId, LootEntry entry, Random random) {
         try {
             // In 1.21.4, registry get returns Optional<Reference<Item>>
             var itemOpt = BuiltInRegistries.ITEM.get(itemId);

@@ -29,7 +29,7 @@ public class ReloadableRegistriesMixin {
     private void isotope$onGetLootTable(ResourceKey<LootTable> key, CallbackInfoReturnable<LootTable> cir) {
         // Track table ID for both recording AND test mode
         if (LootObserver.getInstance().isRecording() || LootEditManager.getInstance().isTestModeActive()) {
-            LootTableTracker.setCurrentTableId(key.location());
+            LootTableTracker.setCurrentTableId(key.identifier());
         }
     }
 }

@@ -7,7 +7,7 @@ import dev.isotope.data.BookmarkManager;
 import dev.isotope.ui.TabManager;
 import dev.isotope.ui.EditorTab;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -69,11 +69,11 @@ public final class SessionManager {
     public EditorSession saveSession(String name, TabManager tabManager, EditorSession.UIState uiState) {
         try {
             // Gather current state
-            List<ResourceLocation> openTabs = tabManager.getTabs().stream()
+            List<Identifier> openTabs = tabManager.getTabs().stream()
                 .map(EditorTab::tableId)
                 .toList();
             int activeTabIndex = tabManager.getActiveTabIndex();
-            List<ResourceLocation> bookmarks = BookmarkManager.getInstance().getAll();
+            List<Identifier> bookmarks = BookmarkManager.getInstance().getAll();
 
             // Create session
             EditorSession session = EditorSession.create(name, openTabs, activeTabIndex, bookmarks, uiState);
@@ -153,7 +153,7 @@ public final class SessionManager {
         tabManager.closeAll();
 
         // Open tabs from session
-        for (ResourceLocation tableId : session.getOpenTabIds()) {
+        for (Identifier tableId : session.getOpenTabIds()) {
             tabManager.openTab(tableId);
         }
 
@@ -165,7 +165,7 @@ public final class SessionManager {
         // Restore bookmarks
         BookmarkManager bookmarkMgr = BookmarkManager.getInstance();
         bookmarkMgr.clear();
-        for (ResourceLocation id : session.getBookmarkIds()) {
+        for (Identifier id : session.getBookmarkIds()) {
             bookmarkMgr.add(id);
         }
 

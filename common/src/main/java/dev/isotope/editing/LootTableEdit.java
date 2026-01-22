@@ -1,6 +1,6 @@
 package dev.isotope.editing;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.List;
  * the original into the edited version. Operations are applied in order.
  */
 public record LootTableEdit(
-    ResourceLocation tableId,
+    Identifier tableId,
     List<LootEditOperation> operations,
     long lastModified,
     String author
@@ -20,7 +20,7 @@ public record LootTableEdit(
     /**
      * Create a new empty edit for a table.
      */
-    public static LootTableEdit create(ResourceLocation tableId) {
+    public static LootTableEdit create(Identifier tableId) {
         return new LootTableEdit(
             tableId,
             new ArrayList<>(),

@@ -6,7 +6,7 @@ import dev.isotope.data.loot.LootCondition;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.data.loot.NumberProvider;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -291,9 +291,9 @@ public final class TemplateManager {
         String description = json.has("description") ? json.get("description").getAsString() : "";
         String category = json.has("category") ? json.get("category").getAsString() : "Custom";
 
-        Optional<ResourceLocation> defaultItem = Optional.empty();
+        Optional<Identifier> defaultItem = Optional.empty();
         if (json.has("defaultItem") && !json.get("defaultItem").isJsonNull()) {
-            ResourceLocation itemId = ResourceLocation.tryParse(json.get("defaultItem").getAsString());
+            Identifier itemId = Identifier.tryParse(json.get("defaultItem").getAsString());
             if (itemId != null) {
                 defaultItem = Optional.of(itemId);
             }

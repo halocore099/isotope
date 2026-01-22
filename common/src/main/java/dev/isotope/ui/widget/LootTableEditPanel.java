@@ -32,7 +32,7 @@ import net.minecraft.client.gui.screens.Screen;
 import dev.isotope.ui.screen.ItemPickerScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -58,7 +58,7 @@ public class LootTableEditPanel extends AbstractWidget {
     private static final int PADDING = 8;
 
     @Nullable
-    private ResourceLocation tableId;
+    private Identifier tableId;
     @Nullable
     private LootTableStructure structure;
     @Nullable
@@ -183,7 +183,7 @@ public class LootTableEditPanel extends AbstractWidget {
         super(x, y, width, height, Component.empty());
     }
 
-    public void setLootTable(@Nullable ResourceLocation tableId) {
+    public void setLootTable(@Nullable Identifier tableId) {
         this.tableId = tableId;
         this.structure = null;
         this.editedStructure = null;
@@ -1046,7 +1046,7 @@ public class LootTableEditPanel extends AbstractWidget {
 
         // Item icon
         if (entry.name().isPresent()) {
-            ResourceLocation itemId = entry.name().get();
+            Identifier itemId = entry.name().get();
             var itemOpt = BuiltInRegistries.ITEM.get(itemId);
             if (itemOpt.isPresent()) {
                 ItemStack stack = new ItemStack(itemOpt.get().value());
@@ -1062,7 +1062,7 @@ public class LootTableEditPanel extends AbstractWidget {
             itemName = entry.getDisplayName();  // Shows "alternatives (3)" etc.
             nameColor = IsotopeColors.ACCENT_AQUA;
         } else {
-            itemName = entry.name().map(ResourceLocation::getPath).orElse(entry.type());
+            itemName = entry.name().map(Identifier::getPath).orElse(entry.type());
         }
         if (font.width(itemName) > 100) {
             itemName = font.plainSubstrByWidth(itemName, 95) + "...";
@@ -2560,7 +2560,7 @@ public class LootTableEditPanel extends AbstractWidget {
         LootEntry entry = pool.entries().get(selectedEntryIdx);
         ClipboardManager.getInstance().copyEntry(entry, tableId);
 
-        String itemName = entry.name().map(ResourceLocation::getPath).orElse(entry.type());
+        String itemName = entry.name().map(Identifier::getPath).orElse(entry.type());
         IsotopeToast.info("Copied", itemName);
     }
 
@@ -2619,7 +2619,7 @@ public class LootTableEditPanel extends AbstractWidget {
         LootEditManager.getInstance().applyOperation(tableId, op);
         refreshFromEdits();
 
-        String itemName = entry.name().map(ResourceLocation::getPath).orElse(entry.type());
+        String itemName = entry.name().map(Identifier::getPath).orElse(entry.type());
         IsotopeToast.success("Pasted", itemName);
     }
 

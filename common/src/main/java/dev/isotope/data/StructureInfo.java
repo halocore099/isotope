@@ -1,16 +1,16 @@
 package dev.isotope.data;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Immutable data class holding discovered structure information.
  */
 public record StructureInfo(
-    ResourceLocation id,
+    Identifier id,
     String namespace,
     String path
 ) {
-    public static StructureInfo fromId(ResourceLocation id) {
+    public static StructureInfo fromId(Identifier id) {
         return new StructureInfo(id, id.getNamespace(), id.getPath());
     }
 

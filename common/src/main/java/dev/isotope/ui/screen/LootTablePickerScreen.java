@@ -17,7 +17,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -34,8 +34,8 @@ public class LootTablePickerScreen extends IsotopeScreen {
     private static final int WINDOW_WIDTH = 350;
     private static final int WINDOW_HEIGHT = 300;
 
-    private final ResourceLocation structureId;
-    private final Consumer<ResourceLocation> onSelect;
+    private final Identifier structureId;
+    private final Consumer<Identifier> onSelect;
 
     private IsotopeWindow window;
     private EditBox searchBox;
@@ -47,7 +47,7 @@ public class LootTablePickerScreen extends IsotopeScreen {
     private LootTableInfo selectedTable = null;
     private String currentFilter = "";
 
-    public LootTablePickerScreen(Screen parent, ResourceLocation structureId, Consumer<ResourceLocation> onSelect) {
+    public LootTablePickerScreen(Screen parent, Identifier structureId, Consumer<Identifier> onSelect) {
         super(TITLE, parent);
         this.structureId = structureId;
         this.onSelect = onSelect;

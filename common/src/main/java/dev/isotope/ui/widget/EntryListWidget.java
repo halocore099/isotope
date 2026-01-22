@@ -7,7 +7,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -75,7 +75,7 @@ public class EntryListWidget extends ScrollableListWidget<LootEntry> {
         }
     }
 
-    private static ItemStack getItemStack(ResourceLocation itemId) {
+    private static ItemStack getItemStack(Identifier itemId) {
         try {
             var itemOpt = BuiltInRegistries.ITEM.get(itemId);
             if (itemOpt.isPresent()) {

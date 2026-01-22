@@ -7,7 +7,7 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -60,7 +60,7 @@ public final class TestingTools {
      * @param searchRadius Search radius in chunks (default: 100)
      * @return LocateResult with position if found
      */
-    public static LocateResult locateStructure(MinecraftServer server, ResourceLocation structureId, int searchRadius) {
+    public static LocateResult locateStructure(MinecraftServer server, Identifier structureId, int searchRadius) {
         try {
             // Get the overworld (most structures are there)
             ServerLevel level = server.overworld();
@@ -162,7 +162,7 @@ public final class TestingTools {
      * @param structureId The structure to find and teleport to
      * @return LocateResult with details
      */
-    public static LocateResult locateAndTeleport(MinecraftServer server, ResourceLocation structureId) {
+    public static LocateResult locateAndTeleport(MinecraftServer server, Identifier structureId) {
         LocateResult result = locateStructure(server, structureId, 100);
 
         if (result.found() && result.position() != null) {

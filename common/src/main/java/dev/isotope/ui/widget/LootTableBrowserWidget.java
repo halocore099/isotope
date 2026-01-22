@@ -23,7 +23,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -46,7 +46,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
     private static final int CATEGORY_HEIGHT = 18;
     private static final int INDENT = 12;
 
-    private final Consumer<ResourceLocation> onTableSelected;
+    private final Consumer<Identifier> onTableSelected;
 
     // UI State
     private EditBox searchBox;
@@ -68,30 +68,30 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
     // Selection
     @Nullable
-    private ResourceLocation selectedTable;
+    private Identifier selectedTable;
 
     // Mod dropdown state
     private boolean modDropdownOpen = false;
 
     // Orphan tooltip state
     @Nullable
-    private ResourceLocation hoveredOrphanTable = null;
+    private Identifier hoveredOrphanTable = null;
     private int hoveredOrphanX = 0;
     private int hoveredOrphanY = 0;
 
     // Mob tooltip state
     @Nullable
-    private ResourceLocation hoveredMobTable = null;
+    private Identifier hoveredMobTable = null;
     private int hoveredMobX = 0;
     private int hoveredMobY = 0;
 
     // Feature tooltip state
     @Nullable
-    private ResourceLocation hoveredFeatureTable = null;
+    private Identifier hoveredFeatureTable = null;
     private int hoveredFeatureX = 0;
     private int hoveredFeatureY = 0;
 
-    public LootTableBrowserWidget(int x, int y, int width, int height, Consumer<ResourceLocation> onTableSelected) {
+    public LootTableBrowserWidget(int x, int y, int width, int height, Consumer<Identifier> onTableSelected) {
         super(x, y, width, height, Component.empty());
         this.onTableSelected = onTableSelected;
 
@@ -154,11 +154,11 @@ public class LootTableBrowserWidget extends AbstractWidget {
     /**
      * Get bookmarked tables that match current filters.
      */
-    private List<ResourceLocation> getFilteredBookmarks() {
-        List<ResourceLocation> result = new ArrayList<>();
+    private List<Identifier> getFilteredBookmarks() {
+        List<Identifier> result = new ArrayList<>();
         String searchText = searchBox != null ? searchBox.getValue().toLowerCase() : "";
 
-        for (ResourceLocation id : BookmarkManager.getInstance().getAll()) {
+        for (Identifier id : BookmarkManager.getInstance().getAll()) {
             // Mod filter
             if (!selectedMod.equals("All") && !id.getNamespace().equals(selectedMod)) {
                 continue;
@@ -176,11 +176,11 @@ public class LootTableBrowserWidget extends AbstractWidget {
      * Get recent tables that match current filters.
      * Excludes tables that are already bookmarked (shown in bookmarks section).
      */
-    private List<ResourceLocation> getFilteredRecent() {
-        List<ResourceLocation> result = new ArrayList<>();
+    private List<Identifier> getFilteredRecent() {
+        List<Identifier> result = new ArrayList<>();
         String searchText = searchBox != null ? searchBox.getValue().toLowerCase() : "";
 
-        for (ResourceLocation id : RecentTablesManager.getInstance().getAll()) {
+        for (Identifier id : RecentTablesManager.getInstance().getAll()) {
             // Skip if bookmarked (already shown in bookmarks)
             if (BookmarkManager.getInstance().isBookmarked(id)) {
                 continue;
@@ -225,7 +225,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         int contentHeight = 0;
 
         // Bookmarks section
-        List<ResourceLocation> bookmarks = getFilteredBookmarks();
+        List<Identifier> bookmarks = getFilteredBookmarks();
         if (!bookmarks.isEmpty()) {
             contentHeight += CATEGORY_HEIGHT; // Header
             if (bookmarksSectionExpanded) {
@@ -234,7 +234,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         }
 
         // Recent section
-        List<ResourceLocation> recent = getFilteredRecent();
+        List<Identifier> recent = getFilteredRecent();
         if (!recent.isEmpty()) {
             contentHeight += CATEGORY_HEIGHT; // Header
             if (recentSectionExpanded) {
@@ -344,7 +344,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         int renderY = listY - scrollOffset;
 
         // Bookmarks section
-        List<ResourceLocation> bookmarks = getFilteredBookmarks();
+        List<Identifier> bookmarks = getFilteredBookmarks();
         if (!bookmarks.isEmpty()) {
             boolean catHovered = mouseX >= getX() && mouseX < getX() + width &&
                 mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT &&
@@ -368,7 +368,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Bookmark entries if expanded
             if (bookmarksSectionExpanded) {
-                for (ResourceLocation id : bookmarks) {
+                for (Identifier id : bookmarks) {
                     if (renderY + ITEM_HEIGHT > listY && renderY < getY() + height) {
                         boolean isSelected = id.equals(selectedTable);
                         boolean itemHovered = mouseX >= getX() + INDENT && mouseX < getX() + width &&
@@ -397,7 +397,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         }
 
         // Recent section
-        List<ResourceLocation> recent = getFilteredRecent();
+        List<Identifier> recent = getFilteredRecent();
         if (!recent.isEmpty()) {
             boolean catHovered = mouseX >= getX() && mouseX < getX() + width &&
                 mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT &&
@@ -421,7 +421,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Recent entries if expanded
             if (recentSectionExpanded) {
-                for (ResourceLocation id : recent) {
+                for (Identifier id : recent) {
                     if (renderY + ITEM_HEIGHT > listY && renderY < getY() + height) {
                         boolean isSelected = id.equals(selectedTable);
                         boolean itemHovered = mouseX >= getX() + INDENT && mouseX < getX() + width &&
@@ -761,7 +761,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         int renderY = listY - scrollOffset;
 
         // Bookmarks section click handling
-        List<ResourceLocation> bookmarks = getFilteredBookmarks();
+        List<Identifier> bookmarks = getFilteredBookmarks();
         if (!bookmarks.isEmpty()) {
             // Bookmarks header click
             if (mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT) {
@@ -773,7 +773,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Bookmark items if expanded
             if (bookmarksSectionExpanded) {
-                for (ResourceLocation id : bookmarks) {
+                for (Identifier id : bookmarks) {
                     if (mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT) {
                         selectedTable = id;
                         RecentTablesManager.getInstance().recordView(id);
@@ -786,7 +786,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         }
 
         // Recent section click handling
-        List<ResourceLocation> recent = getFilteredRecent();
+        List<Identifier> recent = getFilteredRecent();
         if (!recent.isEmpty()) {
             // Recent header click
             if (mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT) {
@@ -798,7 +798,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Recent items if expanded
             if (recentSectionExpanded) {
-                for (ResourceLocation id : recent) {
+                for (Identifier id : recent) {
                     if (mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT) {
                         selectedTable = id;
                         RecentTablesManager.getInstance().recordView(id);

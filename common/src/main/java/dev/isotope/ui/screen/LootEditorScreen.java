@@ -40,7 +40,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -418,11 +418,11 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         switchPanel(panelId);
     }
 
-    private void onTableSelected(ResourceLocation tableId) {
+    private void onTableSelected(Identifier tableId) {
         tabManager.openTab(tableId);
     }
 
-    private void onSearchResultSelected(ResourceLocation tableId) {
+    private void onSearchResultSelected(Identifier tableId) {
         tabManager.openTab(tableId);
         // Switch back to browser after selection
         switchPanel(PANEL_BROWSER);
@@ -446,7 +446,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     private void updateValidationBadge() {
         // Update the badge on the validation activity bar item
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null) {
             activityBar.setBadge(PANEL_VALIDATION, 0);
             return;
@@ -498,7 +498,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
         // Check if entry is composite
         boolean isComposite = false;
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId != null) {
             var structure = LootEditManager.getInstance().getEditedStructure(tableId)
                 .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
@@ -536,7 +536,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openAddFunctionDialog(int poolIdx, int entryIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         minecraft.setScreen(new AddFunctionDialog(this, function -> {
@@ -547,7 +547,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openAddConditionDialog(int poolIdx, int entryIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         minecraft.setScreen(new AddConditionDialog(this, condition -> {
@@ -561,7 +561,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
      * Open dialog to add a condition to a specific function on an entry.
      */
     private void openAddFunctionConditionDialog(int poolIdx, int entryIdx, int funcIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         minecraft.setScreen(new AddConditionDialog(this, condition -> {
@@ -575,7 +575,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
      * Remove a condition from a specific function on an entry.
      */
     private void removeFunctionCondition(int poolIdx, int entryIdx, int funcIdx, int condIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null) return;
 
         LootEditOperation op = new LootEditOperation.RemoveFunctionCondition(poolIdx, entryIdx, funcIdx, condIdx);
@@ -584,7 +584,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openChangeTypeDialog(int poolIdx, int entryIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         // Get current entry type
@@ -603,7 +603,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openSetQualityDialog(int poolIdx, int entryIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         // Get current entry quality
@@ -622,7 +622,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openEditChildrenDialog(int poolIdx, int entryIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         // Get current entry
@@ -650,7 +650,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openAddTableFunctionDialog() {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         minecraft.setScreen(new AddFunctionDialog(this, function -> {
@@ -661,7 +661,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openEditRandomSequenceDialog() {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         // Get current random sequence from the structure
@@ -677,7 +677,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openAddPoolFunctionDialog(int poolIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         minecraft.setScreen(new AddFunctionDialog(this, function -> {
@@ -688,7 +688,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openAddPoolConditionDialog(int poolIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         minecraft.setScreen(new AddConditionDialog(this, condition -> {
@@ -699,7 +699,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void openSetBonusRollsDialog(int poolIdx) {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null || minecraft == null) return;
 
         // Simple dialog with preset bonus roll values
@@ -737,7 +737,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     @Nullable
-    private ResourceLocation getSelectedTable() {
+    private Identifier getSelectedTable() {
         return tabManager.getActiveTableId().orElse(null);
     }
 
@@ -777,7 +777,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void onCopyJson() {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null) {
             IsotopeToast.info("Copy JSON", "No loot table selected");
             return;
@@ -804,7 +804,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void onImportJsonFromClipboard() {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null) {
             IsotopeToast.info("Import JSON", "Select a loot table first");
             return;
@@ -886,7 +886,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     private void onOpenCompare() {
         if (minecraft != null) {
-            ResourceLocation current = getSelectedTable();
+            Identifier current = getSelectedTable();
             if (current != null) {
                 minecraft.setScreen(new CompareScreen(this, current, null));
             } else {
@@ -897,7 +897,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     private void onOpenSimulation() {
         if (minecraft != null) {
-            ResourceLocation current = getSelectedTable();
+            Identifier current = getSelectedTable();
             if (current != null) {
                 minecraft.setScreen(new SimulationScreen(this, current));
             } else {
@@ -908,7 +908,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
 
     private void onOpenQuickFix() {
         if (minecraft != null) {
-            ResourceLocation current = getSelectedTable();
+            Identifier current = getSelectedTable();
             if (current != null) {
                 minecraft.setScreen(new QuickFixScreen(this, current));
             } else {
@@ -958,7 +958,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void onValidateTable() {
-        ResourceLocation tableId = getSelectedTable();
+        Identifier tableId = getSelectedTable();
         if (tableId == null) {
             IsotopeToast.warning("No Table", "Select a loot table first");
             return;
@@ -1002,7 +1002,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         int totalWarnings = 0;
         int tablesWithIssues = 0;
 
-        for (ResourceLocation tableId : editedTables) {
+        for (Identifier tableId : editedTables) {
             var structure = LootEditManager.getInstance().getEditedStructure(tableId).orElse(null);
             if (structure == null) continue;
 
@@ -1080,7 +1080,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     private void updateButtonStates() {
-        ResourceLocation selected = getSelectedTable();
+        Identifier selected = getSelectedTable();
         if (selected != null) {
             undoButton.active = LootEditManager.getInstance().canUndo(selected);
             redoButton.active = LootEditManager.getInstance().canRedo(selected);
@@ -1135,7 +1135,7 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
         graphics.fill(0, statusY, width, statusY + 1, IsotopeColors.borderInner());
 
         // Status bar content
-        ResourceLocation selectedTable = getSelectedTable();
+        Identifier selectedTable = getSelectedTable();
         if (selectedTable != null) {
             graphics.drawString(font, selectedTable.toString(), ActivityBar.WIDTH + 5, statusY + 6,
                 IsotopeColors.textSecondary(), false);

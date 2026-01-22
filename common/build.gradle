@@ -1,10 +1,10 @@
 architectury {
-    common(rootProject.enabled_platforms.split(","))
+    common("fabric")
 }
 
 dependencies {
-    // Fabric loader for annotations - do NOT use other fabric classes here
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    // Fabric loader for annotations (EnvType, Environment) - compile only
+    modCompileOnly "net.fabricmc:fabric-loader:0.16.9"
     // Architectury API
     modApi "dev.architectury:architectury:${rootProject.architectury_version}"
 

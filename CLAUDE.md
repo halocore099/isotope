@@ -2,13 +2,14 @@
 
 ## Branch Info
 
-**Branch**: `fab-1.21.9-.10`
-**Target**: Minecraft 1.21.9-1.21.10, Fabric only
+**Branch**: `fab-1.21.11`
+**Target**: Minecraft 1.21.11, Fabric only
 **Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
 
-This is a multi-version, single-loader branch. For other versions/loaders, see:
+This is a single-version, single-loader branch (separate from 1.21.9-1.21.10 due to major API changes). For other versions/loaders, see:
+- `neo-1.21.11` - NeoForge 1.21.11
+- `fab-1.21.9-.10` - Fabric 1.21.9-1.21.10
 - `neo-1.21.9-.10` - NeoForge 1.21.9-1.21.10
-- `fab-1.21.11` - Fabric 1.21.11 (separate due to major API changes)
 - `main` - Documentation only
 
 ## Critical Rules
@@ -46,10 +47,10 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 
 | Dependency | Version |
 |------------|---------|
-| Minecraft | 1.21.9-1.21.10 |
+| Minecraft | 1.21.11 |
 | Fabric Loader | 0.17.2 |
-| Fabric API | 0.138.4+1.21.10 |
-| Architectury | 18.0.8 |
+| Fabric API | 0.141.1+1.21.11 |
+| Architectury | 19.0.1 |
 | Java | 21 |
 
 ## Structure-Loot Linking Architecture
@@ -1561,6 +1562,8 @@ Three critical mixins enable runtime observation and test mode without modifying
 
 **Purpose:** Intercept loot generation for observation and test mode replacement.
 
+**Note:** In MC 1.21.11+, `LootTable` objects don't store their own ID. The ID is tracked via `LootTableTracker` (ThreadLocal) which is set by `ReloadableRegistriesMixin` when `getLootTable()` is called.
+
 **Injected Methods:**
 
 | Method | Injection | Purpose |
@@ -1572,7 +1575,7 @@ Three critical mixins enable runtime observation and test mode without modifying
 | `fill(Container, LootParams, long)` | HEAD, cancellable | **Critical**: Fills chests with loot |
 
 **Behavior:**
-1. Gets current table ID from `LootTableTracker`
+1. Gets current table ID from `LootTableTracker` (via `getTableId()` helper)
 2. If test mode active AND table has edits:
    - Generates loot from edited `LootTableStructure` via `LootGenerator`
    - Cancels vanilla generation

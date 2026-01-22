@@ -9,7 +9,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -122,7 +122,7 @@ public class CompositeChildrenDialog extends DialogScreen {
             // Item icon
             int iconX = listX + 30;
             if (child.name().isPresent()) {
-                ResourceLocation itemId = child.name().get();
+                Identifier itemId = child.name().get();
                 var itemOpt = BuiltInRegistries.ITEM.get(itemId);
                 if (itemOpt.isPresent()) {
                     ItemStack stack = new ItemStack(itemOpt.get().value());

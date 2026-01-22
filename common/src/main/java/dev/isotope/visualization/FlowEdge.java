@@ -1,14 +1,14 @@
 package dev.isotope.visualization;
 
 import dev.isotope.data.StructureLootLink;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Represents a directed edge in the loot flow graph.
  */
 public record FlowEdge(
-    ResourceLocation fromId,
-    ResourceLocation toId,
+    Identifier fromId,
+    Identifier toId,
     EdgeType type,
     int confidence,      // 0-100 for visual weight
     String sourceLabel   // e.g., "Template", "Verified", "Heuristic"
@@ -37,7 +37,7 @@ public record FlowEdge(
     /**
      * Create an edge for a nested table reference.
      */
-    public static FlowEdge nestedReference(ResourceLocation fromTable, ResourceLocation toTable) {
+    public static FlowEdge nestedReference(Identifier fromTable, Identifier toTable) {
         return new FlowEdge(
             fromTable,
             toTable,

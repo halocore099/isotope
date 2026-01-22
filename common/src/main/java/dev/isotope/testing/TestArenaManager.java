@@ -7,7 +7,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,7 +43,7 @@ public final class TestArenaManager {
     private static final int PLATFORM_Y = 100; // Y level for spawning
 
     @Nullable
-    private ResourceLocation currentStructure;
+    private Identifier currentStructure;
     private int structureCount = DEFAULT_STRUCTURE_COUNT;
     private boolean isArenaActive = false;
 
@@ -78,7 +78,7 @@ public final class TestArenaManager {
      * Get the structure being tested.
      */
     @Nullable
-    public ResourceLocation getCurrentStructure() {
+    public Identifier getCurrentStructure() {
         return currentStructure;
     }
 
@@ -89,7 +89,7 @@ public final class TestArenaManager {
      * @param structureId The structure to spawn
      * @param progressCallback Callback for progress updates
      */
-    public void createArena(ResourceLocation structureId, Consumer<String> progressCallback) {
+    public void createArena(Identifier structureId, Consumer<String> progressCallback) {
         this.currentStructure = structureId;
 
         Minecraft mc = Minecraft.getInstance();
@@ -113,7 +113,7 @@ public final class TestArenaManager {
     /**
      * Spawn multiple copies of a structure in a grid pattern.
      */
-    private void spawnStructuresInArena(MinecraftServer server, ResourceLocation structureId,
+    private void spawnStructuresInArena(MinecraftServer server, Identifier structureId,
                                         Consumer<String> progressCallback) {
         ServerLevel level = server.overworld();
         if (level == null) {

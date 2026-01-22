@@ -8,7 +8,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -25,18 +25,18 @@ public class RandomSequenceDialog extends DialogScreen {
     private static final int DIALOG_WIDTH = 280;
     private static final int DIALOG_HEIGHT = 140;
 
-    private final Optional<ResourceLocation> currentSequence;
-    private final Consumer<Optional<ResourceLocation>> onSequenceSelected;
+    private final Optional<Identifier> currentSequence;
+    private final Consumer<Optional<Identifier>> onSequenceSelected;
 
     private String inputText;
     private boolean inputFocused = true;
 
-    public RandomSequenceDialog(@Nullable Screen parent, Optional<ResourceLocation> currentSequence,
-                                 Consumer<Optional<ResourceLocation>> onSequenceSelected) {
+    public RandomSequenceDialog(@Nullable Screen parent, Optional<Identifier> currentSequence,
+                                 Consumer<Optional<Identifier>> onSequenceSelected) {
         super(parent, "Edit Random Sequence");
         this.currentSequence = currentSequence;
         this.onSequenceSelected = onSequenceSelected;
-        this.inputText = currentSequence.map(ResourceLocation::toString).orElse("");
+        this.inputText = currentSequence.map(Identifier::toString).orElse("");
     }
 
     @Override
@@ -172,7 +172,7 @@ public class RandomSequenceDialog extends DialogScreen {
     public boolean charTyped(CharacterEvent event) {
         char chr = (char) event.codepoint(); int modifiers = event.modifiers();
         if (inputFocused) {
-            // Allow alphanumeric, underscore, colon, slash for ResourceLocation
+            // Allow alphanumeric, underscore, colon, slash for Identifier
             if (Character.isLetterOrDigit(chr) || chr == '_' || chr == ':' || chr == '/' || chr == '.') {
                 inputText += chr;
                 return true;
@@ -182,11 +182,11 @@ public class RandomSequenceDialog extends DialogScreen {
     }
 
     private void applySelection() {
-        Optional<ResourceLocation> result;
+        Optional<Identifier> result;
         if (inputText.isEmpty()) {
             result = Optional.empty();
         } else {
-            result = Optional.of(ResourceLocation.parse(ScreenUtils.ensureNamespace(inputText)));
+            result = Optional.of(Identifier.parse(ScreenUtils.ensureNamespace(inputText)));
         }
         onSequenceSelected.accept(result);
         onClose();
