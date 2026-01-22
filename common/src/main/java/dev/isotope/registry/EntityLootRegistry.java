@@ -103,7 +103,8 @@ public final class EntityLootRegistry {
      */
     private String getEntityDisplayName(ResourceLocation entityId) {
         try {
-            EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
+            // In 1.21.1, get() returns EntityType directly
+            EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.get(entityId);
             if (entityType != null) {
                 // Get the translation key and format it nicely
                 String key = entityType.getDescriptionId();

@@ -21,12 +21,17 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
+import net.minecraft.world.level.dimension.LevelStem;
+import net.minecraft.world.level.levelgen.WorldDimensions;
 import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import org.jetbrains.annotations.Nullable;
 
@@ -191,7 +196,7 @@ public class TestSetupScreen extends Screen {
         minecraft.execute(() -> {
             try {
                 // Configure game rules
-                GameRules gameRules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+                GameRules gameRules = new GameRules();
 
                 LevelSettings levelSettings = new LevelSettings(
                     worldName,
@@ -212,27 +217,19 @@ public class TestSetupScreen extends Screen {
 
                 Isotope.LOGGER.info("Creating test world: {} (type: {})", worldName, selectedWorldType);
 
-                // Create the world directly
-                if (selectedWorldType == TestModeState.WorldType.VOID) {
-                    // Create flat world (superflat) - structures won't generate but
-                    // we can still test loot tables. For a true void, would need custom preset.
-                    minecraft.createWorldOpenFlows().createFreshLevel(
-                        worldName,
-                        levelSettings,
-                        worldOptions,
-                        WorldPresets::createFlatWorldDimensions,
-                        null
-                    );
-                } else {
-                    // Normal generation with structures - best for testing teleport/arena
-                    minecraft.createWorldOpenFlows().createFreshLevel(
-                        worldName,
-                        levelSettings,
-                        worldOptions,
-                        WorldPresets::createNormalWorldDimensions,
-                        null
-                    );
-                }
+                // Create the world using 1.21.1 compatible API
+                // WorldPresets.FLAT or WorldPresets.NORMAL as ResourceKey<WorldPreset>
+                var presetKey = selectedWorldType == TestModeState.WorldType.VOID
+                    ? WorldPresets.FLAT : WorldPresets.NORMAL;
+
+                // 1.21.1: createFreshLevel requires 5th param (Screen)
+                minecraft.createWorldOpenFlows().createFreshLevel(
+                    worldName,
+                    levelSettings,
+                    worldOptions,
+                    registries -> createDimensionsFromPreset(registries, presetKey),
+                    null // parent screen
+                );
 
             } catch (Exception e) {
                 Isotope.LOGGER.error("Failed to create test world", e);
@@ -374,5 +371,17 @@ public class TestSetupScreen extends Screen {
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Don't call super - just fill with solid color to prevent blur
         graphics.fill(0, 0, this.width, this.height, IsotopeColors.BACKGROUND_MEDIUM);
+    }
+
+    /**
+     * Create WorldDimensions from a WorldPreset key.
+     * This is the 1.21.1 compatible way to create world dimensions.
+     */
+    private static WorldDimensions createDimensionsFromPreset(
+            RegistryAccess registries,
+            net.minecraft.resources.ResourceKey<WorldPreset> presetKey) {
+        var presetRegistry = registries.registryOrThrow(Registries.WORLD_PRESET);
+        Holder<WorldPreset> preset = presetRegistry.getHolderOrThrow(presetKey);
+        return preset.value().createWorldDimensions();
     }
 }

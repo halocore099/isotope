@@ -12,6 +12,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
@@ -119,9 +120,9 @@ public final class TestMobTools {
             BlockPos playerPos = player.blockPosition();
             BlockPos spawnPos = playerPos.offset(offset.getX(), offset.getY(), offset.getZ());
 
-            // Spawn the entity
+            // Spawn the entity (1.21.1: uses MobSpawnType instead of EntitySpawnReason)
             Entity entity = entityType.create(level, null, spawnPos,
-                net.minecraft.world.entity.EntitySpawnReason.COMMAND, false, false);
+                MobSpawnType.COMMAND, false, false);
 
             if (entity == null) {
                 return SpawnResult.error("Failed to create entity");
@@ -221,9 +222,9 @@ public final class TestMobTools {
             // Kill the entity
             living.hurt(damageSource, Float.MAX_VALUE);
 
-            // If still alive, force death
+            // If still alive, force death (1.21.1: kill() has no parameters)
             if (living.isAlive()) {
-                living.kill(level);
+                living.kill();
             }
 
             String lootingInfo = lootingLevel > 0 && condition.isPlayerKill() ? " (Looting " + lootingLevel + ")" : "";

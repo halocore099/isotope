@@ -3,13 +3,15 @@ package dev.isotope.registry;
 import dev.isotope.Isotope;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
+import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 import java.io.IOException;
@@ -94,7 +96,7 @@ public final class RegistryLoader {
             Minecraft minecraft = Minecraft.getInstance();
 
             // Minimal world settings - we just need registry access
-            GameRules gameRules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+            GameRules gameRules = new GameRules();
 
             LevelSettings levelSettings = new LevelSettings(
                 TEMP_WORLD_NAME,
@@ -114,12 +116,17 @@ public final class RegistryLoader {
             );
 
             // Create the world - RegistryScanner.onServerStarted will be triggered
+            // 1.21.1: createFreshLevel requires 5th param (Screen)
             minecraft.createWorldOpenFlows().createFreshLevel(
                 TEMP_WORLD_NAME,
                 levelSettings,
                 worldOptions,
-                WorldPresets::createNormalWorldDimensions,
-                null
+                registries -> {
+                    var presetRegistry = registries.registryOrThrow(Registries.WORLD_PRESET);
+                    Holder<WorldPreset> preset = presetRegistry.getHolderOrThrow(WorldPresets.NORMAL);
+                    return preset.value().createWorldDimensions();
+                },
+                null // parent screen
             );
 
         } catch (Exception e) {

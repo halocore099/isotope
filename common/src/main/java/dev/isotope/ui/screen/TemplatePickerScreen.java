@@ -12,7 +12,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -169,9 +171,9 @@ public class TemplatePickerScreen extends Screen {
 
                 // Item icon (if has default item)
                 if (template.defaultItem().isPresent()) {
-                    var itemOpt = BuiltInRegistries.ITEM.get(template.defaultItem().get());
-                    if (itemOpt.isPresent()) {
-                        graphics.renderItem(new ItemStack(itemOpt.get().value()), entryX + 4, y + (entryHeight - 16) / 2);
+                    Item item = BuiltInRegistries.ITEM.get(template.defaultItem().get());
+                    if (item != Items.AIR) {
+                        graphics.renderItem(new ItemStack(item), entryX + 4, y + (entryHeight - 16) / 2);
                         textX = entryX + 26;
                     }
                 }

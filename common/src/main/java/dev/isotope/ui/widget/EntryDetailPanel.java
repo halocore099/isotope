@@ -15,7 +15,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -618,9 +620,9 @@ public class EntryDetailPanel extends AbstractWidget {
 
     private ItemStack getItemStack(ResourceLocation itemId) {
         try {
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
-            if (itemOpt.isPresent()) {
-                return new ItemStack(itemOpt.get().value());
+            Item item = BuiltInRegistries.ITEM.get(itemId);
+            if (item != Items.AIR) {
+                return new ItemStack(item);
             }
         } catch (Exception e) {
             // Ignore

@@ -18,7 +18,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -282,9 +284,9 @@ public class TemplateEditorScreen extends Screen {
 
         if (selectedItem != null) {
             // Render item icon
-            var itemOpt = BuiltInRegistries.ITEM.get(selectedItem);
-            if (itemOpt.isPresent()) {
-                graphics.renderItem(new ItemStack(itemOpt.get().value()), itemBtnX + 2, y);
+            Item item = BuiltInRegistries.ITEM.get(selectedItem);
+            if (item != Items.AIR) {
+                graphics.renderItem(new ItemStack(item), itemBtnX + 2, y);
             }
             String itemName = selectedItem.getPath();
             if (itemName.length() > 18) itemName = itemName.substring(0, 15) + "...";

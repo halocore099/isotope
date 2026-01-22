@@ -7,7 +7,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -120,9 +122,9 @@ public class CompositeChildrenDialog extends DialogScreen {
             int iconX = listX + 30;
             if (child.name().isPresent()) {
                 ResourceLocation itemId = child.name().get();
-                var itemOpt = BuiltInRegistries.ITEM.get(itemId);
-                if (itemOpt.isPresent()) {
-                    ItemStack stack = new ItemStack(itemOpt.get().value());
+                Item item = BuiltInRegistries.ITEM.get(itemId);
+                if (item != Items.AIR) {
+                    ItemStack stack = new ItemStack(item);
                     graphics.renderItem(stack, iconX, childY + 4);
                 }
             }

@@ -9,6 +9,6 @@ pluginManagement {
 
 include("common")
 include("fabric")
-include("neoforge")
+// neoforge not included - this is a Fabric-only branch (fab-1.21-.1)
 
 rootProject.name = "isotope"

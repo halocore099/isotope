@@ -3,7 +3,7 @@ package dev.isotope.registry;
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureLootLink;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -66,22 +66,23 @@ public final class StructureTemplateParser {
         SpawnerEntityExtractor.getInstance().clear();
 
         StructureTemplateManager templateManager = server.getStructureManager();
-        Registry<Structure> structureRegistry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-        Registry<StructureTemplatePool> poolRegistry = server.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL);
+        // 1.21.1: Use HolderLookup instead of Registry
+        HolderLookup.RegistryLookup<Structure> structureLookup = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        HolderLookup.RegistryLookup<StructureTemplatePool> poolLookup = server.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL);
 
         Isotope.LOGGER.info("[TemplateParser] Starting structure template parsing (including spawner analysis)...");
 
-        // Process each registered structure
-        for (var entry : structureRegistry.entrySet()) {
-            ResourceLocation structureId = entry.getKey().location();
-            Structure structure = entry.getValue();
+        // Process each registered structure using listElements()
+        structureLookup.listElements().forEach(holder -> {
+            ResourceLocation structureId = holder.key().location();
+            Structure structure = holder.value();
 
             Set<ResourceLocation> lootTables = new HashSet<>();
 
             try {
                 // Check if this is a jigsaw structure (has template pools)
                 if (structure instanceof JigsawStructure jigsawStructure) {
-                    lootTables.addAll(parseJigsawStructure(structureId, jigsawStructure, templateManager, poolRegistry));
+                    lootTables.addAll(parseJigsawStructure(structureId, jigsawStructure, templateManager, poolLookup));
                 } else {
                     // Try to find templates by naming convention
                     lootTables.addAll(parseByNamingConvention(structureId, templateManager));
@@ -111,7 +112,7 @@ public final class StructureTemplateParser {
                 Isotope.LOGGER.debug("[TemplateParser] Error parsing structure {}: {}",
                     structureId, e.getMessage());
             }
-        }
+        });
 
         parsed = true;
         SpawnerEntityExtractor.Stats spawnerStats = SpawnerEntityExtractor.getInstance().getStats();
@@ -129,7 +130,7 @@ public final class StructureTemplateParser {
             ResourceLocation structureId,
             JigsawStructure structure,
             StructureTemplateManager templateManager,
-            Registry<StructureTemplatePool> poolRegistry) {
+            HolderLookup.RegistryLookup<StructureTemplatePool> poolLookup) {
 
         Set<ResourceLocation> lootTables = new HashSet<>();
         Set<ResourceLocation> visitedPools = new HashSet<>();
@@ -155,7 +156,7 @@ public final class StructureTemplateParser {
 
                 if (poolId != null) {
                     lootTables.addAll(parseTemplatePoolRecursive(
-                        structureId, poolId, templateManager, poolRegistry, visitedPools));
+                        structureId, poolId, templateManager, poolLookup, visitedPools));
                 }
             }
         } catch (Exception e) {
@@ -172,7 +173,7 @@ public final class StructureTemplateParser {
             ResourceLocation structureId,
             ResourceLocation poolId,
             StructureTemplateManager templateManager,
-            Registry<StructureTemplatePool> poolRegistry,
+            HolderLookup.RegistryLookup<StructureTemplatePool> poolLookup,
             Set<ResourceLocation> visitedPools) {
 
         // Avoid infinite recursion
@@ -184,12 +185,14 @@ public final class StructureTemplateParser {
         Set<ResourceLocation> lootTables = new HashSet<>();
 
         try {
-            Optional<StructureTemplatePool> poolOpt = poolRegistry.getOptional(poolId);
-            if (poolOpt.isEmpty()) {
+            // 1.21.1: Use HolderLookup.get() with ResourceKey
+            ResourceKey<StructureTemplatePool> poolKey = ResourceKey.create(Registries.TEMPLATE_POOL, poolId);
+            Optional<Holder.Reference<StructureTemplatePool>> poolHolder = poolLookup.get(poolKey);
+            if (poolHolder.isEmpty()) {
                 return lootTables;
             }
 
-            StructureTemplatePool pool = poolOpt.get();
+            StructureTemplatePool pool = poolHolder.get().value();
 
             // Get all templates from this pool using getShuffledTemplates
             // This returns the weighted random elements
@@ -219,7 +222,7 @@ public final class StructureTemplateParser {
 
                 if (fallbackId != null && !fallbackId.equals(poolId)) {
                     lootTables.addAll(parseTemplatePoolRecursive(
-                        structureId, fallbackId, templateManager, poolRegistry, visitedPools));
+                        structureId, fallbackId, templateManager, poolLookup, visitedPools));
                 }
             }
 

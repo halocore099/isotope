@@ -14,6 +14,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
@@ -126,10 +127,10 @@ public final class LootTestRunner {
 
                 stats.startTest();
 
-                // Spawn entity
+                // Spawn entity (1.21.1: uses MobSpawnType instead of EntitySpawnReason)
                 BlockPos spawnPos = playerPos.offset(3 + (i % 5) * 2, 0, 3 + (i / 5) * 2);
                 Entity entity = entityType.create(level, null, spawnPos,
-                    net.minecraft.world.entity.EntitySpawnReason.COMMAND, false, false);
+                    MobSpawnType.COMMAND, false, false);
 
                 if (entity == null) continue;
 
@@ -186,7 +187,8 @@ public final class LootTestRunner {
         List<ItemStack> drops = new ArrayList<>();
 
         try {
-            var lootTableKey = entity.getLootTable().orElse(null);
+            // In 1.21.1, getLootTable() returns ResourceKey directly (not Optional)
+            var lootTableKey = entity.getLootTable();
             if (lootTableKey == null) return drops;
 
             LootTable lootTable = level.getServer().reloadableRegistries()

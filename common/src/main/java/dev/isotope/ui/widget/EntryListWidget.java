@@ -8,7 +8,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -77,9 +79,9 @@ public class EntryListWidget extends ScrollableListWidget<LootEntry> {
 
     private static ItemStack getItemStack(ResourceLocation itemId) {
         try {
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
-            if (itemOpt.isPresent()) {
-                return new ItemStack(itemOpt.get().value());
+            Item item = BuiltInRegistries.ITEM.get(itemId);
+            if (item != Items.AIR) {
+                return new ItemStack(item);
             }
         } catch (Exception e) {
             // Ignore

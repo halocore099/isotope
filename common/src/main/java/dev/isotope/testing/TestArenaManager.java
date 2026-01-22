@@ -4,7 +4,7 @@ import dev.isotope.Isotope;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -121,12 +121,12 @@ public final class TestArenaManager {
             return;
         }
 
-        // Get structure from registry
-        Registry<Structure> structureRegistry = level.registryAccess()
+        // Get structure from registry (1.21.1 compatible)
+        HolderLookup.RegistryLookup<Structure> structureLookup = level.registryAccess()
             .lookupOrThrow(Registries.STRUCTURE);
 
         ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);
-        Optional<Holder.Reference<Structure>> structureHolder = structureRegistry.get(structureKey);
+        Optional<Holder.Reference<Structure>> structureHolder = structureLookup.get(structureKey);
 
         if (structureHolder.isEmpty()) {
             notifyClient(progressCallback, "Error: Unknown structure " + structureId);
@@ -188,8 +188,8 @@ public final class TestArenaManager {
             int centerX = startX + (gridSize * STRUCTURE_SPACING) / 2;
             int centerZ = startZ + (gridSize * STRUCTURE_SPACING) / 2;
 
-            player.teleportTo(level, centerX, PLATFORM_Y + 10, centerZ,
-                Set.of(), 0, 0, true);
+            // 1.21.1: teleportTo has simpler signature (no Set<RelativeMovement> or boolean)
+            player.teleportTo(level, centerX, PLATFORM_Y + 10, centerZ, 0, 0);
             player.setGameMode(GameType.CREATIVE);
         }
 
@@ -212,8 +212,6 @@ public final class TestArenaManager {
 
             // Create structure start
             StructureStart start = structure.generate(
-                structureHolder,
-                level.dimension(),
                 level.registryAccess(),
                 level.getChunkSource().getGenerator(),
                 level.getChunkSource().getGenerator().getBiomeSource(),
