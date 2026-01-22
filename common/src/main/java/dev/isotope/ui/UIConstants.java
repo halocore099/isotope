@@ -123,6 +123,25 @@ public final class UIConstants {
     /** Status bar height (20 pixels). */
     public static final int STATUS_BAR_HEIGHT = 20;
 
+    // === Test Mode Panel ===
+    /** Test mode panel width (450 pixels). */
+    public static final int TEST_PANEL_WIDTH = 450;
+
+    /** Test mode panel height (400 pixels). */
+    public static final int TEST_PANEL_HEIGHT = 400;
+
+    /** Test mode entry card height (80 pixels). */
+    public static final int TEST_ENTRY_HEIGHT = 80;
+
+    /** Test mode settings row height (24 pixels). */
+    public static final int TEST_SETTINGS_ROW_HEIGHT = 24;
+
+    /** Test mode header height (30 pixels). */
+    public static final int TEST_HEADER_HEIGHT = 30;
+
+    /** Test mode footer height (30 pixels). */
+    public static final int TEST_FOOTER_HEIGHT = 30;
+
     // === Keyboard Key Codes ===
     /** Escape key code (GLFW_KEY_ESCAPE). */
     public static final int KEY_ESCAPE = 256;
