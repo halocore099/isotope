@@ -1105,9 +1105,15 @@ public class LootEditorScreen extends Screen implements KeyboardShortcuts.Shortc
     }
 
     @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        // MC 1.21.11: Override to prevent blur (can only blur once per frame)
+        // Actual background is drawn in render() to control layering order
+    }
+
+    @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Background
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Background (solid, no blur - MC 1.21.11 only allows blur once per frame)
+        graphics.fill(0, 0, width, height, IsotopeColors.backgroundDark());
 
         // Header bar (theme-aware)
         graphics.fill(0, 0, width, HEADER_HEIGHT, IsotopeColors.backgroundSolid());

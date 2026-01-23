@@ -1,8 +1,8 @@
 package dev.isotope.neoforge;
 
 import dev.isotope.Isotope;
-import dev.isotope.ui.IsotopeClientInit;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -15,11 +15,16 @@ public final class IsotopeNeoForge {
 
         // Register client setup only on client side
         if (FMLEnvironment.getDist() == Dist.CLIENT) {
-            modEventBus.addListener(this::onClientSetup);
+            modEventBus.addListener(ClientSetup::onClientSetup);
         }
     }
 
-    private void onClientSetup(FMLClientSetupEvent event) {
-        IsotopeClientInit.init();
+    // Separate class to defer loading of client-only code until actually needed
+    // This prevents IsotopeClientInit from being loaded on the server side
+    @OnlyIn(Dist.CLIENT)
+    private static final class ClientSetup {
+        private static void onClientSetup(FMLClientSetupEvent event) {
+            dev.isotope.ui.IsotopeClientInit.init();
+        }
     }
 }
