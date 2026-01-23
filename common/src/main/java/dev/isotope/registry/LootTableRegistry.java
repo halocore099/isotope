@@ -7,10 +7,13 @@ import dev.isotope.data.LootTableInfo.LootTableCategory;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Registry of all discovered loot tables.
@@ -48,18 +51,18 @@ public final class LootTableRegistry {
             var holder = server.reloadableRegistries();
 
             // Log the holder type for debugging
-            Isotope.LOGGER.info("Holder type: {}", holder.getClass().getName());
+            Isotope.LOGGER.debug("Holder type: {}", holder.getClass().getName());
 
             // Try lookup() with no args to see what it returns
             var lookup = holder.lookup();
-            Isotope.LOGGER.info("Lookup type: {}", lookup.getClass().getName());
+            Isotope.LOGGER.debug("Lookup type: {}", lookup.getClass().getName());
 
             // Collect all IDs first
             List<Identifier> tableIds = new ArrayList<>();
 
             // The lookup should implement HolderLookup.Provider
             if (lookup instanceof net.minecraft.core.HolderLookup.Provider provider) {
-                // Now we can look up the loot table registry
+                // Direct approach - works on NeoForge with Mojang mappings
                 var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
 
                 lootLookup.listElementIds().forEach(key -> {
@@ -68,8 +71,12 @@ public final class LootTableRegistry {
                         tableIds.add(id);
                     }
                 });
+                Isotope.LOGGER.debug("Direct registry access successful");
             } else {
-                Isotope.LOGGER.warn("Lookup is not a HolderLookup.Provider: {}", lookup.getClass());
+                // Fallback: use reflection for Fabric with intermediary mappings
+                // The instanceof check fails on Fabric because class names differ at runtime
+                Isotope.LOGGER.info("Using reflection fallback for loot table registry access");
+                scanViaReflection(lookup, tableIds);
             }
 
             // Now analyze each table with content-based detection
@@ -113,10 +120,190 @@ public final class LootTableRegistry {
             Map<LootTableCategory, Long> byCategory = lootTables.values().stream()
                 .collect(Collectors.groupingBy(LootTableInfo::category, Collectors.counting()));
             byCategory.forEach((cat, count) ->
-                Isotope.LOGGER.info("  {} {} loot tables", count, cat));
+                Isotope.LOGGER.debug("  {} {} loot tables", count, cat));
 
         } catch (Exception e) {
             Isotope.LOGGER.error("Failed to scan loot table registry", e);
+        }
+    }
+
+    /**
+     * Scan loot tables using reflection.
+     * This is a fallback for Fabric where the instanceof check fails due to
+     * intermediary mappings causing different class names at runtime.
+     */
+    @SuppressWarnings("unchecked")
+    private void scanViaReflection(Object lookup, List<Identifier> tableIds) {
+        try {
+            // Step 1: Find and invoke lookupOrThrow(ResourceKey) method
+            // On Fabric intermediary, method names may be obfuscated like "method_46767"
+            Method lookupOrThrowMethod = findMethod(lookup.getClass(),
+                new String[]{"lookupOrThrow", "method_46767", "method_46763"},
+                1, ResourceKey.class);
+
+            if (lookupOrThrowMethod == null) {
+                // Try finding any single-arg method that takes a ResourceKey-like parameter
+                for (Method m : lookup.getClass().getMethods()) {
+                    if (m.getParameterCount() == 1) {
+                        Class<?> paramType = m.getParameterTypes()[0];
+                        if (paramType.getName().contains("ResourceKey") ||
+                            paramType.getName().contains("class_5321")) {
+                            lookupOrThrowMethod = m;
+                            Isotope.LOGGER.debug("Found lookupOrThrow candidate: {}", m.getName());
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (lookupOrThrowMethod == null) {
+                Isotope.LOGGER.warn("Could not find lookupOrThrow method on {}", lookup.getClass().getName());
+                logAvailableMethods(lookup.getClass());
+                return;
+            }
+
+            lookupOrThrowMethod.setAccessible(true);
+            Object lootLookup = lookupOrThrowMethod.invoke(lookup, Registries.LOOT_TABLE);
+
+            if (lootLookup == null) {
+                Isotope.LOGGER.warn("lookupOrThrow returned null");
+                return;
+            }
+
+            Isotope.LOGGER.debug("Got loot lookup: {}", lootLookup.getClass().getName());
+
+            // Step 2: Find and invoke listElementIds() method
+            Method listElementIdsMethod = findMethod(lootLookup.getClass(),
+                new String[]{"listElementIds", "method_46771", "method_40224"},
+                0, null);
+
+            if (listElementIdsMethod == null) {
+                // Try finding any no-arg method that returns a Stream
+                for (Method m : lootLookup.getClass().getMethods()) {
+                    if (m.getParameterCount() == 0 &&
+                        m.getReturnType().getName().contains("Stream")) {
+                        listElementIdsMethod = m;
+                        Isotope.LOGGER.debug("Found listElementIds candidate: {}", m.getName());
+                        break;
+                    }
+                }
+            }
+
+            if (listElementIdsMethod == null) {
+                Isotope.LOGGER.warn("Could not find listElementIds method on {}", lootLookup.getClass().getName());
+                logAvailableMethods(lootLookup.getClass());
+                return;
+            }
+
+            listElementIdsMethod.setAccessible(true);
+            Object streamObj = listElementIdsMethod.invoke(lootLookup);
+
+            if (!(streamObj instanceof java.util.stream.Stream)) {
+                Isotope.LOGGER.warn("listElementIds did not return a Stream: {}",
+                    streamObj != null ? streamObj.getClass().getName() : "null");
+                return;
+            }
+
+            java.util.stream.Stream<?> idStream = (java.util.stream.Stream<?>) streamObj;
+
+            // Step 3: Process each ResourceKey to extract the Identifier
+            idStream.forEach(key -> {
+                try {
+                    Identifier id = extractIdentifier(key);
+                    if (id != null && !id.getPath().equals("empty")) {
+                        tableIds.add(id);
+                    }
+                } catch (Exception e) {
+                    Isotope.LOGGER.debug("Failed to extract ID from key: {}", e.getMessage());
+                }
+            });
+
+            Isotope.LOGGER.info("Reflection-based scan found {} loot tables", tableIds.size());
+
+        } catch (Exception e) {
+            Isotope.LOGGER.error("Reflection-based loot table scan failed", e);
+            Isotope.LOGGER.debug("Stack trace:", e);
+        }
+    }
+
+    /**
+     * Find a method by trying multiple possible names (for mapping compatibility).
+     */
+    private Method findMethod(Class<?> clazz, String[] possibleNames, int paramCount, Class<?> paramType) {
+        for (String name : possibleNames) {
+            try {
+                for (Method m : clazz.getMethods()) {
+                    if (m.getName().equals(name) && m.getParameterCount() == paramCount) {
+                        if (paramType == null ||
+                            (paramCount > 0 && paramType.isAssignableFrom(m.getParameterTypes()[0]))) {
+                            return m;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    /**
+     * Extract an Identifier from a ResourceKey object using reflection.
+     */
+    private Identifier extractIdentifier(Object key) throws Exception {
+        // Try common method names for getting the location/identifier
+        String[] possibleMethods = {"identifier", "location", "method_41185", "method_29177"};
+
+        for (String methodName : possibleMethods) {
+            try {
+                Method m = key.getClass().getMethod(methodName);
+                Object result = m.invoke(key);
+                if (result instanceof Identifier id) {
+                    return id;
+                }
+                // On Fabric, it might return a ResourceLocation with a different class name
+                if (result != null) {
+                    // Try to extract namespace and path
+                    Method getNamespace = result.getClass().getMethod("getNamespace");
+                    Method getPath = result.getClass().getMethod("getPath");
+                    String namespace = (String) getNamespace.invoke(result);
+                    String path = (String) getPath.invoke(result);
+                    return Identifier.fromNamespaceAndPath(namespace, path);
+                }
+            } catch (NoSuchMethodException ignored) {}
+        }
+
+        // Last resort: try any no-arg method that might return a location
+        for (Method m : key.getClass().getMethods()) {
+            if (m.getParameterCount() == 0 && !m.getName().equals("toString") &&
+                !m.getName().equals("hashCode") && !m.getName().equals("getClass")) {
+                try {
+                    Object result = m.invoke(key);
+                    if (result instanceof Identifier id) {
+                        return id;
+                    }
+                    if (result != null && result.getClass().getName().contains("ResourceLocation")) {
+                        Method getNamespace = result.getClass().getMethod("getNamespace");
+                        Method getPath = result.getClass().getMethod("getPath");
+                        String namespace = (String) getNamespace.invoke(result);
+                        String path = (String) getPath.invoke(result);
+                        return Identifier.fromNamespaceAndPath(namespace, path);
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        Isotope.LOGGER.debug("Could not extract identifier from: {}", key.getClass().getName());
+        return null;
+    }
+
+    /**
+     * Log available methods on a class for debugging.
+     */
+    private void logAvailableMethods(Class<?> clazz) {
+        Isotope.LOGGER.debug("Available methods on {}:", clazz.getName());
+        for (Method m : clazz.getMethods()) {
+            if (!m.getDeclaringClass().equals(Object.class)) {
+                Isotope.LOGGER.debug("  {} ({} params)", m.getName(), m.getParameterCount());
+            }
         }
     }
 
