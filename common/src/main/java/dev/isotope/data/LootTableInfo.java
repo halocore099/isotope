@@ -1,12 +1,12 @@
 package dev.isotope.data;
 
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 /**
  * Immutable data class holding discovered loot table information.
  */
 public record LootTableInfo(
-    Identifier id,
+    Id id,
     String namespace,
     String path,
     LootTableCategory category
@@ -25,7 +25,7 @@ public record LootTableInfo(
         OTHER
     }
 
-    public static LootTableInfo fromId(Identifier id) {
+    public static LootTableInfo fromId(Id id) {
         return new LootTableInfo(
             id,
             id.getNamespace(),
@@ -37,7 +37,7 @@ public record LootTableInfo(
     /**
      * Create LootTableInfo with an explicit category (from content analysis).
      */
-    public static LootTableInfo fromIdWithCategory(Identifier id, LootTableCategory category) {
+    public static LootTableInfo fromIdWithCategory(Id id, LootTableCategory category) {
         return new LootTableInfo(
             id,
             id.getNamespace(),

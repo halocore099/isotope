@@ -1,8 +1,8 @@
 package dev.isotope.testing;
 
+import dev.isotope.compat.Id;
 import dev.isotope.ui.ScreenUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.*;
@@ -15,19 +15,19 @@ import java.util.*;
  */
 public class DropStatistics {
 
-    private final Identifier sourceId;  // Loot table or entity ID
+    private final Id sourceId;  // Loot table or entity ID
     private final String sourceName;
     private final String testCondition;  // e.g., "Player Kill", "Looting III"
     private int testCount = 0;
     private int totalDrops = 0;
 
     // Item ID -> list of drop counts per test
-    private final Map<Identifier, List<Integer>> dropsByItem = new LinkedHashMap<>();
+    private final Map<Id, List<Integer>> dropsByItem = new LinkedHashMap<>();
 
     // Track total count per item across all tests
-    private final Map<Identifier, Integer> totalByItem = new LinkedHashMap<>();
+    private final Map<Id, Integer> totalByItem = new LinkedHashMap<>();
 
-    public DropStatistics(Identifier sourceId, String sourceName, String testCondition) {
+    public DropStatistics(Id sourceId, String sourceName, String testCondition) {
         this.sourceId = sourceId;
         this.sourceName = sourceName;
         this.testCondition = testCondition;
@@ -39,7 +39,7 @@ public class DropStatistics {
     public void startTest() {
         testCount++;
         // Initialize drop counts for this test
-        for (Identifier itemId : dropsByItem.keySet()) {
+        for (Id itemId : dropsByItem.keySet()) {
             dropsByItem.get(itemId).add(0);
         }
     }
@@ -50,7 +50,7 @@ public class DropStatistics {
     public void recordDrop(ItemStack stack) {
         if (stack.isEmpty()) return;
 
-        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Id itemId = Id.wrap(BuiltInRegistries.ITEM.getKey(stack.getItem()));
         int count = stack.getCount();
 
         // Initialize if first time seeing this item
@@ -89,7 +89,7 @@ public class DropStatistics {
     /**
      * Get source ID (loot table or entity).
      */
-    public Identifier getSourceId() {
+    public Id getSourceId() {
         return sourceId;
     }
 
@@ -124,21 +124,21 @@ public class DropStatistics {
     /**
      * Get all unique items that dropped.
      */
-    public Set<Identifier> getDroppedItems() {
+    public Set<Id> getDroppedItems() {
         return Collections.unmodifiableSet(dropsByItem.keySet());
     }
 
     /**
      * Get total count for a specific item.
      */
-    public int getTotalForItem(Identifier itemId) {
+    public int getTotalForItem(Id itemId) {
         return totalByItem.getOrDefault(itemId, 0);
     }
 
     /**
      * Get average drops per test for a specific item.
      */
-    public float getAverageForItem(Identifier itemId) {
+    public float getAverageForItem(Id itemId) {
         if (testCount == 0) return 0;
         return (float) getTotalForItem(itemId) / testCount;
     }
@@ -146,7 +146,7 @@ public class DropStatistics {
     /**
      * Get percentage of tests that dropped this item at least once.
      */
-    public float getDropRateForItem(Identifier itemId) {
+    public float getDropRateForItem(Id itemId) {
         if (testCount == 0) return 0;
         List<Integer> counts = dropsByItem.get(itemId);
         if (counts == null) return 0;
@@ -161,7 +161,7 @@ public class DropStatistics {
     /**
      * Get min/max drops for a specific item.
      */
-    public int[] getMinMaxForItem(Identifier itemId) {
+    public int[] getMinMaxForItem(Id itemId) {
         List<Integer> counts = dropsByItem.get(itemId);
         if (counts == null || counts.isEmpty()) return new int[]{0, 0};
 
@@ -188,11 +188,11 @@ public class DropStatistics {
             lines.add("§8No items dropped");
         } else {
             // Sort by total count descending
-            List<Map.Entry<Identifier, Integer>> sorted = new ArrayList<>(totalByItem.entrySet());
+            List<Map.Entry<Id, Integer>> sorted = new ArrayList<>(totalByItem.entrySet());
             sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
 
             for (var entry : sorted) {
-                Identifier itemId = entry.getKey();
+                Id itemId = entry.getKey();
                 int total = entry.getValue();
                 float avg = getAverageForItem(itemId);
                 float rate = getDropRateForItem(itemId);

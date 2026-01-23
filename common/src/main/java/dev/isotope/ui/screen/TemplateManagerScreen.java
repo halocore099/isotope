@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
 import dev.isotope.ui.IsotopeColors;
@@ -15,7 +16,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import dev.isotope.util.Regs;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
@@ -26,7 +29,7 @@ import java.util.List;
  * Screen for managing custom templates (list, edit, delete).
  */
 @Environment(EnvType.CLIENT)
-public class TemplateManagerScreen extends Screen {
+public class TemplateManagerScreen extends VersionedScreen {
 
     private static final int PANEL_WIDTH = 450;
     private static final int PANEL_HEIGHT = 350;
@@ -143,9 +146,9 @@ public class TemplateManagerScreen extends Screen {
                     // Item icon (if has default item)
                     int iconX = listX + 8;
                     if (template.defaultItem().isPresent()) {
-                        var itemOpt = BuiltInRegistries.ITEM.get(template.defaultItem().get());
+                        var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, template.defaultItem().get());
                         if (itemOpt.isPresent()) {
-                            graphics.renderItem(new ItemStack(itemOpt.get().value()), iconX, y + (TEMPLATE_HEIGHT - 4 - 16) / 2);
+                            graphics.renderItem(new ItemStack(itemOpt.get()), iconX, y + (TEMPLATE_HEIGHT - 4 - 16) / 2);
                         }
                     }
 

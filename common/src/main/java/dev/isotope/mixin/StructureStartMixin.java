@@ -1,10 +1,10 @@
 package dev.isotope.mixin;
 
+import dev.isotope.compat.Id;
 import dev.isotope.observation.StructureObserver;
 import dev.isotope.observation.StructurePlacement;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
@@ -58,12 +58,12 @@ public abstract class StructureStartMixin {
         }
 
         // Get the structure's registry key
-        Identifier structureId = level.registryAccess()
+        Id structureId = level.registryAccess()
             .lookupOrThrow(Registries.STRUCTURE)
             .listElements()
             .filter(holder -> holder.value() == this.structure)
             .findFirst()
-            .map(holder -> holder.key().identifier())
+            .map(holder -> Id.fromKey(holder.key()))
             .orElse(null);
 
         if (structureId == null) {

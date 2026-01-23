@@ -1,7 +1,7 @@
 package dev.isotope.visualization;
 
+import dev.isotope.compat.Id;
 import dev.isotope.data.LootSourceType;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -24,7 +24,7 @@ public final class FlowNode {
         NESTED_TABLE  // Referenced via minecraft:loot_table entry
     }
 
-    private final Identifier id;
+    private final Id id;
     private final NodeType type;
     private final String displayName;
     @Nullable
@@ -40,7 +40,7 @@ public final class FlowNode {
     private int width = NODE_WIDTH;
     private int height = NODE_HEIGHT;
 
-    private FlowNode(Identifier id, NodeType type, String displayName, @Nullable LootSourceType sourceType) {
+    private FlowNode(Id id, NodeType type, String displayName, @Nullable LootSourceType sourceType) {
         this.id = id;
         this.type = type;
         this.displayName = displayName;
@@ -53,27 +53,27 @@ public final class FlowNode {
     /**
      * Create a source node (structure, feature, or mob).
      */
-    public static FlowNode source(Identifier id, String name, LootSourceType sourceType) {
+    public static FlowNode source(Id id, String name, LootSourceType sourceType) {
         return new FlowNode(id, NodeType.SOURCE, name, sourceType);
     }
 
     /**
      * Create a loot table node.
      */
-    public static FlowNode lootTable(Identifier id, String name) {
+    public static FlowNode lootTable(Id id, String name) {
         return new FlowNode(id, NodeType.LOOT_TABLE, name, null);
     }
 
     /**
      * Create a nested table reference node.
      */
-    public static FlowNode nestedTable(Identifier id, String name) {
+    public static FlowNode nestedTable(Id id, String name) {
         return new FlowNode(id, NodeType.NESTED_TABLE, name, null);
     }
 
     // --- Getters ---
 
-    public Identifier id() {
+    public Id id() {
         return id;
     }
 

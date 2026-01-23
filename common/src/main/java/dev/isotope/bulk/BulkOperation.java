@@ -1,5 +1,6 @@
 package dev.isotope.bulk;
 
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootFunction;
@@ -9,7 +10,6 @@ import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootEditOperation;
 import dev.isotope.editing.LootTableParser;
 import dev.isotope.registry.LootTableRegistry;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.*;
@@ -46,18 +46,18 @@ public class BulkOperation {
         Type type,
         int tablesAffected,
         int totalChanges,
-        Map<Identifier, List<String>> changesByTable
+        Map<Id, List<String>> changesByTable
     ) {}
 
     /**
      * Preview removing an item from all tables.
      */
-    public static BulkResult previewRemoveItem(MinecraftServer server, Identifier itemToRemove) {
-        Map<Identifier, List<String>> changes = new LinkedHashMap<>();
+    public static BulkResult previewRemoveItem(MinecraftServer server, Id itemToRemove) {
+        Map<Id, List<String>> changes = new LinkedHashMap<>();
         int totalChanges = 0;
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -84,11 +84,11 @@ public class BulkOperation {
     /**
      * Apply removing an item from all tables.
      */
-    public static void applyRemoveItem(MinecraftServer server, Identifier itemToRemove) {
+    public static void applyRemoveItem(MinecraftServer server, Id itemToRemove) {
         LootEditManager manager = LootEditManager.getInstance();
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -108,12 +108,12 @@ public class BulkOperation {
     /**
      * Preview replacing an item across all tables.
      */
-    public static BulkResult previewReplaceItem(MinecraftServer server, Identifier oldItem, Identifier newItem) {
-        Map<Identifier, List<String>> changes = new LinkedHashMap<>();
+    public static BulkResult previewReplaceItem(MinecraftServer server, Id oldItem, Id newItem) {
+        Map<Id, List<String>> changes = new LinkedHashMap<>();
         int totalChanges = 0;
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -140,11 +140,11 @@ public class BulkOperation {
     /**
      * Apply replacing an item across all tables.
      */
-    public static void applyReplaceItem(MinecraftServer server, Identifier oldItem, Identifier newItem) {
+    public static void applyReplaceItem(MinecraftServer server, Id oldItem, Id newItem) {
         LootEditManager manager = LootEditManager.getInstance();
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -164,11 +164,11 @@ public class BulkOperation {
      * Preview scaling weights across all tables.
      */
     public static BulkResult previewScaleWeights(MinecraftServer server, float scaleFactor) {
-        Map<Identifier, List<String>> changes = new LinkedHashMap<>();
+        Map<Id, List<String>> changes = new LinkedHashMap<>();
         int totalChanges = 0;
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -201,7 +201,7 @@ public class BulkOperation {
         LootEditManager manager = LootEditManager.getInstance();
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -223,11 +223,11 @@ public class BulkOperation {
      * Preview scaling item counts across all tables.
      */
     public static BulkResult previewScaleCounts(MinecraftServer server, float scaleFactor) {
-        Map<Identifier, List<String>> changes = new LinkedHashMap<>();
+        Map<Id, List<String>> changes = new LinkedHashMap<>();
         int totalChanges = 0;
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -274,7 +274,7 @@ public class BulkOperation {
         LootEditManager manager = LootEditManager.getInstance();
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -308,11 +308,11 @@ public class BulkOperation {
      * Preview removing empty pools from all tables.
      */
     public static BulkResult previewRemoveEmptyPools(MinecraftServer server) {
-        Map<Identifier, List<String>> changes = new LinkedHashMap<>();
+        Map<Id, List<String>> changes = new LinkedHashMap<>();
         int totalChanges = 0;
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -340,7 +340,7 @@ public class BulkOperation {
         LootEditManager manager = LootEditManager.getInstance();
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -360,11 +360,11 @@ public class BulkOperation {
      * Preview normalizing weights to sum to 100 per pool.
      */
     public static BulkResult previewNormalizeWeights(MinecraftServer server) {
-        Map<Identifier, List<String>> changes = new LinkedHashMap<>();
+        Map<Id, List<String>> changes = new LinkedHashMap<>();
         int totalChanges = 0;
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -403,7 +403,7 @@ public class BulkOperation {
         LootEditManager manager = LootEditManager.getInstance();
 
         for (var tableInfo : LootTableRegistry.getInstance().getAll()) {
-            Identifier tableId = tableInfo.id();
+            Id tableId = tableInfo.id();
             LootTableStructure structure = getStructure(server, tableId);
             if (structure == null) continue;
 
@@ -471,7 +471,7 @@ public class BulkOperation {
         return "?";
     }
 
-    private static LootTableStructure getStructure(MinecraftServer server, Identifier tableId) {
+    private static LootTableStructure getStructure(MinecraftServer server, Id tableId) {
         return LootEditManager.getInstance().getEditedStructure(tableId)
             .or(() -> LootTableParser.parse(server, tableId))
             .orElse(null);

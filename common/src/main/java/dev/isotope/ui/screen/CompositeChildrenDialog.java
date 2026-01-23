@@ -8,8 +8,10 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import dev.isotope.compat.Id;
+import dev.isotope.util.Regs;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -122,10 +124,10 @@ public class CompositeChildrenDialog extends DialogScreen {
             // Item icon
             int iconX = listX + 30;
             if (child.name().isPresent()) {
-                Identifier itemId = child.name().get();
-                var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+                Id itemId = child.name().get();
+                var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, itemId);
                 if (itemOpt.isPresent()) {
-                    ItemStack stack = new ItemStack(itemOpt.get().value());
+                    ItemStack stack = new ItemStack(itemOpt.get());
                     graphics.renderItem(stack, iconX, childY + 4);
                 }
             }

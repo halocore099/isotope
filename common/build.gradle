@@ -1,8 +1,11 @@
 architectury {
-    common("neoforge")
+    common("neoforge", "fabric")
 }
 
 dependencies {
+    // Compat module for version abstraction
+    api project(":compat")
+
     // Fabric loader for annotations (EnvType, Environment) - compile only
     modCompileOnly "net.fabricmc:fabric-loader:0.16.9"
     // Architectury API
@@ -11,6 +14,11 @@ dependencies {
     // Testing
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
+}
+
+// Disable standalone transformation - common will be transformed together with compat in neoforge/fabric
+tasks.matching { it.name.startsWith('transformProduction') }.configureEach {
+    enabled = false
 }
 
 test {

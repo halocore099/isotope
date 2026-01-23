@@ -1,12 +1,12 @@
 package dev.isotope.search;
 
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 /**
  * Search hit within a loot table.
  */
 public record SearchHit(
-    Identifier table,
+    Id table,
     int pool,
     int entry,
     String context

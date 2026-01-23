@@ -1,6 +1,6 @@
 package dev.isotope.data;
 
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
  * This provides a unified abstraction for the UI to display both structures and features.
  */
 public record LootSource(
-    Identifier id,
+    Id id,
     String namespace,
     String path,
     LootSourceType type,
@@ -36,7 +36,7 @@ public record LootSource(
     /**
      * Create a virtual feature source.
      */
-    public static LootSource feature(Identifier id, String displayName, String description) {
+    public static LootSource feature(Id id, String displayName, String description) {
         return new LootSource(
             id,
             id.getNamespace(),
@@ -50,7 +50,7 @@ public record LootSource(
     /**
      * Create a mob/entity loot source.
      */
-    public static LootSource mob(Identifier entityId, String displayName, String description) {
+    public static LootSource mob(Id entityId, String displayName, String description) {
         return new LootSource(
             entityId,
             entityId.getNamespace(),
@@ -64,7 +64,7 @@ public record LootSource(
     /**
      * Create from ID with auto-detected type.
      */
-    public static LootSource fromId(Identifier id, LootSourceType type) {
+    public static LootSource fromId(Id id, LootSourceType type) {
         return new LootSource(
             id,
             id.getNamespace(),

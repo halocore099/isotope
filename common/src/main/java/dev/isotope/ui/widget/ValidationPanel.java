@@ -1,6 +1,8 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.analysis.OrphanDetector;
+import dev.isotope.compat.Id;
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.data.loot.NumberProvider;
@@ -22,7 +24,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ import java.util.function.BiConsumer;
  * Panel that displays validation issues for the current loot table.
  */
 @Environment(EnvType.CLIENT)
-public class ValidationPanel extends AbstractWidget {
+public class ValidationPanel extends VersionedWidget {
 
     private static final int ROW_HEIGHT = 28;
     private static final int HEADER_HEIGHT = 24;
@@ -41,7 +42,7 @@ public class ValidationPanel extends AbstractWidget {
     private static final int FIX_BUTTON_WIDTH = 30;
 
     @Nullable
-    private Identifier currentTableId;
+    private Id currentTableId;
     @Nullable
     private ValidationResult validationResult;
     private List<ValidationIssue> displayedIssues = new ArrayList<>();
@@ -67,7 +68,7 @@ public class ValidationPanel extends AbstractWidget {
     /**
      * Set the loot table to validate.
      */
-    public void setTable(@Nullable Identifier tableId) {
+    public void setTable(@Nullable Id tableId) {
         this.currentTableId = tableId;
 
         if (tableId == null) {
@@ -78,13 +79,13 @@ public class ValidationPanel extends AbstractWidget {
         }
 
         // Check orphan status
-        isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId);
+        isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId.mc());
 
-        LootTableStructure structure = LootEditManager.getInstance().getEditedStructure(tableId)
-            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+        LootTableStructure structure = LootEditManager.getInstance().getEditedStructure(tableId.mc())
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId.mc()).orElse(null));
 
         if (structure != null) {
-            validationResult = LootTableValidator.validate(tableId, structure);
+            validationResult = LootTableValidator.validate(tableId.mc(), structure);
             displayedIssues = new ArrayList<>(validationResult.issues());
         } else {
             validationResult = null;
@@ -116,7 +117,7 @@ public class ValidationPanel extends AbstractWidget {
     /**
      * Refresh validation for the current table.
      */
-    public void refresh(Identifier tableId) {
+    public void refresh(Id tableId) {
         setTable(tableId);
     }
 

@@ -1,6 +1,6 @@
 package dev.isotope.data;
 
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 /**
  * Represents a link between a structure and a loot table.
@@ -11,8 +11,8 @@ import net.minecraft.resources.Identifier;
  * - Manual (author-defined override)
  */
 public record StructureLootLink(
-    Identifier structureId,
-    Identifier lootTableId,
+    Id structureId,
+    Id lootTableId,
     Confidence confidence,
     LinkSource source
 ) {
@@ -82,7 +82,7 @@ public record StructureLootLink(
     /**
      * Create a heuristic link with path-based confidence.
      */
-    public static StructureLootLink heuristic(Identifier structureId, Identifier lootTableId,
+    public static StructureLootLink heuristic(Id structureId, Id lootTableId,
                                                Confidence confidence) {
         return new StructureLootLink(structureId, lootTableId, confidence,
             confidence == Confidence.LOW ? LinkSource.HEURISTIC_NAMESPACE : LinkSource.HEURISTIC_PATH);
@@ -91,21 +91,21 @@ public record StructureLootLink(
     /**
      * Create a verified link from runtime observation.
      */
-    public static StructureLootLink verified(Identifier structureId, Identifier lootTableId) {
+    public static StructureLootLink verified(Id structureId, Id lootTableId) {
         return new StructureLootLink(structureId, lootTableId, Confidence.VERIFIED, LinkSource.OBSERVATION);
     }
 
     /**
      * Create a template-based link from .nbt file parsing.
      */
-    public static StructureLootLink fromTemplate(Identifier structureId, Identifier lootTableId) {
+    public static StructureLootLink fromTemplate(Id structureId, Id lootTableId) {
         return new StructureLootLink(structureId, lootTableId, Confidence.TEMPLATE, LinkSource.TEMPLATE_PARSE);
     }
 
     /**
      * Create a manual link from author override.
      */
-    public static StructureLootLink manual(Identifier structureId, Identifier lootTableId) {
+    public static StructureLootLink manual(Id structureId, Id lootTableId) {
         return new StructureLootLink(structureId, lootTableId, Confidence.MANUAL, LinkSource.AUTHOR_ADDED);
     }
 
@@ -113,7 +113,7 @@ public record StructureLootLink(
      * Create a feature link from known feature-to-loot mappings.
      * Features are treated like structures but are actually fire-and-forget decorations.
      */
-    public static StructureLootLink feature(Identifier featureId, Identifier lootTableId) {
+    public static StructureLootLink feature(Id featureId, Id lootTableId) {
         return new StructureLootLink(featureId, lootTableId, Confidence.HIGH, LinkSource.FEATURE_MAPPING);
     }
 
@@ -121,14 +121,14 @@ public record StructureLootLink(
      * Create a runtime-assigned link from setLootTable() capture.
      * This captures the exact moment a loot table is assigned to a container during generation.
      */
-    public static StructureLootLink runtimeAssigned(Identifier structureId, Identifier lootTableId) {
+    public static StructureLootLink runtimeAssigned(Id structureId, Id lootTableId) {
         return new StructureLootLink(structureId, lootTableId, Confidence.RUNTIME_ASSIGNED, LinkSource.RUNTIME_ASSIGNED);
     }
 
     /**
      * Create a link from worldgen JSON parsing (configured_feature files).
      */
-    public static StructureLootLink fromWorldgen(Identifier featureId, Identifier lootTableId) {
+    public static StructureLootLink fromWorldgen(Id featureId, Id lootTableId) {
         return new StructureLootLink(featureId, lootTableId, Confidence.HIGH, LinkSource.WORLDGEN_JSON);
     }
 
@@ -136,7 +136,7 @@ public record StructureLootLink(
      * Create a link from persistent learned history.
      * Previously verified links are pre-loaded with LEARNED confidence.
      */
-    public static StructureLootLink learned(Identifier structureId, Identifier lootTableId) {
+    public static StructureLootLink learned(Id structureId, Id lootTableId) {
         return new StructureLootLink(structureId, lootTableId, Confidence.LEARNED, LinkSource.LEARNED);
     }
 
@@ -149,7 +149,7 @@ public record StructureLootLink(
      *
      * @param versionAge Number of MC minor versions since link was learned
      */
-    public static StructureLootLink learned(Identifier structureId, Identifier lootTableId, int versionAge) {
+    public static StructureLootLink learned(Id structureId, Id lootTableId, int versionAge) {
         Confidence confidence;
         if (versionAge <= 1) {
             confidence = Confidence.LEARNED;
@@ -164,7 +164,7 @@ public record StructureLootLink(
     /**
      * Create a confirmed link when multiple independent sources agree.
      */
-    public static StructureLootLink confirmed(Identifier structureId, Identifier lootTableId) {
+    public static StructureLootLink confirmed(Id structureId, Id lootTableId) {
         return new StructureLootLink(structureId, lootTableId, Confidence.CONFIRMED, LinkSource.MULTI_SOURCE);
     }
 
@@ -172,7 +172,7 @@ public record StructureLootLink(
      * Create a mod-declared link from ModLinkRegistry API or isotope_links.json.
      * These links have very high confidence (95) since the mod author explicitly declared them.
      */
-    public static StructureLootLink modDeclared(Identifier structureId, Identifier lootTableId) {
+    public static StructureLootLink modDeclared(Id structureId, Id lootTableId) {
         return new StructureLootLink(structureId, lootTableId, Confidence.MOD_DECLARED, LinkSource.MOD_DECLARED);
     }
 
@@ -183,7 +183,7 @@ public record StructureLootLink(
      *
      * Example: A dungeon with a zombie spawner links to minecraft:entities/zombie
      */
-    public static StructureLootLink spawnerEntity(Identifier structureId, Identifier entityLootTableId) {
+    public static StructureLootLink spawnerEntity(Id structureId, Id entityLootTableId) {
         return new StructureLootLink(structureId, entityLootTableId, Confidence.TEMPLATE, LinkSource.SPAWNER_ENTITY);
     }
 
@@ -200,7 +200,7 @@ public record StructureLootLink(
      *
      * @param hintConfidence 0-100 confidence from signature item analysis
      */
-    public static StructureLootLink contentAnalysis(Identifier structureId, Identifier lootTableId, int hintConfidence) {
+    public static StructureLootLink contentAnalysis(Id structureId, Id lootTableId, int hintConfidence) {
         // Map hint confidence to our confidence levels
         Confidence confidence;
         if (hintConfidence >= 85) {

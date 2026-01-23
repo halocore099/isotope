@@ -1,5 +1,8 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.Id;
+import dev.isotope.compat.ui.VersionedScreen;
+import dev.isotope.util.Regs;
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
 import dev.isotope.data.loot.LootEntry;
@@ -19,8 +22,8 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +35,7 @@ import java.util.Optional;
  * Screen for creating and editing custom templates.
  */
 @Environment(EnvType.CLIENT)
-public class TemplateEditorScreen extends Screen {
+public class TemplateEditorScreen extends VersionedScreen {
 
     private static final int PANEL_WIDTH = 380;
     private static final int PANEL_HEIGHT = 400;
@@ -53,7 +56,7 @@ public class TemplateEditorScreen extends Screen {
 
     // State
     @Nullable
-    private Identifier selectedItem;
+    private Id selectedItem;
     private boolean useRange = true;
     private final List<LootFunction> functions = new ArrayList<>();
     private int functionsScrollOffset = 0;
@@ -96,7 +99,7 @@ public class TemplateEditorScreen extends Screen {
      */
     public static TemplateEditorScreen fromEntry(Screen parent, LootEntry entry, @Nullable Runnable onSaved) {
         // Build a template from the entry
-        Identifier itemId = entry.name().orElse(null);
+        Id itemId = entry.name().orElse(null);
 
         // Extract count from set_count function
         NumberProvider count = NumberProvider.constant(1);
@@ -285,9 +288,9 @@ public class TemplateEditorScreen extends Screen {
 
         if (selectedItem != null) {
             // Render item icon
-            var itemOpt = BuiltInRegistries.ITEM.get(selectedItem);
+            var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, selectedItem);
             if (itemOpt.isPresent()) {
-                graphics.renderItem(new ItemStack(itemOpt.get().value()), itemBtnX + 2, y);
+                graphics.renderItem(new ItemStack(itemOpt.get()), itemBtnX + 2, y);
             }
             String itemName = selectedItem.getPath();
             if (itemName.length() > 18) itemName = itemName.substring(0, 15) + "...";

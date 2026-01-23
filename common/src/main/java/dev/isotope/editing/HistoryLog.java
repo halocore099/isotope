@@ -1,6 +1,6 @@
 package dev.isotope.editing;
 
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -35,12 +35,12 @@ public final class HistoryLog {
      */
     public record LogEntry(
         long timestamp,
-        Identifier tableId,
+        Id tableId,
         String operationType,
         String description,
         String formattedTime
     ) {
-        public static LogEntry create(Identifier tableId, LootEditOperation operation) {
+        public static LogEntry create(Id tableId, LootEditOperation operation) {
             long now = System.currentTimeMillis();
             String time = TIME_FORMAT.format(
                 Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).toLocalDateTime()
@@ -90,7 +90,7 @@ public final class HistoryLog {
     /**
      * Log an operation.
      */
-    public void log(Identifier tableId, LootEditOperation operation) {
+    public void log(Id tableId, LootEditOperation operation) {
         LogEntry entry = LogEntry.create(tableId, operation);
         entries.add(entry);
 
@@ -105,7 +105,7 @@ public final class HistoryLog {
     /**
      * Log an undo operation.
      */
-    public void logUndo(Identifier tableId) {
+    public void logUndo(Id tableId) {
         long now = System.currentTimeMillis();
         String time = TIME_FORMAT.format(
             Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).toLocalDateTime()
@@ -117,7 +117,7 @@ public final class HistoryLog {
     /**
      * Log a redo operation.
      */
-    public void logRedo(Identifier tableId) {
+    public void logRedo(Id tableId) {
         long now = System.currentTimeMillis();
         String time = TIME_FORMAT.format(
             Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).toLocalDateTime()
@@ -129,7 +129,7 @@ public final class HistoryLog {
     /**
      * Log a batch operation (multiple operations applied at once).
      */
-    public void logBatch(Identifier tableId, int count, String firstOpDescription) {
+    public void logBatch(Id tableId, int count, String firstOpDescription) {
         long now = System.currentTimeMillis();
         String time = TIME_FORMAT.format(
             Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()).toLocalDateTime()
@@ -157,7 +157,7 @@ public final class HistoryLog {
     /**
      * Get entries for a specific table.
      */
-    public List<LogEntry> getForTable(Identifier tableId) {
+    public List<LogEntry> getForTable(Id tableId) {
         return entries.stream()
             .filter(e -> e.tableId().equals(tableId))
             .toList();

@@ -1,8 +1,8 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.data.LootSource;
-import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -25,7 +25,7 @@ public final class FeatureRegistry {
 
     private static final FeatureRegistry INSTANCE = new FeatureRegistry();
 
-    private final Map<Identifier, FeatureDefinition> features = new LinkedHashMap<>();
+    private final Map<Id, FeatureDefinition> features = new LinkedHashMap<>();
     private boolean initialized = false;
 
     private FeatureRegistry() {}
@@ -79,9 +79,9 @@ public final class FeatureRegistry {
      */
     private void registerFeature(String featureId, String displayName, String description,
                                   List<String> lootTablePaths) {
-        Identifier id = Identifier.parse(featureId);
-        List<Identifier> lootTables = lootTablePaths.stream()
-            .map(Identifier::parse)
+        Id id = Id.parse(featureId);
+        List<Id> lootTables = lootTablePaths.stream()
+            .map(Id::parse)
             .toList();
 
         features.put(id, new FeatureDefinition(id, displayName, description, lootTables));
@@ -97,7 +97,7 @@ public final class FeatureRegistry {
     /**
      * Get feature by ID.
      */
-    public Optional<FeatureDefinition> get(Identifier id) {
+    public Optional<FeatureDefinition> get(Id id) {
         return Optional.ofNullable(features.get(id));
     }
 
@@ -125,7 +125,7 @@ public final class FeatureRegistry {
     /**
      * Check if a given ID is a known feature.
      */
-    public boolean isFeature(Identifier id) {
+    public boolean isFeature(Id id) {
         return features.containsKey(id);
     }
 
@@ -170,7 +170,7 @@ public final class FeatureRegistry {
         int added = 0;
 
         for (WorldgenFeatureParser.FeatureDiscovery discovery : parser.getAllDiscoveries()) {
-            Identifier id = discovery.featureId();
+            Id id = discovery.featureId();
 
             // Skip if already registered (hardcoded takes priority)
             if (features.containsKey(id)) {
@@ -180,7 +180,7 @@ public final class FeatureRegistry {
             // Create feature definition from discovery
             String displayName = formatDisplayName(id);
             String description = "Discovered from worldgen JSON: " + discovery.featureType();
-            List<Identifier> lootTables = new ArrayList<>(discovery.lootTables());
+            List<Id> lootTables = new ArrayList<>(discovery.lootTables());
 
             features.put(id, new FeatureDefinition(id, displayName, description, lootTables));
             added++;
@@ -195,7 +195,7 @@ public final class FeatureRegistry {
     /**
      * Format a feature ID into a display name.
      */
-    private String formatDisplayName(Identifier id) {
+    private String formatDisplayName(Id id) {
         String path = id.getPath();
 
         // Handle nested paths (e.g., "ore/iron_ore" -> "Iron Ore")
@@ -225,10 +225,10 @@ public final class FeatureRegistry {
      * Feature definition with associated loot tables.
      */
     public record FeatureDefinition(
-        Identifier id,
+        Id id,
         String displayName,
         String description,
-        List<Identifier> lootTables
+        List<Id> lootTables
     ) {
         /**
          * Convert to a LootSource for unified handling.

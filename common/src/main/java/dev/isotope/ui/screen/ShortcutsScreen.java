@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
@@ -18,7 +19,7 @@ import net.minecraft.network.chat.Component;
  * Opened with F1.
  */
 @Environment(EnvType.CLIENT)
-public class ShortcutsScreen extends Screen {
+public class ShortcutsScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 340;
     private static final int DIALOG_HEIGHT = 480;

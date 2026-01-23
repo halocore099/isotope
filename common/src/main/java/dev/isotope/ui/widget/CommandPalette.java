@@ -1,5 +1,7 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.ui.EditBoxCompat;
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -26,7 +28,7 @@ import java.util.function.Consumer;
  * Activated with Ctrl+P, shows a searchable list of all available commands.
  */
 @Environment(EnvType.CLIENT)
-public class CommandPalette extends AbstractWidget {
+public class CommandPalette extends VersionedWidget {
 
     private static final int PALETTE_WIDTH = 400;
     private static final int PALETTE_HEIGHT = 320;
@@ -296,7 +298,7 @@ public class CommandPalette extends AbstractWidget {
 
         // Handle search box click
         if (searchBox.isMouseOver(mouseX, mouseY)) {
-            searchBox.mouseClicked(event, focused);
+            EditBoxCompat.mouseClicked(searchBox, event);
             return true;
         }
 
@@ -350,14 +352,12 @@ public class CommandPalette extends AbstractWidget {
         }
 
         // Let search box handle other keys
-        return searchBox.keyPressed(event);
+        return EditBoxCompat.keyPressed(searchBox, event);
     }
 
     @Override
     public boolean charTyped(CharacterEvent event) {
-        char c = (char) event.codepoint();
-        int modifiers = event.modifiers();
-        return searchBox.charTyped(event);
+        return EditBoxCompat.charTyped(searchBox, event);
     }
 
     @Override

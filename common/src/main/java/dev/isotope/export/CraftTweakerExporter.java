@@ -4,7 +4,7 @@ import dev.isotope.Isotope;
 import dev.isotope.data.loot.*;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +38,7 @@ public class CraftTweakerExporter {
     public ExportManager.ExportResult export(Consumer<String> progressCallback) {
         try {
             LootEditManager editManager = LootEditManager.getInstance();
-            Set<Identifier> editedTables = editManager.getEditedTables();
+            Set<Id> editedTables = editManager.getEditedTables();
 
             if (editedTables.isEmpty()) {
                 return new ExportManager.ExportResult(false, "No edited loot tables to export", null, List.of());
@@ -74,7 +74,7 @@ public class CraftTweakerExporter {
 
             List<String> exportedTables = new ArrayList<>();
 
-            for (Identifier tableId : editedTables) {
+            for (Id tableId : editedTables) {
                 progressCallback.accept("Processing: " + tableId);
 
                 Optional<LootTableStructure> edited = editManager.getEditedStructure(tableId);
@@ -105,7 +105,7 @@ public class CraftTweakerExporter {
     /**
      * Generate CraftTweaker code to modify a single loot table.
      */
-    private String generateTableModification(Identifier tableId, LootTableStructure structure) {
+    private String generateTableModification(Id tableId, LootTableStructure structure) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("LootManager.getTable(<resource:").append(tableId).append(">).removeAll();\n");
@@ -121,7 +121,7 @@ public class CraftTweakerExporter {
     /**
      * Generate CraftTweaker code for a single pool.
      */
-    private String generatePoolCode(Identifier tableId, LootPool pool, int poolIdx) {
+    private String generatePoolCode(Id tableId, LootPool pool, int poolIdx) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("LootManager.getTable(<resource:").append(tableId).append(">).addPool((builder) => {\n");
@@ -178,7 +178,7 @@ public class CraftTweakerExporter {
         if (entryType.equals("minecraft:item") || entryType.equals("item")) {
             // Item entry
             if (entry.name().isPresent()) {
-                Identifier item = entry.name().get();
+                Id item = entry.name().get();
                 sb.append("    builder.addLootTableEntry(<item:").append(item).append(">, (entryBuilder) => {\n");
 
                 // Set weight

@@ -1,0 +1,100 @@
+plugins {
+    id "com.github.johnrengelman.shadow"
+}
+
+archivesBaseName = "isotope-fabric"
+
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
+loom {
+    accessWidenerPath = project(":common").loom.accessWidenerPath
+}
+
+configurations {
+    common {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    shadowCommon {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+
+// Helper to get property from ext (version file) or gradle.properties
+def getProp = { String name ->
+    rootProject.ext.has(name) ? rootProject.ext.get(name) : rootProject.findProperty(name)
+}
+
+def fabricLoaderVer = getProp('fabric_loader_version')
+def fabricApiVer = getProp('fabric_api_version')
+def archVer = getProp('architectury_version')
+def mcVer = rootProject.ext.mcVersion
+
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:${fabricLoaderVer}"
+    modApi "net.fabricmc.fabric-api:fabric-api:${fabricApiVer}"
+    modApi "dev.architectury:architectury-fabric:${archVer}"
+
+    common(project(path: ":compat", configuration: "namedElements")) { transitive false }
+    common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":compat", configuration: "transformProductionFabric")) { transitive false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "mod_id", rootProject.mod_id
+    inputs.property "mod_name", rootProject.mod_name
+    inputs.property "mod_description", rootProject.mod_description
+    inputs.property "mod_author", rootProject.mod_author
+    inputs.property "mod_license", rootProject.mod_license
+    inputs.property "minecraft_version", mcVer
+    inputs.property "architectury_version", archVer
+
+    filesMatching("fabric.mod.json") {
+        expand(
+            "version": project.version,
+            "mod_id": rootProject.mod_id,
+            "mod_name": rootProject.mod_name,
+            "mod_description": rootProject.mod_description,
+            "mod_author": rootProject.mod_author,
+            "mod_license": rootProject.mod_license,
+            "minecraft_version": mcVer,
+            "architectury_version": archVer
+        )
+    }
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier = "dev-shadow"
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
+
+sourcesJar {
+    def compatSources = project(":compat").sourcesJar
+    def commonSources = project(":common").sourcesJar
+    dependsOn compatSources, commonSources
+    from compatSources.archiveFile.map { zipTree(it) }
+    from commonSources.archiveFile.map { zipTree(it) }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+components.java {
+    withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
+        skip()
+    }
+}

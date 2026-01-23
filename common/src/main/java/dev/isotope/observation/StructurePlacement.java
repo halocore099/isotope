@@ -1,14 +1,14 @@
 package dev.isotope.observation;
 
+import dev.isotope.compat.Id;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 /**
  * Records a structure placement observed or triggered during analysis.
  */
 public record StructurePlacement(
-    Identifier structureId,
+    Id structureId,
     BlockPos origin,
     BoundingBox boundingBox,
     long timestamp,
@@ -26,7 +26,7 @@ public record StructurePlacement(
     /**
      * Create a forced placement record.
      */
-    public static StructurePlacement forced(Identifier structureId, BlockPos origin, BoundingBox bounds) {
+    public static StructurePlacement forced(Id structureId, BlockPos origin, BoundingBox bounds) {
         return new StructurePlacement(
             structureId,
             origin,
@@ -39,7 +39,7 @@ public record StructurePlacement(
     /**
      * Create a natural/observed placement record.
      */
-    public static StructurePlacement observed(Identifier structureId, BlockPos origin, BoundingBox bounds) {
+    public static StructurePlacement observed(Id structureId, BlockPos origin, BoundingBox bounds) {
         return new StructurePlacement(
             structureId,
             origin,

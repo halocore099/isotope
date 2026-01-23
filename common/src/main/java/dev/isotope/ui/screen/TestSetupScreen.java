@@ -1,6 +1,7 @@
 package dev.isotope.ui.screen;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.StructureLootLinker;
@@ -22,10 +23,10 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
+import dev.isotope.compat.GameRulesCompat;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.flag.FeatureFlags;
-import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
@@ -44,7 +45,7 @@ import java.util.Set;
  * Shows summary of edited loot tables and lets user choose world type.
  */
 @Environment(EnvType.CLIENT)
-public class TestSetupScreen extends Screen {
+public class TestSetupScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 400;
     private static final int DIALOG_HEIGHT = 380;
@@ -61,11 +62,11 @@ public class TestSetupScreen extends Screen {
     private int scrollOffset = 0;
 
     private record EditedTableInfo(
-        Identifier tableId,
-        Set<Identifier> structures,
+        Id tableId,
+        Set<Id> structures,
         int changeCount,
         boolean isEntityLoot,
-        Identifier entityId
+        Id entityId
     ) {
         boolean isMobLoot() {
             return isEntityLoot && entityId != null;
@@ -81,18 +82,18 @@ public class TestSetupScreen extends Screen {
     private void loadEditedTables() {
         editedTables.clear();
 
-        Set<Identifier> edited = LootEditManager.getInstance().getEditedTables();
+        Set<Id> edited = LootEditManager.getInstance().getEditedTables();
         StructureLootLinker linker = StructureLootLinker.getInstance();
         EntityLootRegistry entityRegistry = EntityLootRegistry.getInstance();
 
-        for (Identifier tableId : edited) {
+        for (Id tableId : edited) {
             // Check if this is an entity loot table
             var entityInfo = entityRegistry.getByLootTable(tableId);
             boolean isEntityLoot = entityInfo.isPresent();
-            Identifier entityId = entityInfo.map(e -> e.entityId()).orElse(null);
+            Id entityId = entityInfo.map(e -> e.entityId()).orElse(null);
 
             // Find structures that use this loot table
-            Set<Identifier> structures = new HashSet<>();
+            Set<Id> structures = new HashSet<>();
             for (var link : linker.getAllLinks()) {
                 if (link.lootTableId().equals(tableId)) {
                     structures.add(link.structureId());
@@ -193,8 +194,8 @@ public class TestSetupScreen extends Screen {
         // Create world directly (bypass CreateWorldScreen)
         minecraft.execute(() -> {
             try {
-                // Configure game rules
-                GameRules gameRules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+                // Configure game rules (use version-agnostic factory)
+                var gameRules = GameRulesCompat.create(FeatureFlags.DEFAULT_FLAGS);
 
                 LevelSettings levelSettings = new LevelSettings(
                     worldName,

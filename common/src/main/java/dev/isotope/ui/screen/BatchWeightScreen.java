@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
@@ -21,7 +22,7 @@ import java.util.function.IntConsumer;
  * Simple dialog screen for entering a weight value for batch operations.
  */
 @Environment(EnvType.CLIENT)
-public class BatchWeightScreen extends Screen {
+public class BatchWeightScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 200;
     private static final int DIALOG_HEIGHT = 100;
@@ -70,13 +71,8 @@ public class BatchWeightScreen extends Screen {
         }
 
         // Confirm button
-        confirmButton = Button.builder(Component.literal("Apply"), btn -> {
-            int weight = ScreenUtils.parseIntSafe(weightInput.getValue(), 0);
-            if (weight > 0) {
-                onConfirm.accept(weight);
-                minecraft.setScreen(parent);
-            }
-        }).pos(dialogX + 20, dialogY + DIALOG_HEIGHT - 30).size(70, 20).build();
+        confirmButton = Button.builder(Component.literal("Apply"), btn -> doApply())
+            .pos(dialogX + 20, dialogY + DIALOG_HEIGHT - 30).size(70, 20).build();
         addRenderableWidget(confirmButton);
 
         // Cancel button
@@ -120,10 +116,19 @@ public class BatchWeightScreen extends Screen {
             return true;
         }
         if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
-            confirmButton.onPress(event);
+            // Trigger button click programmatically
+            doApply();
             return true;
         }
         return super.keyPressed(event);
+    }
+
+    private void doApply() {
+        int weight = ScreenUtils.parseIntSafe(weightInput.getValue(), 0);
+        if (weight > 0) {
+            onConfirm.accept(weight);
+            minecraft.setScreen(parent);
+        }
     }
 
     @Override

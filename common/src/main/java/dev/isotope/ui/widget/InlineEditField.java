@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
@@ -24,7 +25,7 @@ import java.util.function.Consumer;
  * Commits on Enter or focus loss.
  */
 @Environment(EnvType.CLIENT)
-public class InlineEditField extends AbstractWidget {
+public class InlineEditField extends VersionedWidget {
 
     private int value;
     private int minValue = 0;

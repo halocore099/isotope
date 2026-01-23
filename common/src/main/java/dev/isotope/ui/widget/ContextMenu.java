@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -24,7 +25,7 @@ import java.util.function.Consumer;
  * Closes when an action is selected or clicked outside.
  */
 @Environment(EnvType.CLIENT)
-public class ContextMenu extends AbstractWidget {
+public class ContextMenu extends VersionedWidget {
 
     private static final int ITEM_HEIGHT = 20;
     private static final int PADDING = 4;

@@ -1,7 +1,7 @@
 package dev.isotope.validation;
 
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.*;
-import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -19,14 +19,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class LootTableValidatorTest {
 
-    private static final Identifier TEST_TABLE = Identifier.fromNamespaceAndPath("test", "table");
+    private static final Id TEST_TABLE = Id.of("test", "table");
 
     // ===== Helper Methods =====
 
     private LootEntry createSimpleEntry(String item, int weight) {
         return new LootEntry(
             "minecraft:item",
-            Optional.of(Identifier.fromNamespaceAndPath("test", item)),
+            Optional.of(Id.of("test", item)),
             weight,
             0,
             Collections.emptyList(),

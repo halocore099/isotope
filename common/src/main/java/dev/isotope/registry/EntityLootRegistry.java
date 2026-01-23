@@ -1,10 +1,12 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
+import dev.isotope.util.Regs;
 import dev.isotope.data.LootSource;
 import dev.isotope.data.LootTableInfo;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 
 import java.util.*;
@@ -29,10 +31,10 @@ public final class EntityLootRegistry {
     private static final EntityLootRegistry INSTANCE = new EntityLootRegistry();
 
     // Entity ID -> Entity loot info
-    private final Map<Identifier, EntityLootInfo> entities = new LinkedHashMap<>();
+    private final Map<Id, EntityLootInfo> entities = new LinkedHashMap<>();
 
     // Loot table ID -> Entity ID (reverse lookup)
-    private final Map<Identifier, Identifier> lootTableToEntity = new LinkedHashMap<>();
+    private final Map<Id, Id> lootTableToEntity = new LinkedHashMap<>();
 
     private boolean initialized = false;
 
@@ -66,9 +68,9 @@ public final class EntityLootRegistry {
                     ? path.substring("entities/".length())
                     : path.substring("entity/".length());
 
-                Identifier entityId = Identifier.fromNamespaceAndPath(
+                Id entityId = Id.of(
                     tableInfo.namespace(), entityPath);
-                Identifier lootTableId = tableInfo.id();
+                Id lootTableId = tableInfo.id();
 
                 // Get display name from entity registry if available
                 String displayName = getEntityDisplayName(entityId);
@@ -101,9 +103,9 @@ public final class EntityLootRegistry {
     /**
      * Get display name for an entity from the registry.
      */
-    private String getEntityDisplayName(Identifier entityId) {
+    private String getEntityDisplayName(Id entityId) {
         try {
-            EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
+            EntityType<?> entityType = Regs.getValue(BuiltInRegistries.ENTITY_TYPE, Registries.ENTITY_TYPE, entityId);
             if (entityType != null) {
                 // Get the translation key and format it nicely
                 String key = entityType.getDescriptionId();
@@ -156,15 +158,15 @@ public final class EntityLootRegistry {
     /**
      * Get entity loot info by entity ID.
      */
-    public Optional<EntityLootInfo> get(Identifier entityId) {
+    public Optional<EntityLootInfo> get(Id entityId) {
         return Optional.ofNullable(entities.get(entityId));
     }
 
     /**
      * Get entity loot info by loot table ID.
      */
-    public Optional<EntityLootInfo> getByLootTable(Identifier lootTableId) {
-        Identifier entityId = lootTableToEntity.get(lootTableId);
+    public Optional<EntityLootInfo> getByLootTable(Id lootTableId) {
+        Id entityId = lootTableToEntity.get(lootTableId);
         if (entityId != null) {
             return Optional.ofNullable(entities.get(entityId));
         }
@@ -174,14 +176,14 @@ public final class EntityLootRegistry {
     /**
      * Check if a loot table is an entity loot table.
      */
-    public boolean isEntityLootTable(Identifier lootTableId) {
+    public boolean isEntityLootTable(Id lootTableId) {
         return lootTableToEntity.containsKey(lootTableId);
     }
 
     /**
      * Get entity ID for a loot table.
      */
-    public Optional<Identifier> getEntityForLootTable(Identifier lootTableId) {
+    public Optional<Id> getEntityForLootTable(Id lootTableId) {
         return Optional.ofNullable(lootTableToEntity.get(lootTableId));
     }
 
@@ -242,8 +244,8 @@ public final class EntityLootRegistry {
      * Entity loot information.
      */
     public record EntityLootInfo(
-        Identifier entityId,
-        Identifier lootTableId,
+        Id entityId,
+        Id lootTableId,
         String displayName,
         boolean requiresPlayerKill
     ) {

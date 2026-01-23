@@ -4,11 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableParser;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -63,7 +63,7 @@ public final class DatapackImporter {
      * Info about an imported loot table.
      */
     public record ImportedTable(
-        Identifier tableId,
+        Id tableId,
         Path sourcePath,
         LootTableStructure structure
     ) {}
@@ -231,7 +231,7 @@ public final class DatapackImporter {
                         String pathStr = relativePath.toString()
                             .replace(".json", "")
                             .replace("\\", "/");
-                        Identifier tableId = Identifier.fromNamespaceAndPath(namespaceName, pathStr);
+                        Id tableId = Id.of(namespaceName, pathStr);
 
                         try {
                             String json = Files.readString(file);
@@ -325,7 +325,7 @@ public final class DatapackImporter {
                 String pathStr = relativePath.toString()
                     .replace(".json", "")
                     .replace("\\", "/");
-                Identifier tableId = Identifier.fromNamespaceAndPath(finalNamespace, pathStr);
+                Id tableId = Id.of(finalNamespace, pathStr);
 
                 try {
                     String json = Files.readString(file);

@@ -1,13 +1,16 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.Id;
+import dev.isotope.compat.ui.RenderCompat;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.util.Regs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -34,12 +37,12 @@ public class EntryListWidget extends ScrollableListWidget<LootEntry> {
         if (entry.isItem() && entry.name().isPresent()) {
             ItemStack stack = getItemStack(entry.name().get());
             if (!stack.isEmpty()) {
-                // Render small item icon (MC 1.21.6+ uses Matrix3x2fStack with 2D methods)
-                graphics.pose().pushMatrix();
-                graphics.pose().translate(x + 2, y + 3);
-                graphics.pose().scale(0.75f, 0.75f);
+                // Render small item icon
+                RenderCompat.pushMatrix(graphics);
+                RenderCompat.translate(graphics, x + 2, y + 3);
+                RenderCompat.scale(graphics, 0.75f, 0.75f);
                 graphics.renderItem(stack, 0, 0);
-                graphics.pose().popMatrix();
+                RenderCompat.popMatrix(graphics);
                 textX = x + 16;
             }
         }
@@ -75,11 +78,11 @@ public class EntryListWidget extends ScrollableListWidget<LootEntry> {
         }
     }
 
-    private static ItemStack getItemStack(Identifier itemId) {
+    private static ItemStack getItemStack(Id itemId) {
         try {
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+            var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, itemId);
             if (itemOpt.isPresent()) {
-                return new ItemStack(itemOpt.get().value());
+                return new ItemStack(itemOpt.get());
             }
         } catch (Exception e) {
             // Ignore

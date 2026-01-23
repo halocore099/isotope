@@ -1,6 +1,6 @@
 package dev.isotope.visualization;
 
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.util.*;
 
@@ -10,7 +10,7 @@ import java.util.*;
 public class FlowGraph {
 
     private final String namespace;
-    private final Map<Identifier, FlowNode> nodes = new LinkedHashMap<>();
+    private final Map<Id, FlowNode> nodes = new LinkedHashMap<>();
     private final List<FlowEdge> edges = new ArrayList<>();
 
     // Column-based node organization
@@ -59,7 +59,7 @@ public class FlowGraph {
     /**
      * Get a node by ID.
      */
-    public Optional<FlowNode> getNode(Identifier id) {
+    public Optional<FlowNode> getNode(Id id) {
         return Optional.ofNullable(nodes.get(id));
     }
 
@@ -94,7 +94,7 @@ public class FlowGraph {
     /**
      * Get edges originating from a node.
      */
-    public List<FlowEdge> getEdgesFrom(Identifier id) {
+    public List<FlowEdge> getEdgesFrom(Id id) {
         List<FlowEdge> result = new ArrayList<>();
         for (FlowEdge edge : edges) {
             if (edge.fromId().equals(id)) {
@@ -107,7 +107,7 @@ public class FlowGraph {
     /**
      * Get edges targeting a node.
      */
-    public List<FlowEdge> getEdgesTo(Identifier id) {
+    public List<FlowEdge> getEdgesTo(Id id) {
         List<FlowEdge> result = new ArrayList<>();
         for (FlowEdge edge : edges) {
             if (edge.toId().equals(id)) {
@@ -120,7 +120,7 @@ public class FlowGraph {
     /**
      * Get the number of connections for a node (both incoming and outgoing).
      */
-    public int getConnectionCount(Identifier id) {
+    public int getConnectionCount(Id id) {
         return getEdgesFrom(id).size() + getEdgesTo(id).size();
     }
 

@@ -1,11 +1,13 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
+import dev.isotope.util.Regs;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -86,7 +88,7 @@ public final class LootTestRunner {
      */
     public static TestResult runMobTest(
         MinecraftServer server,
-        Identifier entityId,
+        Id entityId,
         int count,
         TestMobTools.KillCondition condition,
         int lootingLevel,
@@ -111,7 +113,7 @@ public final class LootTestRunner {
             DropStatistics stats = new DropStatistics(entityId, entityName, conditionText);
 
             // Get entity type
-            Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
+            Optional<EntityType<?>> entityTypeOpt = Regs.getOptional(BuiltInRegistries.ENTITY_TYPE, Registries.ENTITY_TYPE, entityId);
             if (entityTypeOpt.isEmpty()) {
                 return TestResult.error("Unknown entity: " + entityId);
             }
@@ -231,7 +233,7 @@ public final class LootTestRunner {
      */
     public static TestResult runChestTest(
         MinecraftServer server,
-        Identifier lootTableId,
+        Id lootTableId,
         int count,
         int luck,
         @Nullable Consumer<String> progressCallback
@@ -250,7 +252,7 @@ public final class LootTestRunner {
 
             // Get loot table
             LootTable lootTable = server.reloadableRegistries()
-                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
+                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId.mc()));
 
             if (lootTable == LootTable.EMPTY) {
                 return TestResult.error("Loot table not found: " + lootTableId);
@@ -314,7 +316,7 @@ public final class LootTestRunner {
      */
     public static int spawnLootOnGround(
         MinecraftServer server,
-        Identifier lootTableId,
+        Id lootTableId,
         int count
     ) {
         try {
@@ -324,7 +326,7 @@ public final class LootTestRunner {
             if (level == null || player == null) return 0;
 
             LootTable lootTable = server.reloadableRegistries()
-                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
+                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId.mc()));
 
             if (lootTable == LootTable.EMPTY) return 0;
 
@@ -370,7 +372,7 @@ public final class LootTestRunner {
      */
     public static int collectLootToInventory(
         MinecraftServer server,
-        Identifier lootTableId,
+        Id lootTableId,
         int count
     ) {
         try {
@@ -380,7 +382,7 @@ public final class LootTestRunner {
             if (level == null || player == null) return 0;
 
             LootTable lootTable = server.reloadableRegistries()
-                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId));
+                .getLootTable(ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, lootTableId.mc()));
 
             if (lootTable == LootTable.EMPTY) return 0;
 
@@ -415,7 +417,7 @@ public final class LootTestRunner {
     /**
      * Format loot table ID to display name.
      */
-    private static String formatTableName(Identifier tableId) {
+    private static String formatTableName(Id tableId) {
         String path = tableId.getPath();
         // Remove common prefixes
         if (path.startsWith("chests/")) {
@@ -453,7 +455,7 @@ public final class LootTestRunner {
      */
     public static CompareResult runChestCompare(
         MinecraftServer server,
-        Identifier lootTableId,
+        Id lootTableId,
         int count,
         int luck,
         @Nullable Consumer<String> progressCallback
@@ -523,7 +525,7 @@ public final class LootTestRunner {
      */
     public static CompareResult runMobCompare(
         MinecraftServer server,
-        Identifier entityId,
+        Id entityId,
         int count,
         TestMobTools.KillCondition condition,
         int lootingLevel,
@@ -533,7 +535,7 @@ public final class LootTestRunner {
             LootEditManager editManager = LootEditManager.getInstance();
 
             // Get the loot table ID for this entity
-            Identifier lootTableId = Identifier.fromNamespaceAndPath(
+            Id lootTableId = Id.of(
                 entityId.getNamespace(), "entities/" + entityId.getPath());
 
             // Check if table has edits
@@ -598,11 +600,11 @@ public final class LootTestRunner {
         for (int i = 0; i < source.getTestCount(); i++) {
             dest.startTest();
         }
-        for (Identifier itemId : source.getDroppedItems()) {
+        for (Id itemId : source.getDroppedItems()) {
             // Create fake stacks to record the totals
             int total = source.getTotalForItem(itemId);
             if (total > 0) {
-                var itemOpt = BuiltInRegistries.ITEM.getOptional(itemId);
+                var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, itemId);
                 if (itemOpt.isPresent()) {
                     dest.recordDrop(new ItemStack(itemOpt.get(), total));
                 }

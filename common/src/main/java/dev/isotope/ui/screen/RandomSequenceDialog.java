@@ -3,12 +3,12 @@ package dev.isotope.ui.screen;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
+import dev.isotope.compat.Id;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -25,18 +25,18 @@ public class RandomSequenceDialog extends DialogScreen {
     private static final int DIALOG_WIDTH = 280;
     private static final int DIALOG_HEIGHT = 140;
 
-    private final Optional<Identifier> currentSequence;
-    private final Consumer<Optional<Identifier>> onSequenceSelected;
+    private final Optional<Id> currentSequence;
+    private final Consumer<Optional<Id>> onSequenceSelected;
 
     private String inputText;
     private boolean inputFocused = true;
 
-    public RandomSequenceDialog(@Nullable Screen parent, Optional<Identifier> currentSequence,
-                                 Consumer<Optional<Identifier>> onSequenceSelected) {
+    public RandomSequenceDialog(@Nullable Screen parent, Optional<Id> currentSequence,
+                                 Consumer<Optional<Id>> onSequenceSelected) {
         super(parent, "Edit Random Sequence");
         this.currentSequence = currentSequence;
         this.onSequenceSelected = onSequenceSelected;
-        this.inputText = currentSequence.map(Identifier::toString).orElse("");
+        this.inputText = currentSequence.map(Id::toString).orElse("");
     }
 
     @Override
@@ -182,11 +182,11 @@ public class RandomSequenceDialog extends DialogScreen {
     }
 
     private void applySelection() {
-        Optional<Identifier> result;
+        Optional<Id> result;
         if (inputText.isEmpty()) {
             result = Optional.empty();
         } else {
-            result = Optional.of(Identifier.parse(ScreenUtils.ensureNamespace(inputText)));
+            result = Optional.of(Id.parse(ScreenUtils.ensureNamespace(inputText)));
         }
         onSequenceSelected.accept(result);
         onClose();

@@ -1,5 +1,8 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.Id;
+import dev.isotope.compat.ui.EditBoxCompat;
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.search.SearchHit;
 import dev.isotope.search.SearchIndex;
 import dev.isotope.ui.IsotopeColors;
@@ -16,7 +19,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 import dev.isotope.registry.LootTableRegistry;
 import java.util.ArrayList;
@@ -27,7 +29,7 @@ import java.util.function.Consumer;
  * Global search widget for searching items across all loot tables.
  */
 @Environment(EnvType.CLIENT)
-public class GlobalSearchWidget extends AbstractWidget {
+public class GlobalSearchWidget extends VersionedWidget {
 
     private static final int SEARCH_HEIGHT = 24;
     private static final int FILTER_HEIGHT = 16;
@@ -46,9 +48,9 @@ public class GlobalSearchWidget extends AbstractWidget {
     private int hoveredNamespace = -1;
     private boolean showNamespaceDropdown = false;
 
-    private final Consumer<Identifier> onTableSelected;
+    private final Consumer<Id> onTableSelected;
 
-    public GlobalSearchWidget(int x, int y, int width, int height, Consumer<Identifier> onTableSelected) {
+    public GlobalSearchWidget(int x, int y, int width, int height, Consumer<Id> onTableSelected) {
         super(x, y, width, height, Component.literal("Global Search"));
         this.onTableSelected = onTableSelected;
 
@@ -298,7 +300,7 @@ public class GlobalSearchWidget extends AbstractWidget {
         if (searchBox != null && searchBox.isMouseOver(mouseX, mouseY)) {
             showNamespaceDropdown = false;
             searchBox.setFocused(true);
-            searchBox.mouseClicked(event, focused);
+            EditBoxCompat.mouseClicked(searchBox, event);
             return true;
         } else if (searchBox != null) {
             searchBox.setFocused(false);
@@ -346,7 +348,7 @@ public class GlobalSearchWidget extends AbstractWidget {
         // Check result click
         if (hoveredResult >= 0 && hoveredResult < filteredResults.size()) {
             SearchHit hit = filteredResults.get(hoveredResult);
-            onTableSelected.accept(hit.table());
+            onTableSelected.accept(Id.wrap(hit.table()));
             return true;
         }
 
@@ -365,7 +367,7 @@ public class GlobalSearchWidget extends AbstractWidget {
     @Override
     public boolean charTyped(CharacterEvent event) {
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.charTyped(event);
+            return EditBoxCompat.charTyped(searchBox, event);
         }
         return false;
     }
@@ -373,7 +375,7 @@ public class GlobalSearchWidget extends AbstractWidget {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.keyPressed(event);
+            return EditBoxCompat.keyPressed(searchBox, event);
         }
         return false;
     }

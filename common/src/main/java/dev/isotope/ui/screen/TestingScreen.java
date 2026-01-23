@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.StructureLootLink;
 import dev.isotope.registry.EntityLootRegistry;
 import dev.isotope.registry.StructureLootLinker;
@@ -27,7 +28,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -44,7 +45,7 @@ import java.util.Set;
  * Simplified design with actual Button widgets for all interactions.
  */
 @Environment(EnvType.CLIENT)
-public class TestingScreen extends Screen {
+public class TestingScreen extends VersionedScreen {
 
     private static final int PANEL_WIDTH = UIConstants.TEST_PANEL_WIDTH;  // 450
     private static final int PANEL_HEIGHT = UIConstants.TEST_PANEL_HEIGHT;  // 400
@@ -80,10 +81,10 @@ public class TestingScreen extends Screen {
     private Button helpToggleButton;
 
     private record TableEntry(
-        Identifier tableId,
-        Set<Identifier> structures,
+        Id tableId,
+        Set<Id> structures,
         boolean isEntityLoot,
-        Identifier entityId  // null if not entity loot
+        Id entityId  // null if not entity loot
     ) {
         boolean isMobLoot() {
             return isEntityLoot && entityId != null;
@@ -128,19 +129,19 @@ public class TestingScreen extends Screen {
 
     private void loadEntries() {
         entries.clear();
-        Set<Identifier> tested = TestModeState.getInstance().getTestedTables();
+        Set<Id> tested = TestModeState.getInstance().getTestedTables();
         StructureLootLinker linker = StructureLootLinker.getInstance();
         EntityLootRegistry entityRegistry = EntityLootRegistry.getInstance();
 
-        for (Identifier tableId : tested) {
+        for (Id tableId : tested) {
             // Check if this is an entity loot table
             var entityInfo = entityRegistry.getByLootTable(tableId);
             boolean isEntityLoot = entityInfo.isPresent();
-            Identifier entityId = entityInfo.map(e -> e.entityId()).orElse(null);
+            Id entityId = entityInfo.map(e -> e.entityId()).orElse(null);
 
             // Get linked structures (for non-entity loot)
             List<StructureLootLink> links = linker.getLinksForLootTable(tableId);
-            Set<Identifier> structures = new HashSet<>();
+            Set<Id> structures = new HashSet<>();
             for (var link : links) {
                 structures.add(link.structureId());
             }
@@ -367,7 +368,7 @@ public class TestingScreen extends Screen {
 
                 if (entry.isMobLoot()) {
                     // Mob loot: Spawn, Kill, and Stats buttons
-                    final Identifier entityId = entry.entityId;
+                    final Id entityId = entry.entityId;
 
                     Button spawnBtn = Button.builder(
                         Component.literal("Spawn 1"),
@@ -410,7 +411,7 @@ public class TestingScreen extends Screen {
                     entryButtons.add(addRenderableWidget(statsBtn));
 
                     // Compare button - only show if edits exist
-                    Identifier lootTableId = Identifier.fromNamespaceAndPath(
+                    Id lootTableId = Id.of(
                         entityId.getNamespace(), "entities/" + entityId.getPath());
                     if (LootEditManager.getInstance().hasEdits(lootTableId)) {
                         Button compareBtn = Button.builder(
@@ -424,10 +425,10 @@ public class TestingScreen extends Screen {
 
                 } else {
                     // Structure/chest loot: Teleport, Arena, Generate, Stats buttons
-                    final Identifier structureId = entry.structures.isEmpty()
+                    final Id structureId = entry.structures.isEmpty()
                         ? null
                         : entry.structures.iterator().next();
-                    final Identifier tableId = entry.tableId;
+                    final Id tableId = entry.tableId;
 
                     if (structureId != null) {
                         Button teleportBtn = Button.builder(
@@ -533,7 +534,7 @@ public class TestingScreen extends Screen {
         });
     }
 
-    private void onTeleport(Identifier structureId) {
+    private void onTeleport(Id structureId) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -563,7 +564,7 @@ public class TestingScreen extends Screen {
         });
     }
 
-    private void onSpawnArena(Identifier structureId) {
+    private void onSpawnArena(Id structureId) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -578,7 +579,7 @@ public class TestingScreen extends Screen {
 
     // === Mob Testing Methods ===
 
-    private void onSpawnMob(Identifier entityId) {
+    private void onSpawnMob(Id entityId) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -599,7 +600,7 @@ public class TestingScreen extends Screen {
         });
     }
 
-    private void onSpawnMobGrid(Identifier entityId, int count) {
+    private void onSpawnMobGrid(Id entityId, int count) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -617,7 +618,7 @@ public class TestingScreen extends Screen {
         });
     }
 
-    private void onKillMobs(Identifier entityId) {
+    private void onKillMobs(Id entityId) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -638,7 +639,7 @@ public class TestingScreen extends Screen {
         });
     }
 
-    private void onTestMobDrops(Identifier entityId, int count) {
+    private void onTestMobDrops(Id entityId, int count) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -665,7 +666,7 @@ public class TestingScreen extends Screen {
         });
     }
 
-    private void onMobStats(Identifier entityId, int count) {
+    private void onMobStats(Id entityId, int count) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -697,7 +698,7 @@ public class TestingScreen extends Screen {
 
     // === Chest Loot Testing Methods ===
 
-    private void onGenerateChestLoot(Identifier tableId, int count) {
+    private void onGenerateChestLoot(Id tableId, int count) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -730,7 +731,7 @@ public class TestingScreen extends Screen {
         });
     }
 
-    private void onChestStats(Identifier tableId, int count) {
+    private void onChestStats(Id tableId, int count) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -760,7 +761,7 @@ public class TestingScreen extends Screen {
 
     // === Compare Methods ===
 
-    private void onMobCompare(Identifier entityId, int count) {
+    private void onMobCompare(Id entityId, int count) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;
@@ -790,7 +791,7 @@ public class TestingScreen extends Screen {
         });
     }
 
-    private void onChestCompare(Identifier tableId, int count) {
+    private void onChestCompare(Id tableId, int count) {
         if (minecraft == null || minecraft.getSingleplayerServer() == null) {
             IsotopeToast.error("Error", "Not in singleplayer world");
             return;

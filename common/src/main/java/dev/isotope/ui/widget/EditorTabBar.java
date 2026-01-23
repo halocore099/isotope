@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.ui.EditorTab;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.TabManager;
@@ -21,7 +22,7 @@ import java.util.List;
  * Tab bar widget for multi-tab loot table editing.
  */
 @Environment(EnvType.CLIENT)
-public class EditorTabBar extends AbstractWidget {
+public class EditorTabBar extends VersionedWidget {
 
     private static final int TAB_HEIGHT = 22;
     private static final int TAB_MIN_WIDTH = 80;

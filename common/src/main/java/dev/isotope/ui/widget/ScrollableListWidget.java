@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -22,7 +23,7 @@ import java.util.function.Consumer;
  * Uses slot-like rendering with proper selection highlights.
  */
 @Environment(EnvType.CLIENT)
-public class ScrollableListWidget<T> extends AbstractWidget {
+public class ScrollableListWidget<T> extends VersionedWidget {
 
     private static final int SCROLLBAR_WIDTH = 6;
 

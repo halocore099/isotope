@@ -1,10 +1,10 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.data.StructureInfo;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
@@ -21,7 +21,7 @@ public final class StructureRegistry {
 
     private static final StructureRegistry INSTANCE = new StructureRegistry();
 
-    private final Map<Identifier, StructureInfo> structures = new LinkedHashMap<>();
+    private final Map<Id, StructureInfo> structures = new LinkedHashMap<>();
     private boolean scanned = false;
 
     private StructureRegistry() {}
@@ -39,7 +39,8 @@ public final class StructureRegistry {
         try {
             Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
-            registry.keySet().forEach(id -> {
+            registry.keySet().forEach(mcId -> {
+                Id id = Id.wrap(mcId);
                 StructureInfo info = StructureInfo.fromId(id);
                 structures.put(id, info);
             });
@@ -68,7 +69,7 @@ public final class StructureRegistry {
     /**
      * Get structure by ID.
      */
-    public Optional<StructureInfo> get(Identifier id) {
+    public Optional<StructureInfo> get(Id id) {
         return Optional.ofNullable(structures.get(id));
     }
 

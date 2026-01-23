@@ -1,12 +1,12 @@
 package dev.isotope.observation;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -49,19 +49,19 @@ public final class StructurePlacementEngine {
      * @param onProgress Callback for progress updates
      * @return Map of structure ID -> placement result
      */
-    public Map<Identifier, PlacementResult> placeAllStructures(
+    public Map<Id, PlacementResult> placeAllStructures(
             MinecraftServer server,
             ServerLevel level,
             Consumer<String> onProgress) {
 
-        Map<Identifier, PlacementResult> results = new LinkedHashMap<>();
+        Map<Id, PlacementResult> results = new LinkedHashMap<>();
 
         // Get all registered structures
         HolderLookup.RegistryLookup<Structure> lookup = server.registryAccess()
             .lookupOrThrow(Registries.STRUCTURE);
 
-        List<Identifier> structureIds = new ArrayList<>();
-        lookup.listElementIds().forEach(key -> structureIds.add(key.identifier()));
+        List<Id> structureIds = new ArrayList<>();
+        lookup.listElementIds().forEach(key -> structureIds.add(Id.fromKey(key)));
 
         onProgress.accept("Found " + structureIds.size() + " structures to place");
 
@@ -70,7 +70,7 @@ public final class StructurePlacementEngine {
         int gridSize = (int) Math.ceil(Math.sqrt(structureIds.size()));
 
         for (int i = 0; i < structureIds.size(); i++) {
-            Identifier structureId = structureIds.get(i);
+            Id structureId = structureIds.get(i);
 
             // Calculate position on grid
             int gridX = i % gridSize;
@@ -110,12 +110,12 @@ public final class StructurePlacementEngine {
     public PlacementResult placeStructure(
             MinecraftServer server,
             ServerLevel level,
-            Identifier structureId,
+            Id structureId,
             BlockPos targetPos) {
 
         try {
             // Get the structure from registry
-            ResourceKey<Structure> key = ResourceKey.create(Registries.STRUCTURE, structureId);
+            ResourceKey<Structure> key = ResourceKey.create(Registries.STRUCTURE, structureId.mc());
             var lookup = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
             Holder.Reference<Structure> holder = lookup.get(key).orElse(null);
@@ -203,17 +203,17 @@ public final class StructurePlacementEngine {
      * Result of a structure placement attempt.
      */
     public record PlacementResult(
-        Identifier structureId,
+        Id structureId,
         boolean success,
         BlockPos origin,
         BoundingBox bounds,
         String error
     ) {
-        public static PlacementResult success(Identifier id, BlockPos origin, BoundingBox bounds) {
+        public static PlacementResult success(Id id, BlockPos origin, BoundingBox bounds) {
             return new PlacementResult(id, true, origin, bounds, null);
         }
 
-        public static PlacementResult failed(Identifier id, String error) {
+        public static PlacementResult failed(Id id, String error) {
             return new PlacementResult(id, false, BlockPos.ZERO, null, error);
         }
     }

@@ -1,7 +1,7 @@
 package dev.isotope.analysis;
 
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.*;
-import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +22,9 @@ public final class StructureDiff {
         record RemovedPool(int poolIndex, LootPool pool) implements DiffEntry {}
         record AddedEntry(int poolIndex, int entryIndex, LootEntry entry) implements DiffEntry {}
         record RemovedEntry(int poolIndex, int entryIndex, LootEntry entry) implements DiffEntry {}
-        record ModifiedWeight(int poolIndex, int entryIndex, Identifier item, int oldWeight, int newWeight) implements DiffEntry {}
-        record ModifiedCount(int poolIndex, int entryIndex, Identifier item, String oldCount, String newCount) implements DiffEntry {}
-        record ModifiedItem(int poolIndex, int entryIndex, Identifier oldItem, Identifier newItem) implements DiffEntry {}
+        record ModifiedWeight(int poolIndex, int entryIndex, Id item, int oldWeight, int newWeight) implements DiffEntry {}
+        record ModifiedCount(int poolIndex, int entryIndex, Id item, String oldCount, String newCount) implements DiffEntry {}
+        record ModifiedItem(int poolIndex, int entryIndex, Id oldItem, Id newItem) implements DiffEntry {}
     }
 
     /**
@@ -108,8 +108,8 @@ public final class StructureDiff {
                                      List<DiffEntry> modifications) {
 
         // Check item change
-        Identifier origItem = original.name().orElse(null);
-        Identifier editItem = edited.name().orElse(null);
+        Id origItem = original.name().orElse(null);
+        Id editItem = edited.name().orElse(null);
 
         if (!Objects.equals(origItem, editItem) && origItem != null && editItem != null) {
             modifications.add(new DiffEntry.ModifiedItem(poolIndex, entryIndex, origItem, editItem));
@@ -117,7 +117,7 @@ public final class StructureDiff {
 
         // Check weight change
         if (original.weight() != edited.weight()) {
-            Identifier item = editItem != null ? editItem : origItem;
+            Id item = editItem != null ? editItem : origItem;
             if (item != null) {
                 modifications.add(new DiffEntry.ModifiedWeight(poolIndex, entryIndex, item,
                     original.weight(), edited.weight()));
@@ -128,7 +128,7 @@ public final class StructureDiff {
         String origCount = getCountString(original);
         String editCount = getCountString(edited);
         if (!origCount.equals(editCount)) {
-            Identifier item = editItem != null ? editItem : origItem;
+            Id item = editItem != null ? editItem : origItem;
             if (item != null) {
                 modifications.add(new DiffEntry.ModifiedCount(poolIndex, entryIndex, item, origCount, editCount));
             }
@@ -176,9 +176,9 @@ public final class StructureDiff {
             case DiffEntry.RemovedPool e ->
                 "- Removed Pool " + (e.poolIndex() + 1);
             case DiffEntry.AddedEntry e ->
-                "+ Added: " + e.entry().name().map(Identifier::getPath).orElse("unknown");
+                "+ Added: " + e.entry().name().map(Id::getPath).orElse("unknown");
             case DiffEntry.RemovedEntry e ->
-                "- Removed: " + e.entry().name().map(Identifier::getPath).orElse("unknown");
+                "- Removed: " + e.entry().name().map(Id::getPath).orElse("unknown");
             case DiffEntry.ModifiedWeight e ->
                 "~ " + e.item().getPath() + " weight: " + e.oldWeight() + " -> " + e.newWeight();
             case DiffEntry.ModifiedCount e ->

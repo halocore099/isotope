@@ -4,8 +4,39 @@ plugins {
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
 }
 
+// Allow overriding MC version via command line: ./gradlew build -PmcVersion=1.21.10
+// Can also be set via environment variable: MC_VERSION=1.21.10 ./gradlew build
+def targetMcVersion = project.hasProperty('mcVersion') ? project.mcVersion :
+    (System.getenv('MC_VERSION') ?: rootProject.minecraft_version)
+
+// Load version-specific properties if available
+def versionPropsFile = file("versions/${targetMcVersion}.properties")
+if (versionPropsFile.exists()) {
+    def versionProps = new Properties()
+    versionPropsFile.withInputStream { versionProps.load(it) }
+    // Override properties with version-specific values
+    versionProps.each { key, value ->
+        if (key != 'api_version') {
+            ext.set(key, value)
+        }
+    }
+    println "Loaded version properties from versions/${targetMcVersion}.properties"
+} else {
+    println "Warning: No version properties file found for MC ${targetMcVersion}, using defaults"
+}
+
+// Set the MC version and API version for use elsewhere
+ext.mcVersion = targetMcVersion
+// Determine API version based on Minecraft minor version (1.21.11+ uses new API)
+def mcParts = targetMcVersion.split('\\.')
+def minorVersion = mcParts.length >= 3 ? mcParts[2].toInteger() : 0
+ext.apiVersion = minorVersion >= 11 ? "mc1211" : "mc1210"
+
+// Print version info at configuration time
+println "Building for Minecraft ${ext.mcVersion} (API: ${ext.apiVersion})"
+
 architectury {
-    minecraft = rootProject.minecraft_version
+    minecraft = targetMcVersion
 }
 
 subprojects {
@@ -16,7 +47,7 @@ subprojects {
     }
 
     dependencies {
-        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        minecraft "com.mojang:minecraft:${rootProject.ext.mcVersion}"
         mappings loom.officialMojangMappings()
     }
 }
@@ -29,7 +60,9 @@ allprojects {
         archivesName = rootProject.archives_base_name
     }
     // Use CI_VERSION env var if set (from git tag), otherwise use gradle.properties
-    version = System.getenv("CI_VERSION") ?: rootProject.mod_version
+    // Append MC version suffix for versioned artifacts
+    def baseVersion = System.getenv("CI_VERSION") ?: rootProject.mod_version
+    version = "${baseVersion}+mc${rootProject.ext.mcVersion}"
     group = rootProject.maven_group
 
     repositories {

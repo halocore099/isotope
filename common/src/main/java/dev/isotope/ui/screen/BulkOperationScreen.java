@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.bulk.BulkOperation;
 import dev.isotope.bulk.BulkOperation.BulkResult;
 import dev.isotope.bulk.BulkOperation.Type;
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
@@ -18,14 +19,14 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Screen for bulk operations across multiple loot tables.
  */
 @Environment(EnvType.CLIENT)
-public class BulkOperationScreen extends Screen {
+public class BulkOperationScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 450;
     private static final int DIALOG_HEIGHT = 380;
@@ -133,7 +134,7 @@ public class BulkOperationScreen extends Screen {
                     IsotopeToast.warning("Input Required", "Enter an item ID");
                     return;
                 }
-                Identifier item = Identifier.tryParse(itemText);
+                Id item = Id.tryParse(itemText);
                 if (item == null) {
                     IsotopeToast.error("Invalid", "Invalid item ID format");
                     return;
@@ -147,8 +148,8 @@ public class BulkOperationScreen extends Screen {
                     IsotopeToast.warning("Input Required", "Enter both item IDs");
                     return;
                 }
-                Identifier item = Identifier.tryParse(itemText);
-                Identifier item2 = Identifier.tryParse(item2Text);
+                Id item = Id.tryParse(itemText);
+                Id item2 = Id.tryParse(item2Text);
                 if (item == null || item2 == null) {
                     IsotopeToast.error("Invalid", "Invalid item ID format");
                     return;
@@ -195,15 +196,15 @@ public class BulkOperationScreen extends Screen {
 
         switch (selectedType) {
             case REMOVE_ITEM -> {
-                Identifier item = Identifier.tryParse(itemInput.getValue().trim());
+                Id item = Id.tryParse(itemInput.getValue().trim());
                 if (item != null) {
                     BulkOperation.applyRemoveItem(minecraft.getSingleplayerServer(), item);
                     IsotopeToast.success("Applied", "Removed " + item.getPath() + " from " + previewResult.tablesAffected() + " tables");
                 }
             }
             case REPLACE_ITEM -> {
-                Identifier item = Identifier.tryParse(itemInput.getValue().trim());
-                Identifier item2 = Identifier.tryParse(item2Input.getValue().trim());
+                Id item = Id.tryParse(itemInput.getValue().trim());
+                Id item2 = Id.tryParse(item2Input.getValue().trim());
                 if (item != null && item2 != null) {
                     BulkOperation.applyReplaceItem(minecraft.getSingleplayerServer(), item, item2);
                     IsotopeToast.success("Applied", "Replaced in " + previewResult.tablesAffected() + " tables");

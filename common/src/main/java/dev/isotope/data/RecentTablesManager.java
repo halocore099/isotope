@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -27,7 +27,7 @@ public final class RecentTablesManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int MAX_RECENT = 15;
 
-    private final LinkedList<Identifier> recentTables = new LinkedList<>();
+    private final LinkedList<Id> recentTables = new LinkedList<>();
     private final List<RecentListener> listeners = new CopyOnWriteArrayList<>();
     private boolean loaded = false;
 
@@ -42,7 +42,7 @@ public final class RecentTablesManager {
      * Moves to front if already in list, otherwise adds to front.
      * Trims oldest entries if over MAX_RECENT.
      */
-    public void recordView(Identifier tableId) {
+    public void recordView(Id tableId) {
         ensureLoaded();
 
         // Remove if exists (will re-add at front)
@@ -63,7 +63,7 @@ public final class RecentTablesManager {
     /**
      * Remove a table from recent history.
      */
-    public void remove(Identifier tableId) {
+    public void remove(Id tableId) {
         ensureLoaded();
         if (recentTables.remove(tableId)) {
             save();
@@ -74,7 +74,7 @@ public final class RecentTablesManager {
     /**
      * Check if a table is in recent history.
      */
-    public boolean isRecent(Identifier tableId) {
+    public boolean isRecent(Id tableId) {
         ensureLoaded();
         return recentTables.contains(tableId);
     }
@@ -82,7 +82,7 @@ public final class RecentTablesManager {
     /**
      * Get all recent tables (most recent first).
      */
-    public List<Identifier> getAll() {
+    public List<Id> getAll() {
         ensureLoaded();
         return new ArrayList<>(recentTables);
     }
@@ -153,7 +153,7 @@ public final class RecentTablesManager {
 
             // Convert to string list for JSON
             List<String> recentStrings = new ArrayList<>();
-            for (Identifier id : recentTables) {
+            for (Id id : recentTables) {
                 recentStrings.add(id.toString());
             }
 
@@ -184,7 +184,7 @@ public final class RecentTablesManager {
             recentTables.clear();
             if (recentStrings != null) {
                 for (String str : recentStrings) {
-                    Identifier id = Identifier.tryParse(str);
+                    Id id = Id.tryParse(str);
                     if (id != null) {
                         recentTables.add(id);
                     }

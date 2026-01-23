@@ -1,8 +1,8 @@
 package dev.isotope.editing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.LootTableStructure;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.*;
@@ -20,16 +20,16 @@ public final class LootEditManager {
     private static final LootEditManager INSTANCE = new LootEditManager();
 
     // Edits by table ID
-    private final Map<Identifier, LootTableEdit> edits = new ConcurrentHashMap<>();
+    private final Map<Id, LootTableEdit> edits = new ConcurrentHashMap<>();
 
     // Redo stacks by table ID (for undo/redo support)
-    private final Map<Identifier, List<LootEditOperation>> redoStacks = new ConcurrentHashMap<>();
+    private final Map<Id, List<LootEditOperation>> redoStacks = new ConcurrentHashMap<>();
 
     // Cache of original parsed structures
-    private final Map<Identifier, LootTableStructure> originalCache = new ConcurrentHashMap<>();
+    private final Map<Id, LootTableStructure> originalCache = new ConcurrentHashMap<>();
 
     // Cache of edited structures (rebuilt when operations change)
-    private final Map<Identifier, LootTableStructure> editedCache = new ConcurrentHashMap<>();
+    private final Map<Id, LootTableStructure> editedCache = new ConcurrentHashMap<>();
 
     // Test mode flag
     private volatile boolean testModeActive = false;
@@ -77,7 +77,7 @@ public final class LootEditManager {
      * Get the original (unedited) structure for a table.
      * Parses and caches if not already cached.
      */
-    public Optional<LootTableStructure> getOriginalStructure(MinecraftServer server, Identifier tableId) {
+    public Optional<LootTableStructure> getOriginalStructure(MinecraftServer server, Id tableId) {
         // Check cache first
         LootTableStructure cached = originalCache.get(tableId);
         if (cached != null) {
@@ -93,7 +93,7 @@ public final class LootEditManager {
     /**
      * Get a cached original structure (does not parse if missing).
      */
-    public Optional<LootTableStructure> getCachedOriginalStructure(Identifier tableId) {
+    public Optional<LootTableStructure> getCachedOriginalStructure(Id tableId) {
         return Optional.ofNullable(originalCache.get(tableId));
     }
 
@@ -110,7 +110,7 @@ public final class LootEditManager {
      * Get the edited structure for a table.
      * Returns the original if no edits exist.
      */
-    public Optional<LootTableStructure> getEditedStructure(Identifier tableId) {
+    public Optional<LootTableStructure> getEditedStructure(Id tableId) {
         // Check edited cache first
         LootTableStructure edited = editedCache.get(tableId);
         if (edited != null) {
@@ -138,7 +138,7 @@ public final class LootEditManager {
     /**
      * Check if a table has edits.
      */
-    public boolean hasEdits(Identifier tableId) {
+    public boolean hasEdits(Id tableId) {
         LootTableEdit edit = edits.get(tableId);
         return edit != null && edit.hasOperations();
     }
@@ -148,14 +148,14 @@ public final class LootEditManager {
     /**
      * Get the edit record for a table (creates if not exists).
      */
-    public LootTableEdit getOrCreateEdit(Identifier tableId) {
+    public LootTableEdit getOrCreateEdit(Id tableId) {
         return edits.computeIfAbsent(tableId, LootTableEdit::create);
     }
 
     /**
      * Get the edit record for a table (may be null).
      */
-    public LootTableEdit getEdit(Identifier tableId) {
+    public LootTableEdit getEdit(Id tableId) {
         return edits.get(tableId);
     }
 
@@ -163,7 +163,7 @@ public final class LootEditManager {
      * Apply an operation to a table's edits.
      * Clears the redo stack for this table.
      */
-    public void applyOperation(Identifier tableId, LootEditOperation operation) {
+    public void applyOperation(Id tableId, LootEditOperation operation) {
         LootTableEdit edit = getOrCreateEdit(tableId);
         LootTableEdit newEdit = edit.withOperation(operation);
         edits.put(tableId, newEdit);
@@ -190,7 +190,7 @@ public final class LootEditManager {
      * @param operations The operations to apply (in order)
      * @return The number of operations applied
      */
-    public int applyOperations(Identifier tableId, List<LootEditOperation> operations) {
+    public int applyOperations(Id tableId, List<LootEditOperation> operations) {
         if (operations.isEmpty()) {
             return 0;
         }
@@ -219,7 +219,7 @@ public final class LootEditManager {
      * Undo the last operation on a table.
      * The operation is pushed to the redo stack.
      */
-    public boolean undo(Identifier tableId) {
+    public boolean undo(Id tableId) {
         LootTableEdit edit = edits.get(tableId);
         if (edit == null || !edit.hasOperations()) {
             return false;
@@ -251,7 +251,7 @@ public final class LootEditManager {
     /**
      * Redo the last undone operation on a table.
      */
-    public boolean redo(Identifier tableId) {
+    public boolean redo(Id tableId) {
         List<LootEditOperation> redoStack = redoStacks.get(tableId);
         if (redoStack == null || redoStack.isEmpty()) {
             return false;
@@ -279,7 +279,7 @@ public final class LootEditManager {
     /**
      * Check if undo is available for a table.
      */
-    public boolean canUndo(Identifier tableId) {
+    public boolean canUndo(Id tableId) {
         LootTableEdit edit = edits.get(tableId);
         return edit != null && edit.hasOperations();
     }
@@ -287,7 +287,7 @@ public final class LootEditManager {
     /**
      * Check if redo is available for a table.
      */
-    public boolean canRedo(Identifier tableId) {
+    public boolean canRedo(Id tableId) {
         List<LootEditOperation> redoStack = redoStacks.get(tableId);
         return redoStack != null && !redoStack.isEmpty();
     }
@@ -295,7 +295,7 @@ public final class LootEditManager {
     /**
      * Get the operation history for a table.
      */
-    public List<LootEditOperation> getHistory(Identifier tableId) {
+    public List<LootEditOperation> getHistory(Id tableId) {
         LootTableEdit edit = edits.get(tableId);
         if (edit == null) {
             return List.of();
@@ -306,7 +306,7 @@ public final class LootEditManager {
     /**
      * Get the redo stack for a table.
      */
-    public List<LootEditOperation> getRedoStack(Identifier tableId) {
+    public List<LootEditOperation> getRedoStack(Id tableId) {
         List<LootEditOperation> stack = redoStacks.get(tableId);
         if (stack == null) {
             return List.of();
@@ -315,17 +315,17 @@ public final class LootEditManager {
     }
 
     /**
-     * @deprecated Use {@link #undo(Identifier)} instead
+     * @deprecated Use {@link #undo(Id)} instead
      */
     @Deprecated
-    public boolean undoLastOperation(Identifier tableId) {
+    public boolean undoLastOperation(Id tableId) {
         return undo(tableId);
     }
 
     /**
      * Clear all edits for a table.
      */
-    public void clearEdits(Identifier tableId) {
+    public void clearEdits(Id tableId) {
         edits.remove(tableId);
         redoStacks.remove(tableId);
         editedCache.remove(tableId);
@@ -347,7 +347,7 @@ public final class LootEditManager {
     /**
      * Get all tables that have been edited.
      */
-    public Set<Identifier> getEditedTables() {
+    public Set<Id> getEditedTables() {
         return new HashSet<>(edits.keySet());
     }
 
@@ -418,14 +418,14 @@ public final class LootEditManager {
     /**
      * Get all edits for serialization.
      */
-    public Map<Identifier, LootTableEdit> getAllEdits() {
+    public Map<Id, LootTableEdit> getAllEdits() {
         return new HashMap<>(edits);
     }
 
     /**
      * Load edits from save system.
      */
-    public void loadEdits(Map<Identifier, LootTableEdit> savedEdits) {
+    public void loadEdits(Map<Id, LootTableEdit> savedEdits) {
         edits.clear();
         edits.putAll(savedEdits);
         editedCache.clear(); // Force rebuild

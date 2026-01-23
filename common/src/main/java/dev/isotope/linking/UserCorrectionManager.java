@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureLootLink;
+import dev.isotope.compat.Id;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,12 +60,12 @@ public final class UserCorrectionManager {
         String minecraftVersion,
         String note               // Optional user note
     ) {
-        public Identifier structureId() {
-            return Identifier.tryParse(structure);
+        public Id structureId() {
+            return Id.tryParse(structure);
         }
 
-        public Identifier lootTableId() {
-            return Identifier.tryParse(lootTable);
+        public Id lootTableId() {
+            return Id.tryParse(lootTable);
         }
 
         /**
@@ -87,7 +87,7 @@ public final class UserCorrectionManager {
      * Key for identifying a structure-loot pair.
      */
     public record CorrectionKey(String structure, String lootTable) {
-        public static CorrectionKey from(Identifier structure, Identifier lootTable) {
+        public static CorrectionKey from(Id structure, Id lootTable) {
             return new CorrectionKey(structure.toString(), lootTable.toString());
         }
     }
@@ -137,7 +137,7 @@ public final class UserCorrectionManager {
      * Record that the user manually added a link.
      * This indicates a false negative - the system should have detected this link.
      */
-    public void recordAddedLink(Identifier structureId, Identifier lootTableId,
+    public void recordAddedLink(Id structureId, Id lootTableId,
                                  String originalSource, String originalConfidence) {
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
 
@@ -164,7 +164,7 @@ public final class UserCorrectionManager {
      * Record that the user manually removed a link.
      * This indicates a false positive - the system incorrectly suggested this link.
      */
-    public void recordRemovedLink(Identifier structureId, Identifier lootTableId,
+    public void recordRemovedLink(Id structureId, Id lootTableId,
                                    String originalSource, String originalConfidence) {
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
 
@@ -190,7 +190,7 @@ public final class UserCorrectionManager {
     /**
      * Record that the user restored a previously removed link.
      */
-    public void recordRestoredLink(Identifier structureId, Identifier lootTableId) {
+    public void recordRestoredLink(Id structureId, Id lootTableId) {
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
 
         // Check if there was a previous removal
@@ -222,7 +222,7 @@ public final class UserCorrectionManager {
     /**
      * Check if user has added this link manually.
      */
-    public boolean isUserAdded(Identifier structureId, Identifier lootTableId) {
+    public boolean isUserAdded(Id structureId, Id lootTableId) {
         ensureLoaded();
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
         UserCorrection correction = corrections.get(key);
@@ -232,7 +232,7 @@ public final class UserCorrectionManager {
     /**
      * Check if user has removed this link.
      */
-    public boolean isUserRemoved(Identifier structureId, Identifier lootTableId) {
+    public boolean isUserRemoved(Id structureId, Id lootTableId) {
         ensureLoaded();
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
         UserCorrection correction = corrections.get(key);
@@ -242,7 +242,7 @@ public final class UserCorrectionManager {
     /**
      * Check if user has any correction for this link.
      */
-    public Optional<UserCorrection> getCorrection(Identifier structureId, Identifier lootTableId) {
+    public Optional<UserCorrection> getCorrection(Id structureId, Id lootTableId) {
         ensureLoaded();
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
         return Optional.ofNullable(corrections.get(key));
@@ -257,8 +257,8 @@ public final class UserCorrectionManager {
 
         for (UserCorrection correction : corrections.values()) {
             if (correction.isPositive()) {
-                Identifier structId = correction.structureId();
-                Identifier tableId = correction.lootTableId();
+                Id structId = correction.structureId();
+                Id tableId = correction.lootTableId();
                 if (structId != null && tableId != null) {
                     result.add(StructureLootLink.manual(structId, tableId));
                 }
@@ -295,7 +295,7 @@ public final class UserCorrectionManager {
     /**
      * Get corrections for a specific structure.
      */
-    public List<UserCorrection> getCorrectionsForStructure(Identifier structureId) {
+    public List<UserCorrection> getCorrectionsForStructure(Id structureId) {
         ensureLoaded();
         String structStr = structureId.toString();
         List<UserCorrection> result = new ArrayList<>();
@@ -350,7 +350,7 @@ public final class UserCorrectionManager {
     /**
      * Clear a specific correction.
      */
-    public void clearCorrection(Identifier structureId, Identifier lootTableId) {
+    public void clearCorrection(Id structureId, Id lootTableId) {
         CorrectionKey key = CorrectionKey.from(structureId, lootTableId);
         if (corrections.remove(key) != null) {
             save();
@@ -449,8 +449,8 @@ public final class UserCorrectionManager {
 
     private String getMinecraftVersion() {
         try {
-            // MC 1.21.6+ uses id() instead of getName()
-            return net.minecraft.SharedConstants.getCurrentVersion().id();
+            // Use version-agnostic API
+            return dev.isotope.compat.McVersionInfo.getVersionString();
         } catch (Exception e) {
             return "unknown";
         }

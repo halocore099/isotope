@@ -1,10 +1,13 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.testing.DropStatistics;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
+import dev.isotope.compat.Id;
+import dev.isotope.util.Regs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -15,8 +18,8 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +30,7 @@ import java.util.*;
  * Shows side-by-side comparison with difference highlighting.
  */
 @Environment(EnvType.CLIENT)
-public class CompareStatisticsDialog extends Screen {
+public class CompareStatisticsDialog extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 500;
     private static final int DIALOG_HEIGHT = 350;
@@ -45,7 +48,7 @@ public class CompareStatisticsDialog extends Screen {
 
     private record CompareEntry(
         String itemName,
-        Identifier itemId,
+        Id itemId,
         int originalTotal,
         float originalAvg,
         float originalRate,
@@ -86,11 +89,11 @@ public class CompareStatisticsDialog extends Screen {
         entries.clear();
 
         // Collect all unique items from both stats
-        Set<Identifier> allItems = new LinkedHashSet<>();
+        Set<Id> allItems = new LinkedHashSet<>();
         allItems.addAll(originalStats.getDroppedItems());
         allItems.addAll(editedStats.getDroppedItems());
 
-        for (Identifier itemId : allItems) {
+        for (Id itemId : allItems) {
             int origTotal = originalStats.getTotalForItem(itemId);
             float origAvg = originalStats.getAverageForItem(itemId);
             float origRate = originalStats.getDropRateForItem(itemId);
@@ -253,9 +256,9 @@ public class CompareStatisticsDialog extends Screen {
                     }
 
                     // Item icon
-                    var itemOpt = BuiltInRegistries.ITEM.get(entry.itemId);
+                    var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, entry.itemId);
                     if (itemOpt.isPresent()) {
-                        ItemStack stack = new ItemStack(itemOpt.get().value());
+                        ItemStack stack = new ItemStack(itemOpt.get());
                         graphics.renderItem(stack, dialogX + 10, entryY + 2);
                     }
 

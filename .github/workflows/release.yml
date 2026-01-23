@@ -9,8 +9,17 @@ permissions:
   contents: write
 
 jobs:
+  # Build all major version combinations
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        # Release major versions only
+        mc_version: ['1.21.0', '1.21.4', '1.21.11']
+        loader: ['neoforge', 'fabric']
+
+    name: Build ${{ matrix.loader }} MC ${{ matrix.mc_version }}
 
     steps:
       - name: Checkout
@@ -28,51 +37,117 @@ jobs:
       - name: Get version from tag
         id: version
         run: |
-          # Extract version from tag (e.g., v0.2.0-beta+1.21.4 -> 0.2.0-beta)
+          # Extract version from tag (e.g., v0.2.0-beta -> 0.2.0-beta)
           FULL_TAG=${GITHUB_REF#refs/tags/v}
           VERSION=${FULL_TAG%%+*}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "FULL_TAG=$FULL_TAG" >> $GITHUB_OUTPUT
 
-      - name: Get MC version from gradle.properties
-        id: mcversion
-        run: |
-          MC_VERSION=$(grep "minecraft_version=" gradle.properties | cut -d'=' -f2)
-          echo "MC_VERSION=$MC_VERSION" >> $GITHUB_OUTPUT
-
       - name: Build
-        run: ./gradlew build
+        run: ./gradlew :${{ matrix.loader }}:build -PmcVersion=${{ matrix.mc_version }}
         env:
           CI_VERSION: ${{ steps.version.outputs.VERSION }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: isotope-${{ matrix.loader }}-mc${{ matrix.mc_version }}
+          path: |
+            ${{ matrix.loader }}/build/libs/*.jar
+            !${{ matrix.loader }}/build/libs/*-dev-shadow.jar
+          retention-days: 1
+
+  # Create GitHub release with all artifacts
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          FULL_TAG=${GITHUB_REF#refs/tags/v}
+          VERSION=${FULL_TAG%%+*}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f -name "*.jar" | sort
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Isotope IDE v${{ steps.version.outputs.VERSION }} (MC 1.21.x)
+          name: Isotope IDE v${{ steps.version.outputs.VERSION }}
           body: |
             ## Isotope IDE v${{ steps.version.outputs.VERSION }}
-
-            **Minecraft 1.21.x** (1.21 - 1.21.4+)
 
             Visual loot table editor and worldgen analysis toolkit for modpack developers.
 
             ### Downloads
-            - **Fabric**: `isotope-fabric-${{ steps.version.outputs.VERSION }}.jar`
-            - **NeoForge**: `isotope-neoforge-${{ steps.version.outputs.VERSION }}.jar`
+
+            **Minecraft 1.21.11** (Latest)
+            - NeoForge: `isotope-neoforge-*+mc1.21.11.jar`
+            - Fabric: `isotope-fabric-*+mc1.21.11.jar`
+
+            **Minecraft 1.21.4**
+            - NeoForge: `isotope-neoforge-*+mc1.21.4.jar`
+            - Fabric: `isotope-fabric-*+mc1.21.4.jar`
+
+            **Minecraft 1.21.0**
+            - NeoForge: `isotope-neoforge-*+mc1.21.0.jar`
+            - Fabric: `isotope-fabric-*+mc1.21.0.jar`
 
             ### Requirements
-            - Minecraft 1.21.x
+            - Java 21
             - Fabric Loader 0.16.0+ or NeoForge 21.x+
-            - Architectury API
+            - Architectury API (version matching your MC version)
 
             See [CHANGELOG.md](https://github.com/halocore099/isotope/blob/main/CHANGELOG.md) for details.
-          files: |
-            fabric/build/libs/isotope-fabric-*.jar
-            neoforge/build/libs/isotope-neoforge-*.jar
+          files: artifacts/**/*.jar
           draft: false
           prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Publish to mod distribution platforms (latest MC version only)
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.ref, '-alpha') }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          FULL_TAG=${GITHUB_REF#refs/tags/v}
+          VERSION=${FULL_TAG%%+*}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build latest version for publishing
+        run: |
+          ./gradlew :fabric:build -PmcVersion=1.21.11
+          ./gradlew :neoforge:build -PmcVersion=1.21.11
+        env:
+          CI_VERSION: ${{ steps.version.outputs.VERSION }}
 
       - name: Publish to Modrinth
         uses: Kir-Antipov/mc-publish@v3.3
@@ -80,35 +155,35 @@ jobs:
           modrinth-id: ${{ secrets.MODRINTH_ID }}
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           files: |
-            fabric/build/libs/isotope-fabric-${{ steps.version.outputs.VERSION }}.jar
-            neoforge/build/libs/isotope-neoforge-${{ steps.version.outputs.VERSION }}.jar
+            fabric/build/libs/isotope-fabric-*.jar
+            neoforge/build/libs/isotope-neoforge-*.jar
           name: Isotope IDE v${{ steps.version.outputs.VERSION }}
-          version: ${{ steps.version.outputs.VERSION }}+1.21.x
-          version-type: beta
+          version: ${{ steps.version.outputs.VERSION }}+1.21.11
+          version-type: ${{ contains(github.ref, '-beta') && 'beta' || 'release' }}
           loaders: |
             fabric
             neoforge
-          game-versions: ">=1.21 <1.22"
+          game-versions: ">=1.21.11 <1.22"
           dependencies: |
             architectury-api | depends | *
             fabric-api | depends | * | fabric
 
       - name: Publish to CurseForge
-        uses: Kir-Antipov/mc-publish@v3.3
         if: ${{ secrets.CURSEFORGE_ID != '' }}
+        uses: Kir-Antipov/mc-publish@v3.3
         with:
           curseforge-id: ${{ secrets.CURSEFORGE_ID }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
           files: |
-            fabric/build/libs/isotope-fabric-${{ steps.version.outputs.VERSION }}.jar
-            neoforge/build/libs/isotope-neoforge-${{ steps.version.outputs.VERSION }}.jar
+            fabric/build/libs/isotope-fabric-*.jar
+            neoforge/build/libs/isotope-neoforge-*.jar
           name: Isotope IDE v${{ steps.version.outputs.VERSION }}
-          version: ${{ steps.version.outputs.VERSION }}+1.21.x
-          version-type: beta
+          version: ${{ steps.version.outputs.VERSION }}+1.21.11
+          version-type: ${{ contains(github.ref, '-beta') && 'beta' || 'release' }}
           loaders: |
             fabric
             neoforge
-          game-versions: ">=1.21 <1.22"
+          game-versions: ">=1.21.11 <1.22"
           dependencies: |
             architectury-api | depends | *
             fabric-api | depends | * | fabric

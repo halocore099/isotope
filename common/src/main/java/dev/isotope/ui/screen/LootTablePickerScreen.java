@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedListEntry;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.ui.IsotopeColors;
@@ -17,7 +18,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -34,8 +35,8 @@ public class LootTablePickerScreen extends IsotopeScreen {
     private static final int WINDOW_WIDTH = 350;
     private static final int WINDOW_HEIGHT = 300;
 
-    private final Identifier structureId;
-    private final Consumer<Identifier> onSelect;
+    private final Id structureId;
+    private final Consumer<Id> onSelect;
 
     private IsotopeWindow window;
     private EditBox searchBox;
@@ -47,7 +48,7 @@ public class LootTablePickerScreen extends IsotopeScreen {
     private LootTableInfo selectedTable = null;
     private String currentFilter = "";
 
-    public LootTablePickerScreen(Screen parent, Identifier structureId, Consumer<Identifier> onSelect) {
+    public LootTablePickerScreen(Screen parent, Id structureId, Consumer<Id> onSelect) {
         super(TITLE, parent);
         this.structureId = structureId;
         this.onSelect = onSelect;
@@ -194,7 +195,7 @@ public class LootTablePickerScreen extends IsotopeScreen {
     }
 
     @Environment(EnvType.CLIENT)
-    class LootTableEntry extends ObjectSelectionList.Entry<LootTableEntry> {
+    class LootTableEntry extends VersionedListEntry<LootTableEntry> {
         private final LootTableInfo table;
 
         public LootTableEntry(LootTableInfo table) {

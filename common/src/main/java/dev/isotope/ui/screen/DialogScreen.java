@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
@@ -30,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * - Override {@link #renderDialogContent(GuiGraphics, int, int, int, int, float)} to render custom content
  */
 @Environment(EnvType.CLIENT)
-public abstract class DialogScreen extends Screen {
+public abstract class DialogScreen extends VersionedScreen {
 
     /** Default dialog width. */
     protected static final int DEFAULT_WIDTH = 320;

@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.session.EditorSession;
 import dev.isotope.session.SessionManager;
 import dev.isotope.session.SessionManager.SessionInfo;
@@ -29,7 +30,7 @@ import java.util.Optional;
  * Allows saving, loading, and deleting sessions.
  */
 @Environment(EnvType.CLIENT)
-public class SessionScreen extends Screen {
+public class SessionScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 350;
     private static final int DIALOG_HEIGHT = 280;

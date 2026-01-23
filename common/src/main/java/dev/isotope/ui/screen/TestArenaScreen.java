@@ -1,11 +1,13 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.testing.TestArenaManager;
 import dev.isotope.ui.HelpLinks;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
+import dev.isotope.compat.Id;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,24 +18,23 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 /**
  * Screen for configuring and launching a test arena.
  */
 @Environment(EnvType.CLIENT)
-public class TestArenaScreen extends Screen {
+public class TestArenaScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 300;
     private static final int DIALOG_HEIGHT = 180;
 
     private final Screen parent;
-    private final Identifier structureId;
+    private final Id structureId;
 
     private EditBox countInput;
     private Button createButton;
 
-    public TestArenaScreen(Screen parent, Identifier structureId) {
+    public TestArenaScreen(Screen parent, Id structureId) {
         super(Component.literal("Test Arena"));
         this.parent = parent;
         this.structureId = structureId;

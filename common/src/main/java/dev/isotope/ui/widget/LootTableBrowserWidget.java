@@ -1,6 +1,9 @@
 package dev.isotope.ui.widget;
 
 import dev.isotope.analysis.OrphanDetector;
+import dev.isotope.compat.Id;
+import dev.isotope.compat.ui.EditBoxCompat;
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.data.BookmarkManager;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
@@ -23,7 +26,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -38,7 +40,7 @@ import java.util.function.Consumer;
  * - Collapsible category tree
  */
 @Environment(EnvType.CLIENT)
-public class LootTableBrowserWidget extends AbstractWidget {
+public class LootTableBrowserWidget extends VersionedWidget {
 
     private static final int SEARCH_HEIGHT = 20;
     private static final int MOD_FILTER_HEIGHT = 20;
@@ -46,7 +48,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
     private static final int CATEGORY_HEIGHT = 18;
     private static final int INDENT = 12;
 
-    private final Consumer<Identifier> onTableSelected;
+    private final Consumer<Id> onTableSelected;
 
     // UI State
     private EditBox searchBox;
@@ -68,30 +70,30 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
     // Selection
     @Nullable
-    private Identifier selectedTable;
+    private Id selectedTable;
 
     // Mod dropdown state
     private boolean modDropdownOpen = false;
 
     // Orphan tooltip state
     @Nullable
-    private Identifier hoveredOrphanTable = null;
+    private Id hoveredOrphanTable = null;
     private int hoveredOrphanX = 0;
     private int hoveredOrphanY = 0;
 
     // Mob tooltip state
     @Nullable
-    private Identifier hoveredMobTable = null;
+    private Id hoveredMobTable = null;
     private int hoveredMobX = 0;
     private int hoveredMobY = 0;
 
     // Feature tooltip state
     @Nullable
-    private Identifier hoveredFeatureTable = null;
+    private Id hoveredFeatureTable = null;
     private int hoveredFeatureX = 0;
     private int hoveredFeatureY = 0;
 
-    public LootTableBrowserWidget(int x, int y, int width, int height, Consumer<Identifier> onTableSelected) {
+    public LootTableBrowserWidget(int x, int y, int width, int height, Consumer<Id> onTableSelected) {
         super(x, y, width, height, Component.empty());
         this.onTableSelected = onTableSelected;
 
@@ -154,11 +156,11 @@ public class LootTableBrowserWidget extends AbstractWidget {
     /**
      * Get bookmarked tables that match current filters.
      */
-    private List<Identifier> getFilteredBookmarks() {
-        List<Identifier> result = new ArrayList<>();
+    private List<Id> getFilteredBookmarks() {
+        List<Id> result = new ArrayList<>();
         String searchText = searchBox != null ? searchBox.getValue().toLowerCase() : "";
 
-        for (Identifier id : BookmarkManager.getInstance().getAll()) {
+        for (Id id : BookmarkManager.getInstance().getAll()) {
             // Mod filter
             if (!selectedMod.equals("All") && !id.getNamespace().equals(selectedMod)) {
                 continue;
@@ -176,11 +178,11 @@ public class LootTableBrowserWidget extends AbstractWidget {
      * Get recent tables that match current filters.
      * Excludes tables that are already bookmarked (shown in bookmarks section).
      */
-    private List<Identifier> getFilteredRecent() {
-        List<Identifier> result = new ArrayList<>();
+    private List<Id> getFilteredRecent() {
+        List<Id> result = new ArrayList<>();
         String searchText = searchBox != null ? searchBox.getValue().toLowerCase() : "";
 
-        for (Identifier id : RecentTablesManager.getInstance().getAll()) {
+        for (Id id : RecentTablesManager.getInstance().getAll()) {
             // Skip if bookmarked (already shown in bookmarks)
             if (BookmarkManager.getInstance().isBookmarked(id)) {
                 continue;
@@ -225,7 +227,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         int contentHeight = 0;
 
         // Bookmarks section
-        List<Identifier> bookmarks = getFilteredBookmarks();
+        List<Id> bookmarks = getFilteredBookmarks();
         if (!bookmarks.isEmpty()) {
             contentHeight += CATEGORY_HEIGHT; // Header
             if (bookmarksSectionExpanded) {
@@ -234,7 +236,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         }
 
         // Recent section
-        List<Identifier> recent = getFilteredRecent();
+        List<Id> recent = getFilteredRecent();
         if (!recent.isEmpty()) {
             contentHeight += CATEGORY_HEIGHT; // Header
             if (recentSectionExpanded) {
@@ -344,7 +346,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         int renderY = listY - scrollOffset;
 
         // Bookmarks section
-        List<Identifier> bookmarks = getFilteredBookmarks();
+        List<Id> bookmarks = getFilteredBookmarks();
         if (!bookmarks.isEmpty()) {
             boolean catHovered = mouseX >= getX() && mouseX < getX() + width &&
                 mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT &&
@@ -368,7 +370,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Bookmark entries if expanded
             if (bookmarksSectionExpanded) {
-                for (Identifier id : bookmarks) {
+                for (Id id : bookmarks) {
                     if (renderY + ITEM_HEIGHT > listY && renderY < getY() + height) {
                         boolean isSelected = id.equals(selectedTable);
                         boolean itemHovered = mouseX >= getX() + INDENT && mouseX < getX() + width &&
@@ -397,7 +399,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         }
 
         // Recent section
-        List<Identifier> recent = getFilteredRecent();
+        List<Id> recent = getFilteredRecent();
         if (!recent.isEmpty()) {
             boolean catHovered = mouseX >= getX() && mouseX < getX() + width &&
                 mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT &&
@@ -421,7 +423,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Recent entries if expanded
             if (recentSectionExpanded) {
-                for (Identifier id : recent) {
+                for (Id id : recent) {
                     if (renderY + ITEM_HEIGHT > listY && renderY < getY() + height) {
                         boolean isSelected = id.equals(selectedTable);
                         boolean itemHovered = mouseX >= getX() + INDENT && mouseX < getX() + width &&
@@ -712,7 +714,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         if (searchBox != null && searchBox.isMouseOver(mouseX, mouseY)) {
             setFocused(true);  // Mark widget as focused for key events
             searchBox.setFocused(true);
-            return searchBox.mouseClicked(event, focused);
+            return EditBoxCompat.mouseClicked(searchBox, event);
         } else if (searchBox != null) {
             searchBox.setFocused(false);
         }
@@ -761,7 +763,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         int renderY = listY - scrollOffset;
 
         // Bookmarks section click handling
-        List<Identifier> bookmarks = getFilteredBookmarks();
+        List<Id> bookmarks = getFilteredBookmarks();
         if (!bookmarks.isEmpty()) {
             // Bookmarks header click
             if (mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT) {
@@ -773,7 +775,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Bookmark items if expanded
             if (bookmarksSectionExpanded) {
-                for (Identifier id : bookmarks) {
+                for (Id id : bookmarks) {
                     if (mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT) {
                         selectedTable = id;
                         RecentTablesManager.getInstance().recordView(id);
@@ -786,7 +788,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
         }
 
         // Recent section click handling
-        List<Identifier> recent = getFilteredRecent();
+        List<Id> recent = getFilteredRecent();
         if (!recent.isEmpty()) {
             // Recent header click
             if (mouseY >= renderY && mouseY < renderY + CATEGORY_HEIGHT) {
@@ -798,7 +800,7 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
             // Recent items if expanded
             if (recentSectionExpanded) {
-                for (Identifier id : recent) {
+                for (Id id : recent) {
                     if (mouseY >= renderY && mouseY < renderY + ITEM_HEIGHT) {
                         selectedTable = id;
                         RecentTablesManager.getInstance().recordView(id);
@@ -860,21 +862,16 @@ public class LootTableBrowserWidget extends AbstractWidget {
 
     @Override
     public boolean charTyped(CharacterEvent event) {
-        char c = (char) event.codepoint();
-        int modifiers = event.modifiers();
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.charTyped(event);
+            return EditBoxCompat.charTyped(searchBox, event);
         }
         return false;
     }
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        int keyCode = event.key();
-        int scanCode = event.scancode();
-        int modifiers = event.modifiers();
         if (searchBox != null && searchBox.isFocused()) {
-            return searchBox.keyPressed(event);
+            return EditBoxCompat.keyPressed(searchBox, event);
         }
         return false;
     }

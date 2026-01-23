@@ -1,11 +1,11 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.GameRulesCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.flag.FeatureFlags;
-import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
@@ -94,7 +94,7 @@ public final class RegistryLoader {
             Minecraft minecraft = Minecraft.getInstance();
 
             // Minimal world settings - we just need registry access
-            GameRules gameRules = new GameRules(FeatureFlags.DEFAULT_FLAGS);
+            var gameRules = GameRulesCompat.create(FeatureFlags.DEFAULT_FLAGS);
 
             LevelSettings levelSettings = new LevelSettings(
                 TEMP_WORLD_NAME,

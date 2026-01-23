@@ -3,10 +3,12 @@ package dev.isotope.ui.widget;
 import dev.isotope.analysis.DropRateCalculator;
 import dev.isotope.analysis.DropRateCalculator.DropRate;
 import dev.isotope.analysis.DropRateCalculator.PoolStats;
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
+import dev.isotope.util.Regs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -18,6 +20,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +32,7 @@ import java.util.List;
  * Panel showing visual drop rate distribution for a loot table.
  */
 @Environment(EnvType.CLIENT)
-public class DropRatePanel extends AbstractWidget {
+public class DropRatePanel extends VersionedWidget {
 
     private static final int HEADER_HEIGHT = 24;
     private static final int ROW_HEIGHT = 20;
@@ -157,9 +160,9 @@ public class DropRatePanel extends AbstractWidget {
         int x = getX() + PADDING;
 
         // Item icon
-        var itemOpt = BuiltInRegistries.ITEM.get(rate.item());
+        var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, rate.item());
         if (itemOpt.isPresent()) {
-            ItemStack stack = new ItemStack(itemOpt.get().value());
+            ItemStack stack = new ItemStack(itemOpt.get());
             graphics.renderItem(stack, x, y + 2);
         }
         x += 20;

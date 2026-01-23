@@ -1,8 +1,10 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
+import dev.isotope.compat.Id;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,7 +16,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -28,7 +29,7 @@ import java.util.function.Consumer;
  * Shows a search box, mod filter, and grid of matching items.
  */
 @Environment(EnvType.CLIENT)
-public class ItemPickerScreen extends Screen {
+public class ItemPickerScreen extends VersionedScreen {
 
     private static final int GRID_COLS = 9;
     private static final int ITEM_SIZE = 18;
@@ -36,7 +37,7 @@ public class ItemPickerScreen extends Screen {
     private static final int CELL_SIZE = ITEM_SIZE + ITEM_PADDING;
 
     private final Screen parent;
-    private final Consumer<Identifier> onItemSelected;
+    private final Consumer<Id> onItemSelected;
 
     private EditBox searchBox;
     private List<Item> filteredItems = new ArrayList<>();
@@ -54,7 +55,7 @@ public class ItemPickerScreen extends Screen {
     private int gridX, gridY, gridWidth, gridHeight;
     private int modDropdownX, modDropdownY, modDropdownWidth;
 
-    public ItemPickerScreen(Screen parent, Consumer<Identifier> onItemSelected) {
+    public ItemPickerScreen(Screen parent, Consumer<Id> onItemSelected) {
         super(Component.literal("Select Item"));
         this.parent = parent;
         this.onItemSelected = onItemSelected;
@@ -64,7 +65,8 @@ public class ItemPickerScreen extends Screen {
     private void collectMods() {
         Set<String> mods = new TreeSet<>();
         for (var entry : BuiltInRegistries.ITEM.entrySet()) {
-            mods.add(entry.getKey().identifier().getNamespace());
+            // Use Id.fromKey() for version-agnostic ResourceKey -> Id conversion
+            mods.add(dev.isotope.compat.Id.fromKey(entry.getKey()).getNamespace());
         }
         availableMods.add("All");
         availableMods.addAll(mods);
@@ -118,7 +120,7 @@ public class ItemPickerScreen extends Screen {
 
         for (var entry : BuiltInRegistries.ITEM.entrySet()) {
             Item item = entry.getValue();
-            Identifier id = entry.getKey().identifier();
+            Id id = Id.fromKey(entry.getKey());
 
             // Skip air
             if (item == Items.AIR) continue;
@@ -339,7 +341,7 @@ public class ItemPickerScreen extends Screen {
 
             if (index >= 0 && index < filteredItems.size()) {
                 Item item = filteredItems.get(index);
-                Identifier id = BuiltInRegistries.ITEM.getKey(item);
+                Id id = Id.wrap(BuiltInRegistries.ITEM.getKey(item));
                 onItemSelected.accept(id);
                 onClose();
                 return true;

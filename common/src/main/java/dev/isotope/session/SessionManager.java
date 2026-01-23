@@ -3,11 +3,11 @@ package dev.isotope.session;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.data.BookmarkManager;
 import dev.isotope.ui.TabManager;
 import dev.isotope.ui.EditorTab;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -69,11 +69,11 @@ public final class SessionManager {
     public EditorSession saveSession(String name, TabManager tabManager, EditorSession.UIState uiState) {
         try {
             // Gather current state
-            List<Identifier> openTabs = tabManager.getTabs().stream()
+            List<Id> openTabs = tabManager.getTabs().stream()
                 .map(EditorTab::tableId)
                 .toList();
             int activeTabIndex = tabManager.getActiveTabIndex();
-            List<Identifier> bookmarks = BookmarkManager.getInstance().getAll();
+            List<Id> bookmarks = BookmarkManager.getInstance().getAll();
 
             // Create session
             EditorSession session = EditorSession.create(name, openTabs, activeTabIndex, bookmarks, uiState);
@@ -153,7 +153,7 @@ public final class SessionManager {
         tabManager.closeAll();
 
         // Open tabs from session
-        for (Identifier tableId : session.getOpenTabIds()) {
+        for (Id tableId : session.getOpenTabIds()) {
             tabManager.openTab(tableId);
         }
 
@@ -165,7 +165,7 @@ public final class SessionManager {
         // Restore bookmarks
         BookmarkManager bookmarkMgr = BookmarkManager.getInstance();
         bookmarkMgr.clear();
-        for (Identifier id : session.getBookmarkIds()) {
+        for (Id id : session.getBookmarkIds()) {
             bookmarkMgr.add(id);
         }
 

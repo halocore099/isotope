@@ -1,6 +1,6 @@
 package dev.isotope.visualization;
 
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.util.*;
 
@@ -91,7 +91,7 @@ public final class FlowLayoutEngine {
         }
 
         // Build index of target positions
-        Map<Identifier, Integer> targetIndex = new HashMap<>();
+        Map<Id, Integer> targetIndex = new HashMap<>();
         for (int i = 0; i < targetCol.size(); i++) {
             targetIndex.put(targetCol.get(i).id(), i);
         }

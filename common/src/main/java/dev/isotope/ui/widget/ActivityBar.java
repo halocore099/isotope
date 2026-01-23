@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -23,7 +24,7 @@ import java.util.function.Consumer;
  * Each icon toggles a different panel/mode.
  */
 @Environment(EnvType.CLIENT)
-public class ActivityBar extends AbstractWidget {
+public class ActivityBar extends VersionedWidget {
 
     public static final int WIDTH = 32;
     private static final int ICON_SIZE = 24;

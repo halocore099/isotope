@@ -1,5 +1,8 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.Id;
+import dev.isotope.compat.ui.RenderCompat;
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.data.LootSourceType;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.registry.LootSourceRegistry;
@@ -17,7 +20,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -28,7 +30,7 @@ import java.util.function.Consumer;
  * Shows sources (structures/features/mobs) -> loot tables -> nested tables.
  */
 @Environment(EnvType.CLIENT)
-public class LootFlowPanel extends AbstractWidget {
+public class LootFlowPanel extends VersionedWidget {
 
     private static final int HEADER_HEIGHT = 28;
     private static final int PADDING = 6;
@@ -68,7 +70,7 @@ public class LootFlowPanel extends AbstractWidget {
 
     // Callbacks
     @Nullable
-    private Consumer<Identifier> onTableSelected;
+    private Consumer<Id> onTableSelected;
 
     public LootFlowPanel(int x, int y, int width, int height) {
         super(x, y, width, height, Component.literal("Loot Flow"));
@@ -77,7 +79,7 @@ public class LootFlowPanel extends AbstractWidget {
     /**
      * Set callback for when a loot table is clicked.
      */
-    public void setOnTableSelected(@Nullable Consumer<Identifier> callback) {
+    public void setOnTableSelected(@Nullable Consumer<Id> callback) {
         this.onTableSelected = callback;
     }
 
@@ -174,17 +176,17 @@ public class LootFlowPanel extends AbstractWidget {
         // Enable scissor for content area
         graphics.enableScissor(getX(), contentY, getX() + width, getY() + height);
 
-        // Transform for pan and zoom (MC 1.21.6+ uses Matrix3x2fStack with 2D methods)
-        graphics.pose().pushMatrix();
-        graphics.pose().translate(getX() + panX, contentY + panY);
-        graphics.pose().scale(zoom, zoom);
+        // Transform for pan and zoom
+        RenderCompat.pushMatrix(graphics);
+        RenderCompat.translate(graphics, getX() + panX, contentY + panY);
+        RenderCompat.scale(graphics, zoom, zoom);
 
         // Update hovered node
         updateHoveredNode(mouseX, mouseY, contentY);
 
         // Render edges first (below nodes)
         // Track edge index per source for curvature variation
-        Map<Identifier, Integer> edgeIndexBySource = new HashMap<>();
+        Map<Id, Integer> edgeIndexBySource = new HashMap<>();
         for (FlowEdge edge : graph.getEdges()) {
             int edgeIndex = edgeIndexBySource.getOrDefault(edge.fromId(), 0);
             edgeIndexBySource.put(edge.fromId(), edgeIndex + 1);
@@ -198,7 +200,7 @@ public class LootFlowPanel extends AbstractWidget {
             renderNode(graphics, font, node);
         }
 
-        graphics.pose().popMatrix();
+        RenderCompat.popMatrix(graphics);
         graphics.disableScissor();
 
         // Render tooltip (outside scissor so it can extend beyond panel)

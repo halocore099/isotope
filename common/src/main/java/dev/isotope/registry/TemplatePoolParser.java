@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -36,16 +36,16 @@ public final class TemplatePoolParser {
     private static final Gson GSON = new GsonBuilder().create();
 
     // Pool ID -> loot tables found in that pool
-    private final Map<Identifier, Set<Identifier>> poolToLootTables = new LinkedHashMap<>();
+    private final Map<Id, Set<Id>> poolToLootTables = new LinkedHashMap<>();
 
     // Pool ID -> template references (for cross-referencing)
-    private final Map<Identifier, Set<Identifier>> poolToTemplates = new LinkedHashMap<>();
+    private final Map<Id, Set<Id>> poolToTemplates = new LinkedHashMap<>();
 
     // Pool ID -> processor list references
-    private final Map<Identifier, Set<Identifier>> poolToProcessors = new LinkedHashMap<>();
+    private final Map<Id, Set<Id>> poolToProcessors = new LinkedHashMap<>();
 
     // Pool hierarchy: pool ID -> pools it references (fallback pools, nested pools)
-    private final Map<Identifier, Set<Identifier>> poolHierarchy = new LinkedHashMap<>();
+    private final Map<Id, Set<Id>> poolHierarchy = new LinkedHashMap<>();
 
     // Statistics
     private int filesParsed = 0;
@@ -69,15 +69,15 @@ public final class TemplatePoolParser {
             ResourceManager resourceManager = server.getResourceManager();
 
             // Scan for template_pool JSON files
-            Map<Identifier, Resource> resources = resourceManager.listResources(
+            var resources = resourceManager.listResources(
                 "worldgen/template_pool",
                 path -> path.getPath().endsWith(".json")
             );
 
             Isotope.LOGGER.debug("[TemplatePoolParser] Found {} template_pool files", resources.size());
 
-            for (Map.Entry<Identifier, Resource> entry : resources.entrySet()) {
-                parsePoolJson(entry.getKey(), entry.getValue());
+            for (var entry : resources.entrySet()) {
+                parsePoolJson(Id.wrap(entry.getKey()), entry.getValue());
                 filesParsed++;
             }
 
@@ -96,7 +96,7 @@ public final class TemplatePoolParser {
     /**
      * Parse a single template pool JSON file.
      */
-    private void parsePoolJson(Identifier path, Resource resource) {
+    private void parsePoolJson(Id path, Resource resource) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
 
@@ -104,19 +104,19 @@ public final class TemplatePoolParser {
             if (json == null) return;
 
             // Build the pool ID from the path
-            Identifier poolId = extractPoolId(path);
+            Id poolId = extractPoolId(path);
             if (poolId == null) return;
 
-            Set<Identifier> foundLoot = new HashSet<>();
-            Set<Identifier> foundTemplates = new HashSet<>();
-            Set<Identifier> foundProcessors = new HashSet<>();
-            Set<Identifier> referencedPools = new HashSet<>();
+            Set<Id> foundLoot = new HashSet<>();
+            Set<Id> foundTemplates = new HashSet<>();
+            Set<Id> foundProcessors = new HashSet<>();
+            Set<Id> referencedPools = new HashSet<>();
 
             // Check for fallback pool
             if (json.has("fallback")) {
                 String fallback = json.get("fallback").getAsString();
                 try {
-                    referencedPools.add(Identifier.parse(fallback));
+                    referencedPools.add(Id.parse(fallback));
                 } catch (Exception e) {
                     // Invalid fallback
                 }
@@ -156,10 +156,10 @@ public final class TemplatePoolParser {
     /**
      * Parse a pool element for loot table references.
      */
-    private void parsePoolElement(JsonObject element, Set<Identifier> foundLoot,
-                                   Set<Identifier> foundTemplates,
-                                   Set<Identifier> foundProcessors,
-                                   Set<Identifier> referencedPools) {
+    private void parsePoolElement(JsonObject element, Set<Id> foundLoot,
+                                   Set<Id> foundTemplates,
+                                   Set<Id> foundProcessors,
+                                   Set<Id> referencedPools) {
 
         // Check for "element" sub-object
         if (element.has("element")) {
@@ -174,16 +174,16 @@ public final class TemplatePoolParser {
     /**
      * Parse element data for various references.
      */
-    private void parseElementData(JsonObject data, Set<Identifier> foundLoot,
-                                   Set<Identifier> foundTemplates,
-                                   Set<Identifier> foundProcessors,
-                                   Set<Identifier> referencedPools) {
+    private void parseElementData(JsonObject data, Set<Id> foundLoot,
+                                   Set<Id> foundTemplates,
+                                   Set<Id> foundProcessors,
+                                   Set<Id> referencedPools) {
 
         // Check for template location
         if (data.has("location")) {
             String location = data.get("location").getAsString();
             try {
-                foundTemplates.add(Identifier.parse(location));
+                foundTemplates.add(Id.parse(location));
             } catch (Exception e) {
                 // Invalid location
             }
@@ -193,7 +193,7 @@ public final class TemplatePoolParser {
         if (data.has("template")) {
             String template = data.get("template").getAsString();
             try {
-                foundTemplates.add(Identifier.parse(template));
+                foundTemplates.add(Id.parse(template));
             } catch (Exception e) {
                 // Invalid template
             }
@@ -204,7 +204,7 @@ public final class TemplatePoolParser {
             JsonElement processors = data.get("processors");
             if (processors.isJsonPrimitive()) {
                 try {
-                    foundProcessors.add(Identifier.parse(processors.getAsString()));
+                    foundProcessors.add(Id.parse(processors.getAsString()));
                 } catch (Exception e) {
                     // Invalid processor
                 }
@@ -215,7 +215,7 @@ public final class TemplatePoolParser {
         if (data.has("pool")) {
             String pool = data.get("pool").getAsString();
             try {
-                referencedPools.add(Identifier.parse(pool));
+                referencedPools.add(Id.parse(pool));
             } catch (Exception e) {
                 // Invalid pool
             }
@@ -228,7 +228,7 @@ public final class TemplatePoolParser {
     /**
      * Recursively search a JSON structure for loot_table references.
      */
-    private void searchForLootTables(JsonElement element, Set<Identifier> found) {
+    private void searchForLootTables(JsonElement element, Set<Id> found) {
         if (element == null) return;
 
         if (element.isJsonObject()) {
@@ -241,10 +241,10 @@ public final class TemplatePoolParser {
                     if (lootElement.isJsonPrimitive()) {
                         String lootTableStr = lootElement.getAsString();
                         try {
-                            Identifier lootId = Identifier.parse(lootTableStr);
+                            Id lootId = Id.parse(lootTableStr);
                             found.add(lootId);
                         } catch (Exception e) {
-                            // Invalid Identifier
+                            // Invalid Id
                         }
                     }
                 }
@@ -268,10 +268,10 @@ public final class TemplatePoolParser {
      */
     private void resolvePoolHierarchy() {
         // For each pool that has referenced pools, inherit their loot tables
-        Set<Identifier> visited = new HashSet<>();
+        Set<Id> visited = new HashSet<>();
 
-        for (Identifier poolId : poolHierarchy.keySet()) {
-            Set<Identifier> inheritedLoot = new HashSet<>();
+        for (Id poolId : poolHierarchy.keySet()) {
+            Set<Id> inheritedLoot = new HashSet<>();
             collectLootFromHierarchy(poolId, inheritedLoot, visited);
 
             if (!inheritedLoot.isEmpty()) {
@@ -283,21 +283,21 @@ public final class TemplatePoolParser {
     /**
      * Recursively collect loot tables from pool hierarchy.
      */
-    private void collectLootFromHierarchy(Identifier poolId, Set<Identifier> collected,
-                                           Set<Identifier> visited) {
+    private void collectLootFromHierarchy(Id poolId, Set<Id> collected,
+                                           Set<Id> visited) {
         if (visited.contains(poolId)) return; // Prevent cycles
         visited.add(poolId);
 
         // Add direct loot
-        Set<Identifier> directLoot = poolToLootTables.get(poolId);
+        Set<Id> directLoot = poolToLootTables.get(poolId);
         if (directLoot != null) {
             collected.addAll(directLoot);
         }
 
         // Recurse into referenced pools
-        Set<Identifier> refs = poolHierarchy.get(poolId);
+        Set<Id> refs = poolHierarchy.get(poolId);
         if (refs != null) {
-            for (Identifier ref : refs) {
+            for (Id ref : refs) {
                 collectLootFromHierarchy(ref, collected, visited);
             }
         }
@@ -306,7 +306,7 @@ public final class TemplatePoolParser {
     /**
      * Extract pool ID from resource path.
      */
-    private Identifier extractPoolId(Identifier path) {
+    private Id extractPoolId(Id path) {
         String pathStr = path.getPath();
 
         if (!pathStr.startsWith("worldgen/template_pool/")) {
@@ -318,7 +318,7 @@ public final class TemplatePoolParser {
             poolPath = poolPath.substring(0, poolPath.length() - 5);
         }
 
-        return Identifier.fromNamespaceAndPath(path.getNamespace(), poolPath);
+        return Id.of(path.getNamespace(), poolPath);
     }
 
     // --- Query API ---
@@ -326,30 +326,30 @@ public final class TemplatePoolParser {
     /**
      * Get all loot tables referenced by a pool (including inherited).
      */
-    public Set<Identifier> getLootTablesForPool(Identifier poolId) {
+    public Set<Id> getLootTablesForPool(Id poolId) {
         return poolToLootTables.getOrDefault(poolId, Set.of());
     }
 
     /**
      * Get all templates referenced by a pool.
      */
-    public Set<Identifier> getTemplatesForPool(Identifier poolId) {
+    public Set<Id> getTemplatesForPool(Id poolId) {
         return poolToTemplates.getOrDefault(poolId, Set.of());
     }
 
     /**
      * Build a map of all pools to their loot tables.
      */
-    public Map<Identifier, Set<Identifier>> buildPoolLootMap() {
+    public Map<Id, Set<Id>> buildPoolLootMap() {
         return Collections.unmodifiableMap(poolToLootTables);
     }
 
     /**
      * Get all pools that reference a specific loot table.
      */
-    public Set<Identifier> getPoolsForLootTable(Identifier lootTableId) {
-        Set<Identifier> result = new HashSet<>();
-        for (Map.Entry<Identifier, Set<Identifier>> entry : poolToLootTables.entrySet()) {
+    public Set<Id> getPoolsForLootTable(Id lootTableId) {
+        Set<Id> result = new HashSet<>();
+        for (Map.Entry<Id, Set<Id>> entry : poolToLootTables.entrySet()) {
             if (entry.getValue().contains(lootTableId)) {
                 result.add(entry.getKey());
             }
@@ -360,15 +360,15 @@ public final class TemplatePoolParser {
     /**
      * Get all processors referenced by a pool.
      */
-    public Set<Identifier> getProcessorsForPool(Identifier poolId) {
+    public Set<Id> getProcessorsForPool(Id poolId) {
         return poolToProcessors.getOrDefault(poolId, Set.of());
     }
 
     /**
      * Get all pools (for iteration).
      */
-    public Set<Identifier> getAllPoolIds() {
-        Set<Identifier> all = new HashSet<>();
+    public Set<Id> getAllPoolIds() {
+        Set<Id> all = new HashSet<>();
         all.addAll(poolToLootTables.keySet());
         all.addAll(poolToTemplates.keySet());
         all.addAll(poolToProcessors.keySet());

@@ -2,6 +2,7 @@ package dev.isotope.ui.screen;
 
 import dev.isotope.analysis.DropRateCalculator;
 import dev.isotope.analysis.DropRateCalculator.DropRate;
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootPool;
 import dev.isotope.data.loot.LootTableStructure;
@@ -19,9 +20,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import dev.isotope.compat.Id;
+import dev.isotope.util.Regs;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +34,7 @@ import java.util.*;
  * Side-by-side comparison of two loot tables.
  */
 @Environment(EnvType.CLIENT)
-public class CompareScreen extends Screen {
+public class CompareScreen extends VersionedScreen {
 
     private static final int HEADER_HEIGHT = 60;
     private static final int POOL_HEADER_HEIGHT = 20;
@@ -42,9 +45,9 @@ public class CompareScreen extends Screen {
 
     // Selected tables
     @Nullable
-    private Identifier leftTableId;
+    private Id leftTableId;
     @Nullable
-    private Identifier rightTableId;
+    private Id rightTableId;
     @Nullable
     private LootTableStructure leftTable;
     @Nullable
@@ -60,8 +63,8 @@ public class CompareScreen extends Screen {
     private EditBox rightSearchBox;
     private boolean leftDropdownOpen = false;
     private boolean rightDropdownOpen = false;
-    private List<Identifier> filteredTablesLeft = new ArrayList<>();
-    private List<Identifier> filteredTablesRight = new ArrayList<>();
+    private List<Id> filteredTablesLeft = new ArrayList<>();
+    private List<Id> filteredTablesRight = new ArrayList<>();
 
     // Widgets
     private Button syncButton;
@@ -73,7 +76,7 @@ public class CompareScreen extends Screen {
         this.parent = parent;
     }
 
-    public CompareScreen(Screen parent, Identifier leftTable, Identifier rightTable) {
+    public CompareScreen(Screen parent, Id leftTable, Id rightTable) {
         this(parent);
         this.leftTableId = leftTable;
         this.rightTableId = rightTable;
@@ -136,7 +139,7 @@ public class CompareScreen extends Screen {
         leftDropdownOpen = !text.isEmpty() && !filteredTablesLeft.isEmpty();
 
         // Check for exact match
-        Identifier id = Identifier.tryParse(text);
+        Id id = Id.tryParse(text);
         if (id != null && LootTableRegistry.getInstance().get(id).isPresent()) {
             leftTableId = id;
             loadTables();
@@ -149,7 +152,7 @@ public class CompareScreen extends Screen {
         rightDropdownOpen = !text.isEmpty() && !filteredTablesRight.isEmpty();
 
         // Check for exact match
-        Identifier id = Identifier.tryParse(text);
+        Id id = Id.tryParse(text);
         if (id != null && LootTableRegistry.getInstance().get(id).isPresent()) {
             rightTableId = id;
             loadTables();
@@ -158,7 +161,7 @@ public class CompareScreen extends Screen {
     }
 
     private void filterTables(String query, boolean isLeft) {
-        List<Identifier> results = new ArrayList<>();
+        List<Id> results = new ArrayList<>();
         String lowerQuery = query.toLowerCase();
 
         for (var info : LootTableRegistry.getInstance().getAll()) {
@@ -223,7 +226,7 @@ public class CompareScreen extends Screen {
 
     private void onSwap(Button button) {
         // Swap tables
-        Identifier tempId = leftTableId;
+        Id tempId = leftTableId;
         leftTableId = rightTableId;
         rightTableId = tempId;
 
@@ -306,7 +309,7 @@ public class CompareScreen extends Screen {
                              int mouseX, int mouseY, boolean isLeft) {
         // Calculate drop rates for comparison
         List<DropRate> rates = DropRateCalculator.calculate(table);
-        Map<Identifier, DropRate> rateMap = new HashMap<>();
+        Map<Id, DropRate> rateMap = new HashMap<>();
         for (DropRate rate : rates) {
             rateMap.put(rate.item(), rate);
         }
@@ -347,15 +350,15 @@ public class CompareScreen extends Screen {
                     // Item icon
                     final int itemY = currentY;
                     entry.name().ifPresent(itemId -> {
-                        var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+                        var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, itemId);
                         if (itemOpt.isPresent()) {
-                            ItemStack stack = new ItemStack(itemOpt.get().value());
+                            ItemStack stack = new ItemStack(itemOpt.get());
                             graphics.renderItem(stack, x + 2, itemY + 1);
                         }
                     });
 
                     // Entry name
-                    String entryName = entry.name().map(Identifier::getPath).orElse("???");
+                    String entryName = entry.name().map(Id::getPath).orElse("???");
                     if (font.width(entryName) > panelWidth - 100) {
                         entryName = font.plainSubstrByWidth(entryName, panelWidth - 110) + "...";
                     }
@@ -413,7 +416,7 @@ public class CompareScreen extends Screen {
             graphics.fill(PADDING, dropY, halfWidth - PADDING, dropY + dropHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             int itemY = dropY + 2;
-            for (Identifier id : filteredTablesLeft) {
+            for (Id id : filteredTablesLeft) {
                 boolean hovered = mouseX >= PADDING && mouseX < halfWidth - PADDING &&
                     mouseY >= itemY && mouseY < itemY + 14;
 
@@ -439,7 +442,7 @@ public class CompareScreen extends Screen {
             graphics.fill(halfWidth + PADDING, dropY, width - PADDING, dropY + dropHeight, IsotopeColors.ENTRY_BACKGROUND);
 
             int itemY = dropY + 2;
-            for (Identifier id : filteredTablesRight) {
+            for (Id id : filteredTablesRight) {
                 boolean hovered = mouseX >= halfWidth + PADDING && mouseX < width - PADDING &&
                     mouseY >= itemY && mouseY < itemY + 14;
 
@@ -466,7 +469,7 @@ public class CompareScreen extends Screen {
         if (leftDropdownOpen) {
             int dropY = 50;
             int itemY = dropY + 2;
-            for (Identifier id : filteredTablesLeft) {
+            for (Id id : filteredTablesLeft) {
                 if (mouseX >= PADDING && mouseX < halfWidth - PADDING &&
                     mouseY >= itemY && mouseY < itemY + 14) {
                     leftTableId = id;
@@ -484,7 +487,7 @@ public class CompareScreen extends Screen {
         if (rightDropdownOpen) {
             int dropY = 50;
             int itemY = dropY + 2;
-            for (Identifier id : filteredTablesRight) {
+            for (Id id : filteredTablesRight) {
                 if (mouseX >= halfWidth + PADDING && mouseX < width - PADDING &&
                     mouseY >= itemY && mouseY < itemY + 14) {
                     rightTableId = id;

@@ -1,7 +1,7 @@
 package dev.isotope.editing;
 
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.*;
-import net.minecraft.resources.Identifier;
 
 import java.util.Optional;
 
@@ -96,7 +96,7 @@ public sealed interface LootEditOperation permits
     record AddEntry(int poolIndex, int entryIndex, LootEntry entry) implements LootEditOperation {
         @Override
         public String getDescription() {
-            String entryName = entry.name().map(Identifier::getPath).orElse("entry");
+            String entryName = entry.name().map(Id::getPath).orElse("entry");
             return "Add " + entryName + " to pool #" + (poolIndex + 1);
         }
     }
@@ -134,7 +134,7 @@ public sealed interface LootEditOperation permits
     /**
      * Change the item of an item entry.
      */
-    record ModifyEntryItem(int poolIndex, int entryIndex, Identifier newItem) implements LootEditOperation {
+    record ModifyEntryItem(int poolIndex, int entryIndex, Id newItem) implements LootEditOperation {
         @Override
         public String getDescription() {
             return "Change item in pool #" + (poolIndex + 1) + " entry #" + (entryIndex + 1) + " to " + newItem.getPath();
@@ -144,7 +144,7 @@ public sealed interface LootEditOperation permits
     /**
      * Change the type of an entry (item, empty, loot_table, tag, etc.).
      */
-    record ModifyEntryType(int poolIndex, int entryIndex, String newType, Optional<Identifier> newName) implements LootEditOperation {
+    record ModifyEntryType(int poolIndex, int entryIndex, String newType, Optional<Id> newName) implements LootEditOperation {
         @Override
         public String getDescription() {
             String typeName = newType.replace("minecraft:", "");
@@ -300,7 +300,7 @@ public sealed interface LootEditOperation permits
     /**
      * Set the random sequence for the table (1.20+ feature for deterministic loot).
      */
-    record SetRandomSequence(Optional<Identifier> randomSequence) implements LootEditOperation {
+    record SetRandomSequence(Optional<Id> randomSequence) implements LootEditOperation {
         @Override
         public String getDescription() {
             return randomSequence.map(rs -> "Set random sequence to " + rs.toString())
@@ -316,7 +316,7 @@ public sealed interface LootEditOperation permits
     record AddChild(int poolIndex, int entryIndex, int childIndex, LootEntry child) implements LootEditOperation {
         @Override
         public String getDescription() {
-            String childName = child.name().map(Identifier::getPath).orElse("child");
+            String childName = child.name().map(Id::getPath).orElse("child");
             return "Add " + childName + " to composite entry #" + (entryIndex + 1) + " in pool #" + (poolIndex + 1);
         }
     }
@@ -337,7 +337,7 @@ public sealed interface LootEditOperation permits
     record ModifyChild(int poolIndex, int entryIndex, int childIndex, LootEntry newChild) implements LootEditOperation {
         @Override
         public String getDescription() {
-            String childName = newChild.name().map(Identifier::getPath).orElse("child");
+            String childName = newChild.name().map(Id::getPath).orElse("child");
             return "Modify child #" + (childIndex + 1) + " (" + childName + ") in entry #" + (entryIndex + 1);
         }
     }

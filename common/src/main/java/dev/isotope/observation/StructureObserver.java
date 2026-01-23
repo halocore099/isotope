@@ -1,8 +1,8 @@
 package dev.isotope.observation;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,7 +23,7 @@ public final class StructureObserver {
     private final Queue<StructurePlacement> placements = new ConcurrentLinkedQueue<>();
 
     // Quick lookup by structure type
-    private final Map<Identifier, List<StructurePlacement>> placementsByStructure = new ConcurrentHashMap<>();
+    private final Map<Id, List<StructurePlacement>> placementsByStructure = new ConcurrentHashMap<>();
 
     // Quick lookup by chunk for spatial queries
     private final Map<Long, List<StructurePlacement>> placementsByChunk = new ConcurrentHashMap<>();
@@ -116,14 +116,14 @@ public final class StructureObserver {
     /**
      * Get all placements of a specific structure type.
      */
-    public List<StructurePlacement> getPlacementsOf(Identifier structureId) {
+    public List<StructurePlacement> getPlacementsOf(Id structureId) {
         return placementsByStructure.getOrDefault(structureId, List.of());
     }
 
     /**
      * Get all unique structure types that were placed.
      */
-    public Set<Identifier> getObservedStructures() {
+    public Set<Id> getObservedStructures() {
         return Collections.unmodifiableSet(placementsByStructure.keySet());
     }
 

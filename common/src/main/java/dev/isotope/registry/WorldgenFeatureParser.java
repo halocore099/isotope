@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -33,7 +33,7 @@ public final class WorldgenFeatureParser {
     private static final Gson GSON = new GsonBuilder().create();
 
     // Discovered feature -> loot tables mapping
-    private final Map<Identifier, FeatureDiscovery> discoveries = new LinkedHashMap<>();
+    private final Map<Id, FeatureDiscovery> discoveries = new LinkedHashMap<>();
 
     // Statistics
     private int filesParsed = 0;
@@ -52,9 +52,9 @@ public final class WorldgenFeatureParser {
      * Record of a discovered feature with loot tables.
      */
     public record FeatureDiscovery(
-        Identifier featureId,
+        Id featureId,
         String featureType,
-        Set<Identifier> lootTables,
+        Set<Id> lootTables,
         String sourcePath
     ) {}
 
@@ -72,26 +72,26 @@ public final class WorldgenFeatureParser {
 
             // Scan for configured_feature JSON files
             // Path: data/<namespace>/worldgen/configured_feature/<path>.json
-            Map<Identifier, Resource> resources = resourceManager.listResources(
+            var resources = resourceManager.listResources(
                 "worldgen/configured_feature",
                 path -> path.getPath().endsWith(".json")
             );
 
             Isotope.LOGGER.debug("[WorldgenFeatureParser] Found {} configured_feature files", resources.size());
 
-            for (Map.Entry<Identifier, Resource> entry : resources.entrySet()) {
-                parseFeatureJson(entry.getKey(), entry.getValue());
+            for (var entry : resources.entrySet()) {
+                parseFeatureJson(Id.wrap(entry.getKey()), entry.getValue());
                 filesParsed++;
             }
 
             // Also scan placed_feature for any loot references there
-            Map<Identifier, Resource> placedResources = resourceManager.listResources(
+            var placedResources = resourceManager.listResources(
                 "worldgen/placed_feature",
                 path -> path.getPath().endsWith(".json")
             );
 
-            for (Map.Entry<Identifier, Resource> entry : placedResources.entrySet()) {
-                parseFeatureJson(entry.getKey(), entry.getValue());
+            for (var entry : placedResources.entrySet()) {
+                parseFeatureJson(Id.wrap(entry.getKey()), entry.getValue());
                 filesParsed++;
             }
 
@@ -107,7 +107,7 @@ public final class WorldgenFeatureParser {
     /**
      * Parse a single feature JSON file.
      */
-    private void parseFeatureJson(Identifier path, Resource resource) {
+    private void parseFeatureJson(Id path, Resource resource) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
 
@@ -117,14 +117,14 @@ public final class WorldgenFeatureParser {
             // Build the feature ID from the path
             // Path format: <namespace>:worldgen/configured_feature/<path>.json
             // We want: <namespace>:<path>
-            Identifier featureId = extractFeatureId(path);
+            Id featureId = extractFeatureId(path);
             if (featureId == null) return;
 
             // Get feature type if present
             String featureType = json.has("type") ? json.get("type").getAsString() : "unknown";
 
             // Recursively search for loot_table references
-            Set<Identifier> foundLoot = new HashSet<>();
+            Set<Id> foundLoot = new HashSet<>();
             searchForLootTables(json, foundLoot);
 
             if (!foundLoot.isEmpty()) {
@@ -149,7 +149,7 @@ public final class WorldgenFeatureParser {
     /**
      * Extract a feature ID from a resource path.
      */
-    private Identifier extractFeatureId(Identifier path) {
+    private Id extractFeatureId(Id path) {
         // Path: <namespace>:worldgen/configured_feature/<path>.json
         // or: <namespace>:worldgen/placed_feature/<path>.json
         String pathStr = path.getPath();
@@ -169,13 +169,13 @@ public final class WorldgenFeatureParser {
             featurePath = featurePath.substring(0, featurePath.length() - 5);
         }
 
-        return Identifier.fromNamespaceAndPath(path.getNamespace(), featurePath);
+        return Id.of(path.getNamespace(), featurePath);
     }
 
     /**
      * Recursively search a JSON structure for loot_table references.
      */
-    private void searchForLootTables(JsonElement element, Set<Identifier> found) {
+    private void searchForLootTables(JsonElement element, Set<Id> found) {
         if (element == null) return;
 
         if (element.isJsonObject()) {
@@ -187,10 +187,10 @@ public final class WorldgenFeatureParser {
                 if (lootElement.isJsonPrimitive()) {
                     String lootTableStr = lootElement.getAsString();
                     try {
-                        Identifier lootId = Identifier.parse(lootTableStr);
+                        Id lootId = Id.parse(lootTableStr);
                         found.add(lootId);
                     } catch (Exception e) {
-                        // Invalid Identifier, skip
+                        // Invalid Id, skip
                     }
                 }
             }
@@ -201,10 +201,10 @@ public final class WorldgenFeatureParser {
                 if (lootElement.isJsonPrimitive()) {
                     String lootTableStr = lootElement.getAsString();
                     try {
-                        Identifier lootId = Identifier.parse(lootTableStr);
+                        Id lootId = Id.parse(lootTableStr);
                         found.add(lootId);
                     } catch (Exception e) {
-                        // Invalid Identifier, skip
+                        // Invalid Id, skip
                     }
                 }
             }
@@ -233,14 +233,14 @@ public final class WorldgenFeatureParser {
     /**
      * Get discovery for a specific feature.
      */
-    public Optional<FeatureDiscovery> getDiscovery(Identifier featureId) {
+    public Optional<FeatureDiscovery> getDiscovery(Id featureId) {
         return Optional.ofNullable(discoveries.get(featureId));
     }
 
     /**
      * Get all loot tables associated with a feature.
      */
-    public Set<Identifier> getLootTablesForFeature(Identifier featureId) {
+    public Set<Id> getLootTablesForFeature(Id featureId) {
         FeatureDiscovery discovery = discoveries.get(featureId);
         return discovery != null ? discovery.lootTables() : Set.of();
     }
@@ -248,8 +248,8 @@ public final class WorldgenFeatureParser {
     /**
      * Build a map of feature ID -> loot tables for linking.
      */
-    public Map<Identifier, Set<Identifier>> buildFeatureLootMap() {
-        Map<Identifier, Set<Identifier>> result = new LinkedHashMap<>();
+    public Map<Id, Set<Id>> buildFeatureLootMap() {
+        Map<Id, Set<Id>> result = new LinkedHashMap<>();
         for (FeatureDiscovery discovery : discoveries.values()) {
             result.put(discovery.featureId(), discovery.lootTables());
         }
@@ -261,7 +261,7 @@ public final class WorldgenFeatureParser {
      */
     public Set<String> getNamespaces() {
         Set<String> namespaces = new LinkedHashSet<>();
-        for (Identifier id : discoveries.keySet()) {
+        for (Id id : discoveries.keySet()) {
             namespaces.add(id.getNamespace());
         }
         return namespaces;

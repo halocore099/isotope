@@ -2,9 +2,11 @@ package dev.isotope.editing;
 
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.*;
+import dev.isotope.util.Regs;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -147,7 +149,7 @@ public final class LootGenerator {
                 // Nested loot table - would need recursive parsing
                 // For now, skip
                 Isotope.LOGGER.debug("Skipping nested loot table reference: {}",
-                    entry.name().map(Identifier::toString).orElse("unknown"));
+                    entry.name().map(Id::toString).orElse("unknown"));
             }
             case LootEntry.TYPE_ALTERNATIVES -> {
                 // First child that passes conditions
@@ -178,7 +180,7 @@ public final class LootGenerator {
             case LootEntry.TYPE_TAG -> {
                 // Tag entries would need tag lookup
                 Isotope.LOGGER.debug("Skipping tag entry: {}",
-                    entry.name().map(Identifier::toString).orElse("unknown"));
+                    entry.name().map(Id::toString).orElse("unknown"));
             }
             default -> {
                 Isotope.LOGGER.debug("Unknown entry type: {}", entry.type());
@@ -191,16 +193,16 @@ public final class LootGenerator {
     /**
      * Create an ItemStack from an item ID and entry.
      */
-    private static ItemStack createItemStack(Identifier itemId, LootEntry entry, Random random) {
+    private static ItemStack createItemStack(Id itemId, LootEntry entry, Random random) {
         try {
-            // In 1.21.4, registry get returns Optional<Reference<Item>>
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+            // Use version-agnostic registry lookup
+            var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, itemId);
             if (itemOpt.isEmpty()) {
                 Isotope.LOGGER.warn("Unknown item: {}", itemId);
                 return ItemStack.EMPTY;
             }
 
-            var item = itemOpt.get().value();
+            var item = itemOpt.get();
             if (item == Items.AIR) {
                 Isotope.LOGGER.warn("Item is AIR: {}", itemId);
                 return ItemStack.EMPTY;

@@ -4,6 +4,19 @@ plugins {
 
 archivesBaseName = "isotope-neoforge"
 
+// Determine API version group for NeoForge version-specific code
+def apiVersion = rootProject.ext.has('apiVersion') ? rootProject.ext.get('apiVersion') : 'mc1211'
+println "NeoForge module: Using API version ${apiVersion}"
+
+sourceSets {
+    main {
+        java {
+            // Add version-specific source set based on API version
+            srcDir "src/${apiVersion}/java"
+        }
+    }
+}
+
 repositories {
     maven { url "https://maven.neoforged.net/releases/" }
 }
@@ -28,10 +41,22 @@ configurations {
     developmentNeoForge.extendsFrom common
 }
 
+// Helper to get property from ext (version file) or gradle.properties
+def getProp = { String name ->
+    rootProject.ext.has(name) ? rootProject.ext.get(name) : rootProject.findProperty(name)
+}
+
+def neoforgeVer = getProp('neoforge_version')
+def archVer = getProp('architectury_version')
+def archMinVer = getProp('architectury_min_version')
+def mcVersionRange = getProp('minecraft_version_range_neoforge')
+
 dependencies {
-    neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"
-    modApi "dev.architectury:architectury-neoforge:${rootProject.architectury_version}"
+    neoForge "net.neoforged:neoforge:${neoforgeVer}"
+    modApi "dev.architectury:architectury-neoforge:${archVer}"
+    common(project(path: ":compat", configuration: "namedElements")) { transitive false }
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":compat", configuration: "transformProductionNeoForge")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive false }
 }
 
@@ -42,9 +67,9 @@ processResources {
     inputs.property "mod_description", rootProject.mod_description
     inputs.property "mod_author", rootProject.mod_author
     inputs.property "mod_license", rootProject.mod_license
-    inputs.property "neoforge_version", rootProject.neoforge_version
-    inputs.property "minecraft_version_range_neoforge", rootProject.minecraft_version_range_neoforge
-    inputs.property "architectury_min_version", rootProject.architectury_min_version
+    inputs.property "neoforge_version", neoforgeVer
+    inputs.property "minecraft_version_range_neoforge", mcVersionRange
+    inputs.property "architectury_min_version", archMinVer
 
     filesMatching("META-INF/neoforge.mods.toml") {
         expand(
@@ -55,9 +80,9 @@ processResources {
             "mod_author": rootProject.mod_author,
             "mod_license": rootProject.mod_license,
             "neoforge_loader_version": "[4,)",
-            "neoforge_version": rootProject.neoforge_version,
-            "minecraft_version_range_neoforge": rootProject.minecraft_version_range_neoforge,
-            "architectury_min_version": rootProject.architectury_min_version
+            "neoforge_version": neoforgeVer,
+            "minecraft_version_range_neoforge": mcVersionRange,
+            "architectury_min_version": archMinVer
         )
     }
 }
@@ -75,8 +100,10 @@ remapJar {
 }
 
 sourcesJar {
+    def compatSources = project(":compat").sourcesJar
     def commonSources = project(":common").sourcesJar
-    dependsOn commonSources
+    dependsOn compatSources, commonSources
+    from compatSources.archiveFile.map { zipTree(it) }
     from commonSources.archiveFile.map { zipTree(it) }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

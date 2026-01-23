@@ -1,8 +1,11 @@
 package dev.isotope.validation;
 
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.*;
+import dev.isotope.util.Regs;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.Items;
 
 import java.util.*;
 
@@ -70,7 +73,7 @@ public class LootTableValidator {
      * Result of validating a loot table.
      */
     public record ValidationResult(
-        Identifier tableId,
+        Id tableId,
         List<ValidationIssue> issues,
         int errorCount,
         int warningCount,
@@ -88,7 +91,7 @@ public class LootTableValidator {
     /**
      * Validate a loot table structure.
      */
-    public static ValidationResult validate(Identifier tableId, LootTableStructure structure) {
+    public static ValidationResult validate(Id tableId, LootTableStructure structure) {
         List<ValidationIssue> issues = new ArrayList<>();
 
         if (structure == null) {
@@ -146,7 +149,7 @@ public class LootTableValidator {
         }
 
         // Track items for duplicate detection
-        Map<Identifier, Integer> itemCounts = new HashMap<>();
+        Map<Id, Integer> itemCounts = new HashMap<>();
         int totalWeight = 0;
 
         // Validate each entry
@@ -157,7 +160,7 @@ public class LootTableValidator {
         }
 
         // Check for duplicates
-        for (Map.Entry<Identifier, Integer> itemEntry : itemCounts.entrySet()) {
+        for (Map.Entry<Id, Integer> itemEntry : itemCounts.entrySet()) {
             if (itemEntry.getValue() > 1) {
                 issues.add(new ValidationIssue(
                     IssueType.DUPLICATE_ENTRY,
@@ -182,7 +185,7 @@ public class LootTableValidator {
     }
 
     private static void validateEntry(List<ValidationIssue> issues, LootEntry entry,
-                                      int poolIdx, int entryIdx, Map<Identifier, Integer> itemCounts) {
+                                      int poolIdx, int entryIdx, Map<Id, Integer> itemCounts) {
         // Check weight
         if (entry.weight() <= 0) {
             issues.add(new ValidationIssue(
@@ -197,7 +200,7 @@ public class LootTableValidator {
         // Check item existence for item entries
         String entryType = entry.type();
         if ((entryType.equals("minecraft:item") || entryType.equals("item")) && entry.name().isPresent()) {
-            Identifier itemId = entry.name().get();
+            Id itemId = entry.name().get();
 
             // Track for duplicates
             itemCounts.merge(itemId, 1, Integer::sum);
@@ -205,8 +208,8 @@ public class LootTableValidator {
             // Check if item exists (only for minecraft namespace to avoid false positives with mods)
             if (itemId.getNamespace().equals("minecraft")) {
                 try {
-                    var item = BuiltInRegistries.ITEM.get(itemId);
-                    if (item == null || item == BuiltInRegistries.ITEM.get(Identifier.withDefaultNamespace("air"))) {
+                    var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, itemId);
+                    if (itemOpt.isEmpty() || itemOpt.get() == Items.AIR) {
                         issues.add(new ValidationIssue(
                             IssueType.MISSING_ITEM,
                             Severity.ERROR,

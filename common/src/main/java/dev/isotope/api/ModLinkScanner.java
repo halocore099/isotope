@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -75,29 +75,29 @@ public final class ModLinkScanner {
 
             // Look for isotope_links.json in all namespaces
             // The path would be: data/<namespace>/isotope_links.json
-            Map<Identifier, Resource> isotopeLinks = resourceManager.listResources(
+            var isotopeLinks = resourceManager.listResources(
                 "",
                 path -> path.getPath().equals("isotope_links.json")
             );
 
             Isotope.LOGGER.debug("[ModLinkScanner] Found {} isotope_links.json files", isotopeLinks.size());
 
-            for (Map.Entry<Identifier, Resource> entry : isotopeLinks.entrySet()) {
-                parseLinkFile(entry.getKey(), entry.getValue(), "mod");
+            for (var entry : isotopeLinks.entrySet()) {
+                parseLinkFile(Id.wrap(entry.getKey()), entry.getValue(), "mod");
                 filesScanned++;
             }
 
             // Also look for loot_metadata.json (same format, typically used by datapacks)
             // The path would be: data/<namespace>/loot_metadata.json
-            Map<Identifier, Resource> lootMetadata = resourceManager.listResources(
+            var lootMetadata = resourceManager.listResources(
                 "",
                 path -> path.getPath().equals("loot_metadata.json")
             );
 
             Isotope.LOGGER.debug("[ModLinkScanner] Found {} loot_metadata.json files", lootMetadata.size());
 
-            for (Map.Entry<Identifier, Resource> entry : lootMetadata.entrySet()) {
-                parseLinkFile(entry.getKey(), entry.getValue(), "datapack");
+            for (var entry : lootMetadata.entrySet()) {
+                parseLinkFile(Id.wrap(entry.getKey()), entry.getValue(), "datapack");
                 filesScanned++;
             }
 
@@ -117,7 +117,7 @@ public final class ModLinkScanner {
     /**
      * Parse a single isotope_links.json or loot_metadata.json file.
      */
-    private void parseLinkFile(Identifier path, Resource resource, String sourceType) {
+    private void parseLinkFile(Id path, Resource resource, String sourceType) {
         String namespace = path.getNamespace();
 
         try (BufferedReader reader = new BufferedReader(
@@ -155,23 +155,23 @@ public final class ModLinkScanner {
                     continue;
                 }
                 String structureStr = linkObj.get("structure").getAsString();
-                Identifier structureId;
+                Id structureId;
                 try {
-                    structureId = Identifier.parse(structureStr);
+                    structureId = Id.parse(structureStr);
                 } catch (Exception e) {
                     Isotope.LOGGER.warn("[ModLinkScanner] {} has invalid structure ID: {}", path, structureStr);
                     continue;
                 }
 
                 // Get loot tables
-                List<Identifier> lootTables = new ArrayList<>();
+                List<Id> lootTables = new ArrayList<>();
                 if (linkObj.has("loot_tables")) {
                     JsonElement tablesElem = linkObj.get("loot_tables");
                     if (tablesElem.isJsonArray()) {
                         for (JsonElement tableElem : tablesElem.getAsJsonArray()) {
                             if (tableElem.isJsonPrimitive()) {
                                 try {
-                                    lootTables.add(Identifier.parse(tableElem.getAsString()));
+                                    lootTables.add(Id.parse(tableElem.getAsString()));
                                 } catch (Exception e) {
                                     Isotope.LOGGER.warn("[ModLinkScanner] {} has invalid loot table ID: {}",
                                         path, tableElem.getAsString());
@@ -181,7 +181,7 @@ public final class ModLinkScanner {
                     } else if (tablesElem.isJsonPrimitive()) {
                         // Single loot table as string
                         try {
-                            lootTables.add(Identifier.parse(tablesElem.getAsString()));
+                            lootTables.add(Id.parse(tablesElem.getAsString()));
                         } catch (Exception e) {
                             Isotope.LOGGER.warn("[ModLinkScanner] {} has invalid loot table ID: {}",
                                 path, tablesElem.getAsString());
@@ -191,7 +191,7 @@ public final class ModLinkScanner {
                 // Also support singular "loot_table" key
                 if (linkObj.has("loot_table")) {
                     try {
-                        lootTables.add(Identifier.parse(linkObj.get("loot_table").getAsString()));
+                        lootTables.add(Id.parse(linkObj.get("loot_table").getAsString()));
                     } catch (Exception e) {
                         // Invalid
                     }

@@ -1,8 +1,8 @@
 package dev.isotope.analysis;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.observation.ObservationSession;
-import net.minecraft.resources.Identifier;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,7 +70,7 @@ public final class AnalysisEngine {
     /**
      * Get observed structure data.
      */
-    public Optional<ObservationSession.ObservedStructureData> getStructureData(Identifier structureId) {
+    public Optional<ObservationSession.ObservedStructureData> getStructureData(Id structureId) {
         return ObservationSession.getInstance().getStructureData(structureId);
     }
 

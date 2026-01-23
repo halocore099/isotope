@@ -3,21 +3,41 @@
 ## Branch Info
 
 **Branch**: `neo-1.21.11`
-**Target**: Minecraft 1.21.11, NeoForge only
+**Target**: Minecraft 1.21.0-1.21.11, NeoForge and Fabric
 **Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
 
-This is a single-version, single-loader branch. For other versions/loaders, see:
-- `fab-1.21.11` - Fabric 1.21.11 (not yet created)
-- `neo-1.21.9-.10` - NeoForge 1.21.9-1.21.10
-- `fab-1.21.9-.10` - Fabric 1.21.9-1.21.10
-- `main` - Documentation only
+This branch supports **multi-version builds** for all MC 1.21.x versions with both NeoForge and Fabric loaders.
+
+## Multi-Version Support
+
+### Supported Versions
+
+| MC Version | API Group | NeoForge | Fabric |
+|------------|-----------|----------|--------|
+| 1.21.0 | mc1210 | 21.0.x | 0.16.x |
+| 1.21.1 | mc1210 | 21.1.x | 0.16.x |
+| 1.21.2 | mc1210 | 21.2.x | 0.16.x |
+| 1.21.3 | mc1210 | 21.3.x | 0.16.x |
+| 1.21.4 | mc1210 | 21.4.x | 0.16.x |
+| 1.21.5 | mc1210 | 21.5.x | 0.16.x |
+| 1.21.6 | mc1210 | 21.6.x | 0.16.x |
+| 1.21.7 | mc1210 | 21.7.x | 0.16.x |
+| 1.21.8 | mc1210 | 21.8.x | 0.16.x |
+| 1.21.9 | mc1210 | 21.9.x | 0.16.x |
+| 1.21.10 | mc1210 | 21.10.x | 0.16.x |
+| 1.21.11 | mc1211 | 21.11.x | 0.16.x |
+
+### API Groups
+
+- **mc1210**: MC 1.21.0 - 1.21.10 (uses ResourceLocation, hasPermission(int), renderWidget)
+- **mc1211**: MC 1.21.11+ (uses Identifier, permissions().hasPermission(), renderContents)
 
 ## MC 1.21.11 API Changes
 
 Key API changes in Minecraft 1.21.11:
 
-| Old | New |
-|-----|-----|
+| Old (mc1210) | New (mc1211) |
+|--------------|--------------|
 | `ResourceLocation` | `net.minecraft.resources.Identifier` |
 | `ResourceKey.location()` | `ResourceKey.identifier()` |
 | `net.minecraft.Util` | `net.minecraft.util.Util` |
@@ -34,10 +54,18 @@ Key API changes in Minecraft 1.21.11:
 
 ```
 isotope/
-├── common/          # Shared code (Architectury common)
-├── neoforge/        # NeoForge-specific code
-├── build.gradle     # Root build config
-├── gradle.properties # Version properties
+├── compat/              # Version compatibility layer
+│   ├── src/main/java/   # Shared interfaces (Id, McVersion)
+│   ├── src/mc1210/java/ # MC 1.21.0-1.21.10 implementations
+│   └── src/mc1211/java/ # MC 1.21.11+ implementations
+├── common/              # Shared mod code (Architectury common)
+├── neoforge/            # NeoForge-specific code
+├── fabric/              # Fabric-specific code
+├── versions/            # Version-specific properties files
+├── scripts/             # Build scripts
+├── docs/                # Documentation
+├── build.gradle         # Root build config
+├── gradle.properties    # Default version properties
 └── settings.gradle.kts
 ```
 
@@ -47,11 +75,27 @@ isotope/
 # Set Java 21 (macOS with Homebrew)
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 
-# Build
+# Build default version (1.21.11)
 ./gradlew build
 
-# Run client
+# Build specific version
+./gradlew build -PmcVersion=1.21.4
+
+# Build specific loader for specific version
+./gradlew :neoforge:build -PmcVersion=1.21.11
+./gradlew :fabric:build -PmcVersion=1.21.4
+
+# Run NeoForge client
 ./gradlew :neoforge:runClient
+
+# Run Fabric client
+./gradlew :fabric:runClient
+
+# Build all 24 version combinations
+./scripts/build-all-versions.sh
+
+# Quick build (latest only)
+./scripts/build-all-versions.sh --quick
 
 # Clean
 ./gradlew clean
@@ -59,12 +103,45 @@ export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 
 ## Key Dependencies
 
+Default (MC 1.21.11):
+
 | Dependency | Version |
 |------------|---------|
 | Minecraft | 1.21.11 |
 | NeoForge | 21.11.34-beta |
+| Fabric Loader | 0.16.9 |
+| Fabric API | 0.115.0+1.21.11 |
 | Architectury | 19.0.1 |
 | Java | 21 |
+
+Version-specific dependencies are defined in `versions/*.properties` files.
+
+## Compatibility Layer
+
+### Key Classes
+
+- `dev.isotope.compat.Id` - Version-agnostic resource identifier
+- `dev.isotope.compat.McVersion` - Version detection and utilities
+- `dev.isotope.compat.ui.VersionedButton` - Version-specific button base class
+
+### Usage
+
+```java
+// Create identifiers
+Id id = Id.of("minecraft", "stone");
+Id id = Id.parse("minecraft:diamond");
+
+// Convert to native Minecraft type
+ResourceLocation/Identifier native = id.mc();
+
+// Check version
+if (McVersion.INSTANCE.is1211OrNewer()) {
+    // 1.21.11+ specific code
+}
+
+// Version-agnostic permission check
+boolean hasPermission = McVersion.INSTANCE.hasGamemasterPermission(source);
+```
 
 ## Structure-Loot Linking Architecture
 
@@ -105,7 +182,7 @@ Three mixins for runtime observation and test mode:
 | `StructureStartMixin` | `StructureStart` | Observe structure placements |
 | `ReloadableRegistriesMixin` | `ReloadableServerRegistries.Holder` | Track loot table lookups |
 
-All mixins are always applied (no conditional loading needed for single-version branch).
+All mixins are always applied (no conditional loading needed).
 
 ## Test Mode
 
@@ -242,3 +319,14 @@ Exports to `.minecraft/kubejs/server_scripts/isotope_loot_<timestamp>.js`
 
 ### CraftTweaker Export
 Exports to `.minecraft/scripts/isotope_loot_<timestamp>.zs`
+
+## CI/CD
+
+GitHub Actions automatically builds all 24 version combinations on push. See:
+- `.github/workflows/build-matrix.yml` - CI build matrix
+- `.github/workflows/release.yml` - Release workflow
+
+## Documentation
+
+- `docs/TESTING.md` - Testing guide and checklists
+- `docs/VERSION-COMPAT.md` - Version compatibility reference

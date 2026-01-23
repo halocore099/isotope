@@ -2,18 +2,16 @@ package dev.isotope.registry;
 
 import dev.isotope.Isotope;
 import dev.isotope.analysis.LootTableContentAnalyzer;
+import dev.isotope.compat.Id;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.LootTableInfo.LootTableCategory;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Registry of all discovered loot tables.
@@ -25,7 +23,7 @@ public final class LootTableRegistry {
 
     private static final LootTableRegistry INSTANCE = new LootTableRegistry();
 
-    private final Map<Identifier, LootTableInfo> lootTables = new LinkedHashMap<>();
+    private final Map<Id, LootTableInfo> lootTables = new LinkedHashMap<>();
     private boolean scanned = false;
 
     private LootTableRegistry() {}
@@ -58,7 +56,7 @@ public final class LootTableRegistry {
             Isotope.LOGGER.debug("Lookup type: {}", lookup.getClass().getName());
 
             // Collect all IDs first
-            List<Identifier> tableIds = new ArrayList<>();
+            List<Id> tableIds = new ArrayList<>();
 
             // The lookup should implement HolderLookup.Provider
             if (lookup instanceof net.minecraft.core.HolderLookup.Provider provider) {
@@ -66,7 +64,7 @@ public final class LootTableRegistry {
                 var lootLookup = provider.lookupOrThrow(Registries.LOOT_TABLE);
 
                 lootLookup.listElementIds().forEach(key -> {
-                    Identifier id = key.identifier();
+                    Id id = Id.fromKey(key);
                     if (!id.getPath().equals("empty")) {
                         tableIds.add(id);
                     }
@@ -80,7 +78,7 @@ public final class LootTableRegistry {
             }
 
             // Now analyze each table with content-based detection
-            for (Identifier id : tableIds) {
+            for (Id id : tableIds) {
                 LootTableCategory category = null;
                 String path = id.getPath();
 
@@ -133,7 +131,7 @@ public final class LootTableRegistry {
      * intermediary mappings causing different class names at runtime.
      */
     @SuppressWarnings("unchecked")
-    private void scanViaReflection(Object lookup, List<Identifier> tableIds) {
+    private void scanViaReflection(Object lookup, List<Id> tableIds) {
         try {
             // Step 1: Find and invoke lookupOrThrow(ResourceKey) method
             // On Fabric intermediary, method names may be obfuscated like "method_46767"
@@ -209,7 +207,7 @@ public final class LootTableRegistry {
             // Step 3: Process each ResourceKey to extract the Identifier
             idStream.forEach(key -> {
                 try {
-                    Identifier id = extractIdentifier(key);
+                    Id id = extractIdentifier(key);
                     if (id != null && !id.getPath().equals("empty")) {
                         tableIds.add(id);
                     }
@@ -246,9 +244,10 @@ public final class LootTableRegistry {
     }
 
     /**
-     * Extract an Identifier from a ResourceKey object using reflection.
+     * Extract an Id from a ResourceKey object using reflection.
+     * Handles both Identifier (MC 1.21.11+) and ResourceLocation (MC 1.21.0-1.21.10).
      */
-    private Identifier extractIdentifier(Object key) throws Exception {
+    private Id extractIdentifier(Object key) throws Exception {
         // Try common method names for getting the location/identifier
         String[] possibleMethods = {"identifier", "location", "method_41185", "method_29177"};
 
@@ -256,17 +255,13 @@ public final class LootTableRegistry {
             try {
                 Method m = key.getClass().getMethod(methodName);
                 Object result = m.invoke(key);
-                if (result instanceof Identifier id) {
-                    return id;
-                }
-                // On Fabric, it might return a ResourceLocation with a different class name
                 if (result != null) {
-                    // Try to extract namespace and path
+                    // Try to extract namespace and path from any identifier-like object
                     Method getNamespace = result.getClass().getMethod("getNamespace");
                     Method getPath = result.getClass().getMethod("getPath");
                     String namespace = (String) getNamespace.invoke(result);
                     String path = (String) getPath.invoke(result);
-                    return Identifier.fromNamespaceAndPath(namespace, path);
+                    return Id.of(namespace, path);
                 }
             } catch (NoSuchMethodException ignored) {}
         }
@@ -277,15 +272,15 @@ public final class LootTableRegistry {
                 !m.getName().equals("hashCode") && !m.getName().equals("getClass")) {
                 try {
                     Object result = m.invoke(key);
-                    if (result instanceof Identifier id) {
-                        return id;
-                    }
-                    if (result != null && result.getClass().getName().contains("ResourceLocation")) {
-                        Method getNamespace = result.getClass().getMethod("getNamespace");
-                        Method getPath = result.getClass().getMethod("getPath");
-                        String namespace = (String) getNamespace.invoke(result);
-                        String path = (String) getPath.invoke(result);
-                        return Identifier.fromNamespaceAndPath(namespace, path);
+                    if (result != null) {
+                        String className = result.getClass().getName();
+                        if (className.contains("Identifier") || className.contains("ResourceLocation")) {
+                            Method getNamespace = result.getClass().getMethod("getNamespace");
+                            Method getPath = result.getClass().getMethod("getPath");
+                            String namespace = (String) getNamespace.invoke(result);
+                            String path = (String) getPath.invoke(result);
+                            return Id.of(namespace, path);
+                        }
                     }
                 } catch (Exception ignored) {}
             }
@@ -317,7 +312,7 @@ public final class LootTableRegistry {
     /**
      * Get loot table by ID.
      */
-    public Optional<LootTableInfo> get(Identifier id) {
+    public Optional<LootTableInfo> get(Id id) {
         return Optional.ofNullable(lootTables.get(id));
     }
 

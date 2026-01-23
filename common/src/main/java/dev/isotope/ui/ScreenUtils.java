@@ -1,9 +1,9 @@
 package dev.isotope.ui;
 
+import dev.isotope.compat.Id;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.Identifier;
 
 /**
  * Utility methods for screen-related operations.
@@ -41,10 +41,9 @@ public final class ScreenUtils {
      * Replacement for Screen.hasControlDown() which was removed in MC 1.21.9+.
      */
     public static boolean hasControlDown() {
-        com.mojang.blaze3d.platform.Window window = net.minecraft.client.Minecraft.getInstance().getWindow();
-        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
+        return dev.isotope.compat.InputCompat.isKeyDown(
             com.mojang.blaze3d.platform.InputConstants.KEY_LCONTROL) ||
-            com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
+            dev.isotope.compat.InputCompat.isKeyDown(
             com.mojang.blaze3d.platform.InputConstants.KEY_RCONTROL);
     }
 
@@ -53,10 +52,9 @@ public final class ScreenUtils {
      * Replacement for Screen.hasShiftDown() which was removed in MC 1.21.9+.
      */
     public static boolean hasShiftDown() {
-        com.mojang.blaze3d.platform.Window window = net.minecraft.client.Minecraft.getInstance().getWindow();
-        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
+        return dev.isotope.compat.InputCompat.isKeyDown(
             com.mojang.blaze3d.platform.InputConstants.KEY_LSHIFT) ||
-            com.mojang.blaze3d.platform.InputConstants.isKeyDown(window,
+            dev.isotope.compat.InputCompat.isKeyDown(
             com.mojang.blaze3d.platform.InputConstants.KEY_RSHIFT);
     }
 
@@ -121,23 +119,23 @@ public final class ScreenUtils {
     }
 
     /**
-     * Format an item name from a Identifier.
+     * Format an item name from an Id.
      * Converts underscores to spaces and capitalizes words.
      * Example: "minecraft:golden_apple" -&gt; "Golden Apple"
      *
-     * @param itemId The Identifier of the item
+     * @param itemId The Id of the item
      * @return The formatted display name
      */
-    public static String formatItemName(Identifier itemId) {
+    public static String formatItemName(Id itemId) {
         return formatItemName(itemId != null ? itemId.getPath() : "");
     }
 
     /**
-     * Format an item name from a Identifier path.
+     * Format an item name from an Id path.
      * Converts underscores to spaces and capitalizes words.
      * Example: "golden_apple" -&gt; "Golden Apple"
      *
-     * @param path The Identifier path
+     * @param path The Id path
      * @return The formatted display name
      */
     public static String formatItemName(String path) {

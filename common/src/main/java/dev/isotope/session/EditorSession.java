@@ -1,6 +1,6 @@
 package dev.isotope.session;
 
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,9 +27,9 @@ public record EditorSession(
      */
     public static EditorSession create(
             String name,
-            List<Identifier> openTabs,
+            List<Id> openTabs,
             int activeTabIndex,
-            List<Identifier> bookmarks,
+            List<Id> bookmarks,
             UIState uiState
     ) {
         long now = System.currentTimeMillis();
@@ -38,9 +38,9 @@ public record EditorSession(
             name,
             now,
             now,
-            openTabs.stream().map(Identifier::toString).toList(),
+            openTabs.stream().map(Id::toString).toList(),
             activeTabIndex,
-            bookmarks.stream().map(Identifier::toString).toList(),
+            bookmarks.stream().map(Id::toString).toList(),
             SessionMetadata.current(),
             uiState != null ? uiState : UIState.defaults()
         );
@@ -51,9 +51,9 @@ public record EditorSession(
      */
     public static EditorSession create(
             String name,
-            List<Identifier> openTabs,
+            List<Id> openTabs,
             int activeTabIndex,
-            List<Identifier> bookmarks
+            List<Id> bookmarks
     ) {
         return create(name, openTabs, activeTabIndex, bookmarks, UIState.defaults());
     }
@@ -83,21 +83,21 @@ public record EditorSession(
     }
 
     /**
-     * Get open tabs as Identifiers.
+     * Get open tabs as Ids.
      */
-    public List<Identifier> getOpenTabIds() {
+    public List<Id> getOpenTabIds() {
         return openTabs.stream()
-            .map(Identifier::tryParse)
+            .map(Id::tryParse)
             .filter(id -> id != null)
             .toList();
     }
 
     /**
-     * Get bookmarks as Identifiers.
+     * Get bookmarks as Ids.
      */
-    public List<Identifier> getBookmarkIds() {
+    public List<Id> getBookmarkIds() {
         return bookmarks.stream()
-            .map(Identifier::tryParse)
+            .map(Id::tryParse)
             .filter(id -> id != null)
             .toList();
     }

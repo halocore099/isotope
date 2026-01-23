@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.editing.HistoryLog;
 import dev.isotope.editing.HistoryLog.LogEntry;
 import dev.isotope.ui.IsotopeColors;
@@ -22,7 +23,7 @@ import java.util.List;
  * Collapsible panel showing session-wide edit history.
  */
 @Environment(EnvType.CLIENT)
-public class HistoryLogPanel extends AbstractWidget {
+public class HistoryLogPanel extends VersionedWidget {
 
     private static final int HEADER_HEIGHT = 20;
     private static final int ROW_HEIGHT = 14;

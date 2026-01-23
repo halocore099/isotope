@@ -2,8 +2,8 @@ package dev.isotope.editing;
 
 import com.google.gson.*;
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.*;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -32,17 +32,17 @@ public final class LootTableParser {
      * @param tableId The loot table ID (e.g., minecraft:chests/desert_pyramid)
      * @return The parsed structure, or empty if not found or parse error
      */
-    public static Optional<LootTableStructure> parse(MinecraftServer server, Identifier tableId) {
+    public static Optional<LootTableStructure> parse(MinecraftServer server, Id tableId) {
         ResourceManager resourceManager = server.getResourceManager();
 
         // Loot tables are at: data/<namespace>/loot_table/<path>.json
-        Identifier jsonPath = Identifier.fromNamespaceAndPath(
+        Id jsonPath = Id.of(
             tableId.getNamespace(),
             "loot_table/" + tableId.getPath() + ".json"
         );
 
         try {
-            Optional<Resource> resource = resourceManager.getResource(jsonPath);
+            Optional<Resource> resource = resourceManager.getResource(jsonPath.mc());
             if (resource.isEmpty()) {
                 Isotope.LOGGER.debug("Loot table not found: {}", tableId);
                 return Optional.empty();
@@ -67,7 +67,7 @@ public final class LootTableParser {
      * @param jsonString The JSON content
      * @return The parsed structure, or empty if parse error
      */
-    public static Optional<LootTableStructure> parseFromString(Identifier tableId, String jsonString) {
+    public static Optional<LootTableStructure> parseFromString(Id tableId, String jsonString) {
         try {
             JsonObject json = GSON.fromJson(jsonString, JsonObject.class);
             return Optional.of(parseFromJson(tableId, json));
@@ -80,7 +80,7 @@ public final class LootTableParser {
     /**
      * Parse a LootTableStructure from a JSON object.
      */
-    public static LootTableStructure parseFromJson(Identifier tableId, JsonObject json) {
+    public static LootTableStructure parseFromJson(Id tableId, JsonObject json) {
         String type = json.has("type") ? json.get("type").getAsString() : "minecraft:generic";
 
         List<LootPool> pools = new ArrayList<>();
@@ -99,9 +99,9 @@ public final class LootTableParser {
             }
         }
 
-        Optional<Identifier> randomSequence = Optional.empty();
+        Optional<Id> randomSequence = Optional.empty();
         if (json.has("random_sequence")) {
-            randomSequence = Optional.of(Identifier.parse(json.get("random_sequence").getAsString()));
+            randomSequence = Optional.of(Id.parse(json.get("random_sequence").getAsString()));
         }
 
         return new LootTableStructure(tableId, type, pools, functions, randomSequence);
@@ -151,9 +151,9 @@ public final class LootTableParser {
     private static LootEntry parseEntry(JsonObject json) {
         String type = json.has("type") ? json.get("type").getAsString() : "minecraft:item";
 
-        Optional<Identifier> name = Optional.empty();
+        Optional<Id> name = Optional.empty();
         if (json.has("name")) {
-            name = Optional.of(Identifier.parse(json.get("name").getAsString()));
+            name = Optional.of(Id.parse(json.get("name").getAsString()));
         }
 
         int weight = json.has("weight") ? json.get("weight").getAsInt() : 1;

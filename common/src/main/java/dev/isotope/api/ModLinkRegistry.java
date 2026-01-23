@@ -1,7 +1,7 @@
 package dev.isotope.api;
 
 import dev.isotope.Isotope;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,10 +49,10 @@ public final class ModLinkRegistry {
     private static final ModLinkRegistry INSTANCE = new ModLinkRegistry();
 
     // Mod-declared links: structure ID -> loot table IDs
-    private final Map<Identifier, Set<Identifier>> declaredLinks = new ConcurrentHashMap<>();
+    private final Map<Id, Set<Id>> declaredLinks = new ConcurrentHashMap<>();
 
     // Track which mod declared each link (for debugging/logging)
-    private final Map<Identifier, String> linkSources = new ConcurrentHashMap<>();
+    private final Map<Id, String> linkSources = new ConcurrentHashMap<>();
 
     // Statistics
     private int programmaticLinks = 0;
@@ -73,16 +73,16 @@ public final class ModLinkRegistry {
      * @param lootTableId The loot table ID (e.g., "mymod:chests/my_structure")
      */
     public static void register(String structureId, String lootTableId) {
-        register(Identifier.parse(structureId), Identifier.parse(lootTableId));
+        register(Id.parse(structureId), Id.parse(lootTableId));
     }
 
     /**
      * Register a structure-loot link.
      *
-     * @param structureId The structure Identifier
-     * @param lootTableId The loot table Identifier
+     * @param structureId The structure Id
+     * @param lootTableId The loot table Id
      */
-    public static void register(Identifier structureId, Identifier lootTableId) {
+    public static void register(Id structureId, Id lootTableId) {
         getInstance().registerLink(structureId, lootTableId, "programmatic");
     }
 
@@ -93,20 +93,20 @@ public final class ModLinkRegistry {
      * @param lootTableIds List of loot table IDs
      */
     public static void registerAll(String structureId, String... lootTableIds) {
-        Identifier structure = Identifier.parse(structureId);
+        Id structure = Id.parse(structureId);
         for (String tableId : lootTableIds) {
-            register(structure, Identifier.parse(tableId));
+            register(structure, Id.parse(tableId));
         }
     }
 
     /**
      * Register multiple loot tables for a structure.
      *
-     * @param structureId The structure Identifier
-     * @param lootTableIds Collection of loot table Identifiers
+     * @param structureId The structure Id
+     * @param lootTableIds Collection of loot table Ids
      */
-    public static void registerAll(Identifier structureId, Collection<Identifier> lootTableIds) {
-        for (Identifier tableId : lootTableIds) {
+    public static void registerAll(Id structureId, Collection<Id> lootTableIds) {
+        for (Id tableId : lootTableIds) {
             register(structureId, tableId);
         }
     }
@@ -114,14 +114,14 @@ public final class ModLinkRegistry {
     /**
      * Check if a structure has any mod-declared links.
      */
-    public static boolean hasLinks(Identifier structureId) {
+    public static boolean hasLinks(Id structureId) {
         return getInstance().declaredLinks.containsKey(structureId);
     }
 
     /**
      * Get all mod-declared loot tables for a structure.
      */
-    public static Set<Identifier> getLinks(Identifier structureId) {
+    public static Set<Id> getLinks(Id structureId) {
         return getInstance().declaredLinks.getOrDefault(structureId, Set.of());
     }
 
@@ -130,12 +130,12 @@ public final class ModLinkRegistry {
     /**
      * Register a link with source tracking.
      */
-    void registerLink(Identifier structureId, Identifier lootTableId, String source) {
+    void registerLink(Id structureId, Id lootTableId, String source) {
         declaredLinks.computeIfAbsent(structureId, k -> ConcurrentHashMap.newKeySet()).add(lootTableId);
 
         // Track source (first one wins for logging purposes)
         String linkKey = structureId + "->" + lootTableId;
-        linkSources.putIfAbsent(Identifier.parse(linkKey.replace("->", "_")), source);
+        linkSources.putIfAbsent(Id.parse(linkKey.replace("->", "_")), source);
 
         if ("programmatic".equals(source)) {
             programmaticLinks++;
@@ -150,8 +150,8 @@ public final class ModLinkRegistry {
     /**
      * Register links from JSON metadata (called by ModLinkScanner and DatapackLootMetadataScanner).
      */
-    public void registerFromJson(String modId, Identifier structureId, Collection<Identifier> lootTableIds) {
-        for (Identifier tableId : lootTableIds) {
+    public void registerFromJson(String modId, Id structureId, Collection<Id> lootTableIds) {
+        for (Id tableId : lootTableIds) {
             registerLink(structureId, tableId, "json:" + modId);
         }
     }
@@ -159,9 +159,9 @@ public final class ModLinkRegistry {
     /**
      * Build a map of all declared links for use by StructureLootLinker.
      */
-    public Map<Identifier, Set<Identifier>> buildDeclaredLinksMap() {
-        Map<Identifier, Set<Identifier>> result = new HashMap<>();
-        for (Map.Entry<Identifier, Set<Identifier>> entry : declaredLinks.entrySet()) {
+    public Map<Id, Set<Id>> buildDeclaredLinksMap() {
+        Map<Id, Set<Id>> result = new HashMap<>();
+        for (Map.Entry<Id, Set<Id>> entry : declaredLinks.entrySet()) {
             result.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
         return result;
@@ -170,14 +170,14 @@ public final class ModLinkRegistry {
     /**
      * Get all structures that have mod-declared links.
      */
-    public Set<Identifier> getDeclaredStructures() {
+    public Set<Id> getDeclaredStructures() {
         return Collections.unmodifiableSet(declaredLinks.keySet());
     }
 
     /**
      * Get all mod-declared loot tables for a structure.
      */
-    public Set<Identifier> getDeclaredLootTables(Identifier structureId) {
+    public Set<Id> getDeclaredLootTables(Id structureId) {
         return declaredLinks.getOrDefault(structureId, Set.of());
     }
 

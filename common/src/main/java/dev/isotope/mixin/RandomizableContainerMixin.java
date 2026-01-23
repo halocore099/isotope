@@ -1,5 +1,6 @@
 package dev.isotope.mixin;
 
+import dev.isotope.compat.Id;
 import dev.isotope.observation.LootObserver;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -45,7 +46,7 @@ public abstract class RandomizableContainerMixin {
         }
 
         // Get the loot table ID
-        var tableId = lootTableKey.identifier();
+        Id tableId = Id.fromKey(lootTableKey);
 
         // Get the block position - cast this to access the method
         BlockPos pos = BlockPos.ZERO;

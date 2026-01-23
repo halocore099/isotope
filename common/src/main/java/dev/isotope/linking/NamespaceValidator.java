@@ -2,7 +2,6 @@ package dev.isotope.linking;
 
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureLootLink;
-import net.minecraft.resources.Identifier;
 
 import java.util.*;
 

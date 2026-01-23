@@ -11,5 +11,7 @@ pluginManagement {
 
 rootProject.name = "isotope"
 
+include("compat")
 include("common")
 include("neoforge")
+include("fabric")

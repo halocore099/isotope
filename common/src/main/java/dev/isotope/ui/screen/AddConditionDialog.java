@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.loot.LootCondition;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
@@ -24,7 +25,7 @@ import java.util.function.Consumer;
  * Shows common condition presets with configurable parameters.
  */
 @Environment(EnvType.CLIENT)
-public class AddConditionDialog extends Screen {
+public class AddConditionDialog extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 340;
     private static final int DIALOG_HEIGHT = 380;

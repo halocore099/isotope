@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.importing.DatapackImporter;
 import dev.isotope.importing.DatapackImporter.DatapackInfo;
 import dev.isotope.ui.HelpLinks;
@@ -28,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
  * Screen for importing loot tables from datapacks.
  */
 @Environment(EnvType.CLIENT)
-public class ImportScreen extends Screen {
+public class ImportScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 400;
     private static final int DIALOG_HEIGHT = 320;

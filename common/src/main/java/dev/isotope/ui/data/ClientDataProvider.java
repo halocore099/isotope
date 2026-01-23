@@ -7,9 +7,9 @@ import dev.isotope.registry.LootTableRegistry;
 import dev.isotope.registry.RegistryScanner;
 import dev.isotope.registry.StructureLootLinker;
 import dev.isotope.registry.StructureRegistry;
+import dev.isotope.compat.Id;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -57,7 +57,7 @@ public final class ClientDataProvider {
     /**
      * Get structure by ID.
      */
-    public Optional<StructureInfo> getStructure(Identifier structureId) {
+    public Optional<StructureInfo> getStructure(Id structureId) {
         return StructureRegistry.getInstance().get(structureId);
     }
 
@@ -115,7 +115,7 @@ public final class ClientDataProvider {
     /**
      * Get loot table by ID.
      */
-    public Optional<LootTableInfo> getLootTable(Identifier lootTableId) {
+    public Optional<LootTableInfo> getLootTable(Id lootTableId) {
         return LootTableRegistry.getInstance().get(lootTableId);
     }
 
@@ -138,7 +138,7 @@ public final class ClientDataProvider {
     /**
      * Get links for a structure (sorted by confidence).
      */
-    public List<StructureLootLink> getLinksForStructure(Identifier structureId) {
+    public List<StructureLootLink> getLinksForStructure(Id structureId) {
         List<StructureLootLink> links = new ArrayList<>(
             StructureLootLinker.getInstance().getLinksForStructure(structureId));
         // Sort by confidence (highest first)
@@ -149,14 +149,14 @@ public final class ClientDataProvider {
     /**
      * Get links for a loot table.
      */
-    public List<StructureLootLink> getLinksForLootTable(Identifier lootTableId) {
+    public List<StructureLootLink> getLinksForLootTable(Id lootTableId) {
         return StructureLootLinker.getInstance().getLinksForLootTable(lootTableId);
     }
 
     /**
      * Check if a structure has any loot links.
      */
-    public boolean structureHasLoot(Identifier structureId) {
+    public boolean structureHasLoot(Id structureId) {
         return StructureLootLinker.getInstance().hasLinks(structureId);
     }
 
@@ -179,21 +179,21 @@ public final class ClientDataProvider {
     /**
      * Add a manual link (author override).
      */
-    public void addLink(Identifier structureId, Identifier lootTableId) {
+    public void addLink(Id structureId, Id lootTableId) {
         StructureLootLinker.getInstance().addManualLink(structureId, lootTableId);
     }
 
     /**
      * Remove a link (author override).
      */
-    public void removeLink(Identifier structureId, Identifier lootTableId) {
+    public void removeLink(Id structureId, Id lootTableId) {
         StructureLootLinker.getInstance().removeLink(structureId, lootTableId);
     }
 
     /**
      * Restore a previously removed link.
      */
-    public void restoreLink(Identifier structureId, Identifier lootTableId) {
+    public void restoreLink(Id structureId, Id lootTableId) {
         StructureLootLinker.getInstance().restoreLink(structureId, lootTableId);
     }
 }

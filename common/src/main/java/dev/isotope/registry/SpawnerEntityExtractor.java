@@ -1,10 +1,10 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -52,10 +52,10 @@ public final class SpawnerEntityExtractor {
     );
 
     // Structure -> entities found in spawners
-    private final Map<Identifier, Set<Identifier>> structureToSpawnerEntities = new LinkedHashMap<>();
+    private final Map<Id, Set<Id>> structureToSpawnerEntities = new LinkedHashMap<>();
 
     // Entity -> structures containing spawners for that entity
-    private final Map<Identifier, Set<Identifier>> entityToStructures = new LinkedHashMap<>();
+    private final Map<Id, Set<Id>> entityToStructures = new LinkedHashMap<>();
 
     // Statistics
     private int spawnersFound = 0;
@@ -75,8 +75,8 @@ public final class SpawnerEntityExtractor {
      * @param templateNbt The serialized template NBT
      * @return Set of entity IDs found in spawners
      */
-    public Set<Identifier> extractFromTemplate(Identifier structureId, CompoundTag templateNbt) {
-        Set<Identifier> entities = new LinkedHashSet<>();
+    public Set<Id> extractFromTemplate(Id structureId, CompoundTag templateNbt) {
+        Set<Id> entities = new LinkedHashSet<>();
         extractSpawnerEntitiesRecursive(templateNbt, entities);
 
         if (!entities.isEmpty()) {
@@ -86,7 +86,7 @@ public final class SpawnerEntityExtractor {
                 .addAll(entities);
 
             // Update reverse index
-            for (Identifier entityId : entities) {
+            for (Id entityId : entities) {
                 entityToStructures
                     .computeIfAbsent(entityId, k -> new LinkedHashSet<>())
                     .add(structureId);
@@ -103,7 +103,7 @@ public final class SpawnerEntityExtractor {
     /**
      * Recursively search NBT for spawner blocks and extract entity types.
      */
-    private void extractSpawnerEntitiesRecursive(CompoundTag nbt, Set<Identifier> entities) {
+    private void extractSpawnerEntitiesRecursive(CompoundTag nbt, Set<Id> entities) {
         // Check if this is a spawner block entity
         if (isSpawnerBlock(nbt)) {
             spawnersFound++;
@@ -111,7 +111,7 @@ public final class SpawnerEntityExtractor {
         }
 
         // Recursively check nested compound tags
-        for (String key : nbt.keySet()) {
+        for (String key : dev.isotope.compat.NbtCompat.keySet(nbt)) {
             Tag tag = nbt.get(key);
             if (tag instanceof CompoundTag compound) {
                 extractSpawnerEntitiesRecursive(compound, entities);
@@ -130,25 +130,25 @@ public final class SpawnerEntityExtractor {
      */
     private boolean isSpawnerBlock(CompoundTag nbt) {
         // Check for block entity ID field
-        Optional<String> idOpt = nbt.getString("id");
+        Optional<String> idOpt = dev.isotope.compat.NbtCompat.getString(nbt, "id");
         if (idOpt.isPresent() && SPAWNER_IDS.contains(idOpt.get())) {
             return true;
         }
 
         // Also check for nbt field within blocks array (structure template format)
         // The blocks array has elements with {state: {Name: "..."}, nbt: {...}}
-        Optional<CompoundTag> innerNbtOpt = nbt.getCompound("nbt");
+        Optional<CompoundTag> innerNbtOpt = dev.isotope.compat.NbtCompat.getCompound(nbt, "nbt");
         if (innerNbtOpt.isPresent()) {
-            Optional<String> innerId = innerNbtOpt.get().getString("id");
+            Optional<String> innerId = dev.isotope.compat.NbtCompat.getString(innerNbtOpt.get(), "id");
             if (innerId.isPresent() && SPAWNER_IDS.contains(innerId.get())) {
                 return true;
             }
         }
 
         // Check state.Name for the block type (structure template format)
-        Optional<CompoundTag> stateOpt = nbt.getCompound("state");
+        Optional<CompoundTag> stateOpt = dev.isotope.compat.NbtCompat.getCompound(nbt, "state");
         if (stateOpt.isPresent()) {
-            Optional<String> nameOpt = stateOpt.get().getString("Name");
+            Optional<String> nameOpt = dev.isotope.compat.NbtCompat.getString(stateOpt.get(), "Name");
             if (nameOpt.isPresent() && SPAWNER_IDS.contains(nameOpt.get())) {
                 return true;
             }
@@ -160,59 +160,59 @@ public final class SpawnerEntityExtractor {
     /**
      * Extract entity types from a spawner's NBT data.
      */
-    private void extractSpawnerEntityTypes(CompoundTag spawnerNbt, Set<Identifier> entities) {
+    private void extractSpawnerEntityTypes(CompoundTag spawnerNbt, Set<Id> entities) {
         // The actual spawner data might be in 'nbt' field (structure template format)
-        CompoundTag dataTag = spawnerNbt.getCompound("nbt").orElse(spawnerNbt);
+        CompoundTag dataTag = dev.isotope.compat.NbtCompat.getCompound(spawnerNbt, "nbt").orElse(spawnerNbt);
 
         // Extract from SpawnData (the default/current spawn entity)
-        dataTag.getCompound("SpawnData").ifPresent(spawnData ->
+        dev.isotope.compat.NbtCompat.getCompound(dataTag, "SpawnData").ifPresent(spawnData ->
             extractEntityFromSpawnData(spawnData, entities));
 
         // Extract from SpawnPotentials (weighted list of possible entities)
-        dataTag.getList("SpawnPotentials").ifPresent(potentials -> {
+        dev.isotope.compat.NbtCompat.getList(dataTag, "SpawnPotentials").ifPresent(potentials -> {
             for (int i = 0; i < potentials.size(); i++) {
                 if (potentials.get(i) instanceof CompoundTag potential) {
                     // SpawnPotentials format: { weight: N, data: { entity: { id: "..." } } }
-                    potential.getCompound("data").ifPresent(data ->
+                    dev.isotope.compat.NbtCompat.getCompound(potential, "data").ifPresent(data ->
                         extractEntityFromSpawnData(data, entities));
                     // Alternative format: { weight: N, Entity: { id: "..." } }
-                    potential.getCompound("Entity").ifPresent(entityTag ->
+                    dev.isotope.compat.NbtCompat.getCompound(potential, "Entity").ifPresent(entityTag ->
                         extractEntityId(entityTag, entities));
                 }
             }
         });
 
         // Legacy format: direct Entity tag
-        dataTag.getCompound("Entity").ifPresent(entityTag ->
+        dev.isotope.compat.NbtCompat.getCompound(dataTag, "Entity").ifPresent(entityTag ->
             extractEntityId(entityTag, entities));
     }
 
     /**
      * Extract entity ID from SpawnData format: { entity: { id: "..." } }
      */
-    private void extractEntityFromSpawnData(CompoundTag spawnData, Set<Identifier> entities) {
+    private void extractEntityFromSpawnData(CompoundTag spawnData, Set<Id> entities) {
         // Modern format: { entity: { id: "..." } }
-        spawnData.getCompound("entity").ifPresent(entityTag ->
+        dev.isotope.compat.NbtCompat.getCompound(spawnData, "entity").ifPresent(entityTag ->
             extractEntityId(entityTag, entities));
         // Direct ID in SpawnData (some versions)
-        spawnData.getString("id").ifPresent(entityIdStr ->
+        dev.isotope.compat.NbtCompat.getString(spawnData, "id").ifPresent(entityIdStr ->
             addEntityId(entityIdStr, entities));
     }
 
     /**
      * Extract entity ID from an entity compound tag.
      */
-    private void extractEntityId(CompoundTag entityTag, Set<Identifier> entities) {
-        entityTag.getString("id").ifPresent(entityIdStr ->
+    private void extractEntityId(CompoundTag entityTag, Set<Id> entities) {
+        dev.isotope.compat.NbtCompat.getString(entityTag, "id").ifPresent(entityIdStr ->
             addEntityId(entityIdStr, entities));
     }
 
     /**
      * Parse and add an entity ID string to the set.
      */
-    private void addEntityId(String entityIdStr, Set<Identifier> entities) {
+    private void addEntityId(String entityIdStr, Set<Id> entities) {
         try {
-            Identifier entityId = Identifier.parse(entityIdStr);
+            Id entityId = Id.parse(entityIdStr);
             entities.add(entityId);
         } catch (Exception e) {
             Isotope.LOGGER.debug("[SpawnerExtractor] Invalid entity ID: {}", entityIdStr);
@@ -224,28 +224,28 @@ public final class SpawnerEntityExtractor {
     /**
      * Get all entities found in spawners for a structure.
      */
-    public Set<Identifier> getSpawnerEntitiesForStructure(Identifier structureId) {
+    public Set<Id> getSpawnerEntitiesForStructure(Id structureId) {
         return structureToSpawnerEntities.getOrDefault(structureId, Set.of());
     }
 
     /**
      * Get all structures that contain spawners for a specific entity.
      */
-    public Set<Identifier> getStructuresWithSpawnerEntity(Identifier entityId) {
+    public Set<Id> getStructuresWithSpawnerEntity(Id entityId) {
         return entityToStructures.getOrDefault(entityId, Set.of());
     }
 
     /**
      * Get all structures that have spawner entities.
      */
-    public Set<Identifier> getStructuresWithSpawners() {
+    public Set<Id> getStructuresWithSpawners() {
         return Collections.unmodifiableSet(structureToSpawnerEntities.keySet());
     }
 
     /**
      * Get all unique entities found in spawners.
      */
-    public Set<Identifier> getAllSpawnerEntities() {
+    public Set<Id> getAllSpawnerEntities() {
         return Collections.unmodifiableSet(entityToStructures.keySet());
     }
 
@@ -253,12 +253,12 @@ public final class SpawnerEntityExtractor {
      * Get entity loot tables for spawner entities in a structure.
      * Maps entity IDs to their loot table IDs via EntityLootRegistry.
      */
-    public Set<Identifier> getSpawnerLootTablesForStructure(Identifier structureId) {
-        Set<Identifier> lootTables = new LinkedHashSet<>();
-        Set<Identifier> entities = getSpawnerEntitiesForStructure(structureId);
+    public Set<Id> getSpawnerLootTablesForStructure(Id structureId) {
+        Set<Id> lootTables = new LinkedHashSet<>();
+        Set<Id> entities = getSpawnerEntitiesForStructure(structureId);
 
         EntityLootRegistry entityRegistry = EntityLootRegistry.getInstance();
-        for (Identifier entityId : entities) {
+        for (Id entityId : entities) {
             entityRegistry.get(entityId).ifPresent(info ->
                 lootTables.add(info.lootTableId()));
         }
@@ -269,7 +269,7 @@ public final class SpawnerEntityExtractor {
     /**
      * Check if a structure has any spawners.
      */
-    public boolean hasSpawners(Identifier structureId) {
+    public boolean hasSpawners(Id structureId) {
         return structureToSpawnerEntities.containsKey(structureId);
     }
 

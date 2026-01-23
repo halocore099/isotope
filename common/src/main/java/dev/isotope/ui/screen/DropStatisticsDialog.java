@@ -1,10 +1,13 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.testing.DropStatistics;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.IsotopeToast;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
+import dev.isotope.compat.Id;
+import dev.isotope.util.Regs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -15,8 +18,8 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +30,7 @@ import java.util.List;
  * Dialog displaying drop statistics from loot table testing.
  */
 @Environment(EnvType.CLIENT)
-public class DropStatisticsDialog extends Screen {
+public class DropStatisticsDialog extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 350;
     private static final int DIALOG_HEIGHT = 300;
@@ -43,7 +46,7 @@ public class DropStatisticsDialog extends Screen {
     private final List<StatEntry> entries = new ArrayList<>();
 
     private record StatEntry(
-        Identifier itemId,
+        Id itemId,
         String itemName,
         int total,
         float average,
@@ -63,13 +66,13 @@ public class DropStatisticsDialog extends Screen {
         entries.clear();
 
         // Sort items by total count descending
-        List<Identifier> sortedItems = new ArrayList<>(statistics.getDroppedItems());
+        List<Id> sortedItems = new ArrayList<>(statistics.getDroppedItems());
         sortedItems.sort((a, b) -> Integer.compare(
             statistics.getTotalForItem(b),
             statistics.getTotalForItem(a)
         ));
 
-        for (Identifier itemId : sortedItems) {
+        for (Id itemId : sortedItems) {
             int total = statistics.getTotalForItem(itemId);
             float avg = statistics.getAverageForItem(itemId);
             float rate = statistics.getDropRateForItem(itemId);
@@ -206,9 +209,9 @@ public class DropStatisticsDialog extends Screen {
                     }
 
                     // Item icon
-                    var itemOpt = BuiltInRegistries.ITEM.get(entry.itemId);
+                    var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, entry.itemId);
                     if (itemOpt.isPresent()) {
-                        ItemStack stack = new ItemStack(itemOpt.get().value());
+                        ItemStack stack = new ItemStack(itemOpt.get());
                         graphics.renderItem(stack, dialogX + 10, entryY + 3);
                     }
 

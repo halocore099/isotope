@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.analysis.DropSimulator;
 import dev.isotope.analysis.DropSimulator.ItemResult;
 import dev.isotope.analysis.DropSimulator.SimulationResult;
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableParser;
@@ -20,7 +21,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.List;
  * Shows simulated vs theoretical drop rates with visual comparison.
  */
 @Environment(EnvType.CLIENT)
-public class SimulationScreen extends Screen {
+public class SimulationScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 450;
     private static final int DIALOG_HEIGHT = 380;
@@ -39,7 +40,7 @@ public class SimulationScreen extends Screen {
     private static final int ROW_HEIGHT = 18;
 
     private final Screen parent;
-    private final Identifier tableId;
+    private final Id tableId;
 
     @Nullable
     private SimulationResult result;
@@ -54,7 +55,7 @@ public class SimulationScreen extends Screen {
     private Button runButton;
     private Button countButton;
 
-    public SimulationScreen(Screen parent, Identifier tableId) {
+    public SimulationScreen(Screen parent, Id tableId) {
         super(Component.literal("Drop Simulation"));
         this.parent = parent;
         this.tableId = tableId;

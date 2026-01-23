@@ -4,12 +4,12 @@ import dev.isotope.data.loot.LootEntry;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
 import dev.isotope.ui.UIConstants;
+import dev.isotope.compat.Id;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -26,7 +26,7 @@ public class EntryTypeDialog extends DialogScreen {
     private final int poolIdx;
     private final int entryIdx;
     private final String currentType;
-    private final BiConsumer<String, Optional<Identifier>> onTypeSelected;
+    private final BiConsumer<String, Optional<Id>> onTypeSelected;
 
     // Type options
     private static final TypeOption[] TYPE_OPTIONS = {
@@ -47,7 +47,7 @@ public class EntryTypeDialog extends DialogScreen {
     private boolean inputFocused = false;
 
     public EntryTypeDialog(@Nullable Screen parent, int poolIdx, int entryIdx, String currentType,
-                           BiConsumer<String, Optional<Identifier>> onTypeSelected) {
+                           BiConsumer<String, Optional<Id>> onTypeSelected) {
         super(parent, "Change Entry Type");
         this.poolIdx = poolIdx;
         this.entryIdx = entryIdx;
@@ -311,10 +311,10 @@ public class EntryTypeDialog extends DialogScreen {
         if (selectedOption < 0) return;
 
         TypeOption opt = TYPE_OPTIONS[selectedOption];
-        Optional<Identifier> name = Optional.empty();
+        Optional<Id> name = Optional.empty();
 
         if (opt.needsName && !nameInput.isEmpty()) {
-            name = Optional.of(Identifier.parse(ScreenUtils.ensureNamespace(nameInput)));
+            name = Optional.of(Id.parse(ScreenUtils.ensureNamespace(nameInput)));
         }
 
         onTypeSelected.accept(opt.type, name);

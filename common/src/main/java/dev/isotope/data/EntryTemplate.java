@@ -4,7 +4,7 @@ import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.data.loot.NumberProvider;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ public record EntryTemplate(
     String name,
     String description,
     String category,
-    Optional<Identifier> defaultItem,
+    Optional<Id> defaultItem,
     int defaultWeight,
     NumberProvider defaultCount,
     List<LootFunction> functions
@@ -31,7 +31,7 @@ public record EntryTemplate(
      *
      * @param itemId The item to use (overrides defaultItem if present)
      */
-    public LootEntry createEntry(Identifier itemId) {
+    public LootEntry createEntry(Id itemId) {
         return new LootEntry(
             "minecraft:item",
             Optional.of(itemId),
@@ -116,7 +116,7 @@ public record EntryTemplate(
         "Treasure",
         "Rare treasure with weight 1, single item",
         "Valuables",
-        Optional.of(Identifier.parse("minecraft:diamond")),
+        Optional.of(Id.parse("minecraft:diamond")),
         1,
         new NumberProvider.Constant(1),
         List.of(createSetCountFunction(1, 1))
@@ -127,7 +127,7 @@ public record EntryTemplate(
         "Emerald Stack",
         "Emeralds for trading, count 1-4",
         "Valuables",
-        Optional.of(Identifier.parse("minecraft:emerald")),
+        Optional.of(Id.parse("minecraft:emerald")),
         8,
         new NumberProvider.Uniform(1, 4),
         List.of(createSetCountFunction(1, 4))
@@ -138,7 +138,7 @@ public record EntryTemplate(
         "Arrow Stack",
         "Arrows for combat, count 4-12",
         "Combat",
-        Optional.of(Identifier.parse("minecraft:arrow")),
+        Optional.of(Id.parse("minecraft:arrow")),
         10,
         new NumberProvider.Uniform(4, 12),
         List.of(createSetCountFunction(4, 12))
@@ -149,7 +149,7 @@ public record EntryTemplate(
         "Iron Ingots",
         "Iron ingots, count 1-4",
         "Resources",
-        Optional.of(Identifier.parse("minecraft:iron_ingot")),
+        Optional.of(Id.parse("minecraft:iron_ingot")),
         10,
         new NumberProvider.Uniform(1, 4),
         List.of(createSetCountFunction(1, 4))
@@ -160,7 +160,7 @@ public record EntryTemplate(
         "Gold Ingots",
         "Gold ingots, count 1-3",
         "Resources",
-        Optional.of(Identifier.parse("minecraft:gold_ingot")),
+        Optional.of(Id.parse("minecraft:gold_ingot")),
         5,
         new NumberProvider.Uniform(1, 3),
         List.of(createSetCountFunction(1, 3))

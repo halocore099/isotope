@@ -3,7 +3,7 @@ package dev.isotope.save;
 import dev.isotope.analysis.AnalysisEngine.AnalysisConfig;
 import dev.isotope.data.LootTableInfo;
 import dev.isotope.data.StructureInfo;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.util.List;
 import java.util.Map;
@@ -101,7 +101,7 @@ public record AnalysisSave(
 
         public StructureInfo toStructureInfo() {
             return new StructureInfo(
-                Identifier.parse(id),
+                Id.parse(id),
                 namespace,
                 path
             );
@@ -125,7 +125,7 @@ public record AnalysisSave(
 
         public LootTableInfo toLootTableInfo() {
             return new LootTableInfo(
-                Identifier.parse(id),
+                Id.parse(id),
                 namespace,
                 path,
                 LootTableInfo.LootTableCategory.valueOf(category)
@@ -150,8 +150,8 @@ public record AnalysisSave(
 
         public dev.isotope.data.StructureLootLink toLink() {
             return new dev.isotope.data.StructureLootLink(
-                Identifier.parse(structureId),
-                Identifier.parse(lootTableId),
+                Id.parse(structureId),
+                Id.parse(lootTableId),
                 dev.isotope.data.StructureLootLink.Confidence.valueOf(confidence),
                 dev.isotope.data.StructureLootLink.LinkSource.valueOf(source)
             );

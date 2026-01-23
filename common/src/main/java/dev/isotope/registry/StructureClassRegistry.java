@@ -1,9 +1,9 @@
 package dev.isotope.registry;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
@@ -27,13 +27,13 @@ public final class StructureClassRegistry {
     private static final StructureClassRegistry INSTANCE = new StructureClassRegistry();
 
     // class name -> structure ID (primary lookup for stack traces)
-    private final Map<String, Identifier> classToStructure = new ConcurrentHashMap<>();
+    private final Map<String, Id> classToStructure = new ConcurrentHashMap<>();
 
     // structure ID -> class name (reverse lookup for debugging)
-    private final Map<Identifier, String> structureToClass = new ConcurrentHashMap<>();
+    private final Map<Id, String> structureToClass = new ConcurrentHashMap<>();
 
     // Also track superclasses for inheritance-based matching
-    private final Map<String, Identifier> superclassToStructure = new ConcurrentHashMap<>();
+    private final Map<String, Id> superclassToStructure = new ConcurrentHashMap<>();
 
     private boolean scanned = false;
 
@@ -56,7 +56,7 @@ public final class StructureClassRegistry {
             Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
             for (var entry : registry.entrySet()) {
-                Identifier structureId = entry.getKey().identifier();
+                Id structureId = Id.fromKey(entry.getKey());
                 Structure structure = entry.getValue();
                 String className = structure.getClass().getName();
 
@@ -92,17 +92,17 @@ public final class StructureClassRegistry {
      * @param className Full class name from stack trace (e.g., "net.minecraft.world.level.levelgen.structure.structures.JigsawStructure")
      * @return The structure ID if found, empty otherwise
      */
-    public Optional<Identifier> getStructureForClass(String className) {
+    public Optional<Id> getStructureForClass(String className) {
         if (className == null) return Optional.empty();
 
         // Direct lookup (exact class match)
-        Identifier direct = classToStructure.get(className);
+        Id direct = classToStructure.get(className);
         if (direct != null) {
             return Optional.of(direct);
         }
 
         // Superclass lookup (for subclasses)
-        Identifier superMatch = superclassToStructure.get(className);
+        Id superMatch = superclassToStructure.get(className);
         if (superMatch != null) {
             return Optional.of(superMatch);
         }
@@ -117,9 +117,9 @@ public final class StructureClassRegistry {
      * @param classNames Array of class names from stack trace
      * @return First matching structure ID, or empty if none match
      */
-    public Optional<Identifier> findStructureInStackTrace(String[] classNames) {
+    public Optional<Id> findStructureInStackTrace(String[] classNames) {
         for (String className : classNames) {
-            Optional<Identifier> result = getStructureForClass(className);
+            Optional<Id> result = getStructureForClass(className);
             if (result.isPresent()) {
                 return result;
             }
@@ -131,7 +131,7 @@ public final class StructureClassRegistry {
      * Get the implementation class for a structure ID.
      * Useful for debugging and logging.
      */
-    public Optional<String> getClassForStructure(Identifier structureId) {
+    public Optional<String> getClassForStructure(Id structureId) {
         return Optional.ofNullable(structureToClass.get(structureId));
     }
 

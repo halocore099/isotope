@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootTableParser;
@@ -20,21 +21,21 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Screen for selecting and applying quick fix wizards.
  */
 @Environment(EnvType.CLIENT)
-public class QuickFixScreen extends Screen {
+public class QuickFixScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 400;
     private static final int DIALOG_HEIGHT = 350;
     private static final int ROW_HEIGHT = 28;
 
     private final Screen parent;
-    private final Identifier tableId;
+    private final Id tableId;
 
     @Nullable
     private LootTableStructure structure;
@@ -47,7 +48,7 @@ public class QuickFixScreen extends Screen {
 
     private Button applyButton;
 
-    public QuickFixScreen(Screen parent, Identifier tableId) {
+    public QuickFixScreen(Screen parent, Id tableId) {
         super(Component.literal("Quick Fix Wizards"));
         this.parent = parent;
         this.tableId = tableId;

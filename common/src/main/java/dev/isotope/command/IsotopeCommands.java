@@ -6,6 +6,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import dev.architectury.event.events.common.CommandRegistrationEvent;
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
+import dev.isotope.compat.McVersion;
 import dev.isotope.observation.ObservationSession;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -13,8 +15,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.permissions.Permissions;
 
 import java.util.*;
 
@@ -29,7 +29,7 @@ public final class IsotopeCommands {
     private static final SuggestionProvider<CommandSourceStack> STRUCTURE_SUGGESTIONS =
         (ctx, builder) -> SharedSuggestionProvider.suggestResource(
             ObservationSession.getInstance().getAllStructureData().stream()
-                .map(s -> s.structureId()),
+                .map(s -> s.structureId().mc()),
             builder
         );
 
@@ -47,7 +47,7 @@ public final class IsotopeCommands {
 
         dispatcher.register(
             Commands.literal("isotope")
-                .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+                .requires(source -> McVersion.INSTANCE.hasGamemasterPermission(source))
                 .then(Commands.literal("status")
                     .executes(IsotopeCommands::statusCommand))
                 .then(Commands.literal("structures")
@@ -80,7 +80,7 @@ public final class IsotopeCommands {
         long withLoot = allData.stream().filter(ObservationSession.ObservedStructureData::hasLoot).count();
         source.sendSuccess(() -> Component.literal("Structures with loot: " + withLoot), false);
 
-        Set<Identifier> uniqueTables = new HashSet<>();
+        Set<Id> uniqueTables = new HashSet<>();
         for (var data : allData) {
             uniqueTables.addAll(data.lootTables());
         }
@@ -134,7 +134,7 @@ public final class IsotopeCommands {
     private static int listLootTables(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
 
-        Set<Identifier> uniqueTables = new HashSet<>();
+        Set<Id> uniqueTables = new HashSet<>();
         for (var data : ObservationSession.getInstance().getAllStructureData()) {
             uniqueTables.addAll(data.lootTables());
         }
@@ -147,8 +147,8 @@ public final class IsotopeCommands {
         source.sendSuccess(() -> Component.literal(
             "=== Observed Loot Tables (" + uniqueTables.size() + ") ==="), false);
 
-        List<Identifier> sorted = uniqueTables.stream()
-            .sorted(Comparator.comparing(Identifier::toString))
+        List<Id> sorted = uniqueTables.stream()
+            .sorted(Comparator.comparing(Id::toString))
             .toList();
 
         int limit = 20;
@@ -168,7 +168,7 @@ public final class IsotopeCommands {
 
     private static int analyzeStructure(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
-        Identifier structureId = IdentifierArgument.getId(ctx, "structure");
+        Id structureId = Id.wrap(IdentifierArgument.getId(ctx, "structure"));
 
         var dataOpt = ObservationSession.getInstance().getStructureData(structureId);
 
@@ -191,7 +191,7 @@ public final class IsotopeCommands {
         source.sendSuccess(() -> Component.literal("Loot tables (" + data.lootTableCount() + "):"), false);
 
         int count = 0;
-        for (Identifier tableId : data.lootTables()) {
+        for (Id tableId : data.lootTables()) {
             if (count++ >= 20) {
                 int remaining = data.lootTableCount() - 20;
                 source.sendSuccess(() -> Component.literal("... and " + remaining + " more"), false);
@@ -207,7 +207,7 @@ public final class IsotopeCommands {
         if (!data.observedItems().isEmpty()) {
             source.sendSuccess(() -> Component.literal("Observed items (" + data.observedItems().size() + "):"), false);
             count = 0;
-            for (Identifier itemId : data.observedItems()) {
+            for (Id itemId : data.observedItems()) {
                 if (count++ >= 10) {
                     int remaining = data.observedItems().size() - 10;
                     source.sendSuccess(() -> Component.literal("... and " + remaining + " more"), false);

@@ -1,13 +1,13 @@
 package dev.isotope.mixin;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootGenerator;
 import dev.isotope.observation.LootObserver;
 import dev.isotope.observation.LootTableTracker;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
@@ -37,17 +37,18 @@ public abstract class LootTableMixin {
     /**
      * Shadow the getLootTableId method to access the table's ID directly.
      * This is more reliable than ThreadLocal tracking.
+     * Uses Object return type to handle both ResourceLocation (1.21.4) and Identifier (1.21.11).
      */
     @Shadow
-    public abstract Identifier getLootTableId();
+    public abstract Object getLootTableId();
 
     /**
      * Helper to get the table ID, preferring the table's own ID over ThreadLocal.
      */
-    private Identifier getTableId() {
-        Identifier id = getLootTableId();
-        if (id != null) {
-            return id;
+    private Id getTableId() {
+        Object mcId = getLootTableId();
+        if (mcId != null) {
+            return Id.wrap(mcId);
         }
         // Fallback to ThreadLocal (for observation mode compatibility)
         return LootTableTracker.getCurrentTableId();
@@ -65,7 +66,7 @@ public abstract class LootTableMixin {
         cancellable = true
     )
     private void isotope$onGetRandomItems(LootParams params, long seed, Consumer<ItemStack> consumer, CallbackInfo ci) {
-        Identifier tableId = getTableId();
+        Id tableId = getTableId();
 
         if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
             Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);
@@ -92,7 +93,7 @@ public abstract class LootTableMixin {
         cancellable = true
     )
     private void isotope$onGetRandomItemsNoSeed(LootParams params, Consumer<ItemStack> consumer, CallbackInfo ci) {
-        Identifier tableId = getTableId();
+        Id tableId = getTableId();
 
         if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
             Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);
@@ -119,7 +120,7 @@ public abstract class LootTableMixin {
         cancellable = true
     )
     private void isotope$onGetRandomItemsWithRandom(LootParams params, RandomSource random, CallbackInfoReturnable<ObjectArrayList<ItemStack>> cir) {
-        Identifier tableId = getTableId();
+        Id tableId = getTableId();
 
         if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
             Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);
@@ -140,7 +141,7 @@ public abstract class LootTableMixin {
         cancellable = true
     )
     private void isotope$onGetRandomItemsSimple(LootParams params, CallbackInfoReturnable<ObjectArrayList<ItemStack>> cir) {
-        Identifier tableId = getTableId();
+        Id tableId = getTableId();
 
         if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
             Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);
@@ -161,7 +162,7 @@ public abstract class LootTableMixin {
         cancellable = true
     )
     private void isotope$onGetRandomItemsWithSeed(LootParams params, long seed, CallbackInfoReturnable<ObjectArrayList<ItemStack>> cir) {
-        Identifier tableId = getTableId();
+        Id tableId = getTableId();
 
         if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
             Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);
@@ -183,7 +184,7 @@ public abstract class LootTableMixin {
         cancellable = true
     )
     private void isotope$onFill(Container container, LootParams params, long seed, CallbackInfo ci) {
-        Identifier tableId = getTableId();
+        Id tableId = getTableId();
 
         if (tableId != null && LootEditManager.getInstance().isTestModeActive() && LootEditManager.getInstance().hasEdits(tableId)) {
             Optional<LootTableStructure> editedStructure = LootEditManager.getInstance().getEditedStructure(tableId);

@@ -1,8 +1,8 @@
 package dev.isotope.editing;
 
+import dev.isotope.compat.Id;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootPool;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ public final class ClipboardManager {
     private LootPool copiedPool;
 
     @Nullable
-    private Identifier sourceTable;
+    private Id sourceTable;
 
     private ClipboardManager() {}
 
@@ -37,7 +37,7 @@ public final class ClipboardManager {
     /**
      * Copy an entry to the clipboard.
      */
-    public void copyEntry(LootEntry entry, Identifier fromTable) {
+    public void copyEntry(LootEntry entry, Id fromTable) {
         // Create a deep copy
         this.copiedEntry = new LootEntry(
             entry.type(),
@@ -71,7 +71,7 @@ public final class ClipboardManager {
     /**
      * Copy a pool to the clipboard.
      */
-    public void copyPool(LootPool pool, Identifier fromTable) {
+    public void copyPool(LootPool pool, Id fromTable) {
         // Create a deep copy
         this.copiedPool = new LootPool(
             pool.name(),
@@ -104,7 +104,7 @@ public final class ClipboardManager {
     /**
      * Get the source table where the item was copied from.
      */
-    public Optional<Identifier> getSourceTable() {
+    public Optional<Id> getSourceTable() {
         return Optional.ofNullable(sourceTable);
     }
 
@@ -120,7 +120,7 @@ public final class ClipboardManager {
      */
     public String getContentDescription() {
         if (copiedEntry != null) {
-            return "Entry: " + copiedEntry.name().map(Identifier::getPath).orElse(copiedEntry.type());
+            return "Entry: " + copiedEntry.name().map(Id::getPath).orElse(copiedEntry.type());
         }
         if (copiedPool != null) {
             return "Pool with " + copiedPool.entries().size() + " entries";

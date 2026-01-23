@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.isotope.Isotope;
 import dev.isotope.data.StructureLootLink;
+import dev.isotope.compat.Id;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,16 +34,16 @@ public final class LearnedLinksManager {
 
     // Unique key for a structure-loot link
     public record LinkKey(String structure, String lootTable) {
-        public static LinkKey from(Identifier structure, Identifier lootTable) {
+        public static LinkKey from(Id structure, Id lootTable) {
             return new LinkKey(structure.toString(), lootTable.toString());
         }
 
-        public Identifier structureId() {
-            return Identifier.tryParse(structure);
+        public Id structureId() {
+            return Id.tryParse(structure);
         }
 
-        public Identifier lootTableId() {
-            return Identifier.tryParse(lootTable);
+        public Id lootTableId() {
+            return Id.tryParse(lootTable);
         }
     }
 
@@ -66,12 +66,12 @@ public final class LearnedLinksManager {
             }
         }
 
-        public Identifier structureId() {
-            return Identifier.tryParse(structure);
+        public Id structureId() {
+            return Id.tryParse(structure);
         }
 
-        public Identifier lootTableId() {
-            return Identifier.tryParse(lootTable);
+        public Id lootTableId() {
+            return Id.tryParse(lootTable);
         }
 
         /**
@@ -79,8 +79,8 @@ public final class LearnedLinksManager {
          * Applies confidence decay based on version age.
          */
         public StructureLootLink toStructureLootLink(String currentVersion) {
-            Identifier structId = structureId();
-            Identifier tableId = lootTableId();
+            Id structId = structureId();
+            Id tableId = lootTableId();
             if (structId == null || tableId == null) return null;
 
             // Apply confidence decay based on version age
@@ -271,14 +271,14 @@ public final class LearnedLinksManager {
     /**
      * Get all learned loot tables for a specific structure.
      */
-    public Set<Identifier> getLearnedLootTables(Identifier structureId) {
+    public Set<Id> getLearnedLootTables(Id structureId) {
         ensureLoaded();
         String structStr = structureId.toString();
-        Set<Identifier> result = new HashSet<>();
+        Set<Id> result = new HashSet<>();
 
         for (LearnedLink link : learnedLinks.values()) {
             if (link.structure().equals(structStr)) {
-                Identifier tableId = link.lootTableId();
+                Id tableId = link.lootTableId();
                 if (tableId != null) {
                     result.add(tableId);
                 }
@@ -291,14 +291,14 @@ public final class LearnedLinksManager {
     /**
      * Get all learned structures for a specific loot table.
      */
-    public Set<Identifier> getLearnedStructures(Identifier lootTableId) {
+    public Set<Id> getLearnedStructures(Id lootTableId) {
         ensureLoaded();
         String tableStr = lootTableId.toString();
-        Set<Identifier> result = new HashSet<>();
+        Set<Id> result = new HashSet<>();
 
         for (LearnedLink link : learnedLinks.values()) {
             if (link.lootTable().equals(tableStr)) {
-                Identifier structId = link.structureId();
+                Id structId = link.structureId();
                 if (structId != null) {
                     result.add(structId);
                 }
@@ -311,13 +311,13 @@ public final class LearnedLinksManager {
     /**
      * Build a map of structure -> loot tables for linking integration.
      */
-    public Map<Identifier, Set<Identifier>> buildLearnedLinksMap() {
+    public Map<Id, Set<Id>> buildLearnedLinksMap() {
         ensureLoaded();
-        Map<Identifier, Set<Identifier>> result = new LinkedHashMap<>();
+        Map<Id, Set<Id>> result = new LinkedHashMap<>();
 
         for (LearnedLink link : learnedLinks.values()) {
-            Identifier structId = link.structureId();
-            Identifier tableId = link.lootTableId();
+            Id structId = link.structureId();
+            Id tableId = link.lootTableId();
 
             if (structId != null && tableId != null) {
                 result.computeIfAbsent(structId, k -> new HashSet<>()).add(tableId);
@@ -393,7 +393,7 @@ public final class LearnedLinksManager {
     /**
      * Check if a specific link has been learned.
      */
-    public boolean isLearned(Identifier structureId, Identifier lootTableId) {
+    public boolean isLearned(Id structureId, Id lootTableId) {
         ensureLoaded();
         LinkKey key = LinkKey.from(structureId, lootTableId);
         return learnedLinks.containsKey(key);
@@ -402,7 +402,7 @@ public final class LearnedLinksManager {
     /**
      * Get observation count for a specific link.
      */
-    public int getObservationCount(Identifier structureId, Identifier lootTableId) {
+    public int getObservationCount(Id structureId, Id lootTableId) {
         ensureLoaded();
         LinkKey key = LinkKey.from(structureId, lootTableId);
         LearnedLink link = learnedLinks.get(key);
@@ -610,8 +610,8 @@ public final class LearnedLinksManager {
 
     private String getMinecraftVersion() {
         try {
-            // MC 1.21.6+ uses id() instead of getName()
-            return net.minecraft.SharedConstants.getCurrentVersion().id();
+            // Use version-agnostic API
+            return dev.isotope.compat.McVersionInfo.getVersionString();
         } catch (Exception e) {
             return "unknown";
         }

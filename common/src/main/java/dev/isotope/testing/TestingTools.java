@@ -1,13 +1,13 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -60,7 +60,7 @@ public final class TestingTools {
      * @param searchRadius Search radius in chunks (default: 100)
      * @return LocateResult with position if found
      */
-    public static LocateResult locateStructure(MinecraftServer server, Identifier structureId, int searchRadius) {
+    public static LocateResult locateStructure(MinecraftServer server, Id structureId, int searchRadius) {
         try {
             // Get the overworld (most structures are there)
             ServerLevel level = server.overworld();
@@ -84,7 +84,7 @@ public final class TestingTools {
                 .lookupOrThrow(Registries.STRUCTURE);
 
             // Find the structure holder
-            ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);
+            ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId.mc());
             Optional<Holder.Reference<Structure>> structureHolder = structureRegistry.get(structureKey);
             if (structureHolder.isEmpty()) {
                 return LocateResult.error("Unknown structure: " + structureId);
@@ -162,7 +162,7 @@ public final class TestingTools {
      * @param structureId The structure to find and teleport to
      * @return LocateResult with details
      */
-    public static LocateResult locateAndTeleport(MinecraftServer server, Identifier structureId) {
+    public static LocateResult locateAndTeleport(MinecraftServer server, Id structureId) {
         LocateResult result = locateStructure(server, structureId, 100);
 
         if (result.found() && result.position() != null) {

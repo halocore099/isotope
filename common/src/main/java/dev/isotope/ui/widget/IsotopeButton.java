@@ -1,5 +1,6 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.ui.VersionedButton;
 import dev.isotope.ui.IsotopeColors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -12,7 +13,7 @@ import net.minecraft.network.chat.Component;
  * Styled button matching ISOTOPE design language.
  */
 @Environment(EnvType.CLIENT)
-public class IsotopeButton extends Button {
+public class IsotopeButton extends VersionedButton {
 
     private final ButtonStyle style;
 
@@ -21,12 +22,12 @@ public class IsotopeButton extends Button {
     }
 
     public IsotopeButton(int x, int y, int width, int height, Component message, OnPress onPress, ButtonStyle style) {
-        super(x, y, width, height, message, onPress, Button.DEFAULT_NARRATION);
+        super(x, y, width, height, message, onPress);
         this.style = style;
     }
 
     @Override
-    protected void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderButtonContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         int backgroundColor;
         int textColor;
         int borderColor;

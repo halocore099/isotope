@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.isotope.Isotope;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -36,10 +36,10 @@ public final class ProcessorListParser {
     private static final Gson GSON = new GsonBuilder().create();
 
     // Processor ID -> loot tables found in that processor
-    private final Map<Identifier, Set<Identifier>> processorToLootTables = new LinkedHashMap<>();
+    private final Map<Id, Set<Id>> processorToLootTables = new LinkedHashMap<>();
 
     // Reverse lookup: loot table -> processors that reference it
-    private final Map<Identifier, Set<Identifier>> lootTableToProcessors = new LinkedHashMap<>();
+    private final Map<Id, Set<Id>> lootTableToProcessors = new LinkedHashMap<>();
 
     // Statistics
     private int filesParsed = 0;
@@ -63,15 +63,15 @@ public final class ProcessorListParser {
             ResourceManager resourceManager = server.getResourceManager();
 
             // Scan for processor_list JSON files
-            Map<Identifier, Resource> resources = resourceManager.listResources(
+            var resources = resourceManager.listResources(
                 "worldgen/processor_list",
                 path -> path.getPath().endsWith(".json")
             );
 
             Isotope.LOGGER.debug("[ProcessorListParser] Found {} processor_list files", resources.size());
 
-            for (Map.Entry<Identifier, Resource> entry : resources.entrySet()) {
-                parseProcessorJson(entry.getKey(), entry.getValue());
+            for (var entry : resources.entrySet()) {
+                parseProcessorJson(Id.wrap(entry.getKey()), entry.getValue());
                 filesParsed++;
             }
 
@@ -87,7 +87,7 @@ public final class ProcessorListParser {
     /**
      * Parse a single processor list JSON file.
      */
-    private void parseProcessorJson(Identifier path, Resource resource) {
+    private void parseProcessorJson(Id path, Resource resource) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(resource.open(), StandardCharsets.UTF_8))) {
 
@@ -95,10 +95,10 @@ public final class ProcessorListParser {
             if (json == null) return;
 
             // Build the processor ID from the path
-            Identifier processorId = extractProcessorId(path);
+            Id processorId = extractProcessorId(path);
             if (processorId == null) return;
 
-            Set<Identifier> foundLoot = new HashSet<>();
+            Set<Id> foundLoot = new HashSet<>();
 
             // Parse processors array
             if (json.has("processors")) {
@@ -117,7 +117,7 @@ public final class ProcessorListParser {
                 totalLootReferences += foundLoot.size();
 
                 // Build reverse lookup
-                for (Identifier tableId : foundLoot) {
+                for (Id tableId : foundLoot) {
                     lootTableToProcessors.computeIfAbsent(tableId, k -> new HashSet<>()).add(processorId);
                 }
             }
@@ -130,7 +130,7 @@ public final class ProcessorListParser {
     /**
      * Parse a processor element for loot table references.
      */
-    private void parseProcessor(JsonObject processor, Set<Identifier> foundLoot) {
+    private void parseProcessor(JsonObject processor, Set<Id> foundLoot) {
         String type = processor.has("processor_type") ?
             processor.get("processor_type").getAsString() : "";
 
@@ -168,7 +168,7 @@ public final class ProcessorListParser {
     /**
      * Parse a rule processor which can contain output_nbt with LootTable.
      */
-    private void parseRuleProcessor(JsonObject processor, Set<Identifier> foundLoot) {
+    private void parseRuleProcessor(JsonObject processor, Set<Id> foundLoot) {
         if (!processor.has("rules")) return;
 
         JsonArray rules = processor.getAsJsonArray("rules");
@@ -202,7 +202,7 @@ public final class ProcessorListParser {
      * Extract loot table references from SNBT string.
      * Looks for patterns like: LootTable:"minecraft:chests/simple_dungeon"
      */
-    private void extractLootFromSnbt(String snbt, Set<Identifier> found) {
+    private void extractLootFromSnbt(String snbt, Set<Id> found) {
         // Pattern: LootTable:"namespace:path"
         int idx = snbt.indexOf("LootTable:");
         while (idx >= 0) {
@@ -213,7 +213,7 @@ public final class ProcessorListParser {
 
             String tableStr = snbt.substring(start + 1, end);
             try {
-                Identifier tableId = Identifier.parse(tableStr);
+                Id tableId = Id.parse(tableStr);
                 found.add(tableId);
             } catch (Exception e) {
                 // Invalid resource location
@@ -226,7 +226,7 @@ public final class ProcessorListParser {
     /**
      * Recursively search a JSON structure for loot_table references.
      */
-    private void searchForLootTables(JsonElement element, Set<Identifier> found) {
+    private void searchForLootTables(JsonElement element, Set<Id> found) {
         if (element == null) return;
 
         if (element.isJsonObject()) {
@@ -239,10 +239,10 @@ public final class ProcessorListParser {
                     if (lootElement.isJsonPrimitive()) {
                         String lootTableStr = lootElement.getAsString();
                         try {
-                            Identifier lootId = Identifier.parse(lootTableStr);
+                            Id lootId = Id.parse(lootTableStr);
                             found.add(lootId);
                         } catch (Exception e) {
-                            // Invalid Identifier
+                            // Invalid Id
                         }
                     }
                 }
@@ -264,7 +264,7 @@ public final class ProcessorListParser {
     /**
      * Extract processor ID from resource path.
      */
-    private Identifier extractProcessorId(Identifier path) {
+    private Id extractProcessorId(Id path) {
         String pathStr = path.getPath();
 
         if (!pathStr.startsWith("worldgen/processor_list/")) {
@@ -276,7 +276,7 @@ public final class ProcessorListParser {
             processorPath = processorPath.substring(0, processorPath.length() - 5);
         }
 
-        return Identifier.fromNamespaceAndPath(path.getNamespace(), processorPath);
+        return Id.of(path.getNamespace(), processorPath);
     }
 
     // --- Query API ---
@@ -284,28 +284,28 @@ public final class ProcessorListParser {
     /**
      * Get all loot tables referenced by a processor.
      */
-    public Set<Identifier> getLootTablesForProcessor(Identifier processorId) {
+    public Set<Id> getLootTablesForProcessor(Id processorId) {
         return processorToLootTables.getOrDefault(processorId, Set.of());
     }
 
     /**
      * Get all processors that reference a specific loot table.
      */
-    public Set<Identifier> getProcessorsForLootTable(Identifier lootTableId) {
+    public Set<Id> getProcessorsForLootTable(Id lootTableId) {
         return lootTableToProcessors.getOrDefault(lootTableId, Set.of());
     }
 
     /**
      * Build a map of all processors to their loot tables.
      */
-    public Map<Identifier, Set<Identifier>> buildProcessorLootMap() {
+    public Map<Id, Set<Id>> buildProcessorLootMap() {
         return Collections.unmodifiableMap(processorToLootTables);
     }
 
     /**
      * Get all loot tables found in any processor.
      */
-    public Set<Identifier> getAllReferencedLootTables() {
+    public Set<Id> getAllReferencedLootTables() {
         return Collections.unmodifiableSet(lootTableToProcessors.keySet());
     }
 

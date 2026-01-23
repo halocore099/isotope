@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
 import dev.isotope.ui.HelpLinks;
@@ -14,7 +15,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import dev.isotope.util.Regs;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +32,7 @@ import java.util.function.Consumer;
  * Shows a grid of available templates organized by category.
  */
 @Environment(EnvType.CLIENT)
-public class TemplatePickerScreen extends Screen {
+public class TemplatePickerScreen extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 400;
     private static final int DIALOG_HEIGHT = 320;
@@ -173,9 +176,9 @@ public class TemplatePickerScreen extends Screen {
 
                 // Item icon (if has default item)
                 if (template.defaultItem().isPresent()) {
-                    var itemOpt = BuiltInRegistries.ITEM.get(template.defaultItem().get());
+                    var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, template.defaultItem().get());
                     if (itemOpt.isPresent()) {
-                        graphics.renderItem(new ItemStack(itemOpt.get().value()), entryX + 4, y + (entryHeight - 16) / 2);
+                        graphics.renderItem(new ItemStack(itemOpt.get()), entryX + 4, y + (entryHeight - 16) / 2);
                         textX = entryX + 26;
                     }
                 }

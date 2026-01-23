@@ -1,9 +1,11 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.Id;
+import dev.isotope.util.Regs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -95,7 +97,7 @@ public final class TestMobTools {
      * @param offset Offset from player position
      * @return SpawnResult with the spawned entity
      */
-    public static SpawnResult spawnMob(MinecraftServer server, Identifier entityId, BlockPos offset) {
+    public static SpawnResult spawnMob(MinecraftServer server, Id entityId, BlockPos offset) {
         try {
             ServerLevel level = server.overworld();
             if (level == null) {
@@ -108,7 +110,7 @@ public final class TestMobTools {
             }
 
             // Get entity type from registry
-            Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
+            Optional<EntityType<?>> entityTypeOpt = Regs.getOptional(BuiltInRegistries.ENTITY_TYPE, Registries.ENTITY_TYPE, entityId);
             if (entityTypeOpt.isEmpty()) {
                 return SpawnResult.error("Unknown entity: " + entityId);
             }
@@ -156,7 +158,7 @@ public final class TestMobTools {
      * @param count Number of mobs to spawn
      * @return List of spawn results
      */
-    public static List<SpawnResult> spawnMobGrid(MinecraftServer server, Identifier entityId, int count) {
+    public static List<SpawnResult> spawnMobGrid(MinecraftServer server, Id entityId, int count) {
         List<SpawnResult> results = new ArrayList<>();
 
         // Calculate grid dimensions (roughly square)
@@ -247,7 +249,7 @@ public final class TestMobTools {
      * @param lootingLevel Looting enchant level (0-3)
      * @return KillResult
      */
-    public static KillResult spawnAndKill(MinecraftServer server, Identifier entityId, KillCondition condition, int lootingLevel) {
+    public static KillResult spawnAndKill(MinecraftServer server, Id entityId, KillCondition condition, int lootingLevel) {
         SpawnResult spawn = spawnMob(server, entityId, new BlockPos(3, 0, 3));
         if (!spawn.success()) {
             return KillResult.error("Spawn failed: " + spawn.error());
@@ -266,7 +268,7 @@ public final class TestMobTools {
      * @param lootingLevel Looting enchant level (0-3)
      * @return Total kills successful
      */
-    public static int batchSpawnAndKill(MinecraftServer server, Identifier entityId,
+    public static int batchSpawnAndKill(MinecraftServer server, Id entityId,
                                          int count, KillCondition condition, int lootingLevel) {
         int successful = 0;
 
@@ -298,7 +300,7 @@ public final class TestMobTools {
      * @param radius Radius in blocks
      * @return Number of entities removed
      */
-    public static int clearMobs(MinecraftServer server, @Nullable Identifier entityId, int radius) {
+    public static int clearMobs(MinecraftServer server, @Nullable Id entityId, int radius) {
         try {
             ServerLevel level = server.overworld();
             ServerPlayer player = getPlayer(server);
@@ -317,8 +319,8 @@ public final class TestMobTools {
 
                 // Check entity type if specified
                 if (entityId != null) {
-                    Identifier entityType = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-                    if (!entityId.equals(entityType)) continue;
+                    var entityType = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+                    if (!entityId.mc().equals(entityType)) continue;
                 }
 
                 entity.remove(Entity.RemovalReason.DISCARDED);
@@ -347,8 +349,8 @@ public final class TestMobTools {
     /**
      * Get entity display name from entity ID.
      */
-    public static String getEntityDisplayName(Identifier entityId) {
-        Optional<EntityType<?>> entityTypeOpt = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId);
+    public static String getEntityDisplayName(Id entityId) {
+        Optional<EntityType<?>> entityTypeOpt = Regs.getOptional(BuiltInRegistries.ENTITY_TYPE, Registries.ENTITY_TYPE, entityId);
         if (entityTypeOpt.isPresent()) {
             String key = entityTypeOpt.get().getDescriptionId();
             // Extract name from "entity.minecraft.zombie" -> "Zombie"

@@ -1,5 +1,6 @@
 package dev.isotope.mixin;
 
+import dev.isotope.compat.Id;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.observation.LootObserver;
 import dev.isotope.observation.LootTableTracker;
@@ -29,7 +30,7 @@ public class ReloadableRegistriesMixin {
     private void isotope$onGetLootTable(ResourceKey<LootTable> key, CallbackInfoReturnable<LootTable> cir) {
         // Track table ID for both recording AND test mode
         if (LootObserver.getInstance().isRecording() || LootEditManager.getInstance().isTestModeActive()) {
-            LootTableTracker.setCurrentTableId(key.identifier());
+            LootTableTracker.setCurrentTableId(Id.fromKey(key));
         }
     }
 }

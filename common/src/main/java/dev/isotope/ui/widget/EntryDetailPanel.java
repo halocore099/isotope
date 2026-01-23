@@ -1,10 +1,13 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.compat.Id;
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.data.loot.LootCondition;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.data.loot.NumberProvider;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.util.Regs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -15,8 +18,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
@@ -30,7 +33,7 @@ import java.util.function.BiConsumer;
  * Includes editing controls for weight and count.
  */
 @Environment(EnvType.CLIENT)
-public class EntryDetailPanel extends AbstractWidget {
+public class EntryDetailPanel extends VersionedWidget {
 
     @Nullable
     private LootEntry entry;
@@ -619,11 +622,11 @@ public class EntryDetailPanel extends AbstractWidget {
             IsotopeColors.SCROLLBAR_THUMB);
     }
 
-    private ItemStack getItemStack(Identifier itemId) {
+    private ItemStack getItemStack(Id itemId) {
         try {
-            var itemOpt = BuiltInRegistries.ITEM.get(itemId);
+            var itemOpt = Regs.getOptional(BuiltInRegistries.ITEM, Registries.ITEM, itemId);
             if (itemOpt.isPresent()) {
-                return new ItemStack(itemOpt.get().value());
+                return new ItemStack(itemOpt.get());
             }
         } catch (Exception e) {
             // Ignore

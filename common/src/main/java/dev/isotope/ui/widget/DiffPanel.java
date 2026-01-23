@@ -3,6 +3,8 @@ package dev.isotope.ui.widget;
 import dev.isotope.analysis.StructureDiff;
 import dev.isotope.analysis.StructureDiff.DiffEntry;
 import dev.isotope.analysis.StructureDiff.DiffResult;
+import dev.isotope.compat.Id;
+import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.data.loot.LootTableStructure;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.ui.IsotopeColors;
@@ -18,7 +20,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -28,14 +29,14 @@ import java.util.List;
  * Panel showing changes compared to original loot table.
  */
 @Environment(EnvType.CLIENT)
-public class DiffPanel extends AbstractWidget {
+public class DiffPanel extends VersionedWidget {
 
     private static final int HEADER_HEIGHT = 24;
     private static final int ROW_HEIGHT = 14;
     private static final int PADDING = 6;
 
     @Nullable
-    private Identifier tableId;
+    private Id tableId;
     @Nullable
     private DiffResult diffResult;
     private List<DiffEntry> allChanges = new ArrayList<>();
@@ -49,7 +50,7 @@ public class DiffPanel extends AbstractWidget {
     /**
      * Set the table to show diff for.
      */
-    public void setTable(@Nullable Identifier tableId) {
+    public void setTable(@Nullable Id tableId) {
         this.tableId = tableId;
         this.scrollOffset = 0;
         recalculate();
@@ -70,15 +71,15 @@ public class DiffPanel extends AbstractWidget {
         LootEditManager manager = LootEditManager.getInstance();
 
         // Get original
-        var originalOpt = manager.getCachedOriginalStructure(tableId);
+        var originalOpt = manager.getCachedOriginalStructure(tableId.mc());
         if (originalOpt.isEmpty()) {
             return;
         }
         LootTableStructure original = originalOpt.get();
 
         // Get edited
-        var editedOpt = manager.getEditedStructure(tableId);
-        if (editedOpt.isEmpty() || !manager.hasEdits(tableId)) {
+        var editedOpt = manager.getEditedStructure(tableId.mc());
+        if (editedOpt.isEmpty() || !manager.hasEdits(tableId.mc())) {
             return;
         }
         LootTableStructure edited = editedOpt.get();

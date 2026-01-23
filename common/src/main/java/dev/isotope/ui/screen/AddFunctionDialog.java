@@ -1,5 +1,6 @@
 package dev.isotope.ui.screen;
 
+import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.ui.IsotopeColors;
 import dev.isotope.ui.ScreenUtils;
@@ -24,7 +25,7 @@ import java.util.function.Consumer;
  * Shows common function presets with easy configuration.
  */
 @Environment(EnvType.CLIENT)
-public class AddFunctionDialog extends Screen {
+public class AddFunctionDialog extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 320;
     private static final int DIALOG_HEIGHT = 340;

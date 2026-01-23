@@ -4,7 +4,7 @@ import dev.isotope.Isotope;
 import dev.isotope.data.loot.*;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
+import dev.isotope.compat.Id;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +38,7 @@ public class KubeJSExporter {
     public ExportManager.ExportResult export(Consumer<String> progressCallback) {
         try {
             LootEditManager editManager = LootEditManager.getInstance();
-            Set<Identifier> editedTables = editManager.getEditedTables();
+            Set<Id> editedTables = editManager.getEditedTables();
 
             if (editedTables.isEmpty()) {
                 return new ExportManager.ExportResult(false, "No edited loot tables to export", null, List.of());
@@ -71,7 +71,7 @@ public class KubeJSExporter {
 
             List<String> exportedTables = new ArrayList<>();
 
-            for (Identifier tableId : editedTables) {
+            for (Id tableId : editedTables) {
                 progressCallback.accept("Processing: " + tableId);
 
                 Optional<LootTableStructure> edited = editManager.getEditedStructure(tableId);
@@ -104,7 +104,7 @@ public class KubeJSExporter {
     /**
      * Generate KubeJS code to modify a single loot table.
      */
-    private String generateTableModification(Identifier tableId, LootTableStructure structure) {
+    private String generateTableModification(Id tableId, LootTableStructure structure) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("    event.modify('").append(tableId).append("', loot => {\n");
@@ -170,7 +170,7 @@ public class KubeJSExporter {
         if (entryType.equals("minecraft:item") || entryType.equals("item")) {
             // Item entry
             if (entry.name().isPresent()) {
-                Identifier item = entry.name().get();
+                Id item = entry.name().get();
                 sb.append("            pool.addItem('").append(item).append("'");
 
                 // Add weight if not 1
