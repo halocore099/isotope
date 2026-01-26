@@ -9,6 +9,7 @@ import dev.isotope.Isotope;
 import dev.isotope.compat.Id;
 import dev.isotope.compat.McVersion;
 import dev.isotope.observation.ObservationSession;
+import dev.isotope.testing.InGameTestRunner;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -63,6 +64,16 @@ public final class IsotopeCommands {
                         .executes(IsotopeCommands::analyzeStructure)))
                 .then(Commands.literal("session")
                     .executes(IsotopeCommands::sessionStatus))
+                .then(Commands.literal("test")
+                    .executes(ctx -> runTests(ctx, "all"))
+                    .then(Commands.literal("all")
+                        .executes(ctx -> runTests(ctx, "all")))
+                    .then(Commands.literal("registry")
+                        .executes(ctx -> runTests(ctx, "registry")))
+                    .then(Commands.literal("loot")
+                        .executes(ctx -> runTests(ctx, "loot")))
+                    .then(Commands.literal("editor")
+                        .executes(ctx -> runTests(ctx, "editor"))))
         );
     }
 
@@ -241,6 +252,55 @@ public final class IsotopeCommands {
                 for (String failed : result.failedStructures().subList(0, Math.min(5, result.failedStructures().size()))) {
                     source.sendSuccess(() -> Component.literal("  " + failed), false);
                 }
+            }
+        });
+
+        return 1;
+    }
+
+    private static int runTests(CommandContext<CommandSourceStack> ctx, String category) {
+        CommandSourceStack source = ctx.getSource();
+        var server = source.getServer();
+        var player = source.getPlayer();
+
+        source.sendSuccess(() -> Component.literal("=== ISOTOPE Automated Tests ==="), false);
+        source.sendSuccess(() -> Component.literal("Running " + category + " tests..."), false);
+
+        // Run tests asynchronously to avoid blocking
+        server.execute(() -> {
+            InGameTestRunner.TestReport report;
+
+            switch (category) {
+                case "registry" -> report = InGameTestRunner.runRegistryTests(server, null);
+                case "loot" -> report = InGameTestRunner.runLootTests(server, null);
+                case "editor" -> report = InGameTestRunner.runEditorTests(null);
+                default -> report = InGameTestRunner.runAllTests(server, player, null);
+            }
+
+            // Report results
+            source.sendSuccess(() -> Component.literal(""), false);
+            source.sendSuccess(() -> Component.literal("=== Test Results ==="), false);
+
+            for (var result : report.results()) {
+                String status = result.passed() ? "\u2714" : "\u2718";  // Checkmark or X
+                String line = status + " " + result.testName();
+                if (result.message() != null) {
+                    line += " - " + result.message();
+                }
+                final String display = line;
+
+                if (result.passed()) {
+                    source.sendSuccess(() -> Component.literal(display), false);
+                } else {
+                    source.sendFailure(Component.literal(display));
+                }
+            }
+
+            source.sendSuccess(() -> Component.literal(""), false);
+            if (report.allPassed()) {
+                source.sendSuccess(() -> Component.literal("ALL TESTS PASSED: " + report.summary()), false);
+            } else {
+                source.sendFailure(Component.literal("TESTS FAILED: " + report.summary()));
             }
         });
 
