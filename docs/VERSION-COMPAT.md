@@ -160,3 +160,318 @@ Fabric uses intermediary mappings which may have different method names than the
 - `method_36370` (Fabric intermediary for `getOptionalLootTable`)
 
 These fallbacks are automatically used when the official method names fail.
+
+---
+
+# Contributor Guide: Adding New Compat Classes
+
+This section guides contributors on when and how to add version-specific compatibility code.
+
+## Decision Tree: Do I Need a Compat Class?
+
+```
+Is the API you're using different between MC versions?
+│
+├─ NO → Use the API directly in common/
+│
+└─ YES → What kind of difference?
+         │
+         ├─ Class/package renamed (e.g., ResourceLocation → Identifier)
+         │  └─ Create an abstraction interface + version implementations
+         │
+         ├─ Method signature changed (e.g., hasPermission(int) → permissions().hasPermission())
+         │  └─ Add method to existing compat class or create new one
+         │
+         ├─ Method return type changed (e.g., String → Optional<String>)
+         │  └─ Create compat utility class with unified return type
+         │
+         ├─ Class moved to different package
+         │  └─ Create polyfill class in old location that delegates to new
+         │
+         └─ UI rendering method renamed (e.g., renderWidget → renderContents)
+            └─ Create versioned base class with abstract method
+```
+
+## Existing Compat Patterns
+
+### Pattern 1: Interface Abstraction (Id, McVersion)
+
+**When to use**: Core class was renamed or has incompatible APIs.
+
+```
+compat/src/main/java/         → Interface definition
+compat/src/mc1210/java/impl/  → MC 1.21.0-1.21.10 implementation
+compat/src/mc1211/java/impl/  → MC 1.21.11+ implementation
+```
+
+**Example**: `Id` interface wraps `ResourceLocation` (mc1210) or `Identifier` (mc1211)
+
+```java
+// compat/src/main/java/dev/isotope/compat/Id.java
+public interface Id {
+    String getNamespace();
+    String getPath();
+    Object toMc();  // Returns native MC type
+
+    static Id of(String namespace, String path) {
+        return IdFactory.INSTANCE.create(namespace, path);
+    }
+}
+
+// compat/src/mc1210/java/dev/isotope/compat/impl/IdImpl.java
+public record IdImpl(ResourceLocation mc) implements Id {
+    @Override public String getNamespace() { return mc.getNamespace(); }
+    @Override public String getPath() { return mc.getPath(); }
+    @Override public Object toMc() { return mc; }
+}
+
+// compat/src/mc1211/java/dev/isotope/compat/impl/IdImpl.java
+public record IdImpl(Identifier mc) implements Id {
+    @Override public String getNamespace() { return mc.getNamespace(); }
+    @Override public String getPath() { return mc.getPath(); }
+    @Override public Object toMc() { return mc; }
+}
+```
+
+### Pattern 2: Static Utility Class (NbtCompat, EditBoxCompat)
+
+**When to use**: Method signatures or return types changed.
+
+```java
+// compat/src/mc1210/java/dev/isotope/compat/NbtCompat.java
+public final class NbtCompat {
+    // MC 1.21.10: getString() returns String (empty if missing)
+    public static Optional<String> getString(CompoundTag nbt, String key) {
+        if (nbt.contains(key, Tag.TAG_STRING)) {
+            return Optional.of(nbt.getString(key));
+        }
+        return Optional.empty();
+    }
+}
+
+// compat/src/mc1211/java/dev/isotope/compat/NbtCompat.java
+public final class NbtCompat {
+    // MC 1.21.11: getString() already returns Optional<String>
+    public static Optional<String> getString(CompoundTag nbt, String key) {
+        return nbt.getString(key);
+    }
+}
+```
+
+### Pattern 3: Polyfill Class (Identifier, Util)
+
+**When to use**: Class moved to different package, need same import path.
+
+```java
+// compat/src/mc1210/java/net/minecraft/resources/Identifier.java
+// Polyfill so common code can import the 1.21.11 location
+package net.minecraft.resources;
+
+public final class Identifier {
+    public static Identifier fromNamespaceAndPath(String ns, String path) {
+        return new Identifier(ResourceLocation.fromNamespaceAndPath(ns, path));
+    }
+    // Wraps ResourceLocation
+}
+
+// compat/src/mc1210/java/net/minecraft/util/Util.java
+// Shim for Util which moved from net.minecraft.Util
+package net.minecraft.util;
+
+public final class Util {
+    public static net.minecraft.Util.OS getPlatform() {
+        return net.minecraft.Util.getPlatform();
+    }
+}
+```
+
+### Pattern 4: Versioned Base Class (VersionedWidget, VersionedButton)
+
+**When to use**: Override methods were renamed between versions.
+
+```java
+// compat/src/mc1210/java/dev/isotope/compat/ui/VersionedButton.java
+public abstract class VersionedButton extends Button {
+    @Override
+    protected void renderWidget(GuiGraphics g, int mx, int my, float pt) {
+        renderButtonContents(g, mx, my, pt);  // Delegate to unified method
+    }
+    protected abstract void renderButtonContents(GuiGraphics g, int mx, int my, float pt);
+}
+
+// compat/src/mc1211/java/dev/isotope/compat/ui/VersionedButton.java
+public abstract class VersionedButton extends Button {
+    @Override
+    protected void renderContents(GuiGraphics g, int mx, int my, float pt) {
+        renderButtonContents(g, mx, my, pt);  // Delegate to unified method
+    }
+    protected abstract void renderButtonContents(GuiGraphics g, int mx, int my, float pt);
+}
+```
+
+## Step-by-Step: Adding a New Compat Class
+
+### Step 1: Identify the API Difference
+
+Check both MC versions to understand the exact difference:
+
+```bash
+# Build for both versions to see compilation errors
+./gradlew :common:compileJava -PmcVersion=1.21.4
+./gradlew :common:compileJava -PmcVersion=1.21.11
+```
+
+### Step 2: Choose the Right Pattern
+
+- **New core type?** → Pattern 1 (Interface Abstraction)
+- **Method signature changed?** → Pattern 2 (Static Utility)
+- **Package moved?** → Pattern 3 (Polyfill)
+- **Override method renamed?** → Pattern 4 (Versioned Base Class)
+
+### Step 3: Create the Interface/Class
+
+For Pattern 1 or 2, create the shared interface or class:
+
+```java
+// compat/src/main/java/dev/isotope/compat/MyCompat.java
+public interface MyCompat {
+    // Define version-agnostic API
+    void doSomething(Arg arg);
+
+    // Singleton accessor if needed
+    MyCompat INSTANCE = loadInstance();
+
+    private static MyCompat loadInstance() {
+        return ServiceLoader.load(MyCompat.class).findFirst()
+            .orElseThrow(() -> new IllegalStateException("No MyCompat implementation"));
+    }
+}
+```
+
+### Step 4: Implement for Each API Version
+
+```java
+// compat/src/mc1210/java/dev/isotope/compat/MyCompatImpl.java
+public class MyCompatImpl implements MyCompat {
+    @Override
+    public void doSomething(Arg arg) {
+        // MC 1.21.0-1.21.10 implementation
+    }
+}
+
+// compat/src/mc1211/java/dev/isotope/compat/MyCompatImpl.java
+public class MyCompatImpl implements MyCompat {
+    @Override
+    public void doSomething(Arg arg) {
+        // MC 1.21.11+ implementation
+    }
+}
+```
+
+### Step 5: Register ServiceLoader (if needed)
+
+For interfaces that use ServiceLoader:
+
+```
+# compat/src/mc1210/resources/META-INF/services/dev.isotope.compat.MyCompat
+dev.isotope.compat.MyCompatImpl
+
+# compat/src/mc1211/resources/META-INF/services/dev.isotope.compat.MyCompat
+dev.isotope.compat.MyCompatImpl
+```
+
+### Step 6: Add Tests
+
+```java
+// compat/src/test/java/dev/isotope/compat/MyCompatContractTest.java
+@DisplayName("MyCompat Interface Contract")
+class MyCompatContractTest {
+    // Test interface behavior with mock implementation
+    // See IdContractTest.java for example
+}
+```
+
+### Step 7: Update Documentation
+
+Add the new compat class to this file's "Current Compat Classes" table.
+
+## Current Compat Classes
+
+| Class | Pattern | Purpose |
+|-------|---------|---------|
+| `Id` | Interface | Version-agnostic resource identifier |
+| `IdFactory` | Interface | Factory for creating Id instances |
+| `IdImpl` | Implementation | Wraps ResourceLocation/Identifier |
+| `Ids` | Utility | Static helper methods for Id |
+| `McVersion` | Interface | Version detection and utilities |
+| `McVersionImpl` | Implementation | Version-specific permission checks |
+| `McVersionInfo` | Utility | Version string constants |
+| `NbtCompat` | Static Utility | NBT access with unified Optional return |
+| `GameRulesCompat` | Static Utility | GameRules creation across packages |
+| `InputCompat` | Static Utility | Input event handling |
+| `EnchantmentCompat` | Interface | Enchantment registry access |
+| `VersionedWidget` | Base Class | Widget with unified input events |
+| `VersionedButton` | Base Class | Button with unified render method |
+| `VersionedScreen` | Base Class | Screen with unified input events |
+| `VersionedListEntry` | Base Class | List entry compatibility |
+| `EditBoxCompat` | Static Utility | EditBox input forwarding |
+| `RenderCompat` | Static Utility | Rendering utilities |
+| `Identifier` (polyfill) | Polyfill | mc1210 shim for Identifier class |
+| `Util` (polyfill) | Polyfill | mc1210 shim for moved Util class |
+| `IdentifierArgument` (polyfill) | Polyfill | mc1210 shim for command argument |
+
+## Common Pitfalls
+
+### 1. Forgetting Both Implementations
+
+Always implement for **both** mc1210 and mc1211. The build will fail for one version if you only implement one.
+
+### 2. Using Wrong Import in Common
+
+```java
+// WRONG - Uses version-specific class
+import net.minecraft.resources.ResourceLocation;
+
+// RIGHT - Uses compat abstraction
+import dev.isotope.compat.Id;
+```
+
+### 3. Calling toMc() Without Cast
+
+```java
+// WRONG - Object type doesn't help
+Object mc = id.toMc();
+
+// RIGHT - Use generic helper
+Identifier mc = id.mc();  // Typed cast via default method
+```
+
+### 4. Missing @Environment Annotation
+
+Client-only compat classes need the annotation:
+
+```java
+@Environment(EnvType.CLIENT)
+public class VersionedWidget extends AbstractWidget { ... }
+```
+
+### 5. Not Testing Both Versions
+
+Always verify your changes compile for both API groups:
+
+```bash
+./gradlew :compat:compileJava -PmcVersion=1.21.0
+./gradlew :compat:compileJava -PmcVersion=1.21.11
+```
+
+## Quick Reference: Which Source Set?
+
+| Code Type | Location |
+|-----------|----------|
+| Shared interface | `compat/src/main/java/` |
+| MC 1.21.0-1.21.10 impl | `compat/src/mc1210/java/` |
+| MC 1.21.11+ impl | `compat/src/mc1211/java/` |
+| Common mod code | `common/src/main/java/` |
+| NeoForge-specific | `neoforge/src/main/java/` |
+| Fabric-specific | `fabric/src/main/java/` |
+| Unit tests | `compat/src/test/java/` or `common/src/test/java/` |
