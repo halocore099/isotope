@@ -39,7 +39,13 @@ public sealed interface LootEditOperation permits
         LootEditOperation.SetRandomSequence,
         LootEditOperation.AddChild,
         LootEditOperation.RemoveChild,
-        LootEditOperation.ModifyChild {
+        LootEditOperation.ModifyChild,
+        LootEditOperation.ModifyFunction,
+        LootEditOperation.ModifyCondition,
+        LootEditOperation.ModifyPoolFunction,
+        LootEditOperation.ModifyPoolCondition,
+        LootEditOperation.ModifyTableFunction,
+        LootEditOperation.ModifyFunctionCondition {
 
     /**
      * Get a human-readable description of this operation.
@@ -339,6 +345,124 @@ public sealed interface LootEditOperation permits
         public String getDescription() {
             String childName = newChild.name().map(Id::getPath).orElse("child");
             return "Modify child #" + (childIndex + 1) + " (" + childName + ") in entry #" + (entryIndex + 1);
+        }
+    }
+
+    // ===== Modify Operations (for editing existing functions/conditions) =====
+
+    /**
+     * Modify (replace) a function on an entry.
+     */
+    record ModifyFunction(int poolIndex, int entryIndex, int functionIndex, LootFunction oldFunction, LootFunction newFunction) implements LootEditOperation {
+        /**
+         * Convenience constructor without old function (for backwards compatibility).
+         */
+        public ModifyFunction(int poolIndex, int entryIndex, int functionIndex, LootFunction newFunction) {
+            this(poolIndex, entryIndex, functionIndex, null, newFunction);
+        }
+
+        @Override
+        public String getDescription() {
+            String funcName = newFunction.getDisplayName();
+            String oldParams = oldFunction != null ? oldFunction.getParameterSummary() : "";
+            String newParams = newFunction.getParameterSummary();
+            if (!oldParams.isEmpty() && !newParams.isEmpty() && !oldParams.equals(newParams)) {
+                return "Edit " + funcName + ": " + oldParams + " → " + newParams;
+            }
+            return "Edit " + funcName + (newParams.isEmpty() ? "" : " (" + newParams + ")");
+        }
+    }
+
+    /**
+     * Modify (replace) a condition on an entry.
+     */
+    record ModifyCondition(int poolIndex, int entryIndex, int conditionIndex, LootCondition oldCondition, LootCondition newCondition) implements LootEditOperation {
+        /**
+         * Convenience constructor without old condition.
+         */
+        public ModifyCondition(int poolIndex, int entryIndex, int conditionIndex, LootCondition newCondition) {
+            this(poolIndex, entryIndex, conditionIndex, null, newCondition);
+        }
+
+        @Override
+        public String getDescription() {
+            String condName = newCondition.getDisplayName();
+            String oldParams = oldCondition != null ? oldCondition.getParameterSummary() : "";
+            String newParams = newCondition.getParameterSummary();
+            if (!oldParams.isEmpty() && !newParams.isEmpty() && !oldParams.equals(newParams)) {
+                return "Edit " + condName + ": " + oldParams + " → " + newParams;
+            }
+            return "Edit " + condName + (newParams.isEmpty() ? "" : " (" + newParams + ")");
+        }
+    }
+
+    /**
+     * Modify (replace) a function on a pool.
+     */
+    record ModifyPoolFunction(int poolIndex, int functionIndex, LootFunction oldFunction, LootFunction newFunction) implements LootEditOperation {
+        public ModifyPoolFunction(int poolIndex, int functionIndex, LootFunction newFunction) {
+            this(poolIndex, functionIndex, null, newFunction);
+        }
+
+        @Override
+        public String getDescription() {
+            String funcName = newFunction.getDisplayName();
+            String oldParams = oldFunction != null ? oldFunction.getParameterSummary() : "";
+            String newParams = newFunction.getParameterSummary();
+            if (!oldParams.isEmpty() && !newParams.isEmpty() && !oldParams.equals(newParams)) {
+                return "Edit pool " + funcName + ": " + oldParams + " → " + newParams;
+            }
+            return "Edit pool " + funcName + (newParams.isEmpty() ? "" : " (" + newParams + ")");
+        }
+    }
+
+    /**
+     * Modify (replace) a condition on a pool.
+     */
+    record ModifyPoolCondition(int poolIndex, int conditionIndex, LootCondition oldCondition, LootCondition newCondition) implements LootEditOperation {
+        public ModifyPoolCondition(int poolIndex, int conditionIndex, LootCondition newCondition) {
+            this(poolIndex, conditionIndex, null, newCondition);
+        }
+
+        @Override
+        public String getDescription() {
+            String condName = newCondition.getDisplayName();
+            String oldParams = oldCondition != null ? oldCondition.getParameterSummary() : "";
+            String newParams = newCondition.getParameterSummary();
+            if (!oldParams.isEmpty() && !newParams.isEmpty() && !oldParams.equals(newParams)) {
+                return "Edit pool " + condName + ": " + oldParams + " → " + newParams;
+            }
+            return "Edit pool " + condName + (newParams.isEmpty() ? "" : " (" + newParams + ")");
+        }
+    }
+
+    /**
+     * Modify (replace) a function on the table.
+     */
+    record ModifyTableFunction(int functionIndex, LootFunction oldFunction, LootFunction newFunction) implements LootEditOperation {
+        public ModifyTableFunction(int functionIndex, LootFunction newFunction) {
+            this(functionIndex, null, newFunction);
+        }
+
+        @Override
+        public String getDescription() {
+            String funcName = newFunction.getDisplayName();
+            String oldParams = oldFunction != null ? oldFunction.getParameterSummary() : "";
+            String newParams = newFunction.getParameterSummary();
+            if (!oldParams.isEmpty() && !newParams.isEmpty() && !oldParams.equals(newParams)) {
+                return "Edit table " + funcName + ": " + oldParams + " → " + newParams;
+            }
+            return "Edit table " + funcName + (newParams.isEmpty() ? "" : " (" + newParams + ")");
+        }
+    }
+
+    /**
+     * Modify (replace) a condition on a function on an entry.
+     */
+    record ModifyFunctionCondition(int poolIndex, int entryIndex, int functionIndex, int conditionIndex, LootCondition newCondition) implements LootEditOperation {
+        @Override
+        public String getDescription() {
+            return "Edit condition #" + (conditionIndex + 1) + " on function #" + (functionIndex + 1) + " on entry #" + (entryIndex + 1);
         }
     }
 }

@@ -50,6 +50,12 @@ public final class LootEditApplicator {
             case LootEditOperation.AddChild p -> applyAddChild(structure, p);
             case LootEditOperation.RemoveChild p -> applyRemoveChild(structure, p);
             case LootEditOperation.ModifyChild p -> applyModifyChild(structure, p);
+            case LootEditOperation.ModifyFunction p -> applyModifyFunction(structure, p);
+            case LootEditOperation.ModifyCondition p -> applyModifyCondition(structure, p);
+            case LootEditOperation.ModifyPoolFunction p -> applyModifyPoolFunction(structure, p);
+            case LootEditOperation.ModifyPoolCondition p -> applyModifyPoolCondition(structure, p);
+            case LootEditOperation.ModifyTableFunction p -> applyModifyTableFunction(structure, p);
+            case LootEditOperation.ModifyFunctionCondition p -> applyModifyFunctionCondition(structure, p);
         };
     }
 
@@ -386,6 +392,85 @@ public final class LootEditApplicator {
                 return entry; // Not a composite entry, no change
             }
             return entry.withChildReplaced(op.childIndex(), op.newChild());
+        });
+    }
+
+    // ===== Modify Operations (for editing existing functions/conditions) =====
+
+    private static LootTableStructure applyModifyFunction(LootTableStructure structure, LootEditOperation.ModifyFunction op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry -> {
+            if (op.functionIndex() < 0 || op.functionIndex() >= entry.functions().size()) {
+                return entry;
+            }
+            List<LootFunction> newFunctions = new ArrayList<>(entry.functions());
+            newFunctions.set(op.functionIndex(), op.newFunction());
+            return entry.withFunctions(newFunctions);
+        });
+    }
+
+    private static LootTableStructure applyModifyCondition(LootTableStructure structure, LootEditOperation.ModifyCondition op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry -> {
+            if (op.conditionIndex() < 0 || op.conditionIndex() >= entry.conditions().size()) {
+                return entry;
+            }
+            List<LootCondition> newConditions = new ArrayList<>(entry.conditions());
+            newConditions.set(op.conditionIndex(), op.newCondition());
+            return entry.withConditions(newConditions);
+        });
+    }
+
+    private static LootTableStructure applyModifyPoolFunction(LootTableStructure structure, LootEditOperation.ModifyPoolFunction op) {
+        if (op.poolIndex() < 0 || op.poolIndex() >= structure.pools().size()) {
+            return structure;
+        }
+        LootPool pool = structure.pools().get(op.poolIndex());
+        if (op.functionIndex() < 0 || op.functionIndex() >= pool.functions().size()) {
+            return structure;
+        }
+        List<LootFunction> newFunctions = new ArrayList<>(pool.functions());
+        newFunctions.set(op.functionIndex(), op.newFunction());
+        return structure.withPoolReplaced(op.poolIndex(), pool.withFunctions(newFunctions));
+    }
+
+    private static LootTableStructure applyModifyPoolCondition(LootTableStructure structure, LootEditOperation.ModifyPoolCondition op) {
+        if (op.poolIndex() < 0 || op.poolIndex() >= structure.pools().size()) {
+            return structure;
+        }
+        LootPool pool = structure.pools().get(op.poolIndex());
+        if (op.conditionIndex() < 0 || op.conditionIndex() >= pool.conditions().size()) {
+            return structure;
+        }
+        List<LootCondition> newConditions = new ArrayList<>(pool.conditions());
+        newConditions.set(op.conditionIndex(), op.newCondition());
+        return structure.withPoolReplaced(op.poolIndex(), pool.withConditions(newConditions));
+    }
+
+    private static LootTableStructure applyModifyTableFunction(LootTableStructure structure, LootEditOperation.ModifyTableFunction op) {
+        if (op.functionIndex() < 0 || op.functionIndex() >= structure.functions().size()) {
+            return structure;
+        }
+        List<LootFunction> newFunctions = new ArrayList<>(structure.functions());
+        newFunctions.set(op.functionIndex(), op.newFunction());
+        return structure.withFunctions(newFunctions);
+    }
+
+    private static LootTableStructure applyModifyFunctionCondition(LootTableStructure structure, LootEditOperation.ModifyFunctionCondition op) {
+        return modifyEntry(structure, op.poolIndex(), op.entryIndex(), entry -> {
+            if (op.functionIndex() < 0 || op.functionIndex() >= entry.functions().size()) {
+                return entry;
+            }
+            LootFunction oldFunc = entry.functions().get(op.functionIndex());
+            if (op.conditionIndex() < 0 || op.conditionIndex() >= oldFunc.conditions().size()) {
+                return entry;
+            }
+
+            List<LootFunction> newFunctions = new ArrayList<>(entry.functions());
+            List<LootCondition> newConditions = new ArrayList<>(oldFunc.conditions());
+            newConditions.set(op.conditionIndex(), op.newCondition());
+            LootFunction newFunc = new LootFunction(oldFunc.function(), oldFunc.parameters(), newConditions);
+            newFunctions.set(op.functionIndex(), newFunc);
+
+            return entry.withFunctions(newFunctions);
         });
     }
 }

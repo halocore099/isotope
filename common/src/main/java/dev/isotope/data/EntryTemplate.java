@@ -1,5 +1,6 @@
 package dev.isotope.data;
 
+import dev.isotope.data.loot.LootCondition;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.data.loot.NumberProvider;
@@ -24,8 +25,24 @@ public record EntryTemplate(
     Optional<Id> defaultItem,
     int defaultWeight,
     NumberProvider defaultCount,
-    List<LootFunction> functions
+    List<LootFunction> functions,
+    List<LootCondition> conditions
 ) {
+    /**
+     * Convenience constructor without conditions (for backwards compatibility).
+     */
+    public EntryTemplate(
+        String id,
+        String name,
+        String description,
+        String category,
+        Optional<Id> defaultItem,
+        int defaultWeight,
+        NumberProvider defaultCount,
+        List<LootFunction> functions
+    ) {
+        this(id, name, description, category, defaultItem, defaultWeight, defaultCount, functions, List.of());
+    }
     /**
      * Create a LootEntry from this template.
      *
@@ -37,7 +54,7 @@ public record EntryTemplate(
             Optional.of(itemId),
             defaultWeight,
             0,
-            List.of(),
+            new ArrayList<>(conditions),
             new ArrayList<>(functions),
             List.of()
         );

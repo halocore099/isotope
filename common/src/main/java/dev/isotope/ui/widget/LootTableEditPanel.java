@@ -83,6 +83,10 @@ public class LootTableEditPanel extends VersionedWidget {
     private final List<int[]> removePoolFunctionBtns = new ArrayList<>();
     private final List<int[]> removePoolConditionBtns = new ArrayList<>();
     private final List<int[]> removeTableFunctionBtns = new ArrayList<>();
+    // Pool function/condition edit button tracking (poolIdx, funcIdx/condIdx, x, y, width, height)
+    private final List<int[]> editPoolFunctionBtns = new ArrayList<>();
+    private final List<int[]> editPoolConditionBtns = new ArrayList<>();
+    private final List<int[]> editTableFunctionBtns = new ArrayList<>();
     private static final int POOL_FUNC_COND_LINE_HEIGHT = 14;
 
     // Selection state for keyboard shortcuts
@@ -126,6 +130,30 @@ public class LootTableEditPanel extends VersionedWidget {
     private boolean isDraggingPool = false;
     private int draggedPoolIdx = -1;
     private int poolDropTargetIdx = -1;  // Drop before this pool index
+
+    // Double-click detection for function/condition editing
+    private static final int DOUBLE_CLICK_THRESHOLD_MS = 400;
+    private long lastFuncCondClickTime = 0;
+    private int lastFuncCondClickPoolIdx = -1;
+    private int lastFuncCondClickFuncCondIdx = -1;
+    private enum FuncCondClickType { NONE, POOL_FUNC, POOL_COND, TABLE_FUNC }
+    private FuncCondClickType lastFuncCondClickType = FuncCondClickType.NONE;
+
+    // Enchantment indicator click tracking (poolIdx, entryIdx, x, y, w, h)
+    private final List<int[]> enchantmentIndicatorBtns = new ArrayList<>();
+
+    // Callback for opening enchantment analysis
+    @Nullable
+    private EnchantAnalysisCallback onEnchantAnalysisCallback;
+
+    @FunctionalInterface
+    public interface EnchantAnalysisCallback {
+        void onAnalyze(int poolIdx, int entryIdx);
+    }
+
+    public void setOnEnchantAnalysis(@Nullable EnchantAnalysisCallback callback) {
+        this.onEnchantAnalysisCallback = callback;
+    }
 
     /**
      * Key for identifying a specific entry (pool index, entry index).
@@ -180,6 +208,41 @@ public class LootTableEditPanel extends VersionedWidget {
 
     public void setOnEditRandomSequence(@Nullable Runnable callback) {
         this.onEditRandomSequenceCallback = callback;
+    }
+
+    // Callbacks for editing pool/table functions and conditions
+    @Nullable
+    private EditFunctionCallback onEditPoolFunctionCallback;
+    @Nullable
+    private EditConditionCallback onEditPoolConditionCallback;
+    @Nullable
+    private EditFunctionCallback onEditTableFunctionCallback;
+
+    @FunctionalInterface
+    public interface EditFunctionCallback {
+        void onEdit(int poolIdx, int funcIdx, LootFunction existingFunc);
+    }
+
+    @FunctionalInterface
+    public interface EditConditionCallback {
+        void onEdit(int poolIdx, int condIdx, LootCondition existingCond);
+    }
+
+    @FunctionalInterface
+    public interface EditTableFunctionCallback {
+        void onEdit(int funcIdx, LootFunction existingFunc);
+    }
+
+    public void setOnEditPoolFunction(@Nullable EditFunctionCallback callback) {
+        this.onEditPoolFunctionCallback = callback;
+    }
+
+    public void setOnEditPoolCondition(@Nullable EditConditionCallback callback) {
+        this.onEditPoolConditionCallback = callback;
+    }
+
+    public void setOnEditTableFunction(@Nullable EditFunctionCallback callback) {
+        this.onEditTableFunctionCallback = callback;
     }
 
     public LootTableEditPanel(int x, int y, int width, int height) {
@@ -370,6 +433,7 @@ public class LootTableEditPanel extends VersionedWidget {
 
         // Table-level functions section (always show header with [+] button)
         removeTableFunctionBtns.clear();
+        editTableFunctionBtns.clear();
         y = renderTableFunctions(graphics, font, y, display, mouseX, mouseY);
 
         // Pools and entries
@@ -378,6 +442,9 @@ public class LootTableEditPanel extends VersionedWidget {
         hoveredRemoveEntryPool = -1;
         removePoolFunctionBtns.clear();
         removePoolConditionBtns.clear();
+        editPoolFunctionBtns.clear();
+        editPoolConditionBtns.clear();
+        enchantmentIndicatorBtns.clear();
 
         for (int poolIdx = 0; poolIdx < display.pools().size(); poolIdx++) {
             LootPool pool = display.pools().get(poolIdx);
@@ -886,6 +953,20 @@ public class LootTableEditPanel extends VersionedWidget {
                         IsotopeColors.TEXT_MUTED, false);
                 }
 
+                // [✎] edit button
+                int editBtnX = maxX - 16;
+                int editBtnY = y;
+                int editBtnW = 14;
+                int editBtnH = POOL_FUNC_COND_LINE_HEIGHT;
+                boolean editHovered = mouseX >= editBtnX && mouseX < editBtnX + editBtnW &&
+                    mouseY >= editBtnY && mouseY < editBtnY + editBtnH;
+                if (editHovered) {
+                    graphics.fill(editBtnX, editBtnY, editBtnX + editBtnW, editBtnY + editBtnH, IsotopeColors.SUCCESS_BACKGROUND);
+                }
+                graphics.drawString(font, "✎", editBtnX + 3, editBtnY + 2,
+                    editHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.TEXT_MUTED, false);
+                editTableFunctionBtns.add(new int[]{funcIndex, editBtnX, editBtnY, editBtnW, editBtnH});
+
                 // [X] remove button
                 int btnX = maxX;
                 int btnY = y;
@@ -965,6 +1046,20 @@ public class LootTableEditPanel extends VersionedWidget {
                             IsotopeColors.TEXT_MUTED, false);
                     }
 
+                    // [✎] edit button
+                    int editBtnX = maxX - 16;
+                    int editBtnY = y;
+                    int editBtnW = 14;
+                    int editBtnH = POOL_FUNC_COND_LINE_HEIGHT;
+                    boolean editHovered = mouseX >= editBtnX && mouseX < editBtnX + editBtnW &&
+                        mouseY >= editBtnY && mouseY < editBtnY + editBtnH;
+                    if (editHovered) {
+                        graphics.fill(editBtnX, editBtnY, editBtnX + editBtnW, editBtnY + editBtnH, IsotopeColors.SUCCESS_BACKGROUND);
+                    }
+                    graphics.drawString(font, "✎", editBtnX + 3, editBtnY + 2,
+                        editHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.TEXT_MUTED, false);
+                    editPoolFunctionBtns.add(new int[]{poolIdx, funcIndex, editBtnX, editBtnY, editBtnW, editBtnH});
+
                     // [X] remove button
                     int btnX = maxX;
                     int btnY = y;
@@ -1002,6 +1097,20 @@ public class LootTableEditPanel extends VersionedWidget {
                         graphics.drawString(font, " " + params, x + condWidth, y + 2,
                             IsotopeColors.TEXT_MUTED, false);
                     }
+
+                    // [✎] edit button
+                    int editBtnX = maxX - 16;
+                    int editBtnY = y;
+                    int editBtnW = 14;
+                    int editBtnH = POOL_FUNC_COND_LINE_HEIGHT;
+                    boolean editHovered = mouseX >= editBtnX && mouseX < editBtnX + editBtnW &&
+                        mouseY >= editBtnY && mouseY < editBtnY + editBtnH;
+                    if (editHovered) {
+                        graphics.fill(editBtnX, editBtnY, editBtnX + editBtnW, editBtnY + editBtnH, IsotopeColors.SUCCESS_BACKGROUND);
+                    }
+                    graphics.drawString(font, "✎", editBtnX + 3, editBtnY + 2,
+                        editHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.TEXT_MUTED, false);
+                    editPoolConditionBtns.add(new int[]{poolIdx, condIndex, editBtnX, editBtnY, editBtnW, editBtnH});
 
                     // [X] remove button
                     int btnX = maxX;
@@ -1186,10 +1295,20 @@ public class LootTableEditPanel extends VersionedWidget {
             graphics.drawString(font, "⚗", indicatorX, y + 7, IsotopeColors.ACCENT_AQUA, false);
         }
 
-        // Enchantment indicator (sparkle in gold)
+        // Enchantment indicator (sparkle in gold) - clickable to show analysis
         if (hasEnchant) {
-            indicatorX -= 10;
-            graphics.drawString(font, "✦", indicatorX, y + 7, IsotopeColors.ACCENT_GOLD, false);
+            indicatorX -= 14;
+            int enchBtnX = indicatorX;
+            int enchBtnY = y + 4;
+            int enchBtnW = 14;
+            int enchBtnH = 14;
+            boolean enchHovered = mouseX >= enchBtnX && mouseX < enchBtnX + enchBtnW &&
+                mouseY >= enchBtnY && mouseY < enchBtnY + enchBtnH;
+            if (enchHovered) {
+                graphics.fill(enchBtnX, enchBtnY, enchBtnX + enchBtnW, enchBtnY + enchBtnH, IsotopeColors.SUCCESS_BACKGROUND);
+            }
+            graphics.drawString(font, "✦", indicatorX + 2, y + 7, enchHovered ? IsotopeColors.ACCENT_GREEN : IsotopeColors.ACCENT_GOLD, false);
+            enchantmentIndicatorBtns.add(new int[]{poolIdx, entryIdx, enchBtnX, enchBtnY, enchBtnW, enchBtnH});
         }
 
         // Attribute indicator (diamond in green)
@@ -1439,6 +1558,49 @@ public class LootTableEditPanel extends VersionedWidget {
             }
         }
 
+        // Check for double-click on table function row
+        for (int[] btn : editTableFunctionBtns) {
+            int funcIdx = btn[0];
+            int btnY = btn[2];
+            int btnH = btn[4];
+            int rowX = getX() + PADDING;
+            int rowWidth = width - PADDING * 2;
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, rowX, btnY, rowWidth, btnH)) {
+                long now = System.currentTimeMillis();
+                if (lastFuncCondClickType == FuncCondClickType.TABLE_FUNC &&
+                    lastFuncCondClickFuncCondIdx == funcIdx &&
+                    (now - lastFuncCondClickTime) < DOUBLE_CLICK_THRESHOLD_MS) {
+                    // Double-click detected - open edit dialog
+                    if (onEditTableFunctionCallback != null && editedStructure != null) {
+                        LootFunction func = editedStructure.functions().get(funcIdx);
+                        onEditTableFunctionCallback.onEdit(-1, funcIdx, func);
+                    }
+                    lastFuncCondClickType = FuncCondClickType.NONE;
+                    return true;
+                }
+                lastFuncCondClickTime = now;
+                lastFuncCondClickType = FuncCondClickType.TABLE_FUNC;
+                lastFuncCondClickPoolIdx = -1;
+                lastFuncCondClickFuncCondIdx = funcIdx;
+            }
+        }
+
+        // Check for table function edit click (button)
+        for (int[] btn : editTableFunctionBtns) {
+            int funcIdx = btn[0];
+            int btnX = btn[1];
+            int btnY = btn[2];
+            int btnW = btn[3];
+            int btnH = btn[4];
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
+                if (onEditTableFunctionCallback != null && editedStructure != null) {
+                    LootFunction func = editedStructure.functions().get(funcIdx);
+                    onEditTableFunctionCallback.onEdit(-1, funcIdx, func);  // -1 for pool since it's table-level
+                }
+                return true;
+            }
+        }
+
         // Check for table function remove click
         for (int[] btn : removeTableFunctionBtns) {
             int funcIdx = btn[0];
@@ -1450,6 +1612,56 @@ public class LootTableEditPanel extends VersionedWidget {
                 LootEditOperation op = new LootEditOperation.RemoveTableFunction(funcIdx);
                 LootEditManager.getInstance().applyOperation(tableId.mc(), op);
                 refreshFromEdits();
+                return true;
+            }
+        }
+
+        // Check for double-click on pool function row (anywhere on the row, not just edit button)
+        for (int[] btn : editPoolFunctionBtns) {
+            int poolIdx = btn[0];
+            int funcIdx = btn[1];
+            int btnY = btn[3];
+            int btnH = btn[5];
+            // Check if click is on this row (full width)
+            int rowX = getX() + PADDING;
+            int rowWidth = width - PADDING * 2;
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, rowX, btnY, rowWidth, btnH)) {
+                long now = System.currentTimeMillis();
+                if (lastFuncCondClickType == FuncCondClickType.POOL_FUNC &&
+                    lastFuncCondClickPoolIdx == poolIdx &&
+                    lastFuncCondClickFuncCondIdx == funcIdx &&
+                    (now - lastFuncCondClickTime) < DOUBLE_CLICK_THRESHOLD_MS) {
+                    // Double-click detected - open edit dialog
+                    if (onEditPoolFunctionCallback != null && editedStructure != null) {
+                        LootPool pool = editedStructure.pools().get(poolIdx);
+                        LootFunction func = pool.functions().get(funcIdx);
+                        onEditPoolFunctionCallback.onEdit(poolIdx, funcIdx, func);
+                    }
+                    lastFuncCondClickType = FuncCondClickType.NONE;
+                    return true;
+                }
+                // Record this click for potential double-click detection
+                lastFuncCondClickTime = now;
+                lastFuncCondClickType = FuncCondClickType.POOL_FUNC;
+                lastFuncCondClickPoolIdx = poolIdx;
+                lastFuncCondClickFuncCondIdx = funcIdx;
+            }
+        }
+
+        // Check for pool function edit click (button)
+        for (int[] btn : editPoolFunctionBtns) {
+            int poolIdx = btn[0];
+            int funcIdx = btn[1];
+            int btnX = btn[2];
+            int btnY = btn[3];
+            int btnW = btn[4];
+            int btnH = btn[5];
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
+                if (onEditPoolFunctionCallback != null && editedStructure != null) {
+                    LootPool pool = editedStructure.pools().get(poolIdx);
+                    LootFunction func = pool.functions().get(funcIdx);
+                    onEditPoolFunctionCallback.onEdit(poolIdx, funcIdx, func);
+                }
                 return true;
             }
         }
@@ -1470,6 +1682,54 @@ public class LootTableEditPanel extends VersionedWidget {
             }
         }
 
+        // Check for double-click on pool condition row
+        for (int[] btn : editPoolConditionBtns) {
+            int poolIdx = btn[0];
+            int condIdx = btn[1];
+            int btnY = btn[3];
+            int btnH = btn[5];
+            int rowX = getX() + PADDING;
+            int rowWidth = width - PADDING * 2;
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, rowX, btnY, rowWidth, btnH)) {
+                long now = System.currentTimeMillis();
+                if (lastFuncCondClickType == FuncCondClickType.POOL_COND &&
+                    lastFuncCondClickPoolIdx == poolIdx &&
+                    lastFuncCondClickFuncCondIdx == condIdx &&
+                    (now - lastFuncCondClickTime) < DOUBLE_CLICK_THRESHOLD_MS) {
+                    // Double-click detected - open edit dialog
+                    if (onEditPoolConditionCallback != null && editedStructure != null) {
+                        LootPool pool = editedStructure.pools().get(poolIdx);
+                        LootCondition cond = pool.conditions().get(condIdx);
+                        onEditPoolConditionCallback.onEdit(poolIdx, condIdx, cond);
+                    }
+                    lastFuncCondClickType = FuncCondClickType.NONE;
+                    return true;
+                }
+                lastFuncCondClickTime = now;
+                lastFuncCondClickType = FuncCondClickType.POOL_COND;
+                lastFuncCondClickPoolIdx = poolIdx;
+                lastFuncCondClickFuncCondIdx = condIdx;
+            }
+        }
+
+        // Check for pool condition edit click (button)
+        for (int[] btn : editPoolConditionBtns) {
+            int poolIdx = btn[0];
+            int condIdx = btn[1];
+            int btnX = btn[2];
+            int btnY = btn[3];
+            int btnW = btn[4];
+            int btnH = btn[5];
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
+                if (onEditPoolConditionCallback != null && editedStructure != null) {
+                    LootPool pool = editedStructure.pools().get(poolIdx);
+                    LootCondition cond = pool.conditions().get(condIdx);
+                    onEditPoolConditionCallback.onEdit(poolIdx, condIdx, cond);
+                }
+                return true;
+            }
+        }
+
         // Check for pool condition remove click
         for (int[] btn : removePoolConditionBtns) {
             int poolIdx = btn[0];
@@ -1482,6 +1742,22 @@ public class LootTableEditPanel extends VersionedWidget {
                 LootEditOperation op = new LootEditOperation.RemovePoolCondition(poolIdx, condIdx);
                 LootEditManager.getInstance().applyOperation(tableId.mc(), op);
                 refreshFromEdits();
+                return true;
+            }
+        }
+
+        // Check for enchantment indicator click
+        for (int[] btn : enchantmentIndicatorBtns) {
+            int poolIdx = btn[0];
+            int entryIdx = btn[1];
+            int btnX = btn[2];
+            int btnY = btn[3];
+            int btnW = btn[4];
+            int btnH = btn[5];
+            if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
+                if (onEnchantAnalysisCallback != null) {
+                    onEnchantAnalysisCallback.onAnalyze(poolIdx, entryIdx);
+                }
                 return true;
             }
         }

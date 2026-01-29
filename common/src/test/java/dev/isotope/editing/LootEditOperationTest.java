@@ -454,6 +454,174 @@ class LootEditOperationTest {
         }
     }
 
+    // ===== Modify Operations =====
+
+    @Nested
+    @DisplayName("ModifyFunction operation")
+    class ModifyFunctionOperation {
+
+        @Test
+        @DisplayName("stores all data with old and new function")
+        void storesDataWithOldAndNew() {
+            var oldFunc = LootFunction.setCount(1);
+            var newFunc = LootFunction.setCount(5);
+            var op = new LootEditOperation.ModifyFunction(0, 1, 2, oldFunc, newFunc);
+
+            assertThat(op.poolIndex()).isEqualTo(0);
+            assertThat(op.entryIndex()).isEqualTo(1);
+            assertThat(op.functionIndex()).isEqualTo(2);
+            assertThat(op.oldFunction()).isSameAs(oldFunc);
+            assertThat(op.newFunction()).isSameAs(newFunc);
+        }
+
+        @Test
+        @DisplayName("convenience constructor without old function")
+        void convenienceConstructor() {
+            var newFunc = LootFunction.setCount(5);
+            var op = new LootEditOperation.ModifyFunction(0, 1, 2, newFunc);
+
+            assertThat(op.oldFunction()).isNull();
+            assertThat(op.newFunction()).isSameAs(newFunc);
+        }
+
+        @Test
+        @DisplayName("description shows parameter change when old and new differ")
+        void descriptionShowsParameterChange() {
+            var oldFunc = LootFunction.setCount(1);
+            var newFunc = LootFunction.setCount(5);
+            var op = new LootEditOperation.ModifyFunction(0, 1, 2, oldFunc, newFunc);
+
+            assertThat(op.getDescription()).contains("Edit").contains("→");
+        }
+
+        @Test
+        @DisplayName("description shows just function name when no old function")
+        void descriptionWithoutOldFunction() {
+            var newFunc = LootFunction.setCount(5);
+            var op = new LootEditOperation.ModifyFunction(0, 1, 2, newFunc);
+
+            assertThat(op.getDescription()).contains("Edit").contains("set count");
+        }
+    }
+
+    @Nested
+    @DisplayName("ModifyCondition operation")
+    class ModifyConditionOperation {
+
+        @Test
+        @DisplayName("stores all data")
+        void storesData() {
+            var oldCond = new LootCondition("minecraft:random_chance", null);
+            var newCond = new LootCondition("minecraft:killed_by_player", null);
+            var op = new LootEditOperation.ModifyCondition(0, 1, 2, oldCond, newCond);
+
+            assertThat(op.poolIndex()).isEqualTo(0);
+            assertThat(op.entryIndex()).isEqualTo(1);
+            assertThat(op.conditionIndex()).isEqualTo(2);
+            assertThat(op.oldCondition()).isSameAs(oldCond);
+            assertThat(op.newCondition()).isSameAs(newCond);
+        }
+
+        @Test
+        @DisplayName("convenience constructor without old condition")
+        void convenienceConstructor() {
+            var newCond = new LootCondition("minecraft:killed_by_player", null);
+            var op = new LootEditOperation.ModifyCondition(0, 1, 2, newCond);
+
+            assertThat(op.oldCondition()).isNull();
+            assertThat(op.newCondition()).isSameAs(newCond);
+        }
+    }
+
+    @Nested
+    @DisplayName("ModifyPoolFunction operation")
+    class ModifyPoolFunctionOperation {
+
+        @Test
+        @DisplayName("stores pool index and functions")
+        void storesData() {
+            var oldFunc = LootFunction.setCount(1);
+            var newFunc = LootFunction.setCount(10);
+            var op = new LootEditOperation.ModifyPoolFunction(2, 0, oldFunc, newFunc);
+
+            assertThat(op.poolIndex()).isEqualTo(2);
+            assertThat(op.functionIndex()).isEqualTo(0);
+            assertThat(op.oldFunction()).isSameAs(oldFunc);
+            assertThat(op.newFunction()).isSameAs(newFunc);
+        }
+
+        @Test
+        @DisplayName("description mentions pool")
+        void descriptionMentionsPool() {
+            var newFunc = LootFunction.setCount(1);
+            var op = new LootEditOperation.ModifyPoolFunction(0, 0, newFunc);
+
+            assertThat(op.getDescription()).containsIgnoringCase("pool");
+        }
+    }
+
+    @Nested
+    @DisplayName("ModifyPoolCondition operation")
+    class ModifyPoolConditionOperation {
+
+        @Test
+        @DisplayName("stores pool index and conditions")
+        void storesData() {
+            var oldCond = new LootCondition("minecraft:survives_explosion", null);
+            var newCond = new LootCondition("minecraft:killed_by_player", null);
+            var op = new LootEditOperation.ModifyPoolCondition(1, 2, oldCond, newCond);
+
+            assertThat(op.poolIndex()).isEqualTo(1);
+            assertThat(op.conditionIndex()).isEqualTo(2);
+            assertThat(op.oldCondition()).isSameAs(oldCond);
+            assertThat(op.newCondition()).isSameAs(newCond);
+        }
+    }
+
+    @Nested
+    @DisplayName("ModifyTableFunction operation")
+    class ModifyTableFunctionOperation {
+
+        @Test
+        @DisplayName("stores function index and functions")
+        void storesData() {
+            var oldFunc = LootFunction.setCount(1);
+            var newFunc = LootFunction.setCount(5);
+            var op = new LootEditOperation.ModifyTableFunction(0, oldFunc, newFunc);
+
+            assertThat(op.functionIndex()).isEqualTo(0);
+            assertThat(op.oldFunction()).isSameAs(oldFunc);
+            assertThat(op.newFunction()).isSameAs(newFunc);
+        }
+
+        @Test
+        @DisplayName("description mentions table")
+        void descriptionMentionsTable() {
+            var newFunc = LootFunction.setCount(1);
+            var op = new LootEditOperation.ModifyTableFunction(0, newFunc);
+
+            assertThat(op.getDescription()).containsIgnoringCase("table");
+        }
+    }
+
+    @Nested
+    @DisplayName("ModifyFunctionCondition operation")
+    class ModifyFunctionConditionOperation {
+
+        @Test
+        @DisplayName("stores all indices and new condition")
+        void storesData() {
+            var newCond = new LootCondition("minecraft:killed_by_player", null);
+            var op = new LootEditOperation.ModifyFunctionCondition(0, 1, 2, 3, newCond);
+
+            assertThat(op.poolIndex()).isEqualTo(0);
+            assertThat(op.entryIndex()).isEqualTo(1);
+            assertThat(op.functionIndex()).isEqualTo(2);
+            assertThat(op.conditionIndex()).isEqualTo(3);
+            assertThat(op.newCondition()).isSameAs(newCond);
+        }
+    }
+
     // ===== Sealed Interface =====
 
     @Nested
@@ -478,6 +646,13 @@ class LootEditOperationTest {
             assertThat(new LootEditOperation.RemoveFunction(0, 0, 0)).isInstanceOf(LootEditOperation.class);
             assertThat(new LootEditOperation.AddCondition(0, 0, new LootCondition("test", null))).isInstanceOf(LootEditOperation.class);
             assertThat(new LootEditOperation.RemoveCondition(0, 0, 0)).isInstanceOf(LootEditOperation.class);
+            // New modify operations
+            assertThat(new LootEditOperation.ModifyFunction(0, 0, 0, LootFunction.setCount(1))).isInstanceOf(LootEditOperation.class);
+            assertThat(new LootEditOperation.ModifyCondition(0, 0, 0, new LootCondition("test", null))).isInstanceOf(LootEditOperation.class);
+            assertThat(new LootEditOperation.ModifyPoolFunction(0, 0, LootFunction.setCount(1))).isInstanceOf(LootEditOperation.class);
+            assertThat(new LootEditOperation.ModifyPoolCondition(0, 0, new LootCondition("test", null))).isInstanceOf(LootEditOperation.class);
+            assertThat(new LootEditOperation.ModifyTableFunction(0, LootFunction.setCount(1))).isInstanceOf(LootEditOperation.class);
+            assertThat(new LootEditOperation.ModifyFunctionCondition(0, 0, 0, 0, new LootCondition("test", null))).isInstanceOf(LootEditOperation.class);
         }
     }
 }

@@ -219,6 +219,7 @@ public final class IsotopeColors {
     public static final int FUNC_ADD_BORDER = 0xFF5A9A6A;
     public static final int FUNC_ADD_BORDER_DEFAULT = 0xFF4A7A5A;
     public static final int FUNC_ICON_BG = 0xFF3A5A4A;
+    public static final int COND_ICON_BG = 0xFF5A4A3A;  // Brownish for conditions
 
     // === Compare/diff highlight colors ===
     public static final int DIFF_HIGHLIGHT = 0xFF3A2A1A;

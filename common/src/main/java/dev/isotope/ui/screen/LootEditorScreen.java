@@ -3,6 +3,7 @@ package dev.isotope.ui.screen;
 import dev.isotope.Isotope;
 import dev.isotope.analysis.OrphanDetector;
 import dev.isotope.compat.ui.VersionedScreen;
+import dev.isotope.data.loot.LootCondition;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.editing.LootEditManager;
 import dev.isotope.editing.LootEditOperation;
@@ -204,6 +205,10 @@ public class LootEditorScreen extends VersionedScreen implements KeyboardShortcu
             editPanel.setContextMenuListener(this::onContextMenuRequested);
             editPanel.setOnAddTableFunction(this::openAddTableFunctionDialog);
             editPanel.setOnEditRandomSequence(this::openEditRandomSequenceDialog);
+            editPanel.setOnEditPoolFunction(this::onEditPoolFunction);
+            editPanel.setOnEditPoolCondition(this::onEditPoolCondition);
+            editPanel.setOnEditTableFunction(this::onEditTableFunction);
+            editPanel.setOnEnchantAnalysis(this::openEnchantmentAnalysis);
             addRenderableWidget(editPanel);
         }
 
@@ -519,7 +524,10 @@ public class LootEditorScreen extends VersionedScreen implements KeyboardShortcu
             .addItem("\u2193", "Move Down", "", () -> editPanel.moveEntryDown(poolIdx, entryIdx), canMoveDown)
             .addSeparator()
             .addItem("✦", "Add Function...", "", () -> openAddFunctionDialog(poolIdx, entryIdx))
+            .addItem("\u270E", "Edit Function...", "E", () -> openEditFunctionsDialog(poolIdx, entryIdx))
             .addItem("?", "Add Condition...", "", () -> openAddConditionDialog(poolIdx, entryIdx))
+            .addItem("\u270E", "Edit Condition...", "", () -> openEditConditionsDialog(poolIdx, entryIdx))
+            .addItem("\u2726", "Enchantment Analysis...", "", () -> openEnchantmentAnalysis(poolIdx, entryIdx))
             .addItem("⇄", "Change Type...", "", () -> openChangeTypeDialog(poolIdx, entryIdx))
             .addItem("★", "Set Quality...", "", () -> openSetQualityDialog(poolIdx, entryIdx));
 
@@ -556,6 +564,183 @@ public class LootEditorScreen extends VersionedScreen implements KeyboardShortcu
             LootEditManager.getInstance().applyOperation(tableId, op);
             editPanel.refresh();
         }));
+    }
+
+    /**
+     * Open a picker to choose which function to edit, then open the edit dialog.
+     */
+    private void openEditFunctionsDialog(int poolIdx, int entryIdx) {
+        Id tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+        if (structure == null || poolIdx >= structure.pools().size()) return;
+
+        var pool = structure.pools().get(poolIdx);
+        if (entryIdx >= pool.entries().size()) return;
+
+        var entry = pool.entries().get(entryIdx);
+        var functions = entry.functions();
+
+        if (functions.isEmpty()) {
+            // Offer to add a function instead
+            openAddFunctionDialog(poolIdx, entryIdx);
+            return;
+        }
+
+        // If only one function, edit it directly
+        if (functions.size() == 1) {
+            openEditFunctionDialog(poolIdx, entryIdx, 0, functions.get(0));
+            return;
+        }
+
+        // Show function picker
+        minecraft.setScreen(new FunctionConditionPickerScreen(this, "Select Function to Edit",
+            functions.stream().map(LootFunction::getDisplayName).toList(),
+            funcIdx -> openEditFunctionDialog(poolIdx, entryIdx, funcIdx, functions.get(funcIdx))
+        ));
+    }
+
+    /**
+     * Open the edit dialog for a specific function.
+     */
+    private void openEditFunctionDialog(int poolIdx, int entryIdx, int funcIdx, LootFunction existingFunc) {
+        Id tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new EditFunctionDialog(this, existingFunc, newFunc -> {
+            LootEditOperation op = new LootEditOperation.ModifyFunction(poolIdx, entryIdx, funcIdx, newFunc);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    /**
+     * Open a picker to choose which condition to edit, then open the edit dialog.
+     */
+    private void openEditConditionsDialog(int poolIdx, int entryIdx) {
+        Id tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+        if (structure == null || poolIdx >= structure.pools().size()) return;
+
+        var pool = structure.pools().get(poolIdx);
+        if (entryIdx >= pool.entries().size()) return;
+
+        var entry = pool.entries().get(entryIdx);
+        var conditions = entry.conditions();
+
+        if (conditions.isEmpty()) {
+            // Offer to add a condition instead
+            openAddConditionDialog(poolIdx, entryIdx);
+            return;
+        }
+
+        // If only one condition, edit it directly
+        if (conditions.size() == 1) {
+            openEditConditionDialog(poolIdx, entryIdx, 0, conditions.get(0));
+            return;
+        }
+
+        // Show condition picker
+        minecraft.setScreen(new FunctionConditionPickerScreen(this, "Select Condition to Edit",
+            conditions.stream().map(LootCondition::getDisplayName).toList(),
+            condIdx -> openEditConditionDialog(poolIdx, entryIdx, condIdx, conditions.get(condIdx))
+        ));
+    }
+
+    /**
+     * Open the edit dialog for a specific condition.
+     */
+    private void openEditConditionDialog(int poolIdx, int entryIdx, int condIdx, LootCondition existingCond) {
+        Id tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new EditConditionDialog(this, existingCond, newCond -> {
+            LootEditOperation op = new LootEditOperation.ModifyCondition(poolIdx, entryIdx, condIdx, newCond);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    /**
+     * Called when user clicks edit button on a pool function.
+     */
+    private void onEditPoolFunction(int poolIdx, int funcIdx, LootFunction existingFunc) {
+        Id tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new EditFunctionDialog(this, existingFunc, newFunc -> {
+            LootEditOperation op = new LootEditOperation.ModifyPoolFunction(poolIdx, funcIdx, existingFunc, newFunc);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    /**
+     * Called when user clicks edit button on a pool condition.
+     */
+    private void onEditPoolCondition(int poolIdx, int condIdx, LootCondition existingCond) {
+        Id tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        minecraft.setScreen(new EditConditionDialog(this, existingCond, newCond -> {
+            LootEditOperation op = new LootEditOperation.ModifyPoolCondition(poolIdx, condIdx, existingCond, newCond);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    /**
+     * Called when user clicks edit button on a table function.
+     */
+    private void onEditTableFunction(int poolIdx, int funcIdx, LootFunction existingFunc) {
+        Id tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        // poolIdx is -1 for table-level functions, funcIdx is the actual index
+        minecraft.setScreen(new EditFunctionDialog(this, existingFunc, newFunc -> {
+            LootEditOperation op = new LootEditOperation.ModifyTableFunction(funcIdx, existingFunc, newFunc);
+            LootEditManager.getInstance().applyOperation(tableId, op);
+            editPanel.refresh();
+        }));
+    }
+
+    /**
+     * Open enchantment analysis screen for an entry with enchantment functions.
+     */
+    private void openEnchantmentAnalysis(int poolIdx, int entryIdx) {
+        Id tableId = getSelectedTable();
+        if (tableId == null || minecraft == null) return;
+
+        var structure = LootEditManager.getInstance().getEditedStructure(tableId)
+            .orElse(LootEditManager.getInstance().getCachedOriginalStructure(tableId).orElse(null));
+        if (structure == null || poolIdx >= structure.pools().size()) return;
+
+        var pool = structure.pools().get(poolIdx);
+        if (entryIdx >= pool.entries().size()) return;
+
+        var entry = pool.entries().get(entryIdx);
+
+        // Find enchantment functions
+        var enchantFuncs = entry.functions().stream()
+            .filter(LootFunction::isEnchantment)
+            .toList();
+
+        if (enchantFuncs.isEmpty()) {
+            IsotopeToast.info("No Enchantments", "Add an enchantment function first");
+            // Open add function dialog so they can add one
+            openAddFunctionDialog(poolIdx, entryIdx);
+            return;
+        }
+
+        // Get item ID for analysis
+        Id itemId = entry.name().orElse(Id.parse("minecraft:diamond_sword"));
+
+        minecraft.setScreen(new EnchantmentAnalysisScreen(this, itemId, enchantFuncs));
     }
 
     /**
@@ -1247,6 +1432,15 @@ public class LootEditorScreen extends VersionedScreen implements KeyboardShortcu
                 keyCode == GLFW.GLFW_KEY_HOME || keyCode == GLFW.GLFW_KEY_END ||
                 keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
                 if (editPanel.keyPressed(event)) {
+                    return true;
+                }
+            }
+            // E key - edit functions/conditions for selected entry (no modifiers)
+            if (keyCode == GLFW.GLFW_KEY_E && modifiers == 0) {
+                int poolIdx = editPanel.getSelectedPoolIdx();
+                int entryIdx = editPanel.getSelectedEntryIdx();
+                if (poolIdx >= 0 && entryIdx >= 0) {
+                    openEditFunctionsDialog(poolIdx, entryIdx);
                     return true;
                 }
             }

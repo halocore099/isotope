@@ -55,6 +55,8 @@ public class EntryDetailPanel extends VersionedWidget {
     @Nullable
     private java.util.function.Consumer<Integer> onRemoveFunction;  // functionIndex
     @Nullable
+    private java.util.function.BiConsumer<Integer, LootFunction> onEditFunction;  // (functionIndex, existingFunction)
+    @Nullable
     private java.util.function.BiConsumer<Integer, LootCondition> onAddFunctionCondition;  // (functionIndex, condition)
     @Nullable
     private java.util.function.BiConsumer<Integer, Integer> onRemoveFunctionCondition;  // (functionIndex, conditionIndex)
@@ -62,15 +64,19 @@ public class EntryDetailPanel extends VersionedWidget {
     private Runnable onAddCondition;
     @Nullable
     private java.util.function.Consumer<Integer> onRemoveCondition;  // conditionIndex
+    @Nullable
+    private java.util.function.BiConsumer<Integer, LootCondition> onEditCondition;  // (conditionIndex, existingCondition)
 
     // Button bounds for click detection
     private int deleteBtnX, deleteBtnY, deleteBtnWidth;
     private int addFunctionBtnX, addFunctionBtnY, addFunctionBtnWidth;
     private int addConditionBtnX, addConditionBtnY, addConditionBtnWidth;
     private final java.util.List<int[]> removeFunctionBtns = new java.util.ArrayList<>();
+    private final java.util.List<int[]> editFunctionBtns = new java.util.ArrayList<>();  // [x, y, funcIndex]
     private final java.util.List<int[]> addFuncCondBtns = new java.util.ArrayList<>();  // [x, y, funcIndex]
     private final java.util.List<int[]> removeFuncCondBtns = new java.util.ArrayList<>();  // [x, y, funcIndex, condIndex]
     private final java.util.List<int[]> removeConditionBtns = new java.util.ArrayList<>();
+    private final java.util.List<int[]> editConditionBtns = new java.util.ArrayList<>();  // [x, y, condIndex]
     private static final int BTN_SIZE = 14;
 
     // Inline edit fields for weight and count
@@ -118,6 +124,14 @@ public class EntryDetailPanel extends VersionedWidget {
 
     public void setOnRemoveCondition(@Nullable java.util.function.Consumer<Integer> callback) {
         this.onRemoveCondition = callback;
+    }
+
+    public void setOnEditFunction(@Nullable java.util.function.BiConsumer<Integer, LootFunction> callback) {
+        this.onEditFunction = callback;
+    }
+
+    public void setOnEditCondition(@Nullable java.util.function.BiConsumer<Integer, LootCondition> callback) {
+        this.onEditCondition = callback;
     }
 
     public void setEntry(@Nullable LootEntry entry, int poolIndex, int entryIndex) {
@@ -371,9 +385,11 @@ public class EntryDetailPanel extends VersionedWidget {
 
         // Clear button lists
         removeFunctionBtns.clear();
+        editFunctionBtns.clear();
         addFuncCondBtns.clear();
         removeFuncCondBtns.clear();
         removeConditionBtns.clear();
+        editConditionBtns.clear();
 
         // Functions section
         graphics.drawString(font, "Functions:", x, y, IsotopeColors.ACCENT_GOLD, false);
@@ -392,6 +408,14 @@ public class EntryDetailPanel extends VersionedWidget {
                     int funcWidth = font.width(funcName);
                     graphics.drawString(font, " (" + params + ")", x + funcWidth, y,
                         IsotopeColors.TEXT_MUTED, false);
+                }
+
+                // [Edit] button for function
+                if (onEditFunction != null) {
+                    int editBtnX = x + width - 50;
+                    int btnY = y - 1;
+                    renderMiniButton(graphics, editBtnX, btnY, "\u270E", IsotopeColors.BUTTON_BACKGROUND);  // ✎ pencil
+                    editFunctionBtns.add(new int[]{editBtnX, btnY, funcIndex});
                 }
 
                 // [X] remove button for function
@@ -471,6 +495,14 @@ public class EntryDetailPanel extends VersionedWidget {
                     int condWidth = font.width(condName);
                     graphics.drawString(font, " " + params, x + condWidth, y,
                         IsotopeColors.TEXT_MUTED, false);
+                }
+
+                // [Edit] button for condition
+                if (onEditCondition != null) {
+                    int editBtnX = x + width - 50;
+                    int btnY = y - 1;
+                    renderMiniButton(graphics, editBtnX, btnY, "\u270E", IsotopeColors.BUTTON_BACKGROUND);  // ✎ pencil
+                    editConditionBtns.add(new int[]{editBtnX, btnY, condIndex});
                 }
 
                 // [X] remove button
@@ -700,6 +732,20 @@ public class EntryDetailPanel extends VersionedWidget {
             }
         }
 
+        // Check Edit Function buttons
+        if (onEditFunction != null && entry != null) {
+            for (int[] btn : editFunctionBtns) {
+                if (mouseX >= btn[0] && mouseX < btn[0] + 12
+                    && mouseY >= btn[1] && mouseY < btn[1] + 12) {
+                    int funcIdx = btn[2];
+                    if (funcIdx >= 0 && funcIdx < entry.functions().size()) {
+                        onEditFunction.accept(funcIdx, entry.functions().get(funcIdx));
+                    }
+                    return true;
+                }
+            }
+        }
+
         // Check Remove Function buttons
         if (onRemoveFunction != null) {
             for (int[] btn : removeFunctionBtns) {
@@ -742,6 +788,20 @@ public class EntryDetailPanel extends VersionedWidget {
                 && mouseY >= addConditionBtnY && mouseY < addConditionBtnY + 14) {
                 onAddCondition.run();
                 return true;
+            }
+        }
+
+        // Check Edit Condition buttons
+        if (onEditCondition != null && entry != null) {
+            for (int[] btn : editConditionBtns) {
+                if (mouseX >= btn[0] && mouseX < btn[0] + 12
+                    && mouseY >= btn[1] && mouseY < btn[1] + 12) {
+                    int condIdx = btn[2];
+                    if (condIdx >= 0 && condIdx < entry.conditions().size()) {
+                        onEditCondition.accept(condIdx, entry.conditions().get(condIdx));
+                    }
+                    return true;
+                }
             }
         }
 

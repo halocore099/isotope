@@ -5,6 +5,7 @@ import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.util.Regs;
 import dev.isotope.data.EntryTemplate;
 import dev.isotope.data.TemplateManager;
+import dev.isotope.data.loot.LootCondition;
 import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.data.loot.NumberProvider;
@@ -59,12 +60,16 @@ public class TemplateEditorScreen extends VersionedScreen {
     private Id selectedItem;
     private boolean useRange = true;
     private final List<LootFunction> functions = new ArrayList<>();
+    private final List<LootCondition> conditions = new ArrayList<>();
     private int functionsScrollOffset = 0;
+    private int conditionsScrollOffset = 0;
     private int hoveredFunctionIdx = -1;
+    private int hoveredConditionIdx = -1;
 
     // Layout
     private int panelX, panelY;
     private int functionsY, functionsHeight;
+    private int conditionsY, conditionsHeight;
 
     /**
      * Create a new template from scratch.
@@ -86,6 +91,7 @@ public class TemplateEditorScreen extends VersionedScreen {
         if (existing != null) {
             this.selectedItem = existing.defaultItem().orElse(null);
             this.functions.addAll(existing.functions());
+            this.conditions.addAll(existing.conditions());
 
             NumberProvider count = existing.defaultCount();
             if (count instanceof NumberProvider.Constant) {
@@ -111,6 +117,9 @@ public class TemplateEditorScreen extends VersionedScreen {
             funcs.add(func);
         }
 
+        // Include conditions from entry
+        List<LootCondition> conds = new ArrayList<>(entry.conditions());
+
         EntryTemplate template = new EntryTemplate(
             "",
             "",
@@ -119,7 +128,8 @@ public class TemplateEditorScreen extends VersionedScreen {
             Optional.ofNullable(itemId),
             entry.weight(),
             count,
-            funcs
+            funcs,
+            conds
         );
 
         return new TemplateEditorScreen(parent, template, onSaved);
@@ -208,9 +218,12 @@ public class TemplateEditorScreen extends VersionedScreen {
         addRenderableWidget(countMaxBox);
         y += 28;
 
-        // Section 3: Functions area
+        // Section 3 & 4: Functions and Conditions areas (split available space)
+        int availableHeight = PANEL_HEIGHT - (y - panelY) - 70;  // 70 for buttons
         functionsY = y + 22;  // After section header
-        functionsHeight = PANEL_HEIGHT - (y - panelY) - 70;
+        functionsHeight = (availableHeight - 30) / 2;  // Split between functions and conditions
+        conditionsY = functionsY + functionsHeight + 30;  // 30 for section header
+        conditionsHeight = functionsHeight;
 
         // Buttons
         int buttonY = panelY + PANEL_HEIGHT - 30;
@@ -415,6 +428,87 @@ public class TemplateEditorScreen extends VersionedScreen {
 
         graphics.disableScissor();
 
+        // Section 4: Conditions
+        int condSectionY = conditionsY - 22;  // Section header area
+        int condSectionHeight = conditionsHeight + 24;
+        graphics.fill(panelX + 8, condSectionY, panelX + PANEL_WIDTH - 8, condSectionY + condSectionHeight, IsotopeColors.BACKGROUND_DARKER);
+        ScreenUtils.renderOutline(graphics, panelX + 8, condSectionY, PANEL_WIDTH - 16, condSectionHeight, IsotopeColors.BORDER_DEFAULT);
+
+        graphics.drawString(font, "Conditions", panelX + 14, condSectionY + 6, IsotopeColors.TEXT_PRIMARY, false);
+
+        // Add condition button
+        int addCondBtnX = panelX + PANEL_WIDTH - 106;
+        boolean addCondHovered = mouseX >= addCondBtnX && mouseX < addCondBtnX + 92 &&
+            mouseY >= condSectionY + 2 && mouseY < condSectionY + 18;
+        graphics.fill(addCondBtnX, condSectionY + 2, addCondBtnX + 92, condSectionY + 18,
+            addCondHovered ? IsotopeColors.FUNC_ADD_HOVER : IsotopeColors.SUCCESS_TINT);
+        ScreenUtils.renderOutline(graphics, addCondBtnX, condSectionY + 2, 92, 16, addCondHovered ? IsotopeColors.FUNC_ADD_BORDER : IsotopeColors.FUNC_ADD_BORDER_DEFAULT);
+        graphics.drawCenteredString(font, "+ Add Condition", addCondBtnX + 46, condSectionY + 5, addCondHovered ? IsotopeColors.TEXT_PRIMARY : IsotopeColors.SUCCESS_MUTED);
+
+        // Conditions list
+        int condListX = panelX + 14;
+        int condListWidth = PANEL_WIDTH - 36;
+        int condListY = conditionsY;
+        int condListHeight = conditionsHeight - 4;
+
+        graphics.fill(condListX - 1, condListY - 1, condListX + condListWidth + 1, condListY + condListHeight + 1, IsotopeColors.BORDER_OUTER_DARK);
+        graphics.fill(condListX, condListY, condListX + condListWidth, condListY + condListHeight, IsotopeColors.BACKGROUND_MEDIUM);
+
+        graphics.enableScissor(condListX, condListY, condListX + condListWidth, condListY + condListHeight);
+
+        hoveredConditionIdx = -1;
+        int condY = condListY + 4 - conditionsScrollOffset;
+        for (int i = 0; i < conditions.size(); i++) {
+            LootCondition cond = conditions.get(i);
+
+            if (condY + 24 > condListY && condY < condListY + condListHeight) {
+                boolean condHovered = mouseX >= condListX && mouseX < condListX + condListWidth &&
+                    mouseY >= condY && mouseY < condY + 24 &&
+                    mouseY >= condListY && mouseY < condListY + condListHeight;
+
+                if (condHovered) {
+                    hoveredConditionIdx = i;
+                    graphics.fill(condListX + 2, condY, condListX + condListWidth - 2, condY + 22, IsotopeColors.SYNTAX_BLUE_DARK);
+                    ScreenUtils.renderOutline(graphics, condListX + 2, condY, condListWidth - 4, 22, IsotopeColors.SYNTAX_BLUE);
+                } else {
+                    graphics.fill(condListX + 2, condY, condListX + condListWidth - 2, condY + 22, IsotopeColors.ENTRY_BACKGROUND);
+                    ScreenUtils.renderOutline(graphics, condListX + 2, condY, condListWidth - 4, 22, IsotopeColors.POOL_HEADER_HOVER);
+                }
+
+                // Condition icon placeholder
+                graphics.fill(condListX + 6, condY + 4, condListX + 18, condY + 18, IsotopeColors.COND_ICON_BG);
+                graphics.drawCenteredString(font, "?", condListX + 12, condY + 7, IsotopeColors.STATUS_WARNING);
+
+                // Condition name
+                String display = cond.getDisplayName();
+                graphics.drawString(font, display, condListX + 24, condY + 4, IsotopeColors.TEXT_PRIMARY, false);
+
+                // Parameters
+                String params = cond.getParameterSummary();
+                if (!params.isEmpty()) {
+                    if (params.length() > 30) params = params.substring(0, 27) + "...";
+                    graphics.drawString(font, params, condListX + 24, condY + 13, IsotopeColors.SCROLLBAR_THUMB, false);
+                }
+
+                // Remove button
+                int removeCondX = condListX + condListWidth - 22;
+                boolean removeCondHovered = mouseX >= removeCondX && mouseX < removeCondX + 18 &&
+                    mouseY >= condY + 2 && mouseY < condY + 20 &&
+                    mouseY >= condListY && mouseY < condListY + condListHeight;
+                graphics.fill(removeCondX, condY + 3, removeCondX + 18, condY + 19, removeCondHovered ? IsotopeColors.DESTRUCTIVE_BACKGROUND : IsotopeColors.DESTRUCTIVE_BACKGROUND);
+                graphics.drawCenteredString(font, "X", removeCondX + 9, condY + 7, removeCondHovered ? IsotopeColors.DESTRUCTIVE_TEXT : IsotopeColors.DESTRUCTIVE_TEXT);
+            }
+
+            condY += 26;
+        }
+
+        if (conditions.isEmpty()) {
+            graphics.drawCenteredString(font, "No conditions added", condListX + condListWidth / 2, condListY + condListHeight / 2 - 4, IsotopeColors.BORDER_HIGHLIGHT);
+            graphics.drawCenteredString(font, "Click '+ Add Condition' above", condListX + condListWidth / 2, condListY + condListHeight / 2 + 8, IsotopeColors.INPUT_BORDER);
+        }
+
+        graphics.disableScissor();
+
         // Re-render widgets on top
         for (var widget : this.children()) {
             if (widget instanceof Button btn) {
@@ -504,6 +598,39 @@ public class TemplateEditorScreen extends VersionedScreen {
             }
         }
 
+        // Add condition button
+        int condSectionY = conditionsY - 22;
+        int addCondBtnX = panelX + PANEL_WIDTH - 106;
+        if (ScreenUtils.isMouseOver(mouseX, mouseY, addCondBtnX, condSectionY + 2, 92, 16)) {
+            minecraft.setScreen(new ConditionPickerScreen(this, cond -> {
+                conditions.add(cond);
+            }));
+            return true;
+        }
+
+        // Condition remove buttons
+        int condListX = panelX + 14;
+        int condListWidth = PANEL_WIDTH - 36;
+        int condListY = conditionsY;
+        int condListHeight = conditionsHeight - 4;
+
+        if (mouseX >= condListX && mouseX < condListX + condListWidth &&
+            mouseY >= condListY && mouseY < condListY + condListHeight) {
+
+            int condY = condListY + 4 - conditionsScrollOffset;
+            for (int i = 0; i < conditions.size(); i++) {
+                if (condY + 24 > condListY && condY < condListY + condListHeight) {
+                    int removeCondX = condListX + condListWidth - 22;
+                    if (mouseX >= removeCondX && mouseX < removeCondX + 18 &&
+                        mouseY >= condY + 2 && mouseY < condY + 20) {
+                        conditions.remove(i);
+                        return true;
+                    }
+                }
+                condY += 26;
+            }
+        }
+
         return super.mouseClicked(event, focused);
     }
 
@@ -523,6 +650,22 @@ public class TemplateEditorScreen extends VersionedScreen {
             functionsScrollOffset = Math.max(0, Math.min(maxScroll, functionsScrollOffset - (int)(scrollY * 20)));
             return true;
         }
+
+        // Conditions list scroll
+        int condListX = panelX + 14;
+        int condListWidth = PANEL_WIDTH - 36;
+        int condListY = conditionsY;
+        int condListHeight = conditionsHeight - 4;
+
+        if (mouseX >= condListX && mouseX < condListX + condListWidth &&
+            mouseY >= condListY && mouseY < condListY + condListHeight) {
+
+            int contentHeight = conditions.size() * 26 + 8;
+            int maxScroll = Math.max(0, contentHeight - condListHeight);
+            conditionsScrollOffset = Math.max(0, Math.min(maxScroll, conditionsScrollOffset - (int)(scrollY * 20)));
+            return true;
+        }
+
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
@@ -583,7 +726,8 @@ public class TemplateEditorScreen extends VersionedScreen {
             id, name, description, category,
             Optional.ofNullable(selectedItem),
             weight, count,
-            new ArrayList<>(functions)
+            new ArrayList<>(functions),
+            new ArrayList<>(conditions)
         );
 
         TemplateManager.getInstance().save(template);
