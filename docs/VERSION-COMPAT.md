@@ -6,30 +6,34 @@ This document describes API differences between Minecraft versions and how Isoto
 
 | MC Version | NeoForge | Fabric | API Group | Status |
 |------------|----------|--------|-----------|--------|
-| 1.21.0 | 21.0.x | 0.16.x | mc1210 | Supported |
-| 1.21.1 | 21.1.x | 0.16.x | mc1210 | Supported |
-| 1.21.2 | 21.2.x | 0.16.x | mc1210 | Supported |
-| 1.21.3 | 21.3.x | 0.16.x | mc1210 | Supported |
 | 1.21.4 | 21.4.x | 0.16.x | mc1210 | Supported |
 | 1.21.5 | 21.5.x | 0.16.x | mc1210 | Supported |
 | 1.21.6 | 21.6.x | 0.16.x | mc1210 | Supported |
 | 1.21.7 | 21.7.x | 0.16.x | mc1210 | Supported |
 | 1.21.8 | 21.8.x | 0.16.x | mc1210 | Supported |
-| 1.21.9 | 21.9.x | 0.16.x | mc1210 | Supported |
-| 1.21.10 | 21.10.x | 0.16.x | mc1210 | Supported |
 | 1.21.11 | 21.11.x | 0.16.x | mc1211 | Supported |
+
+### Unsupported Versions
+
+| MC Version | Reason |
+|------------|--------|
+| 1.21.0 | Removed from Mojang's version manifest |
+| 1.21.1-1.21.3 | Missing ToastManager, EntitySpawnReason, registry API differences |
+| 1.21.9-1.21.10 | Event-based input API conflicts with mc1210 compat classes |
 
 ## API Groups
 
 Isotope uses two API compatibility groups:
 
-### mc1210 (MC 1.21.0 - 1.21.10)
+### mc1210 (MC 1.21.4 - 1.21.8)
 
 Uses the original Minecraft 1.21 API with:
 - `net.minecraft.resources.ResourceLocation` for identifiers
 - `ResourceKey.location()` to get the location from a key
 - `CommandSourceStack.hasPermission(int level)` for permission checks
 - `Button.renderWidget()` for custom button rendering
+
+Note: The compat module uses reflection for APIs that vary within this range (NBT, rendering, version info).
 
 ### mc1211 (MC 1.21.11+)
 

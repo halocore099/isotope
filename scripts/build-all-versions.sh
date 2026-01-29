@@ -18,8 +18,11 @@ if [[ -d "/opt/homebrew/opt/openjdk@21" ]]; then
     export JAVA_HOME=/opt/homebrew/opt/openjdk@21
 fi
 
-# All supported versions (1.21.0 removed - no longer in Mojang's manifest)
-ALL_VERSIONS=("1.21.1" "1.21.2" "1.21.3" "1.21.4" "1.21.5" "1.21.6" "1.21.7" "1.21.8" "1.21.9" "1.21.10" "1.21.11")
+# Supported versions
+# Note: MC 1.21.1-1.21.3 and 1.21.9-1.21.10 require additional compat layer work
+# (ToastManager, EntitySpawnReason, registry API changes)
+# Currently supported: 1.21.4-1.21.8, 1.21.11
+ALL_VERSIONS=("1.21.4" "1.21.5" "1.21.6" "1.21.7" "1.21.8" "1.21.11")
 LOADERS=("neoforge" "fabric")
 
 # Parse arguments

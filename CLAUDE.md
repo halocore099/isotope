@@ -3,33 +3,32 @@
 ## Branch Info
 
 **Branch**: `neo-1.21.11`
-**Target**: Minecraft 1.21.0-1.21.11, NeoForge and Fabric
+**Target**: Minecraft 1.21.4-1.21.8, 1.21.11 with NeoForge and Fabric
 **Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
 
-This branch supports **multi-version builds** for all MC 1.21.x versions with both NeoForge and Fabric loaders.
+This branch supports **multi-version builds** for select MC 1.21.x versions with both NeoForge and Fabric loaders.
 
 ## Multi-Version Support
 
 ### Supported Versions
 
-| MC Version | API Group | NeoForge | Fabric |
-|------------|-----------|----------|--------|
-| 1.21.0 | mc1210 | 21.0.x | 0.16.x |
-| 1.21.1 | mc1210 | 21.1.x | 0.16.x |
-| 1.21.2 | mc1210 | 21.2.x | 0.16.x |
-| 1.21.3 | mc1210 | 21.3.x | 0.16.x |
-| 1.21.4 | mc1210 | 21.4.x | 0.16.x |
-| 1.21.5 | mc1210 | 21.5.x | 0.16.x |
-| 1.21.6 | mc1210 | 21.6.x | 0.16.x |
-| 1.21.7 | mc1210 | 21.7.x | 0.16.x |
-| 1.21.8 | mc1210 | 21.8.x | 0.16.x |
-| 1.21.9 | mc1210 | 21.9.x | 0.16.x |
-| 1.21.10 | mc1210 | 21.10.x | 0.16.x |
-| 1.21.11 | mc1211 | 21.11.x | 0.16.x |
+| MC Version | API Group | NeoForge | Fabric | Status |
+|------------|-----------|----------|--------|--------|
+| 1.21.4 | mc1210 | 21.4.x | 0.16.x | Supported |
+| 1.21.5 | mc1210 | 21.5.x | 0.16.x | Supported |
+| 1.21.6 | mc1210 | 21.6.x | 0.16.x | Supported |
+| 1.21.7 | mc1210 | 21.7.x | 0.16.x | Supported |
+| 1.21.8 | mc1210 | 21.8.x | 0.16.x | Supported |
+| 1.21.11 | mc1211 | 21.11.x | 0.16.x | Supported |
+
+**Unsupported versions** (require additional compat layer work):
+- MC 1.21.0: Removed from Mojang's version manifest
+- MC 1.21.1-1.21.3: Missing ToastManager, EntitySpawnReason, registry API changes
+- MC 1.21.9-1.21.10: Event-based input API (KeyEvent, MouseButtonEvent) conflicts with base class methods
 
 ### API Groups
 
-- **mc1210**: MC 1.21.0 - 1.21.10 (uses ResourceLocation, hasPermission(int), renderWidget)
+- **mc1210**: MC 1.21.4 - 1.21.8 (uses ResourceLocation, hasPermission(int), renderWidget)
 - **mc1211**: MC 1.21.11+ (uses Identifier, permissions().hasPermission(), renderContents)
 
 ## MC 1.21.11 API Changes
