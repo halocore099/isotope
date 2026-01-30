@@ -3,10 +3,10 @@
 ## Branch Info
 
 **Branch**: `neo-1.21.11`
-**Target**: Minecraft 1.21.0-1.21.8, 1.21.11 with NeoForge and Fabric
+**Target**: Minecraft 1.21.0-1.21.11 with NeoForge and Fabric
 **Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
 
-This branch supports **multi-version builds** for MC 1.21.x versions with both NeoForge and Fabric loaders.
+This branch supports **multi-version builds** for all MC 1.21.x versions with both NeoForge and Fabric loaders.
 
 ## Multi-Version Support
 
@@ -23,15 +23,15 @@ This branch supports **multi-version builds** for MC 1.21.x versions with both N
 | 1.21.6 | mc1210 | 21.6.x | 0.16.x | Supported |
 | 1.21.7 | mc1210 | 21.7.x | 0.16.x | Supported |
 | 1.21.8 | mc1210 | 21.8.x | 0.16.x | Supported |
+| 1.21.9 | mc1219 | 21.9.x | 0.16.x | Supported |
+| 1.21.10 | mc1219 | 21.10.x | 0.16.x | Supported |
 | 1.21.11 | mc1211 | 21.11.x | 0.16.x | Supported |
-
-**Unsupported versions**:
-- MC 1.21.9-1.21.10: Event-based input API (KeyEvent, MouseButtonEvent) conflicts with base class methods
 
 ### API Groups
 
-- **mc1210**: MC 1.21.0 - 1.21.8 (uses ResourceLocation, hasPermission(int), renderWidget)
-- **mc1211**: MC 1.21.11+ (uses Identifier, permissions().hasPermission(), renderContents)
+- **mc1210**: MC 1.21.0 - 1.21.8 (primitive input, ResourceLocation, renderWidget)
+- **mc1219**: MC 1.21.9 - 1.21.10 (event-based input, ResourceLocation, renderWidget)
+- **mc1211**: MC 1.21.11+ (event-based input, Identifier, renderContents)
 
 ## MC 1.21.11 API Changes
 
