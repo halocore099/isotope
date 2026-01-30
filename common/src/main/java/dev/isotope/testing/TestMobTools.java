@@ -1,7 +1,9 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.EntitySpawnCompat;
 import dev.isotope.compat.Id;
+import dev.isotope.compat.LivingEntityCompat;
 import dev.isotope.util.Regs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -121,9 +123,8 @@ public final class TestMobTools {
             BlockPos playerPos = player.blockPosition();
             BlockPos spawnPos = playerPos.offset(offset.getX(), offset.getY(), offset.getZ());
 
-            // Spawn the entity
-            Entity entity = entityType.create(level, null, spawnPos,
-                net.minecraft.world.entity.EntitySpawnReason.COMMAND, false, false);
+            // Spawn the entity using compat layer for version differences
+            Entity entity = EntitySpawnCompat.createEntity(entityType, level, spawnPos);
 
             if (entity == null) {
                 return SpawnResult.error("Failed to create entity");
@@ -225,7 +226,7 @@ public final class TestMobTools {
 
             // If still alive, force death
             if (living.isAlive()) {
-                living.kill(level);
+                LivingEntityCompat.kill(living, level);
             }
 
             String lootingInfo = lootingLevel > 0 && condition.isPlayerKill() ? " (Looting " + lootingLevel + ")" : "";

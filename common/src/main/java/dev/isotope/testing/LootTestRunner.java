@@ -1,7 +1,9 @@
 package dev.isotope.testing;
 
 import dev.isotope.Isotope;
+import dev.isotope.compat.EntitySpawnCompat;
 import dev.isotope.compat.Id;
+import dev.isotope.compat.LootTableCompat;
 import dev.isotope.util.Regs;
 import dev.isotope.editing.LootEditManager;
 import net.minecraft.core.BlockPos;
@@ -128,10 +130,9 @@ public final class LootTestRunner {
 
                 stats.startTest();
 
-                // Spawn entity
+                // Spawn entity using compat layer
                 BlockPos spawnPos = playerPos.offset(3 + (i % 5) * 2, 0, 3 + (i / 5) * 2);
-                Entity entity = entityType.create(level, null, spawnPos,
-                    net.minecraft.world.entity.EntitySpawnReason.COMMAND, false, false);
+                Entity entity = EntitySpawnCompat.createEntity(entityType, level, spawnPos);
 
                 if (entity == null) continue;
 
@@ -188,7 +189,7 @@ public final class LootTestRunner {
         List<ItemStack> drops = new ArrayList<>();
 
         try {
-            var lootTableKey = entity.getLootTable().orElse(null);
+            var lootTableKey = LootTableCompat.getLootTable(entity).orElse(null);
             if (lootTableKey == null) return drops;
 
             LootTable lootTable = level.getServer().reloadableRegistries()

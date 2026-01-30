@@ -2,6 +2,7 @@ package dev.isotope.registry;
 
 import dev.isotope.Isotope;
 import dev.isotope.compat.Id;
+import dev.isotope.compat.RegistryCompat;
 import dev.isotope.data.StructureInfo;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -37,7 +38,12 @@ public final class StructureRegistry {
         structures.clear();
 
         try {
-            Registry<Structure> registry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+            Registry<Structure> registry = RegistryCompat.lookupRegistry(
+                server.registryAccess(), Registries.STRUCTURE);
+            if (registry == null) {
+                Isotope.LOGGER.error("Could not access structure registry");
+                return;
+            }
 
             registry.keySet().forEach(mcId -> {
                 Id id = Id.wrap(mcId);

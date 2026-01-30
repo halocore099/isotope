@@ -2,6 +2,7 @@ package dev.isotope.registry;
 
 import dev.isotope.Isotope;
 import dev.isotope.compat.Id;
+import dev.isotope.compat.RegistryCompat;
 import dev.isotope.util.Regs;
 import dev.isotope.data.StructureLootLink;
 import net.minecraft.core.Holder;
@@ -67,8 +68,15 @@ public final class StructureTemplateParser {
         SpawnerEntityExtractor.getInstance().clear();
 
         StructureTemplateManager templateManager = server.getStructureManager();
-        Registry<Structure> structureRegistry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-        Registry<StructureTemplatePool> poolRegistry = server.registryAccess().lookupOrThrow(Registries.TEMPLATE_POOL);
+        Registry<Structure> structureRegistry = RegistryCompat.lookupRegistry(
+            server.registryAccess(), Registries.STRUCTURE);
+        Registry<StructureTemplatePool> poolRegistry = RegistryCompat.lookupRegistry(
+            server.registryAccess(), Registries.TEMPLATE_POOL);
+
+        if (structureRegistry == null || poolRegistry == null) {
+            Isotope.LOGGER.error("[TemplateParser] Could not access required registries");
+            return;
+        }
 
         Isotope.LOGGER.info("[TemplateParser] Starting structure template parsing (including spawner analysis)...");
 

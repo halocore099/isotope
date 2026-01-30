@@ -2,6 +2,9 @@ package dev.isotope.testing;
 
 import dev.isotope.Isotope;
 import dev.isotope.compat.Id;
+import dev.isotope.compat.RegistryCompat;
+import dev.isotope.compat.StructureCompat;
+import dev.isotope.compat.TeleportCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -121,12 +124,16 @@ public final class TestArenaManager {
             return;
         }
 
-        // Get structure from registry
-        Registry<Structure> structureRegistry = level.registryAccess()
-            .lookupOrThrow(Registries.STRUCTURE);
+        // Get structure from registry using compat layer
+        Registry<Structure> structureRegistry = RegistryCompat.lookupRegistry(
+            level.registryAccess(), Registries.STRUCTURE);
+        if (structureRegistry == null) {
+            notifyClient(progressCallback, "Error: Could not access structure registry");
+            return;
+        }
 
         ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId.mc());
-        Optional<Holder.Reference<Structure>> structureHolder = structureRegistry.get(structureKey);
+        Optional<Holder.Reference<Structure>> structureHolder = RegistryCompat.getHolder(structureRegistry, structureKey);
 
         if (structureHolder.isEmpty()) {
             notifyClient(progressCallback, "Error: Unknown structure " + structureId);
@@ -188,8 +195,8 @@ public final class TestArenaManager {
             int centerX = startX + (gridSize * STRUCTURE_SPACING) / 2;
             int centerZ = startZ + (gridSize * STRUCTURE_SPACING) / 2;
 
-            player.teleportTo(level, centerX, PLATFORM_Y + 10, centerZ,
-                Set.of(), 0, 0, true);
+            TeleportCompat.teleportTo(player, level, centerX, PLATFORM_Y + 10, centerZ,
+                Set.of(), 0, 0);
             player.setGameMode(GameType.CREATIVE);
         }
 
@@ -210,19 +217,14 @@ public final class TestArenaManager {
         try {
             ChunkPos chunkPos = new ChunkPos(pos);
 
-            // Create structure start
-            StructureStart start = structure.generate(
+            // Create structure start using compat layer
+            StructureStart start = StructureCompat.generate(
+                structure,
                 structureHolder,
-                level.dimension(),
-                level.registryAccess(),
-                level.getChunkSource().getGenerator(),
-                level.getChunkSource().getGenerator().getBiomeSource(),
-                level.getChunkSource().randomState(),
-                level.getStructureManager(),
-                level.getSeed() + pos.hashCode(), // Unique seed per position
-                chunkPos,
-                0, // References
                 level,
+                chunkPos,
+                level.getSeed() + pos.hashCode(), // Unique seed per position
+                0, // References
                 biome -> true // Accept all biomes
             );
 

@@ -2,6 +2,8 @@ package dev.isotope.testing;
 
 import dev.isotope.Isotope;
 import dev.isotope.compat.Id;
+import dev.isotope.compat.RegistryCompat;
+import dev.isotope.compat.TeleportCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -80,12 +82,15 @@ public final class TestingTools {
             BlockPos playerPos = player.blockPosition();
 
             // Get structure registry
-            Registry<Structure> structureRegistry = level.registryAccess()
-                .lookupOrThrow(Registries.STRUCTURE);
+            Registry<Structure> structureRegistry = RegistryCompat.lookupRegistry(
+                level.registryAccess(), Registries.STRUCTURE);
+            if (structureRegistry == null) {
+                return LocateResult.error("Could not access structure registry");
+            }
 
             // Find the structure holder
             ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId.mc());
-            Optional<Holder.Reference<Structure>> structureHolder = structureRegistry.get(structureKey);
+            Optional<Holder.Reference<Structure>> structureHolder = RegistryCompat.getHolder(structureRegistry, structureKey);
             if (structureHolder.isEmpty()) {
                 return LocateResult.error("Unknown structure: " + structureId);
             }
@@ -143,8 +148,8 @@ public final class TestingTools {
             double y = position.getY() + 1;
             double z = position.getZ() + 0.5;
 
-            player.teleportTo((net.minecraft.server.level.ServerLevel) player.level(), x, y, z,
-                Set.of(), player.getYRot(), player.getXRot(), true);
+            TeleportCompat.teleportTo(player, (ServerLevel) player.level(), x, y, z,
+                java.util.Set.of(), player.getYRot(), player.getXRot());
 
             Isotope.LOGGER.info("Teleported player to {}, {}, {}", x, y, z);
             return true;

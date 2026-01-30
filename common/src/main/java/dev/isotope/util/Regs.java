@@ -1,6 +1,7 @@
 package dev.isotope.util;
 
 import dev.isotope.compat.Id;
+import dev.isotope.compat.RegistryCompat;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
@@ -10,9 +11,7 @@ import java.util.Optional;
 /**
  * Registry utility methods that work across MC versions.
  *
- * In MC 1.21.11+, registry methods like get() and getOptional() are ambiguous
- * between Identifier/ResourceLocation and TagKey overloads. This class provides
- * unambiguous methods using ResourceKey-based lookups.
+ * Uses RegistryCompat to handle varying registry API signatures between versions.
  */
 public final class Regs {
 
@@ -35,7 +34,7 @@ public final class Regs {
 
     /**
      * Get a holder from a registry by Id.
-     * Uses ResourceKey-based lookup to avoid ambiguity in MC 1.21.11+.
+     * Uses RegistryCompat to handle version differences.
      *
      * @param registry The registry to look up in
      * @param registryKey The registry's key (e.g., Registries.ITEM)
@@ -45,12 +44,12 @@ public final class Regs {
      */
     public static <T> Optional<Holder.Reference<T>> getHolder(Registry<T> registry, ResourceKey<? extends Registry<T>> registryKey, Id id) {
         ResourceKey<T> key = ResourceKey.create(registryKey, id.mc());
-        return registry.get(key);
+        return RegistryCompat.getHolder(registry, key);
     }
 
     /**
      * Get a value from a registry by Id, returning null if not found.
-     * Uses ResourceKey-based lookup to avoid ambiguity in MC 1.21.11+.
+     * Uses RegistryCompat to handle version differences.
      *
      * @param registry The registry to look up in
      * @param registryKey The registry's key (e.g., Registries.ITEM)
@@ -60,6 +59,6 @@ public final class Regs {
      */
     public static <T> T getValue(Registry<T> registry, ResourceKey<? extends Registry<T>> registryKey, Id id) {
         ResourceKey<T> key = ResourceKey.create(registryKey, id.mc());
-        return registry.getValue(key);
+        return RegistryCompat.getValue(registry, key);
     }
 }

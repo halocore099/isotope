@@ -2,9 +2,12 @@ package dev.isotope.observation;
 
 import dev.isotope.Isotope;
 import dev.isotope.compat.Id;
+import dev.isotope.compat.RegistryCompat;
+import dev.isotope.compat.StructureCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -57,11 +60,15 @@ public final class StructurePlacementEngine {
         Map<Id, PlacementResult> results = new LinkedHashMap<>();
 
         // Get all registered structures
-        HolderLookup.RegistryLookup<Structure> lookup = server.registryAccess()
-            .lookupOrThrow(Registries.STRUCTURE);
+        Registry<Structure> registry = RegistryCompat.lookupRegistry(
+            server.registryAccess(), Registries.STRUCTURE);
+        if (registry == null) {
+            onProgress.accept("Error: Could not access structure registry");
+            return results;
+        }
 
         List<Id> structureIds = new ArrayList<>();
-        lookup.listElementIds().forEach(key -> structureIds.add(Id.fromKey(key)));
+        registry.keySet().forEach(mcId -> structureIds.add(Id.wrap(mcId)));
 
         onProgress.accept("Found " + structureIds.size() + " structures to place");
 
@@ -116,9 +123,14 @@ public final class StructurePlacementEngine {
         try {
             // Get the structure from registry
             ResourceKey<Structure> key = ResourceKey.create(Registries.STRUCTURE, structureId.mc());
-            var lookup = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+            Registry<Structure> registry = RegistryCompat.lookupRegistry(
+                server.registryAccess(), Registries.STRUCTURE);
 
-            Holder.Reference<Structure> holder = lookup.get(key).orElse(null);
+            if (registry == null) {
+                return PlacementResult.failed(structureId, "Could not access structure registry");
+            }
+
+            Holder.Reference<Structure> holder = RegistryCompat.getHolder(registry, key).orElse(null);
 
             if (holder == null) {
                 return PlacementResult.failed(structureId, "Structure not found in registry");
@@ -126,22 +138,17 @@ public final class StructurePlacementEngine {
 
             Structure structure = holder.value();
 
-            // Generate the structure using Structure.generate()
+            // Generate the structure using compat layer
             // This creates a StructureStart directly
             var chunkPos = level.getChunk(targetPos).getPos();
 
-            StructureStart start = structure.generate(
+            StructureStart start = StructureCompat.generate(
+                structure,
                 holder,
-                level.dimension(),
-                level.registryAccess(),
-                level.getChunkSource().getGenerator(),
-                level.getChunkSource().getGenerator().getBiomeSource(),
-                level.getChunkSource().randomState(),
-                level.getStructureManager(),
-                level.getSeed(),
-                chunkPos,
-                0, // references
                 level,
+                chunkPos,
+                level.getSeed(),
+                0, // references
                 biome -> true // Accept any biome for forced placement
             );
 

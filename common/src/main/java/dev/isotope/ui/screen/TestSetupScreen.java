@@ -25,13 +25,13 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import dev.isotope.compat.Id;
 import dev.isotope.compat.GameRulesCompat;
+import dev.isotope.compat.WorldGenCompat;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -216,7 +216,7 @@ public class TestSetupScreen extends VersionedScreen {
 
                 Isotope.LOGGER.info("Creating test world: {} (type: {})", worldName, selectedWorldType);
 
-                // Create the world directly
+                // Create the world directly using compat layer for version differences
                 if (selectedWorldType == TestModeState.WorldType.VOID) {
                     // Create flat world (superflat) - structures won't generate but
                     // we can still test loot tables. For a true void, would need custom preset.
@@ -224,7 +224,7 @@ public class TestSetupScreen extends VersionedScreen {
                         worldName,
                         levelSettings,
                         worldOptions,
-                        WorldPresets::createFlatWorldDimensions,
+                        WorldGenCompat.createFlatWorldDimensions(),
                         null
                     );
                 } else {
@@ -233,7 +233,7 @@ public class TestSetupScreen extends VersionedScreen {
                         worldName,
                         levelSettings,
                         worldOptions,
-                        WorldPresets::createNormalWorldDimensions,
+                        WorldGenCompat.createNormalWorldDimensions(),
                         null
                     );
                 }
