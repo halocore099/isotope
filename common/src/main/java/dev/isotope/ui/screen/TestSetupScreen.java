@@ -220,21 +220,19 @@ public class TestSetupScreen extends VersionedScreen {
                 if (selectedWorldType == TestModeState.WorldType.VOID) {
                     // Create flat world (superflat) - structures won't generate but
                     // we can still test loot tables. For a true void, would need custom preset.
-                    minecraft.createWorldOpenFlows().createFreshLevel(
+                    WorldGenCompat.createFlatWorld(
+                        minecraft.createWorldOpenFlows(),
                         worldName,
                         levelSettings,
-                        worldOptions,
-                        WorldGenCompat.createFlatWorldDimensions(),
-                        null
+                        worldOptions
                     );
                 } else {
                     // Normal generation with structures - best for testing teleport/arena
-                    minecraft.createWorldOpenFlows().createFreshLevel(
+                    WorldGenCompat.createNormalWorld(
+                        minecraft.createWorldOpenFlows(),
                         worldName,
                         levelSettings,
-                        worldOptions,
-                        WorldGenCompat.createNormalWorldDimensions(),
-                        null
+                        worldOptions
                     );
                 }
 

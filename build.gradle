@@ -26,7 +26,8 @@ if (versionPropsFile.exists()) {
 }
 
 // Set the MC version and API version for use elsewhere
-ext.mcVersion = targetMcVersion
+// Use minecraft_version from properties if available (handles cases like 1.21 vs 1.21.0)
+ext.mcVersion = ext.has('minecraft_version') ? ext.minecraft_version : targetMcVersion
 // Determine API version based on Minecraft minor version (1.21.11+ uses new API)
 def mcParts = targetMcVersion.split('\\.')
 def minorVersion = mcParts.length >= 3 ? mcParts[2].toInteger() : 0
