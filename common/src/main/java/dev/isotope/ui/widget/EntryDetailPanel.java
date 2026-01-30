@@ -1,5 +1,8 @@
 package dev.isotope.ui.widget;
 
+import dev.isotope.analysis.EnchantmentProbabilityCalculator;
+import dev.isotope.analysis.EnchantmentProbabilityCalculator.EnchantmentAnalysis;
+import dev.isotope.analysis.EnchantmentProbabilityCalculator.EnchantmentChance;
 import dev.isotope.compat.Id;
 import dev.isotope.compat.ui.VersionedWidget;
 import dev.isotope.data.loot.LootCondition;
@@ -7,6 +10,7 @@ import dev.isotope.data.loot.LootEntry;
 import dev.isotope.data.loot.LootFunction;
 import dev.isotope.data.loot.NumberProvider;
 import dev.isotope.ui.IsotopeColors;
+import dev.isotope.ui.ScreenUtils;
 import dev.isotope.util.Regs;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -66,6 +70,15 @@ public class EntryDetailPanel extends VersionedWidget {
     private java.util.function.Consumer<Integer> onRemoveCondition;  // conditionIndex
     @Nullable
     private java.util.function.BiConsumer<Integer, LootCondition> onEditCondition;  // (conditionIndex, existingCondition)
+    @Nullable
+    private Runnable onViewEnchantments;  // Opens enchantment analysis screen
+    @Nullable
+    private TriConsumer<Integer, Integer, LootCondition> onEditFunctionCondition;  // (funcIndex, condIndex, existingCond)
+
+    // Enchantment preview data
+    @Nullable
+    private EnchantmentAnalysis enchantmentAnalysis;
+    private int enchantmentPreviewBtnX, enchantmentPreviewBtnY, enchantmentPreviewBtnWidth;
 
     // Button bounds for click detection
     private int deleteBtnX, deleteBtnY, deleteBtnWidth;
@@ -75,6 +88,7 @@ public class EntryDetailPanel extends VersionedWidget {
     private final java.util.List<int[]> editFunctionBtns = new java.util.ArrayList<>();  // [x, y, funcIndex]
     private final java.util.List<int[]> addFuncCondBtns = new java.util.ArrayList<>();  // [x, y, funcIndex]
     private final java.util.List<int[]> removeFuncCondBtns = new java.util.ArrayList<>();  // [x, y, funcIndex, condIndex]
+    private final java.util.List<int[]> editFuncCondBtns = new java.util.ArrayList<>();  // [x, y, funcIndex, condIndex]
     private final java.util.List<int[]> removeConditionBtns = new java.util.ArrayList<>();
     private final java.util.List<int[]> editConditionBtns = new java.util.ArrayList<>();  // [x, y, condIndex]
     private static final int BTN_SIZE = 14;
@@ -134,13 +148,69 @@ public class EntryDetailPanel extends VersionedWidget {
         this.onEditCondition = callback;
     }
 
+    public void setOnViewEnchantments(@Nullable Runnable callback) {
+        this.onViewEnchantments = callback;
+    }
+
+    public void setOnEditFunctionCondition(@Nullable TriConsumer<Integer, Integer, LootCondition> callback) {
+        this.onEditFunctionCondition = callback;
+    }
+
+    /**
+     * Functional interface for callbacks with three parameters.
+     */
+    @FunctionalInterface
+    public interface TriConsumer<T, U, V> {
+        void accept(T t, U u, V v);
+    }
+
     public void setEntry(@Nullable LootEntry entry, int poolIndex, int entryIndex) {
         this.entry = entry;
         this.poolIndex = poolIndex;
         this.entryIndex = entryIndex;
         this.scrollOffset = 0;
+        this.enchantmentAnalysis = null;  // Reset
+
+        // Analyze enchantment functions if present
+        analyzeEnchantmentFunctions();
+
         calculateContentHeight();
         initEditFields();
+    }
+
+    /**
+     * Analyzes entry functions for enchantment-related functions and calculates
+     * probability data for inline preview display.
+     */
+    private void analyzeEnchantmentFunctions() {
+        if (entry == null || !entry.isItem() || entry.name().isEmpty()) {
+            enchantmentAnalysis = null;
+            return;
+        }
+
+        Id itemId = entry.name().get();
+
+        // Look for enchantment functions
+        for (LootFunction func : entry.functions()) {
+            String funcType = func.function();
+            if (funcType.contains("enchant_with_levels") || funcType.contains("enchant_randomly")) {
+                try {
+                    var mc = Minecraft.getInstance();
+                    if (mc.level != null) {
+                        var registryAccess = mc.level.registryAccess();
+                        if (funcType.contains("enchant_with_levels")) {
+                            enchantmentAnalysis = EnchantmentProbabilityCalculator.analyzeEnchantWithLevels(func, itemId, registryAccess);
+                        } else {
+                            enchantmentAnalysis = EnchantmentProbabilityCalculator.analyzeEnchantRandomly(func, itemId, registryAccess);
+                        }
+                        break;  // Use first enchantment function found
+                    }
+                } catch (Exception e) {
+                    // Failed to analyze - leave null
+                    enchantmentAnalysis = null;
+                }
+            }
+        }
     }
 
     private void initEditFields() {
@@ -248,6 +318,14 @@ public class EntryDetailPanel extends VersionedWidget {
             } else {
                 contentHeight += 14;  // "+ Add" button even when no conditions
             }
+        }
+
+        // Enchantment preview section (if applicable)
+        if (enchantmentAnalysis != null && !enchantmentAnalysis.enchantments().isEmpty()) {
+            contentHeight += lineHeight;  // "Enchantments:" header
+            int previewCount = Math.min(4, enchantmentAnalysis.enchantments().size());
+            contentHeight += previewCount * (lineHeight - 1);  // Compact enchantment lines
+            contentHeight += 16;  // "View All" button
         }
 
         // Conditions
@@ -388,6 +466,7 @@ public class EntryDetailPanel extends VersionedWidget {
         editFunctionBtns.clear();
         addFuncCondBtns.clear();
         removeFuncCondBtns.clear();
+        editFuncCondBtns.clear();
         removeConditionBtns.clear();
         editConditionBtns.clear();
 
@@ -441,6 +520,14 @@ public class EntryDetailPanel extends VersionedWidget {
                             graphics.drawString(font, " " + condParams, x + condWidth, y, IsotopeColors.TEXT_MUTED, false);
                         }
 
+                        // [Edit] button for function condition
+                        if (onEditFunctionCondition != null) {
+                            int editBtnX = x + width - 50;
+                            int btnY = y - 1;
+                            renderMiniButton(graphics, editBtnX, btnY, "\u270E", IsotopeColors.BUTTON_BACKGROUND);  // ✎ pencil
+                            editFuncCondBtns.add(new int[]{editBtnX, btnY, funcIndex, condIndex});
+                        }
+
                         // [X] remove button for function condition
                         if (onRemoveFunctionCondition != null) {
                             int btnX = x + width - 30;
@@ -474,6 +561,12 @@ public class EntryDetailPanel extends VersionedWidget {
             addFunctionBtnWidth = 60;
             renderAddButton(graphics, addFunctionBtnX, addFunctionBtnY, addFunctionBtnWidth, "+ Add");
             y += 18;
+        }
+
+        // Enchantment preview section (if applicable)
+        if (enchantmentAnalysis != null && !enchantmentAnalysis.enchantments().isEmpty()) {
+            y += 4;
+            y = renderEnchantmentPreview(graphics, x, y, mouseX, mouseY);
         }
 
         y += 4; // Spacer
@@ -635,6 +728,121 @@ public class EntryDetailPanel extends VersionedWidget {
         graphics.drawString(font, label, x + 4, y + 2, IsotopeColors.FUNCTION_COND_BTN_TEXT, false);
     }
 
+    /**
+     * Renders a compact enchantment preview section showing top enchantments with probability bars.
+     * @return The new Y position after rendering
+     */
+    private int renderEnchantmentPreview(GuiGraphics graphics, int x, int y, int mouseX, int mouseY) {
+        if (enchantmentAnalysis == null || enchantmentAnalysis.enchantments().isEmpty()) {
+            return y;
+        }
+
+        var font = Minecraft.getInstance().font;
+        int lineHeight = font.lineHeight + 1;
+
+        // Header with level info
+        String header = "Enchantments";
+        if (enchantmentAnalysis.levelMin() > 0 || enchantmentAnalysis.levelMax() > 0) {
+            if (enchantmentAnalysis.levelMin() == enchantmentAnalysis.levelMax()) {
+                header += " (Lv " + enchantmentAnalysis.levelMin() + ")";
+            } else {
+                header += " (Lv " + enchantmentAnalysis.levelMin() + "-" + enchantmentAnalysis.levelMax() + ")";
+            }
+        }
+        graphics.drawString(font, header, x, y, IsotopeColors.ACCENT_BLUE, false);
+        y += lineHeight + 2;
+
+        // Show top 4 enchantments with probability bars
+        var enchants = enchantmentAnalysis.enchantments();
+        int previewCount = Math.min(4, enchants.size());
+        int barWidth = width - 90;  // Space for name + percentage
+
+        for (int i = 0; i < previewCount; i++) {
+            EnchantmentChance ench = enchants.get(i);
+
+            // Enchantment name (truncated if needed)
+            String name = ench.displayName();
+            if (ench.maxLevel() > 1) {
+                name += " " + toRoman(ench.minLevel()) + "-" + toRoman(ench.maxLevel());
+            }
+            if (font.width(name) > 65) {
+                while (font.width(name + "...") > 65 && name.length() > 3) {
+                    name = name.substring(0, name.length() - 1);
+                }
+                name = name + "...";
+            }
+            graphics.drawString(font, "  " + name, x, y, IsotopeColors.TEXT_SECONDARY, false);
+
+            // Probability bar
+            int barX = x + 70;
+            int barY = y + 1;
+            int barHeight = lineHeight - 3;
+            float probability = ench.probability();
+
+            // Bar background
+            graphics.fill(barX, barY, barX + barWidth, barY + barHeight, IsotopeColors.BACKGROUND_SLOT_DARK);
+
+            // Bar fill (color based on probability)
+            int fillWidth = (int) (barWidth * probability);
+            int barColor = getEnchantmentBarColor(probability);
+            if (fillWidth > 0) {
+                graphics.fill(barX, barY, barX + fillWidth, barY + barHeight, barColor);
+            }
+
+            // Percentage text
+            String pctText = String.format("%.0f%%", probability * 100);
+            graphics.drawString(font, pctText, barX + barWidth + 4, y, IsotopeColors.TEXT_MUTED, false);
+
+            y += lineHeight;
+        }
+
+        // "View All (X)" button if there are more enchantments
+        int remaining = enchants.size() - previewCount;
+        String btnLabel = remaining > 0 ? "View All (" + enchants.size() + ")" : "View Details";
+        int btnWidth = font.width(btnLabel) + 12;
+        enchantmentPreviewBtnX = x + 10;
+        enchantmentPreviewBtnY = y;
+        enchantmentPreviewBtnWidth = btnWidth;
+
+        // Render button
+        graphics.fill(enchantmentPreviewBtnX, enchantmentPreviewBtnY,
+            enchantmentPreviewBtnX + btnWidth, enchantmentPreviewBtnY + 14,
+            IsotopeColors.BUTTON_BACKGROUND);
+        graphics.drawString(font, btnLabel, enchantmentPreviewBtnX + 6, enchantmentPreviewBtnY + 3,
+            IsotopeColors.ACCENT_AQUA, false);
+
+        return y + 16;
+    }
+
+    /**
+     * Get color for enchantment probability bar based on probability value.
+     */
+    private int getEnchantmentBarColor(float probability) {
+        if (probability >= 0.25f) {
+            return 0xFF55FF55;  // Bright green for common
+        } else if (probability >= 0.10f) {
+            return 0xFF5555FF;  // Blue for uncommon
+        } else if (probability >= 0.05f) {
+            return 0xFFAA00AA;  // Purple for rare
+        } else {
+            return 0xFFFFAA00;  // Gold for very rare
+        }
+    }
+
+    /**
+     * Convert integer to Roman numeral for enchantment levels.
+     */
+    private String toRoman(int num) {
+        return switch (num) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            default -> String.valueOf(num);
+        };
+    }
+
     private void renderScrollbar(GuiGraphics graphics, int mouseX, int mouseY) {
         int scrollbarWidth = 4;
         int scrollbarX = getX() + width - scrollbarWidth - 2;
@@ -782,6 +990,24 @@ public class EntryDetailPanel extends VersionedWidget {
             }
         }
 
+        // Check Edit Function Condition buttons
+        if (onEditFunctionCondition != null && entry != null) {
+            for (int[] btn : editFuncCondBtns) {
+                if (mouseX >= btn[0] && mouseX < btn[0] + 12
+                    && mouseY >= btn[1] && mouseY < btn[1] + 12) {
+                    int funcIdx = btn[2];
+                    int condIdx = btn[3];
+                    if (funcIdx >= 0 && funcIdx < entry.functions().size()) {
+                        var func = entry.functions().get(funcIdx);
+                        if (condIdx >= 0 && condIdx < func.conditions().size()) {
+                            onEditFunctionCondition.accept(funcIdx, condIdx, func.conditions().get(condIdx));
+                        }
+                    }
+                    return true;
+                }
+            }
+        }
+
         // Check Add Condition button
         if (onAddCondition != null && addConditionBtnWidth > 0) {
             if (mouseX >= addConditionBtnX && mouseX < addConditionBtnX + addConditionBtnWidth
@@ -813,6 +1039,15 @@ public class EntryDetailPanel extends VersionedWidget {
                     onRemoveCondition.accept(btn[2]);
                     return true;
                 }
+            }
+        }
+
+        // Check Enchantment "View All" button
+        if (onViewEnchantments != null && enchantmentAnalysis != null && enchantmentPreviewBtnWidth > 0) {
+            if (mouseX >= enchantmentPreviewBtnX && mouseX < enchantmentPreviewBtnX + enchantmentPreviewBtnWidth
+                && mouseY >= enchantmentPreviewBtnY && mouseY < enchantmentPreviewBtnY + 14) {
+                onViewEnchantments.run();
+                return true;
             }
         }
 

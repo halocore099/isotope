@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 public class AddFunctionDialog extends VersionedScreen {
 
     private static final int DIALOG_WIDTH = 320;
-    private static final int DIALOG_HEIGHT = 340;
+    private static final int DIALOG_HEIGHT = 420;  // Increased for more presets
 
     @Nullable
     private final Screen parent;
@@ -170,6 +170,83 @@ public class AddFunctionDialog extends VersionedScreen {
             null, null,
             (p1, p2, p3) -> createSetPotion(p1)
         ));
+
+        // Apply bonus (Fortune-like)
+        presets.add(new FunctionPreset(
+            "Apply Bonus (Fortune)",
+            "Extra drops with Fortune enchant",
+            "✨", IsotopeColors.ACCENT_GOLD,
+            "Formula:", "ore_drops",
+            "Multiplier:", "1",
+            null, null,
+            (p1, p2, p3) -> createApplyBonus(p1, ScreenUtils.parseIntSafe(p2, 1))
+        ));
+
+        // Limit count
+        presets.add(new FunctionPreset(
+            "Limit Count",
+            "Cap stack size to max",
+            "↕", IsotopeColors.ACCENT_AQUA,
+            "Min:", "0",
+            "Max:", "64",
+            null, null,
+            (p1, p2, p3) -> createLimitCount(ScreenUtils.parseIntSafe(p1, 0), ScreenUtils.parseIntSafe(p2, 64))
+        ));
+
+        // Set name
+        presets.add(new FunctionPreset(
+            "Set Name",
+            "Give item a custom name",
+            "✎", IsotopeColors.TEXT_PRIMARY,
+            "Name:", "Custom Item",
+            null, null,
+            null, null,
+            (p1, p2, p3) -> createSetName(p1)
+        ));
+
+        // Copy name
+        presets.add(new FunctionPreset(
+            "Copy Name",
+            "Copy name from block entity",
+            "↔", IsotopeColors.TEXT_SECONDARY,
+            "Source:", "block_entity",
+            null, null,
+            null, null,
+            (p1, p2, p3) -> createCopyName(p1)
+        ));
+
+        // Reference (loot table reference)
+        presets.add(new FunctionPreset(
+            "Reference Table",
+            "Include drops from another table",
+            "↗", IsotopeColors.ACCENT_AQUA,
+            "Table ID:", "minecraft:chests/village/village_toolsmith",
+            null, null,
+            null, null,
+            (p1, p2, p3) -> createReference(p1)
+        ));
+
+        // Set stew effect
+        presets.add(new FunctionPreset(
+            "Set Stew Effect",
+            "Add effect to suspicious stew",
+            "🍲", IsotopeColors.SOURCE_FEATURE,
+            "Effect:", "regeneration",
+            "Duration (sec):", "8",
+            null, null,
+            (p1, p2, p3) -> createSetStewEffect(p1, ScreenUtils.parseIntSafe(p2, 8))
+        ));
+
+        // Explosion decay
+        presets.add(new FunctionPreset(
+            "Explosion Decay",
+            "Random chance to lose items in explosion",
+            "💥", IsotopeColors.SOURCE_FEATURE,
+            null, null,
+            null, null,
+            null, null,
+            (p1, p2, p3) -> createSimpleFunction("minecraft:explosion_decay")
+        ));
     }
 
     private static LootFunction createLootingEnchant(int min, int max) {
@@ -199,6 +276,57 @@ public class AddFunctionDialog extends VersionedScreen {
         com.google.gson.JsonObject params = new com.google.gson.JsonObject();
         params.addProperty("id", ScreenUtils.ensureNamespace(potionId.trim()));
         return new LootFunction("minecraft:set_potion", params, List.of());
+    }
+
+    private static LootFunction createApplyBonus(String formula, int multiplier) {
+        com.google.gson.JsonObject params = new com.google.gson.JsonObject();
+        params.addProperty("enchantment", "minecraft:fortune");
+        params.addProperty("formula", "minecraft:" + formula.trim().toLowerCase());
+        if (formula.contains("binomial") || formula.contains("uniform")) {
+            com.google.gson.JsonObject parameters = new com.google.gson.JsonObject();
+            parameters.addProperty("extra", multiplier);
+            parameters.addProperty("probability", 0.5);
+            params.add("parameters", parameters);
+        }
+        return new LootFunction("minecraft:apply_bonus", params, List.of());
+    }
+
+    private static LootFunction createLimitCount(int min, int max) {
+        com.google.gson.JsonObject params = new com.google.gson.JsonObject();
+        com.google.gson.JsonObject limit = new com.google.gson.JsonObject();
+        limit.addProperty("min", min);
+        limit.addProperty("max", max);
+        params.add("limit", limit);
+        return new LootFunction("minecraft:limit_count", params, List.of());
+    }
+
+    private static LootFunction createSetName(String name) {
+        com.google.gson.JsonObject params = new com.google.gson.JsonObject();
+        params.addProperty("name", name.trim());
+        return new LootFunction("minecraft:set_name", params, List.of());
+    }
+
+    private static LootFunction createCopyName(String source) {
+        com.google.gson.JsonObject params = new com.google.gson.JsonObject();
+        params.addProperty("source", source.trim());
+        return new LootFunction("minecraft:copy_name", params, List.of());
+    }
+
+    private static LootFunction createReference(String tableId) {
+        com.google.gson.JsonObject params = new com.google.gson.JsonObject();
+        params.addProperty("name", ScreenUtils.ensureNamespace(tableId.trim()));
+        return new LootFunction("minecraft:reference", params, List.of());
+    }
+
+    private static LootFunction createSetStewEffect(String effect, int durationSeconds) {
+        com.google.gson.JsonObject params = new com.google.gson.JsonObject();
+        com.google.gson.JsonArray effects = new com.google.gson.JsonArray();
+        com.google.gson.JsonObject effectObj = new com.google.gson.JsonObject();
+        effectObj.addProperty("type", ScreenUtils.ensureNamespace(effect.trim()));
+        effectObj.addProperty("duration", durationSeconds * 20);  // Convert to ticks
+        effects.add(effectObj);
+        params.add("effects", effects);
+        return new LootFunction("minecraft:set_stew_effect", params, List.of());
     }
 
     @Override

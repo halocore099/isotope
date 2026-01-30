@@ -1,5 +1,10 @@
 package dev.isotope.ui.screen;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import dev.isotope.compat.ui.VersionedScreen;
 import dev.isotope.data.loot.LootCondition;
 import dev.isotope.ui.IsotopeColors;
@@ -45,6 +50,16 @@ public class EditConditionDialog extends VersionedScreen {
 
     // Track which parameter field is selected for keyboard input
     private int activeParamField = 0; // 0 = none, 1 = param1, 2 = param2
+
+    // Raw JSON editing mode for unknown conditions
+    private boolean rawJsonMode = false;
+    private List<String> rawJsonLines = new ArrayList<>();
+    private int rawJsonCursorLine = 0;
+    private int rawJsonCursorCol = 0;
+    private int rawJsonScrollOffset = 0;
+    private String rawJsonError = null;
+    private static final int MAX_JSON_LINES_VISIBLE = 8;
+    private static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private record ConditionPreset(
         String name,
@@ -208,8 +223,49 @@ public class EditConditionDialog extends VersionedScreen {
             }
         }
 
-        // No matching preset found - leave unselected
+        // No matching preset found - switch to raw JSON mode
         selectedPreset = -1;
+        switchToRawJsonMode();
+    }
+
+    /**
+     * Switch to raw JSON editing mode with the current condition.
+     */
+    private void switchToRawJsonMode() {
+        rawJsonMode = true;
+        rawJsonError = null;
+
+        // Build the full JSON representation
+        JsonObject fullJson = new JsonObject();
+        fullJson.addProperty("condition", existingCondition.condition());
+        for (var entry : existingCondition.parameters().entrySet()) {
+            fullJson.add(entry.getKey(), entry.getValue());
+        }
+
+        // Convert to pretty-printed lines
+        String prettyJson = PRETTY_GSON.toJson(fullJson);
+        rawJsonLines.clear();
+        for (String line : prettyJson.split("\n")) {
+            rawJsonLines.add(line);
+        }
+        if (rawJsonLines.isEmpty()) {
+            rawJsonLines.add("{}");
+        }
+        rawJsonCursorLine = 0;
+        rawJsonCursorCol = 0;
+        rawJsonScrollOffset = 0;
+    }
+
+    /**
+     * Switch back to preset mode.
+     */
+    private void switchToPresetMode() {
+        rawJsonMode = false;
+        rawJsonError = null;
+        if (selectedPreset < 0 && !presets.isEmpty()) {
+            selectedPreset = 0;
+            resetParamsToDefaults();
+        }
     }
 
     /**
@@ -272,6 +328,19 @@ public class EditConditionDialog extends VersionedScreen {
             b -> onClose()
         ).pos(dialogX + 10, dialogY + DIALOG_HEIGHT - 30).size(70, 20).build());
 
+        // Toggle Raw JSON button
+        addRenderableWidget(Button.builder(
+            Component.literal(rawJsonMode ? "Use Presets" : "Edit JSON"),
+            b -> {
+                if (rawJsonMode) {
+                    switchToPresetMode();
+                } else {
+                    switchToRawJsonMode();
+                }
+                rebuildButtons();
+            }
+        ).pos(dialogX + 90, dialogY + DIALOG_HEIGHT - 30).size(80, 20).build());
+
         // Save button
         addRenderableWidget(Button.builder(
             Component.literal("Save Changes"),
@@ -279,13 +348,53 @@ public class EditConditionDialog extends VersionedScreen {
         ).pos(dialogX + DIALOG_WIDTH - 110, dialogY + DIALOG_HEIGHT - 30).size(100, 20).build());
     }
 
+    private void rebuildButtons() {
+        clearWidgets();
+        init();
+    }
+
     private void saveCondition() {
-        if (selectedPreset >= 0 && selectedPreset < presets.size()) {
+        if (rawJsonMode) {
+            // Parse and save raw JSON
+            try {
+                String jsonStr = String.join("\n", rawJsonLines);
+                JsonObject json = JsonParser.parseString(jsonStr).getAsJsonObject();
+
+                // Extract condition type
+                String condType = json.has("condition") ? json.get("condition").getAsString() : existingCondition.condition();
+
+                // Extract parameters (everything except "condition")
+                JsonObject params = new JsonObject();
+                for (var entry : json.entrySet()) {
+                    String key = entry.getKey();
+                    if (!key.equals("condition")) {
+                        params.add(key, entry.getValue());
+                    }
+                }
+
+                LootCondition newCondition = new LootCondition(condType, params);
+                onConditionSaved.accept(newCondition);
+                onClose();
+            } catch (JsonSyntaxException e) {
+                rawJsonError = "Invalid JSON: " + e.getMessage();
+            } catch (Exception e) {
+                rawJsonError = "Error: " + e.getMessage();
+            }
+        } else if (selectedPreset >= 0 && selectedPreset < presets.size()) {
             ConditionPreset preset = presets.get(selectedPreset);
             LootCondition newCondition = preset.builder.build(param1, param2);
             onConditionSaved.accept(newCondition);
+            onClose();
         }
-        onClose();
+    }
+
+    private void resetParamsToDefaults() {
+        if (selectedPreset >= 0 && selectedPreset < presets.size()) {
+            ConditionPreset preset = presets.get(selectedPreset);
+            param1 = preset.param1Default != null ? preset.param1Default : "";
+            param2 = preset.param2Default != null ? preset.param2Default : "";
+            activeParamField = preset.param1Label != null ? 1 : 0;
+        }
     }
 
     @Override
@@ -306,6 +415,12 @@ public class EditConditionDialog extends VersionedScreen {
         // Current condition info
         String currentType = existingCondition.getDisplayName();
         graphics.drawString(font, "Current: " + currentType, dialogX + 150, dialogY + 10, IsotopeColors.TEXT_MUTED, false);
+
+        if (rawJsonMode) {
+            renderRawJsonEditor(graphics, dialogX, dialogY, mouseX, mouseY);
+            super.render(graphics, mouseX, mouseY, partialTick);
+            return;
+        }
 
         // Preset list
         int listY = dialogY + 40;
@@ -413,6 +528,135 @@ public class EditConditionDialog extends VersionedScreen {
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
+    /**
+     * Render the raw JSON editor interface.
+     */
+    private void renderRawJsonEditor(GuiGraphics graphics, int dialogX, int dialogY, int mouseX, int mouseY) {
+        int editorX = dialogX + 10;
+        int editorY = dialogY + 40;
+        int editorWidth = DIALOG_WIDTH - 20;
+        int editorHeight = DIALOG_HEIGHT - 120;
+        int lineHeight = font.lineHeight + 2;
+
+        // Editor background
+        graphics.fill(editorX, editorY, editorX + editorWidth, editorY + editorHeight, IsotopeColors.INPUT_BACKGROUND);
+        ScreenUtils.renderOutline(graphics, editorX, editorY, editorWidth, editorHeight, IsotopeColors.INPUT_BORDER);
+
+        // Enable scissor for clipping
+        graphics.enableScissor(editorX + 2, editorY + 2, editorX + editorWidth - 2, editorY + editorHeight - 2);
+
+        // Render visible lines
+        int visibleLines = editorHeight / lineHeight;
+        for (int i = 0; i < visibleLines && i + rawJsonScrollOffset < rawJsonLines.size(); i++) {
+            int lineIdx = i + rawJsonScrollOffset;
+            String line = rawJsonLines.get(lineIdx);
+
+            int lineY = editorY + 4 + i * lineHeight;
+
+            // Line number
+            String lineNum = String.format("%2d", lineIdx + 1);
+            graphics.drawString(font, lineNum, editorX + 4, lineY, IsotopeColors.TEXT_MUTED, false);
+
+            // Line content with syntax highlighting
+            int textX = editorX + 25;
+            renderJsonLine(graphics, line, textX, lineY);
+
+            // Cursor on current line
+            if (lineIdx == rawJsonCursorLine) {
+                int cursorX = textX + font.width(line.substring(0, Math.min(rawJsonCursorCol, line.length())));
+                if (System.currentTimeMillis() % 1000 < 500) {  // Blink cursor
+                    graphics.fill(cursorX, lineY - 1, cursorX + 1, lineY + font.lineHeight, IsotopeColors.TEXT_PRIMARY);
+                }
+            }
+        }
+
+        graphics.disableScissor();
+
+        // Scrollbar if needed
+        if (rawJsonLines.size() > visibleLines) {
+            int scrollbarX = editorX + editorWidth - 6;
+            int scrollbarHeight = editorHeight - 4;
+            int thumbHeight = Math.max(20, scrollbarHeight * visibleLines / rawJsonLines.size());
+            int thumbY = editorY + 2 + (scrollbarHeight - thumbHeight) * rawJsonScrollOffset / Math.max(1, rawJsonLines.size() - visibleLines);
+
+            graphics.fill(scrollbarX, editorY + 2, scrollbarX + 4, editorY + editorHeight - 2, IsotopeColors.SCROLLBAR_TRACK);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, IsotopeColors.SCROLLBAR_THUMB);
+        }
+
+        // Error message
+        if (rawJsonError != null) {
+            int errorY = dialogY + DIALOG_HEIGHT - 75;
+            String errorText = rawJsonError.length() > 45 ? rawJsonError.substring(0, 45) + "..." : rawJsonError;
+            graphics.drawString(font, errorText, dialogX + 15, errorY, IsotopeColors.DESTRUCTIVE_TEXT, false);
+        }
+
+        // Help text
+        int helpY = dialogY + DIALOG_HEIGHT - 55;
+        graphics.drawString(font, "Edit JSON directly. Arrows/typing to edit.", dialogX + 15, helpY, IsotopeColors.TEXT_MUTED, false);
+    }
+
+    /**
+     * Render a JSON line with basic syntax highlighting.
+     */
+    private void renderJsonLine(GuiGraphics graphics, String line, int x, int y) {
+        StringBuilder current = new StringBuilder();
+        int currentX = x;
+        int color = IsotopeColors.TEXT_PRIMARY;
+        boolean inString = false;
+        boolean isKey = true;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+
+            if (c == '"') {
+                if (current.length() > 0) {
+                    graphics.drawString(font, current.toString(), currentX, y, color, false);
+                    currentX += font.width(current.toString());
+                    current.setLength(0);
+                }
+
+                inString = !inString;
+                if (inString) {
+                    color = isKey ? IsotopeColors.ACCENT_AQUA : IsotopeColors.ACCENT_GREEN;
+                } else {
+                    color = IsotopeColors.TEXT_PRIMARY;
+                    isKey = false;
+                }
+                current.append(c);
+            } else if (!inString && (c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == ',')) {
+                if (current.length() > 0) {
+                    graphics.drawString(font, current.toString(), currentX, y, color, false);
+                    currentX += font.width(current.toString());
+                    current.setLength(0);
+                }
+
+                graphics.drawString(font, String.valueOf(c), currentX, y, IsotopeColors.TEXT_MUTED, false);
+                currentX += font.width(String.valueOf(c));
+
+                if (c == ':') {
+                    isKey = false;
+                } else if (c == ',' || c == '{') {
+                    isKey = true;
+                }
+                color = IsotopeColors.TEXT_PRIMARY;
+            } else if (!inString && (Character.isDigit(c) || c == '.' || c == '-')) {
+                if (current.length() > 0 && color != IsotopeColors.ACCENT_GOLD) {
+                    graphics.drawString(font, current.toString(), currentX, y, color, false);
+                    currentX += font.width(current.toString());
+                    current.setLength(0);
+                }
+                color = IsotopeColors.ACCENT_GOLD;
+                current.append(c);
+            } else {
+                current.append(c);
+            }
+        }
+
+        if (current.length() > 0) {
+            graphics.drawString(font, current.toString(), currentX, y, color, false);
+        }
+    }
+
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean focused) {
         double mouseX = event.x(); double mouseY = event.y(); int button = event.button();
@@ -420,6 +664,36 @@ public class EditConditionDialog extends VersionedScreen {
 
         int dialogX = (width - DIALOG_WIDTH) / 2;
         int dialogY = (height - DIALOG_HEIGHT) / 2;
+
+        // Handle raw JSON editor clicks
+        if (rawJsonMode) {
+            int editorX = dialogX + 10;
+            int editorY = dialogY + 40;
+            int editorWidth = DIALOG_WIDTH - 20;
+            int editorHeight = DIALOG_HEIGHT - 120;
+            int lineHeight = font.lineHeight + 2;
+
+            if (mouseX >= editorX && mouseX < editorX + editorWidth &&
+                mouseY >= editorY && mouseY < editorY + editorHeight) {
+                int clickedLine = (int) ((mouseY - editorY - 4) / lineHeight) + rawJsonScrollOffset;
+                clickedLine = Math.max(0, Math.min(clickedLine, rawJsonLines.size() - 1));
+                rawJsonCursorLine = clickedLine;
+
+                String line = rawJsonLines.get(clickedLine);
+                int textX = editorX + 25;
+                int col = 0;
+                for (int i = 0; i <= line.length(); i++) {
+                    if (textX + font.width(line.substring(0, i)) >= mouseX) {
+                        col = i;
+                        break;
+                    }
+                    col = i;
+                }
+                rawJsonCursorCol = Math.min(col, line.length());
+                return true;
+            }
+            return super.mouseClicked(event, focused);
+        }
 
         // Check preset list clicks
         int listY = dialogY + 40;
@@ -476,6 +750,18 @@ public class EditConditionDialog extends VersionedScreen {
     @Override
     public boolean keyPressed(KeyEvent event) {
         int keyCode = event.key(); int scanCode = event.scancode(); int modifiers = event.modifiers();
+
+        // Escape to close (works in all modes)
+        if (keyCode == UIConstants.KEY_ESCAPE) {
+            onClose();
+            return true;
+        }
+
+        // Handle raw JSON editing
+        if (rawJsonMode) {
+            return handleRawJsonKeyPress(keyCode, modifiers);
+        }
+
         // Tab to switch between fields
         if (keyCode == UIConstants.KEY_TAB && selectedPreset >= 0) {
             ConditionPreset preset = presets.get(selectedPreset);
@@ -491,12 +777,6 @@ public class EditConditionDialog extends VersionedScreen {
                 saveCondition();
                 return true;
             }
-        }
-
-        // Escape to close
-        if (keyCode == UIConstants.KEY_ESCAPE) {
-            onClose();
-            return true;
         }
 
         // Backspace to delete character
@@ -534,9 +814,139 @@ public class EditConditionDialog extends VersionedScreen {
         }
     }
 
+    private boolean handleRawJsonKeyPress(int keyCode, int modifiers) {
+        String currentLine = rawJsonLines.get(rawJsonCursorLine);
+        rawJsonError = null;
+
+        // Arrow keys for cursor movement
+        if (keyCode == UIConstants.KEY_UP) {
+            if (rawJsonCursorLine > 0) {
+                rawJsonCursorLine--;
+                rawJsonCursorCol = Math.min(rawJsonCursorCol, rawJsonLines.get(rawJsonCursorLine).length());
+                ensureCursorVisible();
+            }
+            return true;
+        }
+        if (keyCode == UIConstants.KEY_DOWN) {
+            if (rawJsonCursorLine < rawJsonLines.size() - 1) {
+                rawJsonCursorLine++;
+                rawJsonCursorCol = Math.min(rawJsonCursorCol, rawJsonLines.get(rawJsonCursorLine).length());
+                ensureCursorVisible();
+            }
+            return true;
+        }
+        if (keyCode == UIConstants.KEY_LEFT) {
+            if (rawJsonCursorCol > 0) {
+                rawJsonCursorCol--;
+            } else if (rawJsonCursorLine > 0) {
+                rawJsonCursorLine--;
+                rawJsonCursorCol = rawJsonLines.get(rawJsonCursorLine).length();
+            }
+            return true;
+        }
+        if (keyCode == UIConstants.KEY_RIGHT) {
+            if (rawJsonCursorCol < currentLine.length()) {
+                rawJsonCursorCol++;
+            } else if (rawJsonCursorLine < rawJsonLines.size() - 1) {
+                rawJsonCursorLine++;
+                rawJsonCursorCol = 0;
+            }
+            return true;
+        }
+
+        // Home/End
+        if (keyCode == UIConstants.KEY_HOME) {
+            rawJsonCursorCol = 0;
+            return true;
+        }
+        if (keyCode == UIConstants.KEY_END) {
+            rawJsonCursorCol = currentLine.length();
+            return true;
+        }
+
+        // Backspace
+        if (keyCode == UIConstants.KEY_BACKSPACE) {
+            if (rawJsonCursorCol > 0) {
+                String newLine = currentLine.substring(0, rawJsonCursorCol - 1) + currentLine.substring(rawJsonCursorCol);
+                rawJsonLines.set(rawJsonCursorLine, newLine);
+                rawJsonCursorCol--;
+            } else if (rawJsonCursorLine > 0) {
+                String prevLine = rawJsonLines.get(rawJsonCursorLine - 1);
+                rawJsonCursorCol = prevLine.length();
+                rawJsonLines.set(rawJsonCursorLine - 1, prevLine + currentLine);
+                rawJsonLines.remove(rawJsonCursorLine);
+                rawJsonCursorLine--;
+            }
+            return true;
+        }
+
+        // Delete
+        if (keyCode == UIConstants.KEY_DELETE) {
+            if (rawJsonCursorCol < currentLine.length()) {
+                String newLine = currentLine.substring(0, rawJsonCursorCol) + currentLine.substring(rawJsonCursorCol + 1);
+                rawJsonLines.set(rawJsonCursorLine, newLine);
+            } else if (rawJsonCursorLine < rawJsonLines.size() - 1) {
+                rawJsonLines.set(rawJsonCursorLine, currentLine + rawJsonLines.get(rawJsonCursorLine + 1));
+                rawJsonLines.remove(rawJsonCursorLine + 1);
+            }
+            return true;
+        }
+
+        // Enter - new line
+        if (keyCode == UIConstants.KEY_ENTER || keyCode == UIConstants.KEY_NUMPAD_ENTER) {
+            String before = currentLine.substring(0, rawJsonCursorCol);
+            String after = currentLine.substring(rawJsonCursorCol);
+
+            int indent = 0;
+            for (char c : currentLine.toCharArray()) {
+                if (c == ' ') indent++;
+                else break;
+            }
+            if (before.trim().endsWith("{") || before.trim().endsWith("[")) {
+                indent += 2;
+            }
+            String indentStr = " ".repeat(indent);
+
+            rawJsonLines.set(rawJsonCursorLine, before);
+            rawJsonLines.add(rawJsonCursorLine + 1, indentStr + after);
+            rawJsonCursorLine++;
+            rawJsonCursorCol = indent;
+            ensureCursorVisible();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void ensureCursorVisible() {
+        int lineHeight = font.lineHeight + 2;
+        int editorHeight = DIALOG_HEIGHT - 120;
+        int visibleLines = editorHeight / lineHeight;
+
+        if (rawJsonCursorLine < rawJsonScrollOffset) {
+            rawJsonScrollOffset = rawJsonCursorLine;
+        } else if (rawJsonCursorLine >= rawJsonScrollOffset + visibleLines) {
+            rawJsonScrollOffset = rawJsonCursorLine - visibleLines + 1;
+        }
+    }
+
     @Override
     public boolean charTyped(CharacterEvent event) {
         char chr = (char) event.codepoint(); int modifiers = event.modifiers();
+
+        // Handle raw JSON character input
+        if (rawJsonMode) {
+            if (chr >= 32) {
+                rawJsonError = null;
+                String currentLine = rawJsonLines.get(rawJsonCursorLine);
+                String newLine = currentLine.substring(0, rawJsonCursorCol) + chr + currentLine.substring(rawJsonCursorCol);
+                rawJsonLines.set(rawJsonCursorLine, newLine);
+                rawJsonCursorCol++;
+                return true;
+            }
+            return false;
+        }
+
         if (activeParamField > 0 && selectedPreset >= 0) {
             // Allow digits, decimal point, and minus for numeric input
             if (Character.isDigit(chr) || chr == '.' || chr == '-') {
@@ -550,6 +960,31 @@ public class EditConditionDialog extends VersionedScreen {
             }
         }
         return super.charTyped(event);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (rawJsonMode) {
+            int dialogX = (width - DIALOG_WIDTH) / 2;
+            int dialogY = (height - DIALOG_HEIGHT) / 2;
+            int editorX = dialogX + 10;
+            int editorY = dialogY + 40;
+            int editorWidth = DIALOG_WIDTH - 20;
+            int editorHeight = DIALOG_HEIGHT - 120;
+
+            if (mouseX >= editorX && mouseX < editorX + editorWidth &&
+                mouseY >= editorY && mouseY < editorY + editorHeight) {
+
+                int lineHeight = font.lineHeight + 2;
+                int visibleLines = editorHeight / lineHeight;
+                int maxScroll = Math.max(0, rawJsonLines.size() - visibleLines);
+
+                rawJsonScrollOffset -= (int) scrollY * 3;
+                rawJsonScrollOffset = Math.max(0, Math.min(rawJsonScrollOffset, maxScroll));
+                return true;
+            }
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
