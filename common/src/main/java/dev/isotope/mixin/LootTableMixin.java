@@ -14,7 +14,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -35,22 +34,11 @@ import java.util.function.Consumer;
 public abstract class LootTableMixin {
 
     /**
-     * Shadow the getLootTableId method to access the table's ID directly.
-     * This is more reliable than ThreadLocal tracking.
-     * Uses Object return type to handle both ResourceLocation (1.21.4) and Identifier (1.21.11).
-     */
-    @Shadow
-    public abstract Object getLootTableId();
-
-    /**
-     * Helper to get the table ID, preferring the table's own ID over ThreadLocal.
+     * Helper to get the table ID from ThreadLocal tracking.
+     * We use ThreadLocal because the method name for getting the loot table ID
+     * varies across MC versions (getLootTableId vs getLootTableIdentifier).
      */
     private Id getTableId() {
-        Object mcId = getLootTableId();
-        if (mcId != null) {
-            return Id.wrap(mcId);
-        }
-        // Fallback to ThreadLocal (for observation mode compatibility)
         return LootTableTracker.getCurrentTableId();
     }
 
