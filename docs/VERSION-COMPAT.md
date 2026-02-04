@@ -6,34 +6,41 @@ This document describes API differences between Minecraft versions and how Isoto
 
 | MC Version | NeoForge | Fabric | API Group | Status |
 |------------|----------|--------|-----------|--------|
+| 1.21.0 | 21.0.x | 0.16.x | mc1210 | Supported |
+| 1.21.1 | 21.1.x | 0.16.x | mc1210 | Supported |
+| 1.21.2 | 21.2.x | 0.16.x | mc1210 | Supported |
+| 1.21.3 | 21.3.x | 0.16.x | mc1210 | Supported |
 | 1.21.4 | 21.4.x | 0.16.x | mc1210 | Supported |
 | 1.21.5 | 21.5.x | 0.16.x | mc1210 | Supported |
 | 1.21.6 | 21.6.x | 0.16.x | mc1210 | Supported |
 | 1.21.7 | 21.7.x | 0.16.x | mc1210 | Supported |
 | 1.21.8 | 21.8.x | 0.16.x | mc1210 | Supported |
+| 1.21.9 | 21.9.x | 0.16.x | mc1219 | Supported |
+| 1.21.10 | 21.10.x | 0.16.x | mc1219 | Supported |
 | 1.21.11 | 21.11.x | 0.16.x | mc1211 | Supported |
-
-### Unsupported Versions
-
-| MC Version | Reason |
-|------------|--------|
-| 1.21.0 | Removed from Mojang's version manifest |
-| 1.21.1-1.21.3 | Missing ToastManager, EntitySpawnReason, registry API differences |
-| 1.21.9-1.21.10 | Event-based input API conflicts with mc1210 compat classes |
 
 ## API Groups
 
-Isotope uses two API compatibility groups:
+Isotope uses three API compatibility groups:
 
-### mc1210 (MC 1.21.4 - 1.21.8)
+### mc1210 (MC 1.21.0 - 1.21.8)
 
 Uses the original Minecraft 1.21 API with:
 - `net.minecraft.resources.ResourceLocation` for identifiers
 - `ResourceKey.location()` to get the location from a key
 - `CommandSourceStack.hasPermission(int level)` for permission checks
 - `Button.renderWidget()` for custom button rendering
+- Primitive-based input handling (`mouseClicked(double, double, int)`)
 
 Note: The compat module uses reflection for APIs that vary within this range (NBT, rendering, version info).
+
+### mc1219 (MC 1.21.9 - 1.21.10)
+
+Transitional API with event-based input handling:
+- `net.minecraft.resources.ResourceLocation` for identifiers (same as mc1210)
+- `ResourceKey.location()` to get the location from a key
+- Event-based input handling (`InputEvents.MouseClick`, etc.)
+- `Button.renderWidget()` for custom button rendering
 
 ### mc1211 (MC 1.21.11+)
 
@@ -42,18 +49,20 @@ Uses the updated API with:
 - `ResourceKey.identifier()` to get the identifier from a key
 - `CommandSourceStack.permissions().hasPermission(Permission)` for permission checks
 - `Button.renderContents()` for custom button rendering
+- Event-based input handling (same as mc1219)
 
 ## Key API Differences
 
-| Feature | mc1210 | mc1211 |
-|---------|--------|--------|
-| ID Class | `ResourceLocation` | `Identifier` |
-| ID from Key | `key.location()` | `key.identifier()` |
-| Permission Check | `source.hasPermission(2)` | `source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)` |
-| Button Render Override | `renderWidget()` | `renderContents()` |
-| Util Package | `net.minecraft.Util` | `net.minecraft.util.Util` |
-| GameRules Package | `net.minecraft.world.level.GameRules` | `net.minecraft.world.level.gamerules.GameRules` |
-| FMLEnvironment.dist | `FMLEnvironment.dist` | `FMLEnvironment.getDist()` |
+| Feature | mc1210 | mc1219 | mc1211 |
+|---------|--------|--------|--------|
+| ID Class | `ResourceLocation` | `ResourceLocation` | `Identifier` |
+| ID from Key | `key.location()` | `key.location()` | `key.identifier()` |
+| Permission Check | `hasPermission(2)` | `hasPermission(2)` | `permissions().hasPermission(...)` |
+| Button Render Override | `renderWidget()` | `renderWidget()` | `renderContents()` |
+| Util Package | `net.minecraft.Util` | `net.minecraft.Util` | `net.minecraft.util.Util` |
+| GameRules Package | `net.minecraft.world.level.GameRules` | `net.minecraft.world.level.GameRules` | `net.minecraft.world.level.gamerules.GameRules` |
+| Input Handling | Primitive methods | Event-based | Event-based |
+| FMLEnvironment.dist | `FMLEnvironment.dist` | `FMLEnvironment.dist` | `FMLEnvironment.getDist()` |
 
 ## Compatibility Layer Architecture
 
@@ -68,17 +77,35 @@ compat/
 │       ├── Id.java         # Version-agnostic identifier
 │       ├── IdFactory.java  # Factory interface
 │       ├── Ids.java        # Static utilities
-│       └── McVersion.java  # Version detection & utilities
-├── src/mc1210/java/        # MC 1.21.0-1.21.10 implementations
-│   └── dev/isotope/compat/impl/
-│       ├── IdImpl.java
-│       ├── IdFactoryImpl.java
-│       └── McVersionImpl.java
+│       ├── McVersion.java  # Version detection & utilities
+│       └── EnchantmentCompat.java  # Enchantment registry access
+├── src/mc1210/java/        # MC 1.21.0-1.21.8 implementations
+│   └── dev/isotope/compat/
+│       ├── impl/
+│       │   ├── IdImpl.java
+│       │   ├── IdFactoryImpl.java
+│       │   └── McVersionImpl.java
+│       ├── EnchantmentCompatImpl.java
+│       └── ui/
+│           └── VersionedWidget.java (primitive input)
+├── src/mc1219/java/        # MC 1.21.9-1.21.10 implementations
+│   └── dev/isotope/compat/
+│       ├── impl/
+│       │   ├── IdImpl.java
+│       │   ├── IdFactoryImpl.java
+│       │   └── McVersionImpl.java
+│       ├── EnchantmentCompatImpl.java
+│       └── ui/
+│           └── VersionedWidget.java (event-based input)
 └── src/mc1211/java/        # MC 1.21.11+ implementations
-    └── dev/isotope/compat/impl/
-        ├── IdImpl.java
-        ├── IdFactoryImpl.java
-        └── McVersionImpl.java
+    └── dev/isotope/compat/
+        ├── impl/
+        │   ├── IdImpl.java
+        │   ├── IdFactoryImpl.java
+        │   └── McVersionImpl.java
+        ├── EnchantmentCompatImpl.java
+        └── ui/
+            └── VersionedWidget.java (event-based input)
 ```
 
 ### ServiceLoader Pattern
@@ -86,6 +113,7 @@ compat/
 Implementations are loaded at runtime via `ServiceLoader`:
 - `META-INF/services/dev.isotope.compat.IdFactory`
 - `META-INF/services/dev.isotope.compat.McVersion`
+- `META-INF/services/dev.isotope.compat.EnchantmentCompat`
 
 ### Using the Compatibility Layer
 
@@ -107,6 +135,11 @@ if (McVersion.INSTANCE.is1211OrNewer()) {
 
 // Permission check (version-agnostic)
 boolean hasPermission = McVersion.INSTANCE.hasGamemasterPermission(source);
+
+// Enchantment data (registry-based, no hardcoding)
+EnchantmentCompat enchants = EnchantmentCompat.INSTANCE;
+List<Id> applicable = enchants.getApplicableEnchantments(itemId, includeTreasure, registryAccess);
+int maxLevel = enchants.getMaxLevel(enchantmentId, registryAccess);
 ```
 
 ## Building for Specific Versions
@@ -150,7 +183,7 @@ minecraft_version_range_neoforge=[1.21.11,1.21.12)
 2. **Determine API group**: Check if any breaking API changes were introduced
 3. **If new API group needed**:
    - Create `compat/src/mc1212/java/` directory
-   - Implement `IdImpl`, `IdFactoryImpl`, `McVersionImpl`
+   - Implement `IdImpl`, `IdFactoryImpl`, `McVersionImpl`, `EnchantmentCompatImpl`
    - Add ServiceLoader registration files
 4. **Update build.gradle API version logic** if needed
 5. **Test build**: `./gradlew build -PmcVersion=1.21.12`
@@ -198,17 +231,18 @@ Is the API you're using different between MC versions?
 
 ## Existing Compat Patterns
 
-### Pattern 1: Interface Abstraction (Id, McVersion)
+### Pattern 1: Interface Abstraction (Id, McVersion, EnchantmentCompat)
 
 **When to use**: Core class was renamed or has incompatible APIs.
 
 ```
 compat/src/main/java/         → Interface definition
-compat/src/mc1210/java/impl/  → MC 1.21.0-1.21.10 implementation
-compat/src/mc1211/java/impl/  → MC 1.21.11+ implementation
+compat/src/mc1210/java/       → MC 1.21.0-1.21.8 implementation
+compat/src/mc1219/java/       → MC 1.21.9-1.21.10 implementation
+compat/src/mc1211/java/       → MC 1.21.11+ implementation
 ```
 
-**Example**: `Id` interface wraps `ResourceLocation` (mc1210) or `Identifier` (mc1211)
+**Example**: `Id` interface wraps `ResourceLocation` (mc1210/mc1219) or `Identifier` (mc1211)
 
 ```java
 // compat/src/main/java/dev/isotope/compat/Id.java
@@ -317,11 +351,12 @@ public abstract class VersionedButton extends Button {
 
 ### Step 1: Identify the API Difference
 
-Check both MC versions to understand the exact difference:
+Check multiple MC versions to understand the exact difference:
 
 ```bash
-# Build for both versions to see compilation errors
+# Build for multiple versions to see compilation errors
 ./gradlew :common:compileJava -PmcVersion=1.21.4
+./gradlew :common:compileJava -PmcVersion=1.21.9
 ./gradlew :common:compileJava -PmcVersion=1.21.11
 ```
 
@@ -359,7 +394,15 @@ public interface MyCompat {
 public class MyCompatImpl implements MyCompat {
     @Override
     public void doSomething(Arg arg) {
-        // MC 1.21.0-1.21.10 implementation
+        // MC 1.21.0-1.21.8 implementation
+    }
+}
+
+// compat/src/mc1219/java/dev/isotope/compat/MyCompatImpl.java
+public class MyCompatImpl implements MyCompat {
+    @Override
+    public void doSomething(Arg arg) {
+        // MC 1.21.9-1.21.10 implementation
     }
 }
 
@@ -378,6 +421,9 @@ For interfaces that use ServiceLoader:
 
 ```
 # compat/src/mc1210/resources/META-INF/services/dev.isotope.compat.MyCompat
+dev.isotope.compat.MyCompatImpl
+
+# compat/src/mc1219/resources/META-INF/services/dev.isotope.compat.MyCompat
 dev.isotope.compat.MyCompatImpl
 
 # compat/src/mc1211/resources/META-INF/services/dev.isotope.compat.MyCompat
@@ -413,22 +459,22 @@ Add the new compat class to this file's "Current Compat Classes" table.
 | `NbtCompat` | Static Utility | NBT access with unified Optional return |
 | `GameRulesCompat` | Static Utility | GameRules creation across packages |
 | `InputCompat` | Static Utility | Input event handling |
-| `EnchantmentCompat` | Interface | Enchantment registry access |
+| `EnchantmentCompat` | Interface | Enchantment registry access (uses actual registries) |
 | `VersionedWidget` | Base Class | Widget with unified input events |
 | `VersionedButton` | Base Class | Button with unified render method |
 | `VersionedScreen` | Base Class | Screen with unified input events |
 | `VersionedListEntry` | Base Class | List entry compatibility |
 | `EditBoxCompat` | Static Utility | EditBox input forwarding |
 | `RenderCompat` | Static Utility | Rendering utilities |
-| `Identifier` (polyfill) | Polyfill | mc1210 shim for Identifier class |
-| `Util` (polyfill) | Polyfill | mc1210 shim for moved Util class |
-| `IdentifierArgument` (polyfill) | Polyfill | mc1210 shim for command argument |
+| `Identifier` (polyfill) | Polyfill | mc1210/mc1219 shim for Identifier class |
+| `Util` (polyfill) | Polyfill | mc1210/mc1219 shim for moved Util class |
+| `IdentifierArgument` (polyfill) | Polyfill | mc1210/mc1219 shim for command argument |
 
 ## Common Pitfalls
 
-### 1. Forgetting Both Implementations
+### 1. Forgetting All Three Implementations
 
-Always implement for **both** mc1210 and mc1211. The build will fail for one version if you only implement one.
+Always implement for **all three** API groups: mc1210, mc1219, and mc1211. The build will fail for one version if you only implement some.
 
 ### 2. Using Wrong Import in Common
 
@@ -459,13 +505,40 @@ Client-only compat classes need the annotation:
 public class VersionedWidget extends AbstractWidget { ... }
 ```
 
-### 5. Not Testing Both Versions
+### 5. Not Testing All API Groups
 
-Always verify your changes compile for both API groups:
+Always verify your changes compile for all API groups:
 
 ```bash
 ./gradlew :compat:compileJava -PmcVersion=1.21.0
+./gradlew :compat:compileJava -PmcVersion=1.21.9
 ./gradlew :compat:compileJava -PmcVersion=1.21.11
+```
+
+### 6. Hardcoding Data Instead of Using Registries
+
+Always prefer registry lookups over hardcoded data. Registries provide:
+- Correct data for the running MC version
+- Support for modded content
+- Automatic updates when Minecraft changes
+
+```java
+// WRONG - Hardcoded data
+private static final Map<String, Integer> MAX_LEVELS = Map.of("sharpness", 5, ...);
+
+// RIGHT - Registry lookup with fallback
+public int getMaxLevel(Id enchantmentId, RegistryAccess access) {
+    try {
+        Registry<Enchantment> registry = access.lookupOrThrow(Registries.ENCHANTMENT);
+        Optional<Holder.Reference<Enchantment>> holder = registry.get(loc);
+        if (holder.isPresent()) {
+            return holder.get().value().getMaxLevel();
+        }
+    } catch (Exception e) {
+        // Minimal fallback only
+    }
+    return 1;
+}
 ```
 
 ## Quick Reference: Which Source Set?
@@ -473,7 +546,8 @@ Always verify your changes compile for both API groups:
 | Code Type | Location |
 |-----------|----------|
 | Shared interface | `compat/src/main/java/` |
-| MC 1.21.0-1.21.10 impl | `compat/src/mc1210/java/` |
+| MC 1.21.0-1.21.8 impl | `compat/src/mc1210/java/` |
+| MC 1.21.9-1.21.10 impl | `compat/src/mc1219/java/` |
 | MC 1.21.11+ impl | `compat/src/mc1211/java/` |
 | Common mod code | `common/src/main/java/` |
 | NeoForge-specific | `neoforge/src/main/java/` |
