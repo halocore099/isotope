@@ -2,7 +2,7 @@ name: Multi-Version Build
 
 on:
   push:
-    branches: [main, neo-1.21.11, dev]
+    branches: [main, 1.21.x, dev]
   pull_request:
     branches: [main]
 

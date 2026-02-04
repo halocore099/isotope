@@ -2,7 +2,7 @@
 
 ## Branch Info
 
-**Branch**: `neo-1.21.11`
+**Branch**: `1.21.x`
 **Target**: Minecraft 1.21.0-1.21.11 with NeoForge and Fabric
 **Java**: 21 (via Homebrew on macOS: `/opt/homebrew/opt/openjdk@21`)
 
