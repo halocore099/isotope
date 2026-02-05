@@ -263,14 +263,14 @@ public class LootTableEditPanel extends VersionedWidget {
         if (tableId == null) return;
 
         // Get from cache (pre-parsed during registry scan)
-        Optional<LootTableStructure> cached = LootEditManager.getInstance().getCachedOriginalStructure(tableId.mc());
+        Optional<LootTableStructure> cached = LootEditManager.getInstance().getCachedOriginalStructure(tableId);
         if (cached.isPresent()) {
             structure = cached.get();
         } else {
             // Fallback: try to parse if server is available
             MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
             if (server != null) {
-                Optional<LootTableStructure> parsed = LootTableParser.parse(server, tableId.mc());
+                Optional<LootTableStructure> parsed = LootTableParser.parse(server, tableId);
                 if (parsed.isPresent()) {
                     structure = parsed.get();
                     LootEditManager.getInstance().cacheOriginalStructure(structure);
@@ -279,8 +279,8 @@ public class LootTableEditPanel extends VersionedWidget {
         }
 
         // Get edited version if exists
-        if (LootEditManager.getInstance().hasEdits(tableId.mc())) {
-            editedStructure = LootEditManager.getInstance().getEditedStructure(tableId.mc()).orElse(null);
+        if (LootEditManager.getInstance().hasEdits(tableId)) {
+            editedStructure = LootEditManager.getInstance().getEditedStructure(tableId).orElse(null);
         } else {
             editedStructure = structure;
         }
@@ -360,7 +360,7 @@ public class LootTableEditPanel extends VersionedWidget {
 
     private void refreshFromEdits() {
         if (tableId == null) return;
-        editedStructure = LootEditManager.getInstance().getEditedStructure(tableId.mc()).orElse(structure);
+        editedStructure = LootEditManager.getInstance().getEditedStructure(tableId).orElse(structure);
         rebuildEntryRows();
         calculateMaxScroll();
     }
@@ -474,7 +474,7 @@ public class LootTableEditPanel extends VersionedWidget {
         // Orphan tooltip (render last so it's on top)
         if (orphanWarningHovered && tableId != null) {
             var tooltipFont = Minecraft.getInstance().font;
-            var orphanInfo = OrphanDetector.getInstance().getLootTableOrphanInfo(tableId.mc());
+            var orphanInfo = OrphanDetector.getInstance().getLootTableOrphanInfo(tableId);
             if (!orphanInfo.reasons().isEmpty()) {
                 // Build tooltip lines
                 List<String> lines = new ArrayList<>();
@@ -675,11 +675,11 @@ public class LootTableEditPanel extends VersionedWidget {
         graphics.drawString(font, ns, nsX + 3, y + 6, IsotopeColors.TEXT_MUTED, false);
 
         // Check if this is an entity loot table
-        var entityInfo = EntityLootRegistry.getInstance().getByLootTable(tableId.mc());
+        var entityInfo = EntityLootRegistry.getInstance().getByLootTable(tableId);
 
         // Linked structures or orphan warning
-        List<StructureLootLink> links = StructureLootLinker.getInstance().getLinksForLootTable(tableId.mc());
-        boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId.mc());
+        List<StructureLootLink> links = StructureLootLinker.getInstance().getLinksForLootTable(tableId);
+        boolean isOrphan = OrphanDetector.getInstance().isOrphanLootTable(tableId);
 
         if (entityInfo.isPresent()) {
             // This is an entity/mob loot table - show mob indicator with looting info
@@ -769,7 +769,7 @@ public class LootTableEditPanel extends VersionedWidget {
         }
 
         // Edit indicator
-        if (LootEditManager.getInstance().hasEdits(tableId.mc())) {
+        if (LootEditManager.getInstance().hasEdits(tableId)) {
             graphics.drawString(font, "●", getX() + PADDING + font.width(tablePath) + 4, y + 6,
                 IsotopeColors.BADGE_MODIFIED, false);
         }
@@ -1524,7 +1524,7 @@ public class LootTableEditPanel extends VersionedWidget {
         // Check for remove pool click
         if (hoveredRemovePool >= 0) {
             LootEditOperation op = new LootEditOperation.RemovePool(hoveredRemovePool);
-            LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+            LootEditManager.getInstance().applyOperation(tableId, op);
             multiSelection.clear();
             refreshFromEdits();
             return true;
@@ -1610,7 +1610,7 @@ public class LootTableEditPanel extends VersionedWidget {
             int btnH = btn[4];
             if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
                 LootEditOperation op = new LootEditOperation.RemoveTableFunction(funcIdx);
-                LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+                LootEditManager.getInstance().applyOperation(tableId, op);
                 refreshFromEdits();
                 return true;
             }
@@ -1676,7 +1676,7 @@ public class LootTableEditPanel extends VersionedWidget {
             int btnH = btn[5];
             if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
                 LootEditOperation op = new LootEditOperation.RemovePoolFunction(poolIdx, funcIdx);
-                LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+                LootEditManager.getInstance().applyOperation(tableId, op);
                 refreshFromEdits();
                 return true;
             }
@@ -1740,7 +1740,7 @@ public class LootTableEditPanel extends VersionedWidget {
             int btnH = btn[5];
             if (ScreenUtils.isMouseOver(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
                 LootEditOperation op = new LootEditOperation.RemovePoolCondition(poolIdx, condIdx);
-                LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+                LootEditManager.getInstance().applyOperation(tableId, op);
                 refreshFromEdits();
                 return true;
             }
@@ -1765,7 +1765,7 @@ public class LootTableEditPanel extends VersionedWidget {
         // Check for remove entry click
         if (hoveredRemoveEntry >= 0 && hoveredRemoveEntryPool >= 0) {
             LootEditOperation op = new LootEditOperation.RemoveEntry(hoveredRemoveEntryPool, hoveredRemoveEntry);
-            LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+            LootEditManager.getInstance().applyOperation(tableId, op);
             multiSelection.remove(new EntryKey(hoveredRemoveEntryPool, hoveredRemoveEntry));
             refreshFromEdits();
             return true;
@@ -2175,10 +2175,10 @@ public class LootTableEditPanel extends VersionedWidget {
 
         // Apply the move as remove + add operations
         LootEditOperation removeOp = new LootEditOperation.RemovePool(draggedPoolIdx);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), removeOp);
+        LootEditManager.getInstance().applyOperation(tableId, removeOp);
 
         LootEditOperation addOp = new LootEditOperation.AddPool(targetIdx, pool);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), addOp);
+        LootEditManager.getInstance().applyOperation(tableId, addOp);
 
         // Update selection to the new position
         selectedPoolIdx = targetIdx;
@@ -2216,10 +2216,10 @@ public class LootTableEditPanel extends VersionedWidget {
 
         // Apply the move as remove + add operations
         LootEditOperation removeOp = new LootEditOperation.RemoveEntry(dragPoolIdx, dragEntryIdx);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), removeOp);
+        LootEditManager.getInstance().applyOperation(tableId, removeOp);
 
         LootEditOperation addOp = new LootEditOperation.AddEntry(dropTargetPoolIdx, targetEntryIdx, entry);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), addOp);
+        LootEditManager.getInstance().applyOperation(tableId, addOp);
 
         // Update selection to the new position
         selectedPoolIdx = dropTargetPoolIdx;
@@ -2260,7 +2260,7 @@ public class LootTableEditPanel extends VersionedWidget {
 
         if (editingField == EditingField.WEIGHT) {
             LootEditOperation op = new LootEditOperation.ModifyEntryWeight(editingPoolIdx, editingEntryIdx, value);
-            LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+            LootEditManager.getInstance().applyOperation(tableId, op);
         } else {
             // Count editing
             LootPool pool = display.pools().get(editingPoolIdx);
@@ -2282,7 +2282,7 @@ public class LootTableEditPanel extends VersionedWidget {
                 : new NumberProvider.Uniform(min, max);
 
             LootEditOperation op = new LootEditOperation.SetItemCount(editingPoolIdx, editingEntryIdx, newCount);
-            LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+            LootEditManager.getInstance().applyOperation(tableId, op);
         }
 
         refreshFromEdits();
@@ -2318,7 +2318,7 @@ public class LootTableEditPanel extends VersionedWidget {
             );
 
             LootEditOperation op = new LootEditOperation.AddEntry(poolIdx, -1, newEntry);
-            LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+            LootEditManager.getInstance().applyOperation(tableId, op);
             refreshFromEdits();
             Isotope.LOGGER.info("Added {} to pool {}", itemId, poolIdx);
         }));
@@ -2333,7 +2333,7 @@ public class LootTableEditPanel extends VersionedWidget {
             if (template.defaultItem().isPresent()) {
                 LootEntry newEntry = template.createEntry();
                 LootEditOperation op = new LootEditOperation.AddEntry(poolIdx, -1, newEntry);
-                LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+                LootEditManager.getInstance().applyOperation(tableId, op);
                 refreshFromEdits();
                 IsotopeToast.success("Added", template.name() + " (" + template.defaultItem().get().getPath() + ")");
             } else {
@@ -2341,7 +2341,7 @@ public class LootTableEditPanel extends VersionedWidget {
                 Minecraft.getInstance().setScreen(new ItemPickerScreen(currentScreen, itemId -> {
                     LootEntry newEntry = template.createEntry(Id.wrap(itemId));
                     LootEditOperation op = new LootEditOperation.AddEntry(poolIdx, -1, newEntry);
-                    LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+                    LootEditManager.getInstance().applyOperation(tableId, op);
                     refreshFromEdits();
                     IsotopeToast.success("Added", template.name() + " (" + itemId.getPath() + ")");
                 }));
@@ -2355,7 +2355,7 @@ public class LootTableEditPanel extends VersionedWidget {
         Screen currentScreen = Minecraft.getInstance().screen;
         Minecraft.getInstance().setScreen(new ItemPickerScreen(currentScreen, itemId -> {
             LootEditOperation op = new LootEditOperation.ModifyEntryItem(poolIdx, entryIdx, itemId);
-            LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+            LootEditManager.getInstance().applyOperation(tableId, op);
             refreshFromEdits();
             Isotope.LOGGER.info("Changed pool {} entry {} to {}", poolIdx, entryIdx, itemId);
         }));
@@ -2381,7 +2381,7 @@ public class LootTableEditPanel extends VersionedWidget {
         );
 
         LootEditOperation op = new LootEditOperation.AddPool(-1, newPool);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+        LootEditManager.getInstance().applyOperation(tableId, op);
         refreshFromEdits();
     }
 
@@ -2436,7 +2436,7 @@ public class LootTableEditPanel extends VersionedWidget {
             .collect(Collectors.toList());
 
         // Apply as batch
-        int count = LootEditManager.getInstance().applyOperations(tableId.mc(), ops);
+        int count = LootEditManager.getInstance().applyOperations(tableId, ops);
 
         IsotopeToast.success("Deleted", count + " entries removed");
 
@@ -2461,7 +2461,7 @@ public class LootTableEditPanel extends VersionedWidget {
                 .map(key -> new LootEditOperation.ModifyEntryWeight(key.poolIdx(), key.entryIdx(), newWeight))
                 .collect(Collectors.toList());
 
-            int count = LootEditManager.getInstance().applyOperations(tableId.mc(), ops);
+            int count = LootEditManager.getInstance().applyOperations(tableId, ops);
             IsotopeToast.success("Updated", count + " entries set to weight " + newWeight);
 
             multiSelection.clear();
@@ -2761,7 +2761,7 @@ public class LootTableEditPanel extends VersionedWidget {
         if (selectedPoolIdx < 0 || selectedEntryIdx < 0) return;
 
         LootEditOperation op = new LootEditOperation.RemoveEntry(selectedPoolIdx, selectedEntryIdx);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+        LootEditManager.getInstance().applyOperation(tableId, op);
         refreshFromEdits();
 
         // Clear selection after delete
@@ -2796,7 +2796,7 @@ public class LootTableEditPanel extends VersionedWidget {
 
         // Insert after the current entry
         LootEditOperation op = new LootEditOperation.AddEntry(selectedPoolIdx, selectedEntryIdx + 1, copy);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+        LootEditManager.getInstance().applyOperation(tableId, op);
         refreshFromEdits();
 
         // Select the new duplicate
@@ -2895,7 +2895,7 @@ public class LootTableEditPanel extends VersionedWidget {
         );
 
         LootEditOperation op = new LootEditOperation.AddEntry(targetPool, targetIndex, copy);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+        LootEditManager.getInstance().applyOperation(tableId, op);
         refreshFromEdits();
 
         String itemName = entry.name().map(Id::getPath).orElse(entry.type());
@@ -2918,7 +2918,7 @@ public class LootTableEditPanel extends VersionedWidget {
         );
 
         LootEditOperation op = new LootEditOperation.AddPool(-1, copy);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+        LootEditManager.getInstance().applyOperation(tableId, op);
         refreshFromEdits();
 
         IsotopeToast.success("Pasted", "Pool with " + pool.entries().size() + " entries");
@@ -3009,7 +3009,7 @@ public class LootTableEditPanel extends VersionedWidget {
     public void deletePool(int poolIdx) {
         if (tableId == null) return;
         LootEditOperation op = new LootEditOperation.RemovePool(poolIdx);
-        LootEditManager.getInstance().applyOperation(tableId.mc(), op);
+        LootEditManager.getInstance().applyOperation(tableId, op);
         multiSelection.clear();
         refreshFromEdits();
     }
@@ -3031,8 +3031,8 @@ public class LootTableEditPanel extends VersionedWidget {
 
         LootEditManager manager = LootEditManager.getInstance();
         // Remove entry, then add at new position
-        manager.applyOperation(tableId.mc(), new LootEditOperation.RemoveEntry(poolIdx, entryIdx));
-        manager.applyOperation(tableId.mc(), new LootEditOperation.AddEntry(poolIdx, entryIdx - 1, entry));
+        manager.applyOperation(tableId, new LootEditOperation.RemoveEntry(poolIdx, entryIdx));
+        manager.applyOperation(tableId, new LootEditOperation.AddEntry(poolIdx, entryIdx - 1, entry));
 
         selectedEntryIdx = entryIdx - 1;
         refreshFromEdits();
@@ -3055,8 +3055,8 @@ public class LootTableEditPanel extends VersionedWidget {
 
         LootEditManager manager = LootEditManager.getInstance();
         // Remove entry, then add at new position
-        manager.applyOperation(tableId.mc(), new LootEditOperation.RemoveEntry(poolIdx, entryIdx));
-        manager.applyOperation(tableId.mc(), new LootEditOperation.AddEntry(poolIdx, entryIdx + 1, entry));
+        manager.applyOperation(tableId, new LootEditOperation.RemoveEntry(poolIdx, entryIdx));
+        manager.applyOperation(tableId, new LootEditOperation.AddEntry(poolIdx, entryIdx + 1, entry));
 
         selectedEntryIdx = entryIdx + 1;
         refreshFromEdits();
@@ -3075,7 +3075,7 @@ public class LootTableEditPanel extends VersionedWidget {
         LootPool emptyPool = LootPool.simple(1, List.of());
 
         LootEditManager manager = LootEditManager.getInstance();
-        manager.applyOperation(tableId.mc(), new LootEditOperation.AddPool(newPoolIdx, emptyPool));
+        manager.applyOperation(tableId, new LootEditOperation.AddPool(newPoolIdx, emptyPool));
         refreshFromEdits();
         IsotopeToast.success("Pool Added", "New pool created");
     }
@@ -3093,7 +3093,7 @@ public class LootTableEditPanel extends VersionedWidget {
 
         // Create a copy of the pool
         LootEditManager manager = LootEditManager.getInstance();
-        manager.applyOperation(tableId.mc(), new LootEditOperation.AddPool(newPoolIdx, pool));
+        manager.applyOperation(tableId, new LootEditOperation.AddPool(newPoolIdx, pool));
 
         refreshFromEdits();
         IsotopeToast.success("Pool Duplicated", "Pool copied with " + pool.entries().size() + " entries");
@@ -3108,7 +3108,7 @@ public class LootTableEditPanel extends VersionedWidget {
         if (display == null || poolIdx >= display.pools().size()) return;
 
         LootPool pool = display.pools().get(poolIdx);
-        ClipboardManager.getInstance().copyPool(pool, tableId != null ? tableId.mc() : null);
+        ClipboardManager.getInstance().copyPool(pool, tableId != null ? tableId : null);
 
         IsotopeToast.info("Copied", "Pool with " + pool.entries().size() + " entries");
     }
@@ -3143,7 +3143,7 @@ public class LootTableEditPanel extends VersionedWidget {
 
         // Remove entries in reverse order
         for (int i = pool.entries().size() - 1; i >= 0; i--) {
-            manager.applyOperation(tableId.mc(), new LootEditOperation.RemoveEntry(poolIdx, i));
+            manager.applyOperation(tableId, new LootEditOperation.RemoveEntry(poolIdx, i));
         }
 
         multiSelection.clear();

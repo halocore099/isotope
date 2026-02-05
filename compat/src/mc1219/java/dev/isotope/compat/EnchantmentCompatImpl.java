@@ -5,6 +5,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.world.item.Item;
@@ -20,7 +21,9 @@ import java.util.Set;
  * MC 1.21.9-1.21.10 implementation of EnchantmentCompat.
  * Uses ResourceLocation for identifiers.
  *
- * Uses actual registry lookups for enchantment data rather than hardcoded values.
+ * Uses actual registry lookups via RegistryCompat for enchantment data rather
+ * than hardcoded values. RegistryCompat handles the varying registry API across
+ * versions via reflection.
  * Fallbacks are provided only for edge cases where registry access fails.
  */
 public class EnchantmentCompatImpl implements EnchantmentCompat {
@@ -49,23 +52,32 @@ public class EnchantmentCompatImpl implements EnchantmentCompat {
         List<Id> result = new ArrayList<>();
 
         try {
-            // Get item from registry
+            // Get item from registry via RegistryCompat (handles API differences)
             ResourceLocation itemLoc = (ResourceLocation) itemId.toMc();
-            Registry<Item> itemRegistry = access.lookupOrThrow(Registries.ITEM);
-            Optional<Holder.Reference<Item>> itemHolder = itemRegistry.get(itemLoc);
-            if (itemHolder.isEmpty()) {
+            Registry<Item> itemRegistry = RegistryCompat.lookupRegistry(access, Registries.ITEM);
+            if (itemRegistry == null) {
                 return result;
             }
 
-            ItemStack stack = new ItemStack(itemHolder.get().value());
+            ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, itemLoc);
+            Item item = RegistryCompat.getValue(itemRegistry, itemKey);
+            if (item == null) {
+                return result;
+            }
+
+            ItemStack stack = new ItemStack(item);
 
             // Get enchantment registry
-            Registry<Enchantment> enchRegistry = access.lookupOrThrow(Registries.ENCHANTMENT);
+            Registry<Enchantment> enchRegistry = RegistryCompat.lookupRegistry(access, Registries.ENCHANTMENT);
+            if (enchRegistry == null) {
+                return result;
+            }
 
             // Check each enchantment
             for (var entry : enchRegistry.entrySet()) {
                 Enchantment ench = entry.getValue();
-                ResourceLocation enchId = entry.getKey().location();
+                ResourceKey<Enchantment> enchKey = entry.getKey();
+                ResourceLocation enchId = enchKey.location();
 
                 // Check if enchantment can be applied to this item
                 if (ench.canEnchant(stack)) {
@@ -73,19 +85,16 @@ public class EnchantmentCompatImpl implements EnchantmentCompat {
                     if (!includeTreasure) {
                         boolean isTreasure = false;
                         try {
-                            // Get holder to check tags
-                            Optional<Holder.Reference<Enchantment>> holderOpt = enchRegistry.get(enchId);
+                            Optional<Holder.Reference<Enchantment>> holderOpt =
+                                RegistryCompat.getHolder(enchRegistry, enchKey);
                             if (holderOpt.isPresent()) {
                                 Holder.Reference<Enchantment> holder = holderOpt.get();
-                                // Check TREASURE tag or not IN_ENCHANTING_TABLE
                                 isTreasure = holder.is(EnchantmentTags.TREASURE) ||
                                             !holder.is(EnchantmentTags.IN_ENCHANTING_TABLE);
                             } else {
-                                // Fallback to hardcoded check
                                 isTreasure = FALLBACK_TREASURE_ENCHANTS.contains(enchId.getPath());
                             }
                         } catch (Exception e) {
-                            // Fallback to hardcoded check
                             isTreasure = FALLBACK_TREASURE_ENCHANTS.contains(enchId.getPath());
                         }
                         if (isTreasure) {
@@ -96,7 +105,7 @@ public class EnchantmentCompatImpl implements EnchantmentCompat {
                 }
             }
         } catch (Exception e) {
-            // Log error but return empty list rather than crash
+            // Return empty list rather than crash
         }
 
         return result;
@@ -105,11 +114,14 @@ public class EnchantmentCompatImpl implements EnchantmentCompat {
     @Override
     public int getMaxLevel(Id enchantmentId, RegistryAccess access) {
         try {
-            Registry<Enchantment> registry = access.lookupOrThrow(Registries.ENCHANTMENT);
-            ResourceLocation loc = (ResourceLocation) enchantmentId.toMc();
-            Optional<Holder.Reference<Enchantment>> holder = registry.get(loc);
-            if (holder.isPresent()) {
-                return holder.get().value().getMaxLevel();
+            Registry<Enchantment> registry = RegistryCompat.lookupRegistry(access, Registries.ENCHANTMENT);
+            if (registry != null) {
+                ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT,
+                    (ResourceLocation) enchantmentId.toMc());
+                Enchantment ench = RegistryCompat.getValue(registry, key);
+                if (ench != null) {
+                    return ench.getMaxLevel();
+                }
             }
         } catch (Exception e) {
             // Fallback
@@ -119,19 +131,20 @@ public class EnchantmentCompatImpl implements EnchantmentCompat {
 
     @Override
     public int getMinLevel(Id enchantmentId, RegistryAccess access) {
-        // Minecraft enchantments always start at level 1
         return 1;
     }
 
     @Override
     public String getDisplayName(Id enchantmentId, RegistryAccess access) {
         try {
-            Registry<Enchantment> registry = access.lookupOrThrow(Registries.ENCHANTMENT);
-            ResourceLocation loc = (ResourceLocation) enchantmentId.toMc();
-            Optional<Holder.Reference<Enchantment>> holder = registry.get(loc);
-            if (holder.isPresent()) {
-                // getFullname takes a Holder and level parameter
-                return Enchantment.getFullname(holder.get(), 1).getString();
+            Registry<Enchantment> registry = RegistryCompat.lookupRegistry(access, Registries.ENCHANTMENT);
+            if (registry != null) {
+                ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT,
+                    (ResourceLocation) enchantmentId.toMc());
+                Optional<Holder.Reference<Enchantment>> holder = RegistryCompat.getHolder(registry, key);
+                if (holder.isPresent()) {
+                    return Enchantment.getFullname(holder.get(), 1).getString();
+                }
             }
         } catch (Exception e) {
             // Fallback
@@ -144,22 +157,23 @@ public class EnchantmentCompatImpl implements EnchantmentCompat {
     @Override
     public boolean isTreasure(Id enchantmentId, RegistryAccess access) {
         try {
-            Registry<Enchantment> registry = access.lookupOrThrow(Registries.ENCHANTMENT);
-            ResourceLocation loc = (ResourceLocation) enchantmentId.toMc();
-            Optional<Holder.Reference<Enchantment>> holder = registry.get(loc);
-            if (holder.isPresent()) {
-                // Check if enchantment has the TREASURE tag
-                if (holder.get().is(EnchantmentTags.TREASURE)) {
-                    return true;
+            Registry<Enchantment> registry = RegistryCompat.lookupRegistry(access, Registries.ENCHANTMENT);
+            if (registry != null) {
+                ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT,
+                    (ResourceLocation) enchantmentId.toMc());
+                Optional<Holder.Reference<Enchantment>> holder = RegistryCompat.getHolder(registry, key);
+                if (holder.isPresent()) {
+                    if (holder.get().is(EnchantmentTags.TREASURE)) {
+                        return true;
+                    }
+                    if (!holder.get().is(EnchantmentTags.IN_ENCHANTING_TABLE)) {
+                        return true;
+                    }
+                    return false;
                 }
-                // Also check: if NOT in enchanting table, treat as treasure-like
-                if (!holder.get().is(EnchantmentTags.IN_ENCHANTING_TABLE)) {
-                    return true;
-                }
-                return false;
             }
         } catch (Exception e) {
-            // Fallback to hardcoded list
+            // Fallback
         }
         return FALLBACK_TREASURE_ENCHANTS.contains(enchantmentId.getPath());
     }
@@ -167,21 +181,21 @@ public class EnchantmentCompatImpl implements EnchantmentCompat {
     @Override
     public int getRarityWeight(Id enchantmentId, RegistryAccess access) {
         try {
-            Registry<Enchantment> registry = access.lookupOrThrow(Registries.ENCHANTMENT);
-            ResourceLocation loc = (ResourceLocation) enchantmentId.toMc();
-            Optional<Holder.Reference<Enchantment>> holder = registry.get(loc);
-            if (holder.isPresent()) {
-                // In MC 1.21.x, enchantments have a weight() method
-                Enchantment ench = holder.get().value();
-                int weight = ench.getWeight();
-                if (weight > 0) {
-                    return weight;
+            Registry<Enchantment> registry = RegistryCompat.lookupRegistry(access, Registries.ENCHANTMENT);
+            if (registry != null) {
+                ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT,
+                    (ResourceLocation) enchantmentId.toMc());
+                Enchantment ench = RegistryCompat.getValue(registry, key);
+                if (ench != null) {
+                    int weight = ench.getWeight();
+                    if (weight > 0) {
+                        return weight;
+                    }
                 }
             }
         } catch (Exception e) {
-            // Fallback to hardcoded estimation
+            // Fallback
         }
-        // Fallback: use hardcoded rarity estimation
         String path = enchantmentId.getPath();
         if (VERY_RARE_ENCHANTS.contains(path)) {
             return 1;
@@ -190,28 +204,29 @@ public class EnchantmentCompatImpl implements EnchantmentCompat {
         } else if (UNCOMMON_ENCHANTS.contains(path)) {
             return 5;
         }
-        return 10; // Common
+        return 10;
     }
 
     @Override
     public boolean isDiscoverable(Id enchantmentId, RegistryAccess access) {
         try {
-            Registry<Enchantment> registry = access.lookupOrThrow(Registries.ENCHANTMENT);
-            ResourceLocation loc = (ResourceLocation) enchantmentId.toMc();
-            Optional<Holder.Reference<Enchantment>> holder = registry.get(loc);
-            if (holder.isPresent()) {
-                // Discoverable = in enchanting table OR tradeable OR available from loot
-                if (holder.get().is(EnchantmentTags.IN_ENCHANTING_TABLE) ||
-                    holder.get().is(EnchantmentTags.TRADEABLE) ||
-                    holder.get().is(EnchantmentTags.ON_RANDOM_LOOT)) {
-                    return true;
+            Registry<Enchantment> registry = RegistryCompat.lookupRegistry(access, Registries.ENCHANTMENT);
+            if (registry != null) {
+                ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT,
+                    (ResourceLocation) enchantmentId.toMc());
+                Optional<Holder.Reference<Enchantment>> holder = RegistryCompat.getHolder(registry, key);
+                if (holder.isPresent()) {
+                    if (holder.get().is(EnchantmentTags.IN_ENCHANTING_TABLE) ||
+                        holder.get().is(EnchantmentTags.TRADEABLE) ||
+                        holder.get().is(EnchantmentTags.ON_RANDOM_LOOT)) {
+                        return true;
+                    }
+                    return false;
                 }
-                return false;
             }
         } catch (Exception e) {
             // Fallback
         }
-        // Fallback: non-treasure enchantments are typically discoverable
         return !FALLBACK_TREASURE_ENCHANTS.contains(enchantmentId.getPath());
     }
 }
